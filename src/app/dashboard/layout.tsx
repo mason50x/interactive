@@ -32,6 +32,11 @@ export const metadata: Metadata = {
  * it read as a well pressed into the sheet rather than a card floating on
  * top, and it gives the white cards inside it something to sit on.
  *
+ * The shell's margin is the same at every size on purpose. It is half of the
+ * rail's right-hand gutter — the rail pads its own contents by the other
+ * half — so a margin that grew at `lg` would pull the two out of step and
+ * leave everything in the rail sitting left of centre. See `AppSidebar`.
+ *
  * `auth.protect()` here covers the shell and anything a future page forgets to
  * guard on a full page load. It is a floor, not the guarantee: the router does
  * not re-render a shared layout when you navigate between pages beneath it, so
@@ -46,7 +51,7 @@ export default async function DashboardLayout({
     <AppProviders>
       <div className="flex h-svh overflow-hidden bg-surface">
         <AppSidebar />
-        <main className="shell-inset m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-background lg:m-4">
+        <main className="shell-inset m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-background">
           {children}
         </main>
       </div>

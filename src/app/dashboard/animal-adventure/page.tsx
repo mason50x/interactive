@@ -20,8 +20,10 @@ export default async function AnimalAdventurePage() {
 
   // Minted here, after the guard, because this is the last point that both
   // knows who the user is and can still reach the signing secret. The player
-  // origin gets the result and never the session it was derived from.
-  const grant = await mintPlayerGrant(game.slug, userId);
+  // origin gets the result and never the session it was derived from. One
+  // grant covers every game, so a future catalogue page can mint once and
+  // frame anything.
+  const grant = await mintPlayerGrant(userId);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-12 sm:px-10 lg:py-16">

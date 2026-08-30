@@ -40,8 +40,16 @@ const navItems: NavItem[] = [
  * The recessed shell beside it is what draws the edge between them, so a line
  * here would only be a second one.
  *
+ * The padding is deliberately lopsided — 24px in from the window, 12px in
+ * from its own right edge — because the shell beside it adds another 12px of
+ * margin. The two halves add up, so what you see is 24px of white on either
+ * side of everything in here. Change the shell's margin and this has to move
+ * with it.
+ *
  * Below `lg` it drops to icons, so the layout never has to reflow into a top
- * bar and no state is needed to open or close it.
+ * bar and no state is needed to open or close it. The collapsed width is what
+ * it is so that the icon rows come out square at 44px, the same target size
+ * they have when open.
  */
 export function AppSidebar() {
   const pathname = usePathname();
@@ -49,9 +57,9 @@ export function AppSidebar() {
   return (
     <nav
       aria-label="Dashboard"
-      className="flex w-[4.5rem] shrink-0 flex-col lg:w-60"
+      className="flex w-20 shrink-0 flex-col lg:w-60"
     >
-      <div className="flex h-16 items-center justify-center px-4 lg:justify-start lg:px-5">
+      <div className="flex h-16 items-center justify-center pr-3 pl-6 lg:justify-start lg:pl-9">
         <Link
           href="/dashboard"
           aria-label={`${brand.name} dashboard`}
@@ -69,7 +77,7 @@ export function AppSidebar() {
       {/* The rail can outgrow a short viewport once there are enough
           destinations, so the list — and only the list — is allowed to
           scroll inside it. */}
-      <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 py-2">
+      <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-3 pb-2 pl-6">
         {navItems.map((item) => {
           // `startsWith` so a nested route keeps its parent lit, with the
           // boundary check stopping `/dashboards` from matching `/dashboard`.
@@ -98,7 +106,7 @@ export function AppSidebar() {
 
       {/* Nothing links back to the marketing site: `/` bounces a live session
           straight back here, so it would be a round trip to nowhere. */}
-      <div className="shrink-0 px-3 pb-3">
+      <div className="shrink-0 pr-3 pb-3 pl-6">
         <UserMenu />
       </div>
     </nav>

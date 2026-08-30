@@ -5,13 +5,21 @@
  * existing — a Clerk cookie there is a cookie game code can read — so the
  * usual answer of "run the auth middleware on it too" is the one answer
  * unavailable. Instead the app, which does hold the session, signs a short
- * grant naming one game, and the player origin verifies the signature before
- * serving anything. No session crosses the boundary and no crawler gets a
- * page: an unsigned request is a 404.
+ * grant, and the player origin verifies the signature before serving anything.
+ * No session crosses the boundary and no crawler gets a page: an unsigned
+ * request is a 404.
  *
- * A grant is deliberately weak. It authorises loading one game for a couple of
- * hours and nothing else — it is not a session, cannot be exchanged for one,
- * and carries no ability to reach Convex or read anything about the user.
+ * A grant says one thing: this came from someone signed in, recently. It is
+ * not scoped to a game — being signed in is the whole entitlement, so scoping
+ * it per game would only mean re-minting the same permission under a different
+ * name. If games ever stop being uniformly available (a title someone has not
+ * unlocked, say), that check belongs on the dashboard route that decides to
+ * render the frame at all, not here.
+ *
+ * A grant is still deliberately weak. It authorises loading games for a couple
+ * of hours and nothing else — it is not a session, cannot be exchanged for
+ * one, and carries no ability to reach Convex or read anything about the
+ * user.
  *
  * It is also readable by the game, since it travels in the URL. That is why
  * the subject is a keyed hash of the Clerk user id rather than the id itself:
@@ -28,8 +36,6 @@ const GRANT_TTL_SECONDS = 2 * 60 * 60;
 export const GRANT_PARAM = "t";
 
 type GrantPayload = {
-  /** Game slug this grant is good for. */
-  s: string;
   /** Expiry, epoch seconds. */
   e: number;
   /** Pseudonymous subject — a keyed hash of the Clerk user id. */
@@ -84,10 +90,10 @@ function equalsInConstantTime(a: string, b: string): boolean {
 }
 
 /**
- * Signs a grant for one game. Server-side only, and only ever after the
- * caller has established who the user is.
+ * Signs a grant for a signed-in user. Server-side only, and only ever after
+ * the caller has established who that user is.
  */
-export async function mintPlayerGrant(slug: string, userId: string): Promise<string> {
+export async function mintPlayerGrant(userId: string): Promise<string> {
   const key = secret();
   if (!key) {
     // Loud rather than silent: a missing secret must not degrade into serving
@@ -99,7 +105,6 @@ export async function mintPlayerGrant(slug: string, userId: string): Promise<str
   }
 
   const payload: GrantPayload = {
-    s: slug,
     e: Math.floor(Date.now() / 1000) + GRANT_TTL_SECONDS,
     u: (await sign(key, `subject:${userId}`)).slice(0, 22),
   };
@@ -109,18 +114,15 @@ export async function mintPlayerGrant(slug: string, userId: string): Promise<str
 }
 
 /**
- * Verifies a grant against the game actually being requested.
+ * Verifies a grant.
  *
- * Returns a plain boolean, and false for every failure — bad signature, wrong
- * game, expired, malformed, no secret configured. The caller answers 404 to
- * all of them alike, so nothing about why is observable from outside.
+ * Returns a plain boolean, and false for every failure — bad signature,
+ * expired, malformed, no secret configured. The caller answers 404 to all of
+ * them alike, so nothing about why is observable from outside.
  */
-export async function verifyPlayerGrant(
-  grant: string | null,
-  slug: string,
-): Promise<boolean> {
+export async function verifyPlayerGrant(grant: string | null): Promise<boolean> {
   const key = secret();
-  if (!key || !grant || !slug) return false;
+  if (!key || !grant) return false;
 
   const [body, signature] = grant.split(".");
   if (!body || !signature) return false;
@@ -132,7 +134,6 @@ export async function verifyPlayerGrant(
       new TextDecoder().decode(bytesFromBase64url(body)),
     ) as GrantPayload;
 
-    if (payload.s !== slug) return false;
     if (typeof payload.e !== "number") return false;
     return payload.e > Date.now() / 1000;
   } catch {

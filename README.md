@@ -234,16 +234,22 @@ It is still **one codebase and one Vercel project**. The split is a hostname:
 
 Requiring a session there is exactly what the boundary forbids — a Clerk cookie
 on the player origin is a cookie game code can read. So the app signs instead.
-`src/lib/player-token.ts` mints a short HMAC grant naming one game and an
-expiry, the dashboard puts it in the frame's URL, and the proxy verifies it
-before any rewrite happens. No grant, wrong game, expired, or forged all answer
-the same bare 404, so nothing about why is observable and a crawler sees no
-page at all. The player origin also serves its own `Disallow: /` robots.txt,
-since the app's would otherwise allow the game paths.
+`src/lib/player-token.ts` mints a short HMAC grant, the dashboard puts it in
+the frame's URL, and the proxy verifies it before any rewrite happens. No
+grant, expired, or forged all answer the same bare 404, so nothing about why is
+observable and a crawler sees no page at all. The player origin also serves its
+own `Disallow: /` robots.txt, since the app's would otherwise allow the game
+paths.
 
-A grant is not a session and cannot become one: it authorises loading one game
-for two hours, reaches nothing else, and names its subject as a keyed hash of
-the Clerk user id rather than the id itself — it travels in the URL, where game
+A grant says one thing: this came from someone signed in, recently. It is not
+scoped to a game, because being signed in *is* the entitlement — every game is
+available to every account. If that stops being true, the check belongs on the
+dashboard route that decides to render the frame, not on the grant; the player
+origin should not be the place that knows who may play what.
+
+A grant is not a session and cannot become one: it authorises loading games for
+two hours, reaches nothing else, and names its subject as a keyed hash of the
+Clerk user id rather than the id itself — it travels in the URL, where game
 code can read it, so it must not carry an identifier.
 
 `PLAYER_TOKEN_SECRET` signs them and is required in every environment. Without

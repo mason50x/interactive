@@ -2,7 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import { Menu } from "@base-ui/react/menu";
-import { Check, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from "lucide-react";
+import { ChevronsUpDown, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "@/components/theme-provider";
 import { themePreferences, type ThemePreference } from "@/lib/theme";
@@ -94,15 +94,25 @@ export function UserMenu() {
 
       <Menu.Portal>
         <Menu.Positioner side="top" align="start" sideOffset={8} className="z-50 outline-none">
-          <Menu.Popup className="w-[15rem] origin-[var(--transform-origin)] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none transition-[transform,opacity] duration-150 ease-out data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0">
-            <div className="flex items-center gap-3 px-2 py-2">
-              <Avatar src={user.imageUrl} name={name} size={36} />
+          {/* Once the rail is open the popup takes the trigger's exact width,
+              so the two share both edges instead of the menu hanging over
+              into the shell. Collapsed, the trigger is a 4.5rem icon and
+              there is nothing useful to match, so it falls back to a width
+              of its own. */}
+          <Menu.Popup className="w-[15rem] origin-[var(--transform-origin)] lg:w-[var(--anchor-width)] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none transition-[transform,opacity] duration-150 ease-out data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0">
+            <div className="flex items-center gap-2.5 px-1.5 py-2">
+              <Avatar src={user.imageUrl} name={name} size={32} />
               <div className="min-w-0">
                 <p className="truncate text-[0.875rem] font-medium">
                   {user.fullName ?? name}
                 </p>
+                {/* The popup is only as wide as the trigger, so a long address
+                    truncates. The title is the way back to the whole of it. */}
                 {email && (
-                  <p className="truncate text-[0.75rem] text-muted-foreground">
+                  <p
+                    title={email}
+                    className="truncate text-[0.75rem] text-muted-foreground"
+                  >
                     {email}
                   </p>
                 )}
@@ -111,31 +121,42 @@ export function UserMenu() {
 
             <Menu.Separator className="-mx-1.5 my-1.5 h-px bg-border" />
 
-            <Menu.RadioGroup
-              value={preference}
-              onValueChange={(value) => setPreference(value as ThemePreference)}
-            >
-              <Menu.GroupLabel className="px-2.5 pt-1 pb-1.5 text-[0.6875rem] font-medium tracking-wide text-faint uppercase">
+            <div className="flex h-9 items-center justify-between gap-2 pr-0.5 pl-2.5">
+              <span className="text-[0.875rem] text-muted-foreground">
                 Theme
-              </Menu.GroupLabel>
+              </span>
 
-              {themePreferences.map((value) => {
-                const { label, icon: Icon } = themeLabels[value];
+              {/* Three states in one control rather than three rows of menu.
+                  Radio items keep the menu open on click, so the change can be
+                  seen against the page behind it and corrected in place — the
+                  reason this is worth a segmented control and not a button
+                  that cycles blindly through the options.
 
-                return (
-                  // Radio items keep the menu open on click, so the change can
-                  // be seen against the page behind it and corrected without
-                  // reopening.
-                  <Menu.RadioItem key={value} value={value} className={itemClass}>
-                    <Icon className="size-4 shrink-0" aria-hidden />
-                    <span className="flex-1">{label}</span>
-                    <Menu.RadioItemIndicator>
-                      <Check className="size-4 text-primary" aria-hidden />
-                    </Menu.RadioItemIndicator>
-                  </Menu.RadioItem>
-                );
-              })}
-            </Menu.RadioGroup>
+                  The selected segment has to be *lighter* than the track to
+                  read as raised, and `--surface` is only lighter than `--muted`
+                  in the light theme — in the dark one it is a step down, which
+                  turns the pill into a hole. Hence the explicit dark value. */}
+              <Menu.RadioGroup
+                value={preference}
+                onValueChange={(value) => setPreference(value as ThemePreference)}
+                className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5"
+              >
+                {themePreferences.map((value) => {
+                  const { label, icon: Icon } = themeLabels[value];
+
+                  return (
+                    <Menu.RadioItem
+                      key={value}
+                      value={value}
+                      aria-label={label}
+                      className="flex size-7 cursor-pointer items-center justify-center rounded-[0.4375rem] text-muted-foreground outline-none transition-colors select-none data-checked:bg-surface data-checked:text-foreground data-checked:shadow-sm dark:data-checked:bg-border dark:data-checked:shadow-none data-highlighted:text-foreground not-data-checked:data-highlighted:bg-foreground/[0.06]"
+                    >
+                      <Icon className="size-4" aria-hidden />
+                    </Menu.RadioItem>
+                  );
+                })}
+              </Menu.RadioGroup>
+            </div>
 
             <Menu.Separator className="-mx-1.5 my-1.5 h-px bg-border" />
 

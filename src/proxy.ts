@@ -86,9 +86,11 @@ function notFound(): NextResponse {
  * same-origin, where the sandbox attribute is decorative.
  *
  * Nothing on the player origin is public. Since the session cannot cross the
- * boundary, the app signs a short grant for one game instead and this is
- * where it is checked — before any rewrite, so an unsigned request never
- * reaches a route at all. See `src/lib/player-token.ts`.
+ * boundary, the app signs a short grant instead and this is where it is
+ * checked — before any rewrite, so an unsigned request never reaches a route
+ * at all. The grant says only that a signed-in user asked for this; which
+ * games exist is the catalogue's business, and an unknown slug still 404s from
+ * the route itself. See `src/lib/player-token.ts`.
  *
  * With no player host configured this is a single-origin deployment (preview,
  * or a bare `next dev`); games stay behind the same grant, just on the app's
@@ -100,9 +102,9 @@ export default async function proxy(req: NextRequest, event: NextFetchEvent) {
   if (PLAYER_HOST && req.headers.get("host") === PLAYER_HOST) {
     if (path === "/robots.txt") return playerRobots();
 
-    const slug = path.replace(/^\/+|\/+$/g, "");
-    const grant = req.nextUrl.searchParams.get(GRANT_PARAM);
-    if (!(await verifyPlayerGrant(grant, slug))) return notFound();
+    if (!(await verifyPlayerGrant(req.nextUrl.searchParams.get(GRANT_PARAM)))) {
+      return notFound();
+    }
 
     const url = req.nextUrl.clone();
     url.pathname = `${PLAYER_PATH_PREFIX}${url.pathname}`;
@@ -114,9 +116,9 @@ export default async function proxy(req: NextRequest, event: NextFetchEvent) {
     // deployment it is the only one games have, and it is gated the same way.
     if (PLAYER_HOST) return notFound();
 
-    const slug = path.slice(PLAYER_PATH_PREFIX.length).replace(/^\/+|\/+$/g, "");
-    const grant = req.nextUrl.searchParams.get(GRANT_PARAM);
-    if (!(await verifyPlayerGrant(grant, slug))) return notFound();
+    if (!(await verifyPlayerGrant(req.nextUrl.searchParams.get(GRANT_PARAM)))) {
+      return notFound();
+    }
 
     return NextResponse.next();
   }
