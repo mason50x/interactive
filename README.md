@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 50x
 
-## Getting Started
+Next.js + Convex + Clerk + Tailwind foundation. Clerk owns authentication;
+every signed-in user is mirrored into the Convex `users` table.
 
-First, run the development server:
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx convex dev   # terminal 1 — pushes functions, watches convex/
+npm run dev      # terminal 2 — Next.js on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How auth flows through
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. `src/proxy.ts` runs `clerkMiddleware()` on every request and calls
+   `auth.protect()` for `/dashboard(.*)`.
+2. `ClerkProvider` (in `src/app/layout.tsx`) wraps the app, and
+   `ConvexClientProvider` sits inside it. `ConvexProviderWithClerk` passes the
+   Clerk session token to Convex, so `ctx.auth.getUserIdentity()` resolves
+   inside queries and mutations.
+3. `convex/auth.config.ts` tells Convex to trust that token. It reads
+   `CLERK_JWT_ISSUER_DOMAIN` from the Convex deployment's environment and
+   matches `applicationID: "convex"` against the `aud` claim of the **convex**
+   JWT template in the Clerk dashboard.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### The convex JWT template
 
-## Learn More
+Convex builds `identity` purely from the claims in the token, so the template
+has to emit them. A template containing only `{"aud": "convex"}` authenticates
+fine but yields an identity with no email, name, or picture — rows land with
+just a `clerkId`. The template configured on this instance is:
 
-To learn more about Next.js, take a look at the following resources:
+```json
+{
+  "aud": "convex",
+  "email": "{{user.primary_email_address}}",
+  "name": "{{user.full_name}}",
+  "picture": "{{user.image_url}}",
+  "given_name": "{{user.first_name}}",
+  "family_name": "{{user.last_name}}",
+  "nickname": "{{user.username}}"
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Convex maps `email` -> `identity.email`, `name` -> `identity.name`, and
+`picture` -> `identity.pictureUrl`. Add a claim here first if you want a new
+field available to `users.store`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## How users reach the database
 
-## Deploy on Vercel
+Two paths, both funnelling into one `upsertUser` helper in `convex/users.ts`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Client sync** — `<StoreUser />` calls `users.store` once the Convex client
+  is authenticated. It reads name/email/image from the verified JWT, never from
+  client arguments. This works with no extra setup.
+- **Webhook** — `convex/http.ts` exposes `/clerk-users-webhook`, verifies the
+  Svix signature, and handles `user.created`, `user.updated`, and
+  `user.deleted`. This is the authoritative sync and the only path that catches
+  profile edits and deletions made outside the app.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To turn the webhook on:
+
+1. In the Clerk dashboard under **Webhooks**, add an endpoint pointing at
+   `$NEXT_PUBLIC_CONVEX_SITE_URL/clerk-users-webhook` (the `.convex.site`
+   host, not `.convex.cloud`), subscribed to `user.created`, `user.updated`,
+   and `user.deleted`.
+2. Copy the signing secret and run:
+   `npx convex env set CLERK_WEBHOOK_SECRET whsec_...`
+
+## Environment variables
+
+The Vercel project `cognify/interactive-learning` holds the **Development**
+environment, mirroring `.env.local` exactly:
+
+```bash
+vercel env pull          # rewrites .env.local from Vercel
+vercel env ls
+```
+
+They are stored as Config (readable) rather than Sensitive, which is what makes
+`vercel env pull` able to return real values. That is fine for the Clerk
+*development* instance keys; when you add Production, mark `CLERK_SECRET_KEY`
+sensitive there — production never needs `env pull`.
+
+All three environments (Development, Preview, Production) currently hold the
+same values, so pushes to `main` build and ship to production automatically.
+
+That means **production is running on Clerk development keys and the Convex dev
+deployment.** Fine for a foundation; swap both before real users:
+
+- Create a Clerk production instance (needs a domain + DNS), then set
+  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` for Production only.
+- Create a Convex production deployment and switch the Vercel build command to
+  `npx convex deploy --cmd 'npm run build'` with a `CONVEX_DEPLOY_KEY`, which
+  pushes functions and rewrites `NEXT_PUBLIC_CONVEX_URL` at build time.
+
+Two variables live on the Convex deployment instead of here, because Convex
+functions read them at runtime:
+
+```bash
+npx convex env set CLERK_JWT_ISSUER_DOMAIN https://<your-app>.clerk.accounts.dev
+npx convex env set CLERK_WEBHOOK_SECRET whsec_...
+```
+
+## Layout
+
+```
+convex/
+  schema.ts        users table + byClerkId index
+  auth.config.ts   trusts Clerk-issued JWTs
+  users.ts         current / store / upsertFromClerk / deleteFromClerk
+  http.ts          Clerk webhook endpoint
+src/
+  proxy.ts         clerkMiddleware + protected routes
+  app/
+    layout.tsx     ClerkProvider > ConvexClientProvider
+    page.tsx       landing
+    dashboard/     protected; reads the Convex user row
+    sign-in/, sign-up/
+  components/
+    convex-client-provider.tsx
+    store-user.tsx
+    site-header.tsx
+```
+
+## Adding a table
+
+Add it to `convex/schema.ts`, write functions in a new `convex/*.ts` file, and
+`npx convex dev` regenerates `convex/_generated`. Gate anything user-scoped on
+`ctx.auth.getUserIdentity()` the way `users.ts` does.
