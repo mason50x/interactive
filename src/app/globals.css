@@ -3,6 +3,13 @@
 @import "shadcn/tailwind.css";
 
 /*
+ * `dark:` follows the resolved theme on <html>, not the OS. Without this it
+ * would still compile to `prefers-color-scheme`, and a user who picked light
+ * on a dark machine would get half a light page.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
  * shadcn's token vocabulary, mapped onto our palette rather than its neutral
  * defaults. Two mappings are worth knowing:
  *   --primary  is the brand blue. shadcn components use it for their main
@@ -71,57 +78,61 @@
   --panel-border: #2a2a2a;
 }
 
-/* Theming follows the OS. There is no toggle and nothing persisted. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f0f0f;
-    --foreground: #f2f2f2;
+/*
+ * Dark is keyed to the attribute rather than to `prefers-color-scheme`,
+ * because the OS is only the *default* answer now — `src/lib/theme.ts` reads
+ * the user's choice, falls back to the OS when they have not made one, and
+ * writes the winner to <html> before the first paint. Nothing in this file
+ * ever has to know which of the two it was.
+ */
+:root[data-theme="dark"] {
+  --background: #0f0f0f;
+  --foreground: #f2f2f2;
 
-    --card: #171717;
-    --card-foreground: #f2f2f2;
-    --popover: #171717;
-    --popover-foreground: #f2f2f2;
+  --card: #171717;
+  --card-foreground: #f2f2f2;
+  --popover: #171717;
+  --popover-foreground: #f2f2f2;
 
-    --primary: #3c85f7;
-    --primary-foreground: #ffffff;
-    --primary-hover: #5a99f8;
+  --primary: #3c85f7;
+  --primary-foreground: #ffffff;
+  --primary-hover: #5a99f8;
 
-    --secondary: #1f1f1f;
-    --secondary-foreground: #f2f2f2;
+  --secondary: #1f1f1f;
+  --secondary-foreground: #f2f2f2;
 
-    --muted: #1f1f1f;
-    --muted-foreground: #a0a0a0;
+  --muted: #1f1f1f;
+  --muted-foreground: #a0a0a0;
 
-    --accent: #14243d;
-    --accent-foreground: #cfe0fb;
+  --accent: #14243d;
+  --accent-foreground: #cfe0fb;
 
-    --destructive: oklch(0.704 0.191 22.216);
-    --destructive-foreground: #ffffff;
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: #ffffff;
 
-    --border: #272727;
-    --input: #272727;
-    --ring: #3c85f7;
+  --border: #272727;
+  --input: #272727;
+  --ring: #3c85f7;
 
-    --sidebar: #171717;
-    --sidebar-foreground: #f2f2f2;
-    --sidebar-primary: #3c85f7;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #14243d;
-    --sidebar-accent-foreground: #cfe0fb;
-    --sidebar-border: #272727;
-    --sidebar-ring: #3c85f7;
+  --sidebar: #171717;
+  --sidebar-foreground: #f2f2f2;
+  --sidebar-primary: #3c85f7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #14243d;
+  --sidebar-accent-foreground: #cfe0fb;
+  --sidebar-border: #272727;
+  --sidebar-ring: #3c85f7;
 
-    --surface: #171717;
-    --surface-muted: #1f1f1f;
-    --faint: #767676;
-    --border-strong: #383838;
+  --surface: #171717;
+  --surface-muted: #1f1f1f;
+  --faint: #767676;
+  --border-strong: #383838;
 
-    --panel: #171717;
-    --panel-elevated: #202020;
-    --panel-foreground: #f2f2f2;
-    --panel-muted: #9c9c9c;
-    --panel-border: #303030;
-  }
+  --panel: #171717;
+  --panel-elevated: #202020;
+  --panel-foreground: #f2f2f2;
+  --panel-muted: #9c9c9c;
+  --panel-border: #303030;
 }
 
 @theme inline {
@@ -252,13 +263,11 @@
       0 1px 0 rgba(255, 255, 255, 0.7);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .shell-inset {
-      box-shadow:
-        inset 0 2px 8px rgba(0, 0, 0, 0.5),
-        inset 0 1px 2px rgba(0, 0, 0, 0.45),
-        0 1px 0 rgba(255, 255, 255, 0.04);
-    }
+  :root[data-theme="dark"] .shell-inset {
+    box-shadow:
+      inset 0 2px 8px rgba(0, 0, 0, 0.5),
+      inset 0 1px 2px rgba(0, 0, 0, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .label-small {

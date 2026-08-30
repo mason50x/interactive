@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/app/app-header";
+import { AppSidebar } from "@/components/app/app-sidebar";
 import { AppProviders } from "@/components/app-providers";
 
 export const metadata: Metadata = {
@@ -17,12 +17,20 @@ export const metadata: Metadata = {
  * keeps the marketing header and footer off these pages — that chrome belongs
  * to the group's layout, exactly as `/auth` opts out of it.
  *
- * The shape is a viewport-height column that never scrolls itself: the bar on
- * top holds its place because nothing moves it, and the shell beneath it is
- * the only scroll container on the page. That is also why the whole chain
- * carries `min-h-0` — a flex child defaults to `min-height: auto`, which
- * refuses to shrink below its content and would push the overflow back out to
- * the document, taking the header with it.
+ * The shape is a viewport-height row that never scrolls itself. The rail holds
+ * its place because nothing can move it, and the shell beside it is the only
+ * scroll container on the page — which is also why it carries `min-h-0`: a
+ * flex child defaults to `min-height: auto` and refuses to shrink below its
+ * content, which would push the overflow back out to the document and take
+ * the rail with it.
+ *
+ * The two surfaces run the opposite way to the usual card on a page. The
+ * chrome — the rail and the margin all the way around the shell — is one
+ * unbroken white sheet (`--surface`), and the only thing that is not white is
+ * the shell itself, which takes the page colour the landing uses
+ * (`--background`). Being the darker of the two in both themes is what lets
+ * it read as a well pressed into the sheet rather than a card floating on
+ * top, and it gives the white cards inside it something to sit on.
  *
  * `auth.protect()` here covers the shell and anything a future page forgets to
  * guard on a full page load. It is a floor, not the guarantee: the router does
@@ -36,9 +44,9 @@ export default async function DashboardLayout({
 
   return (
     <AppProviders>
-      <div className="flex h-svh min-h-0 flex-col overflow-hidden">
-        <AppHeader />
-        <main className="shell-inset mx-3 mb-3 min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface sm:mx-4 sm:mb-4">
+      <div className="flex h-svh overflow-hidden bg-surface">
+        <AppSidebar />
+        <main className="shell-inset m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-background lg:m-4">
           {children}
         </main>
       </div>

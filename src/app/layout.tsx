@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 import { brand } from "@/lib/brand";
+import { themeScript } from "@/lib/theme";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -71,12 +72,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Matches the page background in each theme so mobile browser chrome does
-  // not sit at a different colour from the top of the page.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: brand.colors.themeLight },
-    { media: "(prefers-color-scheme: dark)", color: brand.colors.themeDark },
-  ],
+  // No `themeColor` here on purpose. A static pair keyed to
+  // `prefers-color-scheme` cannot follow a theme the user has overridden in
+  // the app, so the tag is written by the theme script instead — see
+  // `src/lib/theme.ts`. `colorScheme` stays as the pre-script default; the
+  // script narrows it to the resolved theme.
   colorScheme: "light dark",
 };
 
@@ -92,6 +92,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full scroll-smooth antialiased font-sans",
         inter.variable,
@@ -99,7 +100,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         displaySerif.variable,
       )}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {/* Before anything paints: reads the stored preference and puts the
+            resolved theme on <html>. A component could not do this — the
+            server has no storage to read, so React would paint light first
+            and snap to dark on hydration. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+          suppressHydrationWarning
+        />
+        {children}
+      </body>
     </html>
   );
 }

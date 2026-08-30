@@ -15,6 +15,8 @@
  * the player host into the `/player` segment. One `git push` ships both.
  */
 
+import { GRANT_PARAM } from "@/lib/player-token";
+
 /** The segment the player host is rewritten into. Never linked directly. */
 export const PLAYER_PATH_PREFIX = "/player";
 
@@ -49,13 +51,16 @@ export function playerHost(): string | null {
 }
 
 /**
- * The `src` for a game's frame.
+ * The `src` for a game's frame, carrying the grant that buys it past the
+ * proxy — see `src/lib/player-token.ts`. Without one the player origin
+ * answers 404, so this is the only way to build a working game URL.
  *
  * On the player origin the `/player` prefix is supplied by the proxy, so the
  * public URL of a game is just its slug at the root — which is also what
  * keeps the prefix an implementation detail rather than a public path.
  */
-export function playerUrl(slug: string): string {
+export function playerUrl(slug: string, grant: string): string {
   const origin = playerOrigin();
-  return origin ? `${origin}/${slug}` : `${PLAYER_PATH_PREFIX}/${slug}`;
+  const path = origin ? `/${slug}` : `${PLAYER_PATH_PREFIX}/${slug}`;
+  return `${origin ?? ""}${path}?${GRANT_PARAM}=${encodeURIComponent(grant)}`;
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { GameFrame } from "@/components/app/game-frame";
 import { findGame } from "@/lib/games";
 import { playerOrigin, playerUrl } from "@/lib/player";
+import { mintPlayerGrant } from "@/lib/player-token";
 
 const SLUG = "animal-adventure";
 
@@ -12,10 +13,15 @@ export const metadata: Metadata = { title: "Animal Adventure" };
 export default async function AnimalAdventurePage() {
   // The layout guards the shell, but the router does not re-render a shared
   // layout between sibling pages, so every page under /dashboard guards itself.
-  await auth.protect();
+  const { userId } = await auth.protect();
 
   const game = findGame(SLUG);
   if (!game) notFound();
+
+  // Minted here, after the guard, because this is the last point that both
+  // knows who the user is and can still reach the signing secret. The player
+  // origin gets the result and never the session it was derived from.
+  const grant = await mintPlayerGrant(game.slug, userId);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-12 sm:px-10 lg:py-16">
@@ -30,7 +36,7 @@ export default async function AnimalAdventurePage() {
       <GameFrame
         slug={game.slug}
         title={game.title}
-        src={playerUrl(game.slug)}
+        src={playerUrl(game.slug, grant)}
         playerOrigin={playerOrigin()}
       />
     </div>

@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
 import { PLAYER_PATH_PREFIX, playerHost } from "@/lib/player";
+import { GRANT_PARAM, verifyPlayerGrant } from "@/lib/player-token";
 
 /**
  * Only these routes require a session. Everything else — the landing page and
@@ -59,6 +60,20 @@ const app = clerkMiddleware(async (auth, req) => {
  *  constant by the time the proxy is deployed. */
 const PLAYER_HOST = playerHost();
 
+/** Everything the player origin has to say to a crawler. It is reachable
+ *  only with a signed grant, so there is nothing here to index. */
+function playerRobots(): NextResponse {
+  return new NextResponse("User-agent: *\nDisallow: /\n", {
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+}
+
+/** A request with no game behind it, answered identically whatever the reason
+ *  — missing grant, wrong game, expired, forged, or simply no such slug. */
+function notFound(): NextResponse {
+  return new NextResponse(null, { status: 404 });
+}
+
 /**
  * Two hostnames, one deployment.
  *
@@ -70,20 +85,40 @@ const PLAYER_HOST = playerHost();
  * leaving `/player` reachable on the app host would let a game be framed
  * same-origin, where the sandbox attribute is decorative.
  *
+ * Nothing on the player origin is public. Since the session cannot cross the
+ * boundary, the app signs a short grant for one game instead and this is
+ * where it is checked — before any rewrite, so an unsigned request never
+ * reaches a route at all. See `src/lib/player-token.ts`.
+ *
  * With no player host configured this is a single-origin deployment (preview,
- * or a bare `next dev`) and neither branch applies — see `playerOrigin`.
+ * or a bare `next dev`); games stay behind the same grant, just on the app's
+ * own origin — see `playerOrigin`.
  */
 export default async function proxy(req: NextRequest, event: NextFetchEvent) {
-  if (PLAYER_HOST) {
-    if (req.headers.get("host") === PLAYER_HOST) {
-      const url = req.nextUrl.clone();
-      url.pathname = `${PLAYER_PATH_PREFIX}${url.pathname}`;
-      return NextResponse.rewrite(url);
-    }
+  const path = req.nextUrl.pathname;
 
-    if (req.nextUrl.pathname.startsWith(PLAYER_PATH_PREFIX)) {
-      return new NextResponse(null, { status: 404 });
-    }
+  if (PLAYER_HOST && req.headers.get("host") === PLAYER_HOST) {
+    if (path === "/robots.txt") return playerRobots();
+
+    const slug = path.replace(/^\/+|\/+$/g, "");
+    const grant = req.nextUrl.searchParams.get(GRANT_PARAM);
+    if (!(await verifyPlayerGrant(grant, slug))) return notFound();
+
+    const url = req.nextUrl.clone();
+    url.pathname = `${PLAYER_PATH_PREFIX}${url.pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  if (path.startsWith(PLAYER_PATH_PREFIX)) {
+    // On the app host the player segment is not a route. On a single-origin
+    // deployment it is the only one games have, and it is gated the same way.
+    if (PLAYER_HOST) return notFound();
+
+    const slug = path.slice(PLAYER_PATH_PREFIX.length).replace(/^\/+|\/+$/g, "");
+    const grant = req.nextUrl.searchParams.get(GRANT_PARAM);
+    if (!(await verifyPlayerGrant(grant, slug))) return notFound();
+
+    return NextResponse.next();
   }
 
   return app(req, event);

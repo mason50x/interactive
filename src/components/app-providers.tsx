@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { StoreUser } from "@/components/store-user";
+import { ThemeProvider } from "@/components/theme-provider";
 
 /**
  * Everything the app needs and a game must never get.
@@ -15,14 +16,21 @@ import { StoreUser } from "@/components/store-user";
  *
  * Analytics rides along for the same reason. A game frame firing its own
  * pageviews would double-count every session.
+ *
+ * The theme is here rather than in the root layout for a third reason: the
+ * *application* of a theme belongs to every route (the root layout's inline
+ * script does that, player included), but the ability to read and change one
+ * is only ever used by app chrome.
  */
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider>
       <ConvexClientProvider>
-        <StoreUser />
-        {children}
-        <GoogleAnalytics />
+        <ThemeProvider>
+          <StoreUser />
+          {children}
+          <GoogleAnalytics />
+        </ThemeProvider>
       </ConvexClientProvider>
     </ClerkProvider>
   );

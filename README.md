@@ -123,6 +123,8 @@ Each environment points at its own backends:
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_` | `pk_live_` |
 | `CLERK_SECRET_KEY` | `sk_test_` (Config) | `sk_live_` (Sensitive) |
 | `CONVEX_DEPLOY_KEY` | not set | prod deploy key (Sensitive) |
+| `NEXT_PUBLIC_PLAYER_ORIGIN` | `http://127.0.0.1:3000` / unset on Preview | the player domain |
+| `PLAYER_TOKEN_SECRET` | per environment (Sensitive) | per environment (Sensitive) |
 
 Production's `CLERK_SECRET_KEY` is stored Sensitive, so `vercel env pull
 --environment=production` returns it blank. That is expected — only the build
@@ -227,6 +229,33 @@ It is still **one codebase and one Vercel project**. The split is a hostname:
 - The frame gets `sandbox` and a `postMessage` channel, nothing else. A score
   arriving from it is a claim, not a fact: `GameFrame` displays it and anything
   destined for Convex has to be written by code the player cannot reach.
+
+### Nothing on the player origin is public
+
+Requiring a session there is exactly what the boundary forbids — a Clerk cookie
+on the player origin is a cookie game code can read. So the app signs instead.
+`src/lib/player-token.ts` mints a short HMAC grant naming one game and an
+expiry, the dashboard puts it in the frame's URL, and the proxy verifies it
+before any rewrite happens. No grant, wrong game, expired, or forged all answer
+the same bare 404, so nothing about why is observable and a crawler sees no
+page at all. The player origin also serves its own `Disallow: /` robots.txt,
+since the app's would otherwise allow the game paths.
+
+A grant is not a session and cannot become one: it authorises loading one game
+for two hours, reaches nothing else, and names its subject as a keyed hash of
+the Clerk user id rather than the id itself — it travels in the URL, where game
+code can read it, so it must not carry an identifier.
+
+`PLAYER_TOKEN_SECRET` signs them and is required in every environment. Without
+it the player origin refuses everything rather than falling open.
+
+Two things it does **not** cover, worth knowing before treating it as a content
+gate. Static chunks under `/_next/` are excluded from the proxy matcher and
+stay public — they are the same bundle the app serves, so there is no game
+content in them, but a real asset pipeline (bundles, ROM blobs) would need its
+own check. And the grant is only tested when the document loads, so a run in
+progress never gets interrupted and a reload after two hours needs a fresh one
+from the dashboard.
 
 `NEXT_PUBLIC_PLAYER_ORIGIN` names the player origin. Leave it unset and games
 fall back to `/player/<slug>` on the app's own origin with no isolation, which
