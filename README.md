@@ -82,25 +82,52 @@ They are stored as Config (readable) rather than Sensitive, which is what makes
 *development* instance keys. Once real production keys land, mark
 `CLERK_SECRET_KEY` sensitive for Production — production never needs `env pull`.
 
-All three environments (Development, Preview, Production) currently hold the
-same values, so pushes to `main` build and ship to production automatically.
+Each environment points at its own backends:
 
-That means **production is running on Clerk development keys and the Convex dev
-deployment.** Fine for a foundation; swap both before real users:
+| variable | Development / Preview | Production |
+| --- | --- | --- |
+| `NEXT_PUBLIC_CONVEX_URL` | `cheerful-guanaco-637` (dev) | `posh-chicken-69` (prod) |
+| `CONVEX_DEPLOYMENT` | `dev:cheerful-guanaco-637` | `prod:posh-chicken-69` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_` | `pk_live_` |
+| `CLERK_SECRET_KEY` | `sk_test_` (Config) | `sk_live_` (Sensitive) |
 
-- Create a Clerk production instance (needs a domain + DNS), then set
-  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` for Production only.
-- Create a Convex production deployment and switch the Vercel build command to
-  `npx convex deploy --cmd 'npm run build'` with a `CONVEX_DEPLOY_KEY`, which
-  pushes functions and rewrites `NEXT_PUBLIC_CONVEX_URL` at build time.
+Production's `CLERK_SECRET_KEY` is stored Sensitive, so `vercel env pull
+--environment=production` returns it blank. That is expected — only the build
+and runtime can read it.
+
+Note that `vercel env add --force` silently no-ops against a record that spans
+two targets. Remove the combined record first, then add each target separately.
 
 Two variables live on the Convex deployment instead of here, because Convex
 functions read them at runtime:
 
 ```bash
-npx convex env set CLERK_JWT_ISSUER_DOMAIN https://<your-app>.clerk.accounts.dev
+# dev deployment
+npx convex env set CLERK_JWT_ISSUER_DOMAIN https://great-joey-9314.clerk.accounts.dev
 npx convex env set CLERK_WEBHOOK_SECRET whsec_...
+
+# prod deployment
+npx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.interactivelearningresources.org
+npx convex env set --prod CLERK_WEBHOOK_SECRET whsec_...
 ```
+
+The webhook is configured per Clerk instance, so the production instance needs
+its own endpoint (pointing at `https://posh-chicken-69.convex.site/clerk-users-webhook`)
+and its own signing secret.
+
+### Production DNS (outstanding)
+
+The Clerk production instance serves from `clerk.interactivelearningresources.org`,
+which is not yet pointed at Clerk. Until these CNAMEs exist, Convex cannot fetch
+the JWKS and production sign-in will fail:
+
+| host | CNAME target |
+| --- | --- |
+| `clerk` | `frontend-api.clerk.services` |
+| `accounts` | `accounts.clerk.services` |
+| `clkmail` | `mail.elzh40fke12s.clerk.services` |
+| `clk._domainkey` | `dkim1.elzh40fke12s.clerk.services` |
+| `clk2._domainkey` | `dkim2.elzh40fke12s.clerk.services` |
 
 ## Deployments
 
