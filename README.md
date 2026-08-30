@@ -142,11 +142,11 @@ A production build ships the Convex backend along with the frontend.
 if [ -n "$CONVEX_DEPLOY_KEY" ]; then npx convex deploy --cmd 'npm run build'; else npm run build; fi
 ```
 
-`npx convex deploy` typechecks `convex/`, regenerates `convex/_generated`,
-pushes functions, indexes, and schema to the deployment its key names, and only
-then runs `npm run build` — with `NEXT_PUBLIC_CONVEX_URL` pointed at that same
-deployment. A schema or typecheck failure fails the Vercel build before anything
-ships, so the two halves never drift apart.
+`npx convex deploy` runs `npm run build` first, with
+`NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` set to the deployment
+its key names, then typechecks `convex/`, regenerates `convex/_generated`, and
+pushes functions, indexes, and schema there. Any step failing fails the Vercel
+build, so the frontend and the backend land together or not at all.
 
 The key is `CONVEX_DEPLOY_KEY`, stored Sensitive on **Production only** and
 minted with:
@@ -164,9 +164,9 @@ To give each preview branch its own Convex backend instead, generate a
 only mints keys scoped to an existing deployment) and add it as
 `CONVEX_DEPLOY_KEY` for Vercel's Preview environment — the build command picks
 it up with no further changes, naming each deployment after its branch. Drop the
-Preview `CONVEX_DEPLOYMENT` override at that point, and note that
-`NEXT_PUBLIC_CONVEX_SITE_URL` would still point at the dev deployment; only
-`NEXT_PUBLIC_CONVEX_URL` is rewritten by `--cmd`.
+Preview `CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, and
+`NEXT_PUBLIC_CONVEX_SITE_URL` overrides at that point — the key picks the
+deployment and `--cmd` injects both URLs.
 
 ## Layout
 
