@@ -29,9 +29,16 @@ http.route({
         break;
       case "user.deleted": {
         const clerkId = event.data.id;
-        if (clerkId !== undefined) {
-          await ctx.runMutation(internal.users.deleteFromClerk, { clerkId });
+        if (clerkId === undefined) {
+          // Nothing to key the cascade on; ack so Svix stops retrying.
+          console.error("user.deleted webhook arrived without a user id");
+          break;
         }
+        const { deleted } = await ctx.runMutation(
+          internal.users.deleteFromClerk,
+          { clerkId },
+        );
+        console.log(`user.deleted ${clerkId}: cleared ${deleted} user row(s)`);
         break;
       }
       default:
@@ -49,11 +56,18 @@ async function validateRequest(request: Request): Promise<WebhookEvent | null> {
     throw new Error("CLERK_WEBHOOK_SECRET is not set on the Convex deployment");
   }
 
+  const id = request.headers.get("svix-id");
+  const timestamp = request.headers.get("svix-timestamp");
+  const signature = request.headers.get("svix-signature");
+  if (id === null || timestamp === null || signature === null) {
+    return null;
+  }
+
   const payload = await request.text();
   const headers = {
-    "svix-id": request.headers.get("svix-id")!,
-    "svix-timestamp": request.headers.get("svix-timestamp")!,
-    "svix-signature": request.headers.get("svix-signature")!,
+    "svix-id": id,
+    "svix-timestamp": timestamp,
+    "svix-signature": signature,
   };
 
   try {

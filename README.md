@@ -6,14 +6,28 @@ every signed-in user is mirrored into the Convex `users` table.
 ## Running it
 
 ```bash
-npx convex dev   # terminal 1 — pushes functions, watches convex/
-npm run dev      # terminal 2 — Next.js on http://localhost:3000
+npm run dev      # Next.js + convex dev, and prints both origins
 ```
+
+It comes up on two of them:
+
+| | | |
+|---|---|---|
+| App | `http://localhost:3000` | the site, the dashboard, the session |
+| Player | `http://127.0.0.1:3000` | games only; `/` is a 404 here |
+
+That is one server reached by two hostnames — see [Two origins](#two-origins).
 
 ## How auth flows through
 
-1. `src/proxy.ts` runs `clerkMiddleware()` on every request and calls
-   `auth.protect()` for `/dashboard(.*)`.
+1. `src/proxy.ts` runs `clerkMiddleware()` on every request, which is what
+   makes the session readable by `auth()` and `currentUser()`. It enforces
+   nothing: authentication lives on the resource. Every page under
+   `/dashboard` calls `auth.protect()` itself, and the layout repeats it as a
+   floor — the router does not re-render a shared layout on navigation between
+   pages beneath it, so a layout-only check would not hold. The one thing
+   middleware still decides is cosmetic: sending a signed-in visitor from `/`
+   or a sign-in form to the dashboard, which keeps `/` statically rendered.
 2. `ClerkProvider` (in `src/app/layout.tsx`) wraps the app, and
    `ConvexClientProvider` sits inside it. `ConvexProviderWithClerk` passes the
    Clerk session token to Convex, so `ctx.auth.getUserIdentity()` resolves
@@ -58,14 +72,32 @@ Two paths, both funnelling into one `upsertUser` helper in `convex/users.ts`:
   `user.deleted`. This is the authoritative sync and the only path that catches
   profile edits and deletions made outside the app.
 
-To turn the webhook on:
+The webhook is live on both Clerk instances, each pointed at its own Convex
+deployment's `.convex.site` host (not `.convex.cloud`) and subscribed to
+`user.created`, `user.updated`, and `user.deleted`:
 
-1. In the Clerk dashboard under **Webhooks**, add an endpoint pointing at
-   `$NEXT_PUBLIC_CONVEX_SITE_URL/clerk-users-webhook` (the `.convex.site`
-   host, not `.convex.cloud`), subscribed to `user.created`, `user.updated`,
-   and `user.deleted`.
-2. Copy the signing secret and run:
-   `npx convex env set CLERK_WEBHOOK_SECRET whsec_...`
+| Clerk instance | endpoint |
+| --- | --- |
+| development (`great-joey-9314`) | `https://cheerful-guanaco-637.convex.site/clerk-users-webhook` |
+| production (`clerk.interactivelearningresources.org`) | `https://posh-chicken-69.convex.site/clerk-users-webhook` |
+
+Each endpoint has its own signing secret, stored as `CLERK_WEBHOOK_SECRET` on
+the matching Convex deployment. Rotating one in the Clerk dashboard means
+re-running `npx convex env set CLERK_WEBHOOK_SECRET whsec_...` (add `--prod`
+for production) — a mismatched secret makes every delivery fail verification
+and return 400.
+
+### Deleting a user
+
+`user.deleted` runs `users.deleteFromClerk`, which is the single cascade point
+for erasing someone from Convex. It deletes every `users` row for that Clerk id
+— `.collect()` rather than `.unique()`, so a stray duplicate can't throw and
+wedge the webhook on Svix's retries — and a delete for an unknown user is a
+no-op, which keeps retries and dashboard replays safe to apply twice.
+
+**When you add a table that holds user-owned rows, delete them in
+`deleteFromClerk` too.** Nothing else erases them, so anything missed there
+outlives the account.
 
 ## Environment variables
 
@@ -112,9 +144,9 @@ npx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.interactivelearn
 npx convex env set --prod CLERK_WEBHOOK_SECRET whsec_...
 ```
 
-The webhook is configured per Clerk instance, so the production instance needs
-its own endpoint (pointing at `https://posh-chicken-69.convex.site/clerk-users-webhook`)
-and its own signing secret.
+Both are set on both deployments. The webhook secret is per Clerk instance, so
+the two deployments hold different `CLERK_WEBHOOK_SECRET` values — see the
+webhook endpoint table above.
 
 ### Production DNS (outstanding)
 
@@ -168,6 +200,43 @@ Preview `CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, and
 `NEXT_PUBLIC_CONVEX_SITE_URL` overrides at that point — the key picks the
 deployment and `--cmd` injects both URLs.
 
+## Two origins
+
+Games are third-party code. Even the one in this repo today is a stand-in for
+bundles a studio shipped, so the rule is written for the worst case: anything
+executing on the app's own origin can read `localStorage`, lift the Clerk
+session, and call Convex as the signed-in user. Games therefore answer on a
+hostname of their own, and the browser enforces the rest — an origin is
+scheme + host + port, and a document on the far side of that line cannot reach
+across it whatever it does with the DOM it is handed.
+
+It is still **one codebase and one Vercel project**. The split is a hostname:
+
+- `src/proxy.ts` reads the `Host` header. The player host is rewritten into the
+  `/player` segment and never reaches `clerkMiddleware`; on the app host,
+  `/player/*` 404s outright, so a game can never be framed same-origin where
+  the `sandbox` attribute would be decorative.
+- `AppProviders` (Clerk, Convex, analytics) is mounted by `(site)`, `/auth` and
+  `/dashboard` rather than by the root layout, which also wraps `/player`.
+  Mounting it higher would load Clerk's script and set its cookies on the
+  player origin.
+- `next.config.ts` sets `frame-ancestors` per host: the player may be framed by
+  the app and nothing else, the app by nothing at all. It matches on hostname
+  with the port stripped — that is what a `has: [{ type: "host" }]` matcher
+  compares, and a value carrying `:3000` silently matches nothing.
+- The frame gets `sandbox` and a `postMessage` channel, nothing else. A score
+  arriving from it is a claim, not a fact: `GameFrame` displays it and anything
+  destined for Convex has to be written by code the player cannot reach.
+
+`NEXT_PUBLIC_PLAYER_ORIGIN` names the player origin. Leave it unset and games
+fall back to `/player/<slug>` on the app's own origin with no isolation, which
+is how preview deployments work with no configuration; `GameFrame` drops
+`allow-same-origin` from the sandbox to compensate. Production always sets it.
+
+Adding a game is an entry in `src/lib/games.ts`, a component under
+`src/components/player/`, and a line in the `RUNTIMES` map in
+`src/app/player/[slug]/page.tsx`.
+
 ## Layout
 
 ```
@@ -177,16 +246,20 @@ convex/
   users.ts         current / store / upsertFromClerk / deleteFromClerk
   http.ts          Clerk webhook endpoint
 src/
-  proxy.ts         clerkMiddleware + protected routes
+  proxy.ts         host dispatch; clerkMiddleware; signed-out-only redirects
+  lib/
+    player.ts      where games are allowed to run, and why
+    games.ts       the game catalogue
   app/
-    layout.tsx     ClerkProvider > ConvexClientProvider
-    page.tsx       landing
-    dashboard/     protected; reads the Convex user row
-    sign-in/, sign-up/
+    layout.tsx     document shell only — no providers (see Two origins)
+    (site)/        landing, marketing chrome
+    auth/          sign-in, sign-up, invitations
+    dashboard/     auth.protect() per page; one route per game
+    player/[slug]  the player origin's only route
   components/
-    convex-client-provider.tsx
-    store-user.tsx
-    site-header.tsx
+    app-providers.tsx      Clerk > Convex > analytics; never on /player
+    app/game-frame.tsx     the app's side of the boundary
+    player/snake-game.tsx  Animal Adventure
 ```
 
 ## Adding a table

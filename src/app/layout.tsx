@@ -1,15 +1,15 @@
-import { ClerkProvider } from "@clerk/nextjs";
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
-import { GoogleAnalytics } from "@/components/google-analytics";
-import { SiteHeader } from "@/components/site-header";
-import { StoreUser } from "@/components/store-user";
+import type { Metadata, Viewport } from "next";
+import { Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
+import { brand } from "@/lib/brand";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter is the brand typeface: the monogram is drawn from its letterforms, so
+// the wordmark beside it has to be the same face for the lockup to hold.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -17,27 +17,89 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const displaySerif = Instrument_Serif({
+  variable: "--font-display-serif",
+  weight: "400",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "50x",
-  description: "Next.js + Convex + Clerk + Tailwind",
+  // Lets every URL-based field below be written as a relative path.
+  metadataBase: new URL(brand.url),
+  title: {
+    default: `${brand.name} — ${brand.tagline}`,
+    template: `%s — ${brand.name}`,
+  },
+  description: brand.metaDescription,
+  applicationName: brand.name,
+  keywords: [...brand.keywords],
+  authors: [{ name: brand.name, url: brand.url }],
+  creator: brand.name,
+  publisher: brand.name,
+  category: "education",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: brand.name,
+    title: `${brand.name} — ${brand.tagline}`,
+    description: brand.metaDescription,
+    url: "/",
+    locale: brand.locale,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${brand.name} — ${brand.tagline}`,
+    description: brand.metaDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  appleWebApp: {
+    capable: true,
+    title: brand.shortName,
+    statusBarStyle: "default",
+  },
+  formatDetection: { telephone: false, address: false, email: false },
 };
 
+export const viewport: Viewport = {
+  // Matches the page background in each theme so mobile browser chrome does
+  // not sit at a different colour from the top of the page.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: brand.colors.themeLight },
+    { media: "(prefers-color-scheme: dark)", color: brand.colors.themeDark },
+  ],
+  colorScheme: "light dark",
+};
+
+/**
+ * The document shell, and nothing else.
+ *
+ * Fonts, the stylesheet, and the site-wide metadata belong to every route this
+ * deployment serves — including `/player`, which answers on its own hostname.
+ * Auth, Convex, and analytics deliberately do not: they live in `AppProviders`,
+ * mounted by each of the app's own route trees. See `src/lib/player.ts`.
+ */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn(
+        "h-full scroll-smooth antialiased font-sans",
+        inter.variable,
+        geistMono.variable,
+        displaySerif.variable,
+      )}
     >
-      <body className="min-h-full flex flex-col">
-        <ClerkProvider>
-          <ConvexClientProvider>
-            <StoreUser />
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-          </ConvexClientProvider>
-        </ClerkProvider>
-        <GoogleAnalytics />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

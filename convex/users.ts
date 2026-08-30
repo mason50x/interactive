@@ -47,6 +47,18 @@ async function userByClerkId(ctx: QueryCtx, clerkId: string) {
     .unique();
 }
 
+/**
+ * Every row for a Clerk id. The delete path uses this rather than
+ * `userByClerkId` so a stray duplicate row can't throw and wedge the webhook
+ * on retry — a deletion should clear whatever is there.
+ */
+async function usersByClerkId(ctx: QueryCtx, clerkId: string) {
+  return await ctx.db
+    .query("users")
+    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+    .collect();
+}
+
 /** The signed-in user's row, or null when signed out / not synced yet. */
 export const current = query({
   args: {},
@@ -97,13 +109,24 @@ export const upsertFromClerk = internalMutation({
   },
 });
 
-/** Called by the Clerk webhook on `user.deleted`. */
+/**
+ * Called by the Clerk webhook on `user.deleted`.
+ *
+ * This is the single cascade point for erasing a user from Convex: when a new
+ * table holds user-owned rows, delete them here too, otherwise they outlive
+ * the account. Deleting an unknown user is a no-op so Svix retries and replays
+ * stay safe to apply twice.
+ */
 export const deleteFromClerk = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
-    const user = await userByClerkId(ctx, clerkId);
-    if (user !== null) {
+    const users = await usersByClerkId(ctx, clerkId);
+    for (const user of users) {
       await ctx.db.delete(user._id);
     }
+
+    // Add deletes for any other table keyed by this user above this line.
+
+    return { deleted: users.length };
   },
 });
