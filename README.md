@@ -90,6 +90,7 @@ Each environment points at its own backends:
 | `CONVEX_DEPLOYMENT` | `dev:cheerful-guanaco-637` | `prod:posh-chicken-69` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_` | `pk_live_` |
 | `CLERK_SECRET_KEY` | `sk_test_` (Config) | `sk_live_` (Sensitive) |
+| `CONVEX_DEPLOY_KEY` | not set | prod deploy key (Sensitive) |
 
 Production's `CLERK_SECRET_KEY` is stored Sensitive, so `vercel env pull
 --environment=production` returns it blank. That is expected — only the build
@@ -133,6 +134,39 @@ the JWKS and production sign-in will fail:
 
 `main` is connected to `mason50x/interactive-learning` (private) and deploys to
 production on every push. Other branches get preview deployments.
+
+A production build ships the Convex backend along with the frontend.
+`vercel.json` overrides the build command with:
+
+```sh
+if [ -n "$CONVEX_DEPLOY_KEY" ]; then npx convex deploy --cmd 'npm run build'; else npm run build; fi
+```
+
+`npx convex deploy` typechecks `convex/`, regenerates `convex/_generated`,
+pushes functions, indexes, and schema to the deployment its key names, and only
+then runs `npm run build` — with `NEXT_PUBLIC_CONVEX_URL` pointed at that same
+deployment. A schema or typecheck failure fails the Vercel build before anything
+ships, so the two halves never drift apart.
+
+The key is `CONVEX_DEPLOY_KEY`, stored Sensitive on **Production only** and
+minted with:
+
+```bash
+npx convex deployment token create vercel-production --prod
+```
+
+Preview builds have no key, so the `else` branch runs a plain `npm run build`
+and they keep talking to the shared dev deployment (`cheerful-guanaco-637`),
+whose functions `npx convex dev` pushes from your machine.
+
+To give each preview branch its own Convex backend instead, generate a
+**Preview** deploy key in the Convex dashboard under Project Settings (the CLI
+only mints keys scoped to an existing deployment) and add it as
+`CONVEX_DEPLOY_KEY` for Vercel's Preview environment — the build command picks
+it up with no further changes, naming each deployment after its branch. Drop the
+Preview `CONVEX_DEPLOYMENT` override at that point, and note that
+`NEXT_PUBLIC_CONVEX_SITE_URL` would still point at the dev deployment; only
+`NEXT_PUBLIC_CONVEX_URL` is rewritten by `--cmd`.
 
 ## Layout
 
