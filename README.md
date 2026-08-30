@@ -69,8 +69,8 @@ To turn the webhook on:
 
 ## Environment variables
 
-The Vercel project `cognify/interactive-learning` holds the **Development**
-environment, mirroring `.env.local` exactly:
+The Vercel project `cognify/interactive-learning` holds all three
+environments, each mirroring `.env.local` exactly:
 
 ```bash
 vercel env pull          # rewrites .env.local from Vercel
@@ -79,8 +79,8 @@ vercel env ls
 
 They are stored as Config (readable) rather than Sensitive, which is what makes
 `vercel env pull` able to return real values. That is fine for the Clerk
-*development* instance keys; when you add Production, mark `CLERK_SECRET_KEY`
-sensitive there — production never needs `env pull`.
+*development* instance keys. Once real production keys land, mark
+`CLERK_SECRET_KEY` sensitive for Production — production never needs `env pull`.
 
 All three environments (Development, Preview, Production) currently hold the
 same values, so pushes to `main` build and ship to production automatically.
@@ -101,6 +101,11 @@ functions read them at runtime:
 npx convex env set CLERK_JWT_ISSUER_DOMAIN https://<your-app>.clerk.accounts.dev
 npx convex env set CLERK_WEBHOOK_SECRET whsec_...
 ```
+
+## Deployments
+
+`main` is connected to `mason50x/interactive-learning` (private) and deploys to
+production on every push. Other branches get preview deployments.
 
 ## Layout
 
