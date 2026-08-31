@@ -200,6 +200,8 @@ export function claimError(reason: string): string {
       return "That is already your handle.";
     case "no-profile":
       return "You do not have a handle yet.";
+    case "closed":
+      return "This account is closed.";
     default:
       return "That handle will not work.";
   }

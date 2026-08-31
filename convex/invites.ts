@@ -142,7 +142,10 @@ export const reserve = mutation({
     const identity = await requireIdentity(ctx);
     const address = normalizeEmail(email);
 
-    if (!looksLikeEmail(address)) {
+    // 254 is the longest an address can be on the wire (RFC 5321's path
+    // limit); past it this is not an address, and without the cap it is an
+    // arbitrarily large string headed for a stored, indexed field.
+    if (!looksLikeEmail(address) || address.length > 254) {
       return { ok: false, reason: "invalid_email" } as const;
     }
 

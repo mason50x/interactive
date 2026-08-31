@@ -8,7 +8,13 @@ import {
   reporterWeight,
 } from "../moderation/limits";
 import { mutation, type MutationCtx } from "../_generated/server";
-import { applyStrike, callerProfile, profileFor, standingFor } from "./shared";
+import {
+  applyStrike,
+  callerProfile,
+  membership,
+  profileFor,
+  standingFor,
+} from "./shared";
 
 /**
  * Telling the system that something was wrong, when there is no one to tell.
@@ -40,7 +46,10 @@ const MAX_TALLY = 50;
 
 export type ReportResult =
   | { ok: true; recorded: boolean }
-  | { ok: false; reason: "no-profile" | "self" | "already" | "too-many" | "unknown" };
+  | {
+      ok: false;
+      reason: "no-profile" | "self" | "already" | "too-many" | "unknown" | "closed";
+    };
 
 export const report = mutation({
   args: {
@@ -60,9 +69,39 @@ export const report = mutation({
   handler: async (ctx, args): Promise<ReportResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
+    // A closed account keeps no say in anyone else's standing. Its reports
+    // would be weightless anyway only if it also happened to be muted;
+    // `reporterWeight` never sees the ban, so the ban has to refuse here.
+    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
     if (args.targetClerkId === profile.clerkId) return { ok: false, reason: "self" };
 
-    const target = await profileFor(ctx, args.targetClerkId);
+    // What the row records about a message report is read off the message, not
+    // off the arguments. The ids in `args` have been through a browser, and a
+    // report whose `targetClerkId` names somebody who never wrote the message
+    // would sit in the `byTarget` index as an accusation against the wrong
+    // person; a `conversationId` that names the wrong room would dodge the
+    // purge that clears reports when a conversation goes.
+    let targetClerkId = args.targetClerkId;
+    let conversationId = args.conversationId;
+
+    if (args.messageId !== undefined) {
+      const message = await ctx.db.get(args.messageId);
+      if (message === null) return { ok: false, reason: "unknown" };
+
+      // Only somebody the message was actually shown to may report it. Without
+      // this, any id that leaks out of a room reaches the tally from outside
+      // it — and the tally hides messages and writes strikes.
+      const member = await membership(ctx, message.conversationId, profile.clerkId);
+      if (member === null || member.status !== "active") {
+        return { ok: false, reason: "unknown" };
+      }
+
+      targetClerkId = message.authorClerkId;
+      conversationId = message.conversationId;
+      if (targetClerkId === profile.clerkId) return { ok: false, reason: "self" };
+    }
+
+    const target = await profileFor(ctx, targetClerkId);
     if (target === null) return { ok: false, reason: "unknown" };
 
     const now = Date.now();
@@ -94,8 +133,8 @@ export const report = mutation({
     await ctx.db.insert("reports", {
       reporterClerkId: profile.clerkId,
       messageId: args.messageId,
-      targetClerkId: args.targetClerkId,
-      conversationId: args.conversationId,
+      targetClerkId,
+      conversationId,
       reason: args.reason,
       createdAt: now,
       weight,

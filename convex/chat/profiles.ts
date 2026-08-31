@@ -365,7 +365,7 @@ export type RenameResult =
   | { ok: true; left: number }
   | {
       ok: false;
-      reason: HandleRefusal | "limit" | "same" | "no-profile";
+      reason: HandleRefusal | "limit" | "same" | "no-profile" | "closed";
       left?: number;
     };
 
@@ -385,6 +385,12 @@ export const renameHandle = mutation({
   handler: async (ctx, { handle }): Promise<RenameResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
+
+    // A ban freezes the name with everything else. The whole reason renames
+    // are rationed is that a name is what people know an account by, and the
+    // account whose conduct ended it is the account with the most to gain
+    // from being known by another one.
+    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
 
     const spent = profile.handleChanges ?? 0;
     if (spent >= MAX_HANDLE_CHANGES) {

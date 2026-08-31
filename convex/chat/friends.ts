@@ -102,6 +102,15 @@ export const accept = mutation({
   handler: async (ctx, { peerClerkId }) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
+    if (profile.bannedAt !== undefined) return;
+
+    // The same bars `request` sets, because an acceptance grants the same
+    // thing a request asks for — a standing permission to open a direct
+    // message. A pending row normally cannot outlive a block or a ban, but
+    // "normally" is a claim about the other code paths, not about this one.
+    const peer = await profileFor(ctx, peerClerkId);
+    if (peer === null || peer.bannedAt !== undefined) return;
+    if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) return;
 
     const existing = await friendship(ctx, profile.clerkId, peerClerkId);
     if (existing === null || existing.status !== "pending") return;
