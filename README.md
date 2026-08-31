@@ -259,14 +259,30 @@ production on every push. Other branches get preview deployments.
 
 The repository is private and `cognify` is a Hobby team, and the Hobby plan does
 not support collaboration on private repositories. So Vercel builds a commit
-only when its author is the team owner, matched against the owner's git provider
-login — or, if the Vercel account has no provider connected, against the
-verified email addresses on the account.
+only when its author is the team owner. Which half of the author it compares
+depends on how the deploy was created, and the deploy history shows both:
 
-A commit authored under any other address is accepted by GitHub and pushed
+| deploy source | author email | GitHub login | result |
+| --- | --- | --- | --- |
+| git | masonsyzn@ | mason50x | READY, then BLOCKED |
+| git | masonsingel20@ | Msingelhassio | BLOCKED |
+| cli | masonsingel20@ | — | READY |
+| cli | masonsyzn@ | — | BLOCKED |
+
+A git deploy carries `githubCommitAuthorLogin`, and Vercel matches that against
+the login connected to the account. A CLI deploy has no login, so it falls back
+to the verified addresses on the account — which is why the same commit can be
+blocked through git and build through the CLI. The `masonsyzn@` git deploys
+built until the GitHub connection lapsed and the fallback started applying.
+
+So both halves have to line up: the connected login must be the account that
+authors the commits, and that account's address must also be verified on Vercel
+so the fallback agrees. Two addresses have authored here, which is what makes
+this worth writing down.
+
+A commit authored under the wrong address is accepted by GitHub and pushed
 normally; the deploy is then created and immediately `BLOCKED`, with no build
-and no log to read. Nothing about the push says so. That is worth knowing
-because this repository has been committed to from more than one address.
+and no log to read. Nothing about the push says so.
 
 `.githooks/pre-commit` refuses to write such a commit and `.githooks/pre-push`
 refuses to push one that arrived from somewhere the first hook did not run —
@@ -280,9 +296,23 @@ The hooks only keep the repository consistent. What makes Vercel accept the
 address is on the account: under **Account Settings → Login Connections** the
 GitHub account must be connected and must be the one that authors the commits,
 and under **Account Settings → Email** every address used to author commits
-should be added and verified, which covers the fallback if the connection is
-ever dropped. A commit blocked for this reason needs no new commit once the
-account is fixed — redeploying it from the dashboard is enough.
+should be added and verified, which covers the fallback. A commit blocked for
+this reason needs no new commit once the account is fixed — redeploying it from
+the dashboard is enough.
+
+Until then the CLI is the way out, deploying from a tree with no git metadata at
+all so neither check applies:
+
+```sh
+d=$(mktemp -d) && git archive HEAD | tar -x -C "$d"
+mkdir -p "$d/.vercel" && cp .vercel/project.json "$d/.vercel/"
+(cd "$d" && vercel deploy --prod)
+```
+
+That ships exactly what is committed — `git archive` carries tracked files only,
+so `.cache`, `node_modules` and `.env*` stay out — and the build runs on Vercel
+against the Production environment, so `CONVEX_DEPLOY_KEY` is present and the
+Convex backend ships with it as usual.
 
 A production build ships the Convex backend along with the frontend.
 `vercel.json` overrides the build command with:
