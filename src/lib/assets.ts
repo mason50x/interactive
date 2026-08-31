@@ -9,28 +9,29 @@
  *
  * ## What this origin is not
  *
- * It is not gated. `src/lib/player-token.ts` mints a grant, and `src/proxy.ts`
- * verifies it, but the proxy only sees requests to *this deployment* — a
- * request straight to the bucket never passes through it. The README has
- * always flagged this gap for a real asset pipeline; this is that pipeline, so
- * state the consequence plainly: **anyone who learns a bundle URL can fetch it
- * without signing in.** The grant still gates the page that frames the activity,
- * so the catalogue, the dashboard, and every score path stay behind the
- * session; what is public is the static bundle itself, which is upstream's
+ * It is not gated. `src/proxy.ts` protects `/learn`, the page that frames a
+ * activity, but the proxy only sees requests to *this deployment* — a request
+ * straight to the bucket never passes through it. The README has always
+ * flagged this gap for a real asset pipeline; this is that pipeline, so state
+ * the consequence plainly: **anyone who learns a bundle URL can fetch it
+ * without signing in.** The session still gates the page that hands the URL
+ * out, so the catalogue, the dashboard, and every score path stay behind it;
+ * what is public is the static bundle itself, which is upstream's
  * freely-downloadable content in the first place.
  *
- * Closing that gap means signed bucket URLs with a short expiry, minted next
- * to the grant. Worth doing if anything private ever lands in the bucket. It
- * is not worth doing for a copy of a public archive, so it is deliberately
- * not done yet.
+ * Closing that gap means signed bucket URLs with a short expiry. Worth doing
+ * if anything private ever lands in the bucket. It is not worth doing for a
+ * copy of a public archive, so it is deliberately not done yet.
  *
- * ## Why a separate origin from the player
+ * ## Why the bundles get an origin of their own
  *
- * The player origin already exists to keep activity code away from the Clerk
- * session (see `src/lib/player.ts`). The asset origin is a third host, and the
- * boundary that matters is still the player's: a bundle is *framed* by the
- * player origin, so it inherits that document's origin for anything it tries
- * to reach. The bucket is a file server, not a security boundary.
+ * A bundle is third-party code, and this is the origin that contains it. The
+ * app frames a bundle from `/learn` (see `src/lib/learn.ts`), and because the
+ * bundle sits on this separate host it is cross-origin to everything of ours —
+ * the browser keeps it from reaching the session no matter what it does with
+ * the document it is handed. That boundary is the whole security model now
+ * that the framing page shares the app's origin; the bucket itself is a file
+ * server, not a boundary, but the origin it answers on is.
  */
 
 /** Where a hosted activity's own files sit, under the asset origin. */
@@ -56,7 +57,7 @@ export const ACTIVITIES_PREFIX = "activities";
  * ## Why two variable names
  *
  * `ASSET_ORIGIN` is the one to set. This module has exactly one importer —
- * `src/app/player/[slug]/page.tsx`, a server component — so the origin has no
+ * `src/app/learn/[slug]/page.tsx`, a server component — so the origin has no
  * business being in the client bundle, and an unprefixed variable is read at
  * runtime rather than inlined into every build. `NEXT_PUBLIC_ASSET_ORIGIN` is
  * still honoured because it is what is set today and what `vercel env pull`

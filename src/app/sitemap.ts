@@ -5,7 +5,7 @@ import { LEGAL_UPDATED } from "@/lib/legal";
 /**
  * Everything on this site a crawler should know about. `robots.ts` disallows
  * the three prefixes that are missing here — `/dashboard`, `/auth`, and
- * `/player` — and between them that is the whole route tree.
+ * `/learn` — and between them that is the whole route tree.
  *
  * The legal pages carry the date the documents were last revised rather than
  * `new Date()`. A `lastModified` that moves on every build tells a crawler

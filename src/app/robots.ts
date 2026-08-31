@@ -7,10 +7,10 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Signed-in surfaces and Clerk's auth routes have nothing to index and
-      // would only ever resolve to a redirect for a crawler. `/player` is the
-      // segment the player host is rewritten into: it is only ever reached by
-      // being framed, and on the app host it 404s outright.
-      disallow: ["/dashboard", "/auth", "/player"],
+      // would only ever resolve to a redirect for a crawler. `/learn` is where
+      // an activity is framed: it is behind the session and only ever reached
+      // by being embedded from a dashboard page.
+      disallow: ["/dashboard", "/auth", "/learn"],
     },
     sitemap: `${brand.url}/sitemap.xml`,
     host: brand.url,

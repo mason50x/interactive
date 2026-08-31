@@ -27,11 +27,10 @@ const bold = (text) => `\u001b[1m${text}\u001b[0m`;
 const warn = (text) => `\u001b[33m${text}\u001b[0m`;
 const good = (text) => `\u001b[32m${text}\u001b[0m`;
 
-const { site, player, asset, mail } = resolveDomains();
+const { site, asset, mail } = resolveDomains();
 
 const rows = [
   ["Site", site.url, site.from],
-  ["Player", player.url, player.from],
   ["Assets", asset.url, asset.from],
   ["Mail", `@${mail.host}`, mail.from],
 ];
@@ -55,14 +54,6 @@ if (!asset.url) {
   );
 }
 
-if (!player.url) {
-  lines.push(
-    "",
-    warn("  No player origin — activities run on the app's own origin."),
-    dim("  Expected on preview and on a bare `next dev`; never in production."),
-  );
-}
-
 if (site.from === "config/domains.json") {
   lines.push(
     "",
@@ -78,13 +69,6 @@ lines.push(
   dim("     Settings → Custom Domains). Nothing is re-uploaded: bundle HTML"),
   dim("     references its own files relatively and never learns its host."),
   dim("  2. Set ASSET_ORIGIN on Vercel (Production)."),
-  dim("  3. Redeploy."),
-  "",
-  bold("  Moving the player domain"),
-  dim("  1. Add the hostname to the same Vercel project — one deployment,"),
-  dim("     two names, routed on the Host header in src/proxy.ts."),
-  dim("  2. Set NEXT_PUBLIC_PLAYER_ORIGIN. next.config.ts derives the"),
-  dim("     frame-ancestors CSP and the dev-origin allowlist from it."),
   dim("  3. Redeploy."),
   "",
   bold("  Moving the root domain"),

@@ -11,7 +11,7 @@ import { AppProviders } from "@/components/app-providers";
  *
  * `AppProviders` still mounts, so a signed-in reader keeps their accent and
  * so these pages are counted like every other page on the app host. What it
- * must never do is mount on `/player`; see the note in that file.
+ * must never do is mount on `/learn`; see the note in that file.
  */
 export default function LegalLayout({ children }: LayoutProps<"/">) {
   return <AppProviders>{children}</AppProviders>;

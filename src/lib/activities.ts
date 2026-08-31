@@ -33,7 +33,7 @@
  * and rendered by the player route — carried as a discriminated union on a
  * `runtime` field. It is gone, and so is the union. If one comes back, the
  * shape to restore is a `runtime` discriminant here, a component under
- * `src/components/player/`, a branch in `src/app/player/[slug]/page.tsx`, and
+ * `src/components/activity/`, a branch in `src/app/learn/[slug]/page.tsx`, and
  * the `postMessage` score listener in `ActivityFrame`.
  */
 

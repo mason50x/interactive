@@ -1,9 +1,9 @@
 /**
  * What this checkout resolves each domain to, for the plain-Node scripts.
  *
- * The app resolves the same three origins in `src/lib/site-url.ts`,
- * `src/lib/player.ts`, and `src/lib/assets.ts`. This is not a fourth opinion:
- * it reads the same variables in the same order and falls back to the same
+ * The app resolves the same origins in `src/lib/site-url.ts` and
+ * `src/lib/assets.ts`. This is not a third opinion: it reads the same
+ * variables in the same order and falls back to the same
  * `config/domains.json`. It exists because `scripts/dev-urls.mjs` and
  * `scripts/domains.mjs` both run as plain Node, before the bundler exists, so
  * the TypeScript modules are not loadable — and two scripts printing origins
@@ -82,13 +82,6 @@ export function resolveDomains(env = { ...readEnvFile(), ...process.env }) {
         ? { url: `https://${env.VERCEL_URL}`, from: "VERCEL_URL" }
         : { url: trim(defaults.site), from: "config/domains.json" };
 
-  const player = usable(env.NEXT_PUBLIC_PLAYER_ORIGIN)
-    ? {
-        url: usable(env.NEXT_PUBLIC_PLAYER_ORIGIN),
-        from: "NEXT_PUBLIC_PLAYER_ORIGIN",
-      }
-    : { url: null, from: null };
-
   const asset = usable(env.ASSET_ORIGIN)
     ? { url: usable(env.ASSET_ORIGIN), from: "ASSET_ORIGIN" }
     : usable(env.NEXT_PUBLIC_ASSET_ORIGIN)
@@ -114,7 +107,7 @@ export function resolveDomains(env = { ...readEnvFile(), ...process.env }) {
       ? { host: hostOf(defaults.site), from: "config/domains.json" }
       : { host: siteHost, from: `derived from ${site.from}` };
 
-  return { site, player, asset, mail };
+  return { site, asset, mail };
 }
 
 /** A host that is a deployment rather than a brand — see the note of the same

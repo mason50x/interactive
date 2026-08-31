@@ -1,29 +1,31 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { HostedActivity } from "@/components/player/hosted-activity";
+import { HostedActivity } from "@/components/activity/hosted-activity";
 import { activityBundleUrl } from "@/lib/assets";
 import { findActivity } from "@/lib/activities";
 
 /**
- * The player origin's only route.
+ * The framed activity, at `/learn/<slug>`.
  *
  * Every activity is a static bundle on the asset origin, so this resolves one by
  * URL from the catalogue rather than mapping slugs to components. It used to
  * do both, behind a `runtime` discriminant; the compiled-in kind is gone.
  *
- * The catalogue in `src/lib/activities.ts` is the metadata and this is the frame
- * around it. They are separate because the app has to render a title and a
- * description for an activity without pulling the activity's bundle into the app's own
- * origin.
+ * This page is the middle of three frames — a dashboard page frames it, it
+ * frames the bundle — and that is the whole reason it exists rather than
+ * pointing the dashboard straight at the bundle: the bundle URL is only ever
+ * handed out from a page the session already gated, and this page can send the
+ * `frame-ancestors` a bucket cannot. `src/proxy.ts` protects `/learn` with the
+ * session; `src/lib/learn.ts` has the rest.
  */
 export async function generateMetadata({
   params,
-}: PageProps<"/player/[slug]">): Promise<Metadata> {
+}: PageProps<"/learn/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  return { title: findActivity(slug)?.title ?? "Player" };
+  return { title: findActivity(slug)?.title ?? "Activity" };
 }
 
-export default async function PlayerPage({ params }: PageProps<"/player/[slug]">) {
+export default async function LearnPage({ params }: PageProps<"/learn/[slug]">) {
   const { slug } = await params;
 
   const activity = findActivity(slug);
@@ -31,7 +33,7 @@ export default async function PlayerPage({ params }: PageProps<"/player/[slug]">
 
   // `null` means no asset origin is configured, so there is nowhere to load
   // this from. A 404 is the honest answer and matches every other way this
-  // route declines — see the note on uniform 404s in `src/proxy.ts`.
+  // route declines.
   const src = activityBundleUrl(activity.slug);
   if (!src) notFound();
 

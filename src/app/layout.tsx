@@ -80,9 +80,11 @@ export const viewport: Viewport = {
  * The document shell, and nothing else.
  *
  * Fonts, the stylesheet, and the site-wide metadata belong to every route this
- * deployment serves — including `/player`, which answers on its own hostname.
- * Auth, Convex, and analytics deliberately do not: they live in `AppProviders`,
- * mounted by each of the app's own route trees. See `src/lib/player.ts`.
+ * deployment serves — including `/learn`, the bare shell an activity is framed
+ * in. Auth, Convex, and analytics deliberately do not: they live in
+ * `AppProviders`, mounted by each of the app's own route trees, and the
+ * `/learn` shell is kept clear of them on purpose — see
+ * `src/app/learn/layout.tsx`.
  */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -20,32 +20,30 @@ import { cn } from "@/lib/utils";
  * document with a title above it; it is the thing you came for, and every
  * pixel spent framing it is a pixel it does not get.
  *
- * Nothing here ever touches the frame's document: that would need
- * `contentWindow` access the browser refuses across origins, which is the
- * whole reason activities live on their own hostname. That constraint is what
- * shapes the controls — see `reload` below.
+ * The frame points at `/learn/<slug>` on this same origin, which in turn
+ * frames the bundle on the asset origin (see `HostedActivity`). The controls
+ * still never touch the framed document: the *bundle* two levels down is
+ * cross-origin, so `contentWindow` access is refused all the way up. That
+ * constraint is what shapes the controls — see `reload` below.
  *
  * This used to also listen for a `postMessage` score envelope, which is how a
- * activity we compiled ourselves reported a result back across the boundary
- * without being trusted to write it. Every activity is now a third-party bundle
- * that knows nothing of that protocol, so the listener could not fire and the
- * panel under the board showed an empty state forever.
+ * activity we compiled ourselves reported a result back without being trusted
+ * to write it. Every activity is now a third-party bundle that knows nothing of
+ * that protocol, so the listener could not fire and the panel under the board
+ * showed an empty state forever.
  *
- * If an activity of ours returns, the contract to restore is: the frame posts
- * `{ source: "player", type: "score", slug, score }` to the app's origin, the
- * app checks `event.origin` against the player origin exactly, and the value
- * is treated as a *claim* — display only. Anything durable, a ranking or a
- * streak, has to be written by code the framed document cannot reach.
+ * If an activity of ours returns, the contract to restore is: the bundle posts
+ * `{ source: "activity", type: "score", slug, score }` to the app's origin,
+ * the app checks `event.origin` against the asset origin exactly, and the
+ * value is treated as a *claim* — display only. Anything durable, a ranking or
+ * a streak, has to be written by code the framed document cannot reach.
  */
 export function ActivityFrame({
   title,
   src,
-  playerOrigin,
 }: {
   title: string;
   src: string;
-  /** `null` on a single-origin deployment — see `src/lib/player.ts`. */
-  playerOrigin: string | null;
 }) {
   // The element that goes fullscreen. The stage rather than the iframe, so the
   // controls come with it — fullscreening the iframe alone would hand the
@@ -102,22 +100,22 @@ export function ActivityFrame({
         key={run}
         src={src}
         title={title}
-        // `allow-same-origin` is safe here only because the frame is already
-        // cross-origin: it lets the activity keep its own storage bucket for save
-        // states without reaching ours. On the single-origin fallback it is
-        // withheld, because same-origin plus allow-scripts is a sandbox that
-        // does nothing at all.
+        // This frame is a capability pass-through, not the security boundary.
+        // Its direct child is `/learn`, our own page on this same origin, so
+        // the sandbox does nothing to *it* — a same-origin frame with
+        // `allow-scripts` is unconstrained either way. What the sandbox governs
+        // is the *bundle* two levels down, which `/learn` frames on the asset
+        // origin: a nested frame can only narrow the flags it inherits, never
+        // widen them, so every capability the bundle needs must be granted here
+        // or it is stripped before it arrives.
         //
-        // `allow-pointer-lock` is for the hosted bundles, which frame a third
-        // document inside this one (see `HostedActivity`). A nested frame can only
-        // narrow the sandbox it sits in, never widen it, so a capability the
-        // driving and 3D titles need has to be granted here as well or it is
-        // dropped before it reaches them.
-        sandbox={
-          playerOrigin
-            ? "allow-scripts allow-same-origin allow-pointer-lock"
-            : "allow-scripts allow-pointer-lock"
-        }
+        // `allow-same-origin` therefore stays: without it the bundle is forced
+        // to an opaque origin and loses the per-activity storage its save
+        // states live in. It costs nothing here — the bundle is cross-origin to
+        // the app regardless of this flag, so being granted its own origin
+        // never brings it any closer to the session. `allow-pointer-lock` is
+        // what the driving and 3D titles need to capture the mouse.
+        sandbox="allow-scripts allow-same-origin allow-pointer-lock"
         allow="gamepad; fullscreen; autoplay"
         referrerPolicy="no-referrer"
         className="block size-full border-0"

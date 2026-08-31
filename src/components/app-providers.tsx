@@ -11,16 +11,17 @@ import { ThemeProvider } from "@/components/theme-provider";
  *
  * This sits in the three route trees that make up the app — `(site)`, `/auth`,
  * `/dashboard` — rather than in the root layout, because the root layout also
- * wraps `/player`. Mounting `ClerkProvider` there would load Clerk's script on
- * the player origin and set its cookies there, which is precisely the thing
- * the separate origin exists to prevent: `src/lib/player.ts` has the reasoning.
+ * wraps `/learn`, the shell an activity is framed in. That shell is deliberately
+ * bare (see `src/app/learn/layout.tsx`): mounting `ClerkProvider` there would
+ * load Clerk's script and a Convex client into a page whose only job is to
+ * hold an iframe, none of which the framed bundle should find waiting for it.
  *
  * Analytics rides along for the same reason. An activity frame firing its own
  * pageviews would double-count every session.
  *
  * The theme is here rather than in the root layout for a third reason: the
  * *application* of a theme belongs to every route (the root layout's inline
- * script does that, player included), but the ability to read and change one
+ * script does that, `/learn` included), but the ability to read and change one
  * is only ever used by app chrome.
  */
 export function AppProviders({ children }: { children: ReactNode }) {

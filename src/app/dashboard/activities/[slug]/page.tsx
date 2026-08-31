@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { ActivityFrame } from "@/components/app/activity-frame";
 import { ViewRecorder } from "@/components/app/view-recorder";
 import { findActivity } from "@/lib/activities";
-import { playerOrigin, playerUrl } from "@/lib/player";
-import { mintPlayerGrant } from "@/lib/player-token";
+import { activityFrameSrc } from "@/lib/learn";
 
 export async function generateMetadata({
   params,
@@ -17,8 +16,8 @@ export async function generateMetadata({
 /**
  * One route for every activity.
  *
- * The app's side of the boundary is the same for all of them — mint a grant,
- * frame the player origin — so there is nothing a per-activity page could add
+ * The app's side of the frame is the same for all of them — protect the route,
+ * frame `/learn/<slug>` — so there is nothing a per-activity page could add
  * beyond a title and a genre, both of which the catalogue already carries.
  *
  * Unlike every other page under `/dashboard`, this one has no container: the
@@ -29,32 +28,19 @@ export async function generateMetadata({
 export default async function ActivityPage({
   params,
 }: PageProps<"/dashboard/activities/[slug]">) {
-  const { userId } = await auth.protect();
+  await auth.protect();
   const { slug } = await params;
 
   const activity = findActivity(slug);
   if (!activity) notFound();
 
-  // Minted here, after the guard, because this is the last point that both
-  // knows who the user is and can still reach the signing secret. The player
-  // origin gets the result and never the session it was derived from. One
-  // grant covers every activity.
-  const grant = await mintPlayerGrant(userId);
-
   return (
     <>
       {/* Draws nothing. It is what puts this activity on the home page — in
-          "jump back in", in your most-opened, and in the day's global count.
-          Beside the frame rather than inside it, because the frame's whole job
-          is to be the origin boundary and it should not also be holding a
-          Convex mutation. */}
+          "jump back in", in your most-opened, and in the day's global count. */}
       <ViewRecorder slug={activity.slug} />
 
-      <ActivityFrame
-        title={activity.title}
-        src={playerUrl(activity.slug, grant)}
-        playerOrigin={playerOrigin()}
-      />
+      <ActivityFrame title={activity.title} src={activityFrameSrc(activity.slug)} />
     </>
   );
 }

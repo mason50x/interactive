@@ -1,16 +1,26 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
-import { PLAYER_PATH_PREFIX, playerHost } from "@/lib/player";
-import { GRANT_PARAM, verifyPlayerGrant } from "@/lib/player-token";
+import { NextResponse } from "next/server";
+import { LEARN_PATH_PREFIX } from "@/lib/learn";
 
 /**
- * Only these routes require a session. Everything else — the landing page and
- * all of `/auth`, including `/auth/accept-invite` — has to stay reachable to a
- * signed-out visitor. Protecting an invitation link would bounce the recipient
- * to sign-in and strip the `__clerk_ticket` param on the way, which is a dead
- * end for someone who has no account yet: that ticket is how they get one.
+ * Routes that require a session.
+ *
+ * `/dashboard` is the app. `/learn` is where an activity is framed — it used to
+ * be gated by a signed grant on a separate origin, because the session could
+ * not reach that origin; now it is a normal page of this site and the session
+ * reaches it like any other, so it is protected the same way. See
+ * `src/lib/learn.ts`.
+ *
+ * Everything else — the landing page and all of `/auth`, including
+ * `/auth/accept-invite` — has to stay reachable to a signed-out visitor.
+ * Protecting an invitation link would bounce the recipient to sign-in and
+ * strip the `__clerk_ticket` param on the way, which is a dead end for someone
+ * who has no account yet: that ticket is how they get one.
  */
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"]);
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  `${LEARN_PATH_PREFIX}(.*)`,
+]);
 
 /**
  * The mirror image: routes that only make sense signed *out*. A visitor with a
@@ -37,7 +47,15 @@ const isSignedOutRoute = createRouteMatcher([
  *  edge bundle free of the Clerk Backend API client that module pulls in. */
 const TICKET_PARAM = "__clerk_ticket";
 
-const app = clerkMiddleware(async (auth, req) => {
+/**
+ * One origin, one job: decide who may see a route before it renders.
+ *
+ * This was once a two-hostname router — the player origin was rewritten here
+ * and kept away from Clerk. That origin is gone (`src/lib/learn.ts` has the
+ * why), and with it the host matching, the rewrite, and the grant check. What
+ * is left is the session gate, which is all a single-origin deployment needs.
+ */
+export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     await auth.protect();
     return;
@@ -55,76 +73,6 @@ const app = clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 });
-
-/** Resolved once: `NEXT_PUBLIC_*` is inlined at build time, so this is a
- *  constant by the time the proxy is deployed. */
-const PLAYER_HOST = playerHost();
-
-/** Everything the player origin has to say to a crawler. It is reachable
- *  only with a signed grant, so there is nothing here to index. */
-function playerRobots(): NextResponse {
-  return new NextResponse("User-agent: *\nDisallow: /\n", {
-    headers: { "content-type": "text/plain; charset=utf-8" },
-  });
-}
-
-/** A request with no activity behind it, answered identically whatever the reason
- *  — missing grant, wrong activity, expired, forged, or simply no such slug. */
-function notFound(): NextResponse {
-  return new NextResponse(null, { status: 404 });
-}
-
-/**
- * Two hostnames, one deployment.
- *
- * Which host a request arrived on decides everything: the player host is
- * rewritten into `/player` and never sees Clerk, and the app host cannot
- * reach `/player` at all. Both halves matter. Running `clerkMiddleware` on
- * the player host would set Clerk's cookies *on the player origin*, handing
- * activity code the session the separate origin exists to keep away from it; and
- * leaving `/player` reachable on the app host would let an activity be framed
- * same-origin, where the sandbox attribute is decorative.
- *
- * Nothing on the player origin is public. Since the session cannot cross the
- * boundary, the app signs a short grant instead and this is where it is
- * checked — before any rewrite, so an unsigned request never reaches a route
- * at all. The grant says only that a signed-in user asked for this; which
- * activities exist is the catalogue's business, and an unknown slug still 404s from
- * the route itself. See `src/lib/player-token.ts`.
- *
- * With no player host configured this is a single-origin deployment (preview,
- * or a bare `next dev`); activities stay behind the same grant, just on the app's
- * own origin — see `playerOrigin`.
- */
-export default async function proxy(req: NextRequest, event: NextFetchEvent) {
-  const path = req.nextUrl.pathname;
-
-  if (PLAYER_HOST && req.headers.get("host") === PLAYER_HOST) {
-    if (path === "/robots.txt") return playerRobots();
-
-    if (!(await verifyPlayerGrant(req.nextUrl.searchParams.get(GRANT_PARAM)))) {
-      return notFound();
-    }
-
-    const url = req.nextUrl.clone();
-    url.pathname = `${PLAYER_PATH_PREFIX}${url.pathname}`;
-    return NextResponse.rewrite(url);
-  }
-
-  if (path.startsWith(PLAYER_PATH_PREFIX)) {
-    // On the app host the player segment is not a route. On a single-origin
-    // deployment it is the only one activities have, and it is gated the same way.
-    if (PLAYER_HOST) return notFound();
-
-    if (!(await verifyPlayerGrant(req.nextUrl.searchParams.get(GRANT_PARAM)))) {
-      return notFound();
-    }
-
-    return NextResponse.next();
-  }
-
-  return app(req, event);
-}
 
 export const config = {
   matcher: [

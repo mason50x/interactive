@@ -8,23 +8,21 @@ repo a domain is spelled out. Nothing else hard-codes one.
 Run `npm run domains` to see what the current environment resolves to, and
 what has to change outside the repo for each move.
 
-## The three domains
+## The two domains
 
 | What | Variable | Fallback | Cost of a move |
 | --- | --- | --- | --- |
 | Assets (R2 bucket) | `ASSET_ORIGIN`, or `NEXT_PUBLIC_ASSET_ORIGIN` | none — hosted activities disappear | one variable |
-| Player (activity sandbox) | `NEXT_PUBLIC_PLAYER_ORIGIN` | none — single-origin fallback | one variable |
 | Site (root) | `NEXT_PUBLIC_SITE_URL` | `config/domains.json` | one variable, plus the identity providers below |
 
-Assets and player have **no fallback on purpose**. A stale default would
-silently keep serving the old bucket or framing the old host, and both fail
-quietly: hosted activities would simply be absent, or the frame would be
-refused with nothing in the console worth reading. Unset is a state the app
-reports; wrong is a state it cannot detect.
+The asset origin has **no fallback on purpose**. A stale default would
+silently keep serving the old bucket, and it fails quietly: hosted activities
+would simply be absent. Unset is a state the app reports; wrong is a state it
+cannot detect.
 
 ## Moving the asset domain
 
-The cheapest of the three, by design.
+The cheaper of the two, by design.
 
 1. Point the new hostname at the same R2 bucket (Cloudflare → R2 → Settings →
    Custom Domains). The bucket keeps its contents.
@@ -37,16 +35,6 @@ URL upstream ships (Ruffle) into a relative path precisely so the bucket's
 contents never learn their own hostname. `src/lib/assets.ts` is the only
 module that knows the origin, and it is imported by exactly one server
 component, so the value never reaches the client bundle.
-
-## Moving the player domain
-
-1. Add the hostname to the Vercel project (same project — the player is the
-   same deployment reached by a second name, routed in `src/proxy.ts`).
-2. Set `NEXT_PUBLIC_PLAYER_ORIGIN` on Vercel (Production).
-3. Redeploy.
-
-`next.config.ts` derives the `frame-ancestors` CSP and the dev-origin
-allowlist from that same variable, so nothing else needs editing.
 
 ## Moving the root domain
 
