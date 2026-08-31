@@ -1,11 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
+import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AgreementProvider } from "@/components/app/agreement-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { SearchProvider } from "@/components/app/search-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
-import { WelcomeProvider } from "@/components/welcome-provider";
 import { serverAgreement } from "@/lib/agreement-gate";
 
 export const metadata: Metadata = {
@@ -59,27 +59,23 @@ export default async function DashboardLayout({
 
   return (
     <AppProviders>
-      {/* Above `StreakProvider`, and it has to be: a first ever sign-in claims
-          its first day, so both of them have something to show on the same
-          tick. `StreakProvider` reads this one's context and holds its
-          celebration back until the unlock is finished, which only works while
-          this is the ancestor.
-
-          Not in `AppProviders` for the reason the streak is not: it asks
-          Clerk whether this session was just created, and every session on the
-          marketing site was created somewhere. */}
-      <WelcomeProvider>
-        {/* Here and not in `AppProviders`, which also wraps the marketing site
-            and the auth pages: arriving at the app is a day's activity, reading
-            the pricing page is not. It is outside the viewport-height row rather
-            than inside it because it renders the celebration overlay, and a
-            `fixed` element inside a `overflow-hidden` flex row is one more thing
-            that can be clipped for no reason. */}
-        <StreakProvider>
-          {/* Wraps both the rail and the shell, for the same reason the search
-              does: the card that accepts the terms is in the rail and the
-              tiles they gate are in the shell, and both read one value. */}
-          <AgreementProvider initial={agreement}>
+      {/* Here and not in `AppProviders`, which also wraps the marketing site
+          and the auth pages: arriving at the app is a day's activity, reading
+          the pricing page is not. It is outside the viewport-height row rather
+          than inside it because it renders the celebration overlay, and a
+          `fixed` element inside a `overflow-hidden` flex row is one more thing
+          that can be clipped for no reason. */}
+      <StreakProvider>
+        {/* Wraps both the rail and the shell, for the same reason the search
+            does: the card that accepts the terms is in the rail and the
+            tiles they gate are in the shell, and both read one value. */}
+        <AgreementProvider initial={agreement}>
+          {/* Also wraps both, and for a smaller reason than the others: the
+              unread dot is on a row in the rail, and the conversations it counts
+              are read on a page in the shell. Mounted here rather than inside
+              `/dashboard/chat` so the dot is right while you are looking at an
+              activity, which is the only time it is worth having. */}
+          <ChatProvider>
             {/* Wraps both the rail and the shell, which is what lets the rail's
                 search box filter a grid it does not render. See `SearchProvider`. */}
             <SearchProvider>
@@ -90,9 +86,9 @@ export default async function DashboardLayout({
                 </main>
               </div>
             </SearchProvider>
-          </AgreementProvider>
-        </StreakProvider>
-      </WelcomeProvider>
+          </ChatProvider>
+        </AgreementProvider>
+      </StreakProvider>
     </AppProviders>
   );
 }

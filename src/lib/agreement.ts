@@ -30,20 +30,27 @@ export type Agreement = {
 export const AGREEMENT_PHRASE = "I understand";
 
 /**
- * The terms. Four short clauses rather than a page of prose, because the whole
+ * The terms. Five short clauses rather than a page of prose, because the whole
  * point of typing the phrase is that the person has read them, and nobody
  * reads a page of prose inside a card in a sidebar.
  *
  * One voice all the way through: we do things, you have things done to you.
  * The earlier draft slipped into "that account comes down" halfway, which
- * reads as though it happens by itself — and the whole point of these four
- * lines is that it does not. Somebody decides, and that somebody is us.
+ * reads as though it happens by itself — and the whole point of these lines is
+ * that it does not. Somebody decides, and that somebody is us.
+ *
+ * The fifth is the exception, and it says so. Chat is enforced by a program
+ * with nobody behind it: it reads what you send, it decides, and there is
+ * nothing to appeal to. Claiming a person is involved would be the one false
+ * sentence in the set, and the honest version is also the more frightening one,
+ * which is the right way round.
  */
 export const AGREEMENT_CLAUSES: readonly string[] = [
   "We are handing you this on the condition that you use it with caution and stay alert the whole time you are in it.",
   "If we detect a breach, or find that your account has been compromised, we take you down.",
   "If you become trouble for us, we take you down for that too.",
   "Taken down is not suspended. We blacklist you, and you do not come back.",
+  "Chat is watched by a machine, not a person. It reads everything you send, it decides on its own, and there is nobody to appeal to.",
 ];
 
 /**

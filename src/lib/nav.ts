@@ -1,14 +1,34 @@
-import { HomeIcon, PuzzlePieceIcon } from "@heroicons/react/24/outline";
 import {
+  ChatBubbleLeftRightIcon,
+  HomeIcon,
+  PuzzlePieceIcon,
+} from "@heroicons/react/24/outline";
+import {
+  ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid,
   HomeIcon as HomeIconSolid,
   PuzzlePieceIcon as PuzzlePieceIconSolid,
 } from "@heroicons/react/24/solid";
 import type { IconPair } from "@/lib/icons";
 
-export type NavItem = { label: string; href: string; icon: IconPair };
+export type NavItem = {
+  label: string;
+  href: string;
+  icon: IconPair;
+  /**
+   * Whether this row shows an unread dot.
+   *
+   * A flag rather than a number, because the number is not the rail's to know:
+   * `AppSidebar` reads it from `useChat()` and the rail stays a list of
+   * destinations. Only one row has ever wanted it, and a second would be one
+   * more line here rather than a different shape.
+   */
+  unread?: boolean;
+};
 
 /** Where the rail's search sends you, and the only page that reads its query. */
 export const ACTIVITIES_HREF = "/dashboard/activities";
+
+export const CHAT_HREF = "/dashboard/chat";
 
 /**
  * Every destination inside the signed-in app, in the order the rail shows
@@ -27,4 +47,24 @@ export const navItems: NavItem[] = [
     href: ACTIVITIES_HREF,
     icon: { outline: PuzzlePieceIcon, solid: PuzzlePieceIconSolid },
   },
+  {
+    label: "Chat",
+    href: CHAT_HREF,
+    icon: {
+      outline: ChatBubbleLeftRightIcon,
+      solid: ChatBubbleLeftRightIconSolid,
+    },
+    unread: true,
+  },
 ];
+
+/**
+ * The same destinations as a bare list of paths, held once.
+ *
+ * `useWarmRoutes` takes this as an effect dependency, so it has to keep its
+ * identity between renders — `navItems.map(...)` in a component body is a new
+ * array every time and would restart the idle pass on each one. Derived from
+ * `navItems` rather than written out again so a new row cannot be warmed by
+ * one list and shown by the other.
+ */
+export const NAV_HREFS: readonly string[] = navItems.map((item) => item.href);

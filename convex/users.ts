@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import {
   internalMutation,
   mutation,
@@ -171,6 +172,15 @@ export const deleteFromClerk = internalMutation({
     for (const row of days) {
       await ctx.db.delete(row._id);
     }
+
+    // Everything they said, everyone they blocked, and the record of both.
+    //
+    // Scheduled rather than done here. This handler is a webhook with a timeout
+    // on it and a Convex mutation has one second; the number of messages an
+    // account has sent is bounded by nothing at all. A scheduled mutation runs
+    // exactly once, so booking it is not a weaker guarantee than doing it —
+    // only a later one. See `purgeAuthor` in `convex/chat/sweep.ts`.
+    await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
 
     // Add deletes for any other table keyed by this user above this line.
 

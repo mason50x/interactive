@@ -1,0 +1,225 @@
+import {
+  BROADCAST,
+  DUPLICATE_WINDOW_MS,
+  EXCERPT_CHARS,
+  TARGETING,
+} from "./limits";
+import type { Category } from "./lexicon";
+import type { PatternCategory } from "./patterns";
+
+/**
+ * What each finding costs, and the handful of rules that need more than one
+ * message to see.
+ *
+ * The lexicon and the patterns answer "is this in the message". Nothing they
+ * return is a decision — `fuck` is fine and `you are a fuck` is not, and the
+ * difference is not a word, it is an arrangement of words. This is where the
+ * arrangement is read, and where the last four sends are allowed to matter.
+ */
+
+/** Everything a message can be refused for, in the vocabulary the client sees. */
+export type Refusal =
+  | "empty"
+  | "too-long"
+  | "hidden-characters"
+  | "reordering"
+  | "stacked-marks"
+  | "too-many-lines"
+  | "slur"
+  | "sexual"
+  | "exploitation"
+  | "threat"
+  | "self-harm"
+  | "degrading"
+  | "harassment"
+  | "contact"
+  | "link"
+  | "location"
+  | "duplicate"
+  | "broadcast"
+  | "too-fast"
+  | "muted"
+  | "banned"
+  | "not-a-member"
+  | "blocked"
+  | "too-new"
+  | "not-agreed";
+
+/**
+ * The weight each refusal adds to the sender's standing.
+ *
+ * Read this table against the ladder in `convex/moderation/limits.ts` and the
+ * whole enforcement policy is legible in about ten seconds, which is the point
+ * of both being numbers in one place. One slur is eight, which is an hour's
+ * mute on its own. One link is two, so a person who has not read the rules
+ * bumps into them twice before anything happens to them.
+ *
+ * Zero means refused and not held against you. A malformed message is a bug or
+ * a paste, and `duplicate` is almost always somebody hitting send twice.
+ */
+const WEIGHTS: Record<Refusal, number> = {
+  empty: 0,
+  "too-long": 0,
+  "hidden-characters": 0,
+  // Not zero: embedding a right-to-left override in an English sentence is not
+  // something that happens by accident.
+  reordering: 3,
+  "stacked-marks": 1,
+  "too-many-lines": 0,
+  slur: 8,
+  sexual: 8,
+  exploitation: 8,
+  threat: 8,
+  "self-harm": 6,
+  degrading: 6,
+  harassment: 4,
+  contact: 3,
+  link: 2,
+  location: 4,
+  duplicate: 0,
+  broadcast: 3,
+  "too-fast": 1,
+  muted: 0,
+  banned: 0,
+  "not-a-member": 0,
+  blocked: 0,
+  "too-new": 0,
+  // Not a violation. They have not agreed to the rules being enforced
+  // against them, which is a reason to refuse and not a reason to charge.
+  "not-agreed": 0,
+};
+
+export function weightFor(refusal: Refusal): number {
+  return WEIGHTS[refusal];
+}
+
+/** A lexicon category, as the client is told about it. */
+export function refusalForCategory(category: Category): Refusal {
+  return category === "profanity" ? "harassment" : category;
+}
+
+export function refusalForPattern(category: PatternCategory): Refusal {
+  return category;
+}
+
+/**
+ * The ways of writing "you" that a fourteen-year-old actually writes.
+ *
+ * Folded and lowercased by the time they get here, so this is only about
+ * spelling, not about case or accents.
+ */
+const SECOND_PERSON = new Set([
+  "you", "u", "ur", "your", "youre", "ure", "yours", "yourself",
+  "urself", "yall", "yalls", "ya",
+]);
+
+/**
+ * Whether an allowed-but-flagged word is pointed at somebody.
+ *
+ * This is the rule that makes tier three worth keeping rather than blocking.
+ * `this game is shit` and `you are shit` contain the same word and are not the
+ * same message, and the only thing that separates them is a pronoun four tokens
+ * away. Four is wide enough for `you are such a shit` and narrow enough not to
+ * reach into the next sentence.
+ */
+export function isTargeted(tokens: string[], flaggedTokens: string[]): boolean {
+  const flagged = new Set(flaggedTokens);
+  for (let index = 0; index < tokens.length; index += 1) {
+    if (!flagged.has(tokens[index])) continue;
+    const from = Math.max(0, index - 4);
+    const to = Math.min(tokens.length, index + 5);
+    for (let nearby = from; nearby < to; nearby += 1) {
+      if (nearby !== index && SECOND_PERSON.has(tokens[nearby])) return true;
+    }
+  }
+  return false;
+}
+
+/** One earlier send, as the ring on the sender's profile remembers it. */
+export type RecentSend = {
+  at: number;
+  conversationId: string;
+  hash: string;
+  flagged: boolean;
+};
+
+/**
+ * A cheap, stable hash of the folded message.
+ *
+ * djb2, because the ring holds twenty of these and they are compared for
+ * equality and nothing else. Hashing the *folded* form rather than the typed
+ * one is what makes it useful: `stop it`, `st0p it` and `sto p it` are one
+ * message sent three times, and storing the text itself would also mean keeping
+ * twenty copies of what everybody said on their own profile row.
+ */
+export function hashBody(squashed: string): string {
+  let hash = 5381;
+  for (let index = 0; index < squashed.length; index += 1) {
+    hash = ((hash << 5) + hash + squashed.charCodeAt(index)) | 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/** The same thing, again, within the window. */
+export function isDuplicate(recent: RecentSend[], hash: string, now: number): boolean {
+  for (const send of recent) {
+    if (send.hash === hash && now - send.at < DUPLICATE_WINDOW_MS) return true;
+  }
+  return false;
+}
+
+/**
+ * The same thing into several conversations at once.
+ *
+ * Counted across conversations rather than within one, because within one it is
+ * a duplicate and outside one it is somebody working through a list. The
+ * current conversation counts towards the total, so the threshold is reached on
+ * the third room rather than the fourth.
+ */
+export function isBroadcast(
+  recent: RecentSend[],
+  hash: string,
+  conversationId: string,
+  now: number,
+): boolean {
+  const rooms = new Set<string>([conversationId]);
+  for (const send of recent) {
+    if (send.hash !== hash) continue;
+    if (now - send.at >= BROADCAST.ms) continue;
+    rooms.add(send.conversationId);
+  }
+  return rooms.size >= BROADCAST.conversations;
+}
+
+/**
+ * Somebody being worn down rather than sworn at once.
+ *
+ * Three flagged messages into the same conversation inside ten minutes is a
+ * pattern that no individual message in it would have been refused for, which
+ * is exactly why it needs its own rule. The current message counts.
+ */
+export function isHounding(
+  recent: RecentSend[],
+  conversationId: string,
+  now: number,
+): boolean {
+  let count = 1;
+  for (const send of recent) {
+    if (!send.flagged) continue;
+    if (send.conversationId !== conversationId) continue;
+    if (now - send.at >= TARGETING.ms) continue;
+    count += 1;
+  }
+  return count >= TARGETING.count;
+}
+
+/**
+ * What of the message is kept on the strike it caused.
+ *
+ * Enough to recognise, not enough to republish. The person it happened to is
+ * shown their own ledger, and a strike that says only "slur" with no excerpt is
+ * an accusation they cannot check.
+ */
+export function excerpt(body: string): string {
+  return body.length <= EXCERPT_CHARS ? body : `${body.slice(0, EXCERPT_CHARS)}…`;
+}

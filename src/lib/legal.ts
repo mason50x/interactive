@@ -213,6 +213,46 @@ export const terms: LegalDocument = {
       ],
     },
     {
+      id: "chat",
+      heading: "Talking to other people",
+      blocks: [
+        {
+          kind: "p",
+          text: "The Service includes chat: a room open to everyone with an account, private messages between two people, and groups. You choose a handle when you first use it, and that handle is the only thing other people see. Your name and your email address are not shown to anyone.",
+        },
+        { kind: "p", text: "In chat you agree not to:" },
+        {
+          kind: "list",
+          items: [
+            "use slurs, or attack anyone for their race, religion, nationality, disability, sex, gender, or sexuality",
+            "post sexual content of any kind, or approach anyone sexually",
+            "threaten anyone, or tell anyone to hurt or kill themselves",
+            "harass anyone, follow them between conversations, or organise anyone else to",
+            "share contact details, links, addresses, phone numbers, or handles for other platforms, whether your own or anybody else's",
+            "impersonate another person, or pick a handle intended to be mistaken for one",
+            "flood, spam, or send the same message to several conversations",
+            "attempt to evade any of the above by disguising what you have written",
+          ],
+        },
+        {
+          kind: "p",
+          text: "Every message is checked automatically before it is sent, and a message that breaks these rules is refused and never stored. Refusals are recorded against your account and expire after thirty days. Enough of them mutes your account for a period that lifts by itself; the most serious of them close your account permanently and immediately.",
+        },
+        {
+          kind: "p",
+          text: "This is done by a program. No person reviews it, there is no moderation queue, and there is no appeal. You can see everything currently recorded against your account, the rule each entry relates to, and the date each one stops counting, at any time from within chat.",
+        },
+        {
+          kind: "p",
+          text: "You can report a message and you can block an account. A report is counted, weighted by your own record, and acted on automatically when enough separate people report the same message; it is not read by anyone. Reports alone will never close an account. Blocking is immediate and needs no reason.",
+        },
+        {
+          kind: "p",
+          text: "We may remove any message, hide any message that has been reported, and close any account, without notice. Groups you create are yours to run: you may invite, admit, remove, and promote people within them, and that power reaches no further than the group itself.",
+        },
+      ],
+    },
+    {
       id: "content",
       heading: "Content and ownership",
       blocks: [
@@ -502,6 +542,32 @@ export const privacy: LegalDocument = {
         {
           kind: "p",
           text: `If you believe a child under 13 has given us information, write to ${legalContacts.privacy} and we will delete the account and the information held for it.`,
+        },
+      ],
+    },
+    {
+      id: "messages",
+      heading: "Messages",
+      blocks: [
+        {
+          kind: "p",
+          text: "If you use chat, we store what you send. Messages are held on our servers so that the conversation exists for the people in it, and we can read them — there is no end-to-end encryption here and you should not treat chat as private in that sense.",
+        },
+        {
+          kind: "p",
+          text: "Against each message we store the handle that sent it, the conversation it belongs to, and the time. Your name and email address are not attached to it and are never shown to another user.",
+        },
+        {
+          kind: "p",
+          text: "A message that our automatic checks refuse is never stored at all. What is stored instead is a record against your account: the rule it broke, a short extract of what you wrote, and the date the record stops counting. Only you can see that record. Reports you make, and reports made about you, are stored with them.",
+        },
+        {
+          kind: "p",
+          text: "Messages in the room open to everyone are deleted after thirty days. Messages in private conversations and groups are kept until the conversation or the account is deleted.",
+        },
+        {
+          kind: "p",
+          text: "When an account is closed, everything above goes with it: the handle, the messages, the records, the reports, and the list of who was blocked. Private conversations that account was part of are deleted for both people, because a conversation with a closed account has nobody on the other side of it.",
         },
       ],
     },

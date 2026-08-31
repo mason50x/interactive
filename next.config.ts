@@ -15,6 +15,30 @@ import type { NextConfig } from "next";
  * and `HostedActivity`), not by a header it does not emit.
  */
 const nextConfig: NextConfig = {
+  experimental: {
+    /**
+     * How long the router may reuse what it has already fetched.
+     *
+     * The pair matters more than either number. Every route under `/dashboard`
+     * reads cookies through `auth.protect()` and is therefore dynamic, and a
+     * dynamic route's client cache is off by default — `dynamic: 0` means the
+     * router throws away the payload the moment it has rendered it, so leaving
+     * a page and coming back is a second full server render of the same thing.
+     * Thirty seconds is enough to cover the round trip of opening an activity
+     * and closing it again, and short enough that a streak or an unread count
+     * cannot be caught out by it. Nothing on these pages is server-rendered
+     * anyway: the numbers are Convex subscriptions and refresh themselves.
+     *
+     * `static` is the one `src/lib/warm.ts` fills. A `router.prefetch` lands
+     * under this bucket rather than the dynamic one, which is what makes the
+     * rail's warming last past the next click; at the default `dynamic: 0` a
+     * warmed route would go cold on arrival and the whole thing would be a
+     * server render for nothing. Five minutes is the default, written out
+     * because the warming reads as deliberate only next to a number.
+     */
+    staleTimes: { dynamic: 30, static: 300 },
+  },
+
   async headers() {
     return [
       {

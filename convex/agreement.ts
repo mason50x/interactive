@@ -27,7 +27,20 @@ import {
  * Bump it only when the *terms* change. Fixing a typo in the card is not a new
  * agreement.
  */
-const AGREEMENT_VERSION = 1;
+/**
+ * Two, as of chat.
+ *
+ * Version one said nothing about talking to other people, because until chat
+ * there was nobody to talk to — the terms covered what you did with the
+ * activities and that was the whole surface. Chat adds a fifth clause and adds
+ * a section to the privacy policy about messages being stored, and neither of
+ * those is something anybody can be held to on the strength of having accepted
+ * the previous wording.
+ *
+ * So everybody accepts again. That is what the version is for, and it is the
+ * entire migration: a row below this number reads as not agreed.
+ */
+const AGREEMENT_VERSION = 2;
 
 /**
  * The phrase the person has to type out, normalized the way `accept` compares
@@ -64,6 +77,28 @@ async function userFor(ctx: QueryCtx, clerkId: string) {
     .query("users")
     .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
     .unique();
+}
+
+/**
+ * Whether this account has accepted the terms currently in force.
+ *
+ * Exported because chat needs the same answer and must not get it from the
+ * browser. The activity routes can gate in Next, because what they are
+ * protecting is a URL that Next hands out; a message is written by a Convex
+ * mutation the browser calls directly, so the only place that gate can live is
+ * inside the mutation.
+ *
+ * It matters more than it did. Version two of the terms is the version that
+ * says anything about how you speak to other people — enforcing the rules
+ * against somebody who never accepted them would be the one part of this system
+ * that could not be defended.
+ */
+export async function hasAccepted(
+  ctx: QueryCtx,
+  clerkId: string,
+): Promise<boolean> {
+  const row = await agreementFor(ctx, clerkId);
+  return row !== null && row.version >= AGREEMENT_VERSION;
 }
 
 /**

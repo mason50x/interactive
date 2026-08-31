@@ -264,4 +264,404 @@ export default defineSchema({
     views: v.number(),
     seconds: v.number(),
   }).index("byUserDay", ["clerkId", "day"]),
+
+  /**
+   * Who somebody is in chat, and how much trouble they are in.
+   *
+   * ## Why this is not fields on `users`
+   *
+   * Because `users` is not ours. It is rebuilt by the Clerk webhook — see
+   * `upsertFromClerk` in `convex/users.ts` — and it holds a real name and a real
+   * email address, which are exactly the two things chat must never show. A
+   * separate row keyed by the Clerk id is the same shape `agreements` uses and
+   * for the same reason: it survives the webhook, and it can exist before the
+   * webhook has ever run.
+   *
+   * ## Why a handle instead of a name
+   *
+   * The account has a real first name on it because Clerk collected one at
+   * signup. Putting that in a room of strangers, on a site whose users are
+   * thirteen and up, is the single worst default available, and it is a default
+   * nobody would have chosen deliberately — it happens by reaching for the name
+   * that was already there. So chat has an identity of its own, chosen once, and
+   * no query in `convex/chat/` returns anything from `users` at all.
+   *
+   * `handleKey` is what uniqueness is actually enforced on: the handle with
+   * confusables and leet folded and separators removed, so `adm1n`, `а𝖽min` and
+   * `a_d_m_i_n` all collapse onto `admin` and cannot be claimed to shadow it.
+   * `handle` is what gets displayed. They are written together and only here.
+   *
+   * ## The ring
+   *
+   * `recent` is the last twenty sends — when, where, a hash of what, and whether
+   * it was flagged. It is the entire cross-message memory of the moderation
+   * system: rate windows, duplicate detection, broadcast detection and
+   * repeat-targeting all read this one bounded array on the sender's own
+   * document, which means none of them costs a second table, a second index, or
+   * a read of anybody else's row. It is a hash rather than the text because
+   * twenty copies of everything everyone said, kept on their profile, is a
+   * different product than this one.
+   */
+  chatProfiles: defineTable({
+    clerkId: v.string(),
+    /** What everyone sees. Claimed once, and changeable twice after that. */
+    handle: v.string(),
+    /** Folded, and the thing uniqueness is on. See above. */
+    handleKey: v.string(),
+    /**
+     * Renames spent, of `MAX_HANDLE_CHANGES`. Absent on every profile made
+     * before renaming existed, which reads as zero — the correct answer for
+     * them, and cheaper than a migration.
+     */
+    handleChanges: v.optional(v.number()),
+    /**
+     * The disc, when it has been chosen rather than derived.
+     *
+     * Both optional and both independent: a hue with no initials is your first
+     * letter on a colour you picked, initials with no hue is your initials on
+     * the colour your handle hashes to. Absent means derived, which is what
+     * every profile started as — see `Monogram` in the app for the fallbacks.
+     *
+     * `avatarHue` is checked against `AVATAR_HUES` on the way in and
+     * `avatarInitials` against a two-character shape, because a disc a person
+     * picks must not become a field a person writes in.
+     */
+    avatarHue: v.optional(v.number()),
+    avatarInitials: v.optional(v.string()),
+    createdAt: v.number(),
+    /**
+     * Who may open a direct message. Defaults to `friends`, which is what makes
+     * a friend request a gate rather than a formality: a stranger cannot reach
+     * you until you have said they may.
+     */
+    dmPolicy: v.union(
+      v.literal("friends"),
+      v.literal("anyone"),
+      v.literal("nobody"),
+    ),
+    /** Whether handle search returns you. */
+    discoverable: v.boolean(),
+    /** Feeds the trust tier, and nothing else reads it. */
+    messagesSent: v.number(),
+    /**
+     * The mute, and the rule that caused it. Both, because a mute somebody
+     * cannot see the reason for is indistinguishable from the app being broken,
+     * and there is nobody to ask.
+     */
+    mutedUntil: v.optional(v.number()),
+    mutedRule: v.optional(v.string()),
+    /** The one thing here that does not lift on its own. */
+    bannedAt: v.optional(v.number()),
+    banRule: v.optional(v.string()),
+    recent: v.array(
+      v.object({
+        at: v.number(),
+        conversationId: v.string(),
+        hash: v.string(),
+        flagged: v.boolean(),
+      }),
+    ),
+  })
+    .index("byClerkId", ["clerkId"])
+    .index("byHandleKey", ["handleKey"])
+    // Convex allows one search field per index, which is the whole reason chat
+    // identity is a handle and nothing else: there is no display name to search
+    // as well, so one index is all this ever needed.
+    .searchIndex("searchHandle", { searchField: "handle" }),
+
+  /**
+   * A room, a group, or a pair.
+   *
+   * One table for all three because everything above them — membership,
+   * messages, reads, reports — is identical, and the differences are three
+   * fields. `kind` is the only thing that varies behaviour, and it is copied
+   * onto every membership row so that sending a message never has to read this
+   * document at all. That is not a micro-optimisation: reading the conversation
+   * on every send would put it in the read set of every send, and two people
+   * talking at once would start conflicting with each other over a row neither
+   * of them was writing.
+   *
+   * `dmKey` is the two Clerk ids sorted and joined. It exists so that opening a
+   * direct message is idempotent — both people "creating" it land on the same
+   * row — rather than a race that leaves two half-populated conversations.
+   *
+   * `lastMessageAt` is written for direct messages and groups, which are
+   * low-traffic and sort by it, and deliberately *not* for the global room. Every
+   * message in a busy room would rewrite this one document, and every
+   * subscription that had read it would be recomputed because of it. The room
+   * is pinned to the top of the list instead, which is where it belongs anyway.
+   */
+  conversations: defineTable({
+    kind: v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
+    /** Set only on direct messages: both Clerk ids, sorted, joined. */
+    dmKey: v.optional(v.string()),
+    /** Groups only. Screened like a message before it is accepted. */
+    title: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    /** Absent on the global room, on purpose. See above. */
+    lastMessageAt: v.optional(v.number()),
+    /** Groups only. `request` is the one that needs an owner to approve. */
+    joinPolicy: v.optional(
+      v.union(v.literal("invite"), v.literal("request"), v.literal("open")),
+    ),
+    /**
+     * A group's face: one of a fixed set of emoji *or* up to two letters, on
+     * one of a fixed set of hues. Groups only, and all three optional — a group
+     * that has never been given one is drawn from its name, the same way a
+     * person with no `avatarHue` is drawn from their handle.
+     *
+     * A picked emoji rather than an uploaded picture, and that is the whole
+     * design. See `monogram.tsx` for why this app holds no photographs of its
+     * users; a group avatar anybody could upload would be the same hole opened
+     * from the other side, on a site with nobody to look at what came through
+     * it. An emoji from a closed set cannot carry anything that was not already
+     * in the app, and two characters cannot carry a sentence — which is the
+     * same reasoning `MAX_INITIALS` is under.
+     *
+     * `emoji` and `initials` are alternatives rather than layers: `setLook`
+     * clears one when the other is set, because a disc has room for one thing.
+     */
+    emoji: v.optional(v.string()),
+    initials: v.optional(v.string()),
+    hue: v.optional(v.number()),
+  })
+    .index("byDmKey", ["dmKey"])
+    .index("byKind", ["kind"]),
+
+  /**
+   * One row per person per conversation, and the only thing a send reads.
+   *
+   * It carries membership, the group role, the read position, and a copy of the
+   * conversation's `kind`. The copy is what lets the send path answer "may this
+   * person speak here, and what are the limits" from a single indexed lookup of
+   * a row that only that person writes — so two people sending at the same
+   * moment touch no document in common.
+   *
+   * `status` is doing four jobs at once and they are all the same job: `invited`
+   * is a group invitation waiting on the recipient, `requested` is a join
+   * request waiting on the owner, `banned` is somebody the owner removed and who
+   * may not come back, and `left` is a row kept rather than deleted so that
+   * rejoining does not lose where they had read up to.
+   *
+   * `role` is scoped to one group. There is no global moderator anywhere in this
+   * schema, because there are no moderators — see `convex/moderation/`.
+   */
+  conversationMembers: defineTable({
+    conversationId: v.id("conversations"),
+    clerkId: v.string(),
+    /** Copied from the conversation, which never changes kind. */
+    kind: v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
+    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("invited"),
+      v.literal("requested"),
+      v.literal("banned"),
+      v.literal("left"),
+    ),
+    joinedAt: v.number(),
+    /** Everything after this is unread. Written only by its own owner. */
+    lastReadAt: v.number(),
+    invitedBy: v.optional(v.string()),
+    /**
+     * Direct messages only: the Clerk id of the other person.
+     *
+     * Copied here so the send path can check whether the two of you have
+     * blocked each other without reading the conversation document or the other
+     * member's row — the first would put a shared document in the read set of
+     * every send, and the second would make your message conflict with them
+     * marking the thread read.
+     */
+    dmPeer: v.optional(v.string()),
+  })
+    .index("byConversation", ["conversationId", "status"])
+    .index("byUser", ["clerkId", "status"])
+    .index("byConversationUser", ["conversationId", "clerkId"]),
+
+  /**
+   * What was said.
+   *
+   * Ordered by `_creationTime` through `byConversation`, which is what the
+   * paginated thread query reads backwards. There is no `createdAt` field
+   * because Convex already keeps one and a second copy could only ever disagree
+   * with it.
+   *
+   * ## `authorHandle` is stored on the message
+   *
+   * Denormalised on purpose, and it is the field that makes the thread work.
+   * Resolving the author for each row would mean the thread query joined against
+   * `chatProfiles`, and a joined row cannot be constructed on the client, which
+   * is what an optimistic send has to do to put your own message on screen the
+   * instant you press enter. Carrying the handle makes the page self-contained.
+   * The cost is that a handle could go stale — which it cannot, because handles
+   * are claimed once and never renamed.
+   *
+   * ## Only survivors are here
+   *
+   * A message that fails the filter is never inserted. There is no row for it,
+   * no id, and nothing to leak: the refusal happens in `convex/chat/messages.ts`
+   * before any write. `status` is therefore about the one thing that happens
+   * *afterwards* — `hidden`, when reports pile up on it. An author taking their
+   * own message back is not a status either: within `DELETE_WINDOW_MS` the row
+   * is deleted outright, and after it nothing can be taken back at all.
+   *
+   * `flags` is the tier-three words that were allowed through. It is the record
+   * of why a message was permitted, which on a system with nobody reviewing it
+   * is the only account of the decision that exists.
+   */
+  messages: defineTable({
+    conversationId: v.id("conversations"),
+    authorClerkId: v.string(),
+    /** See above: denormalised so a page of messages needs no join. */
+    authorHandle: v.string(),
+    body: v.string(),
+    status: v.union(v.literal("visible"), v.literal("hidden")),
+    flags: v.array(v.string()),
+    /**
+     * Kept on the document rather than in a table of its own, so drawing fifty
+     * messages is one range read instead of fifty. Bounded by the fixed emoji
+     * set and by a cap on recorded reactors — past the cap the count is still
+     * right, only the list of who stops growing.
+     */
+    reactions: v.optional(
+      v.array(v.object({ emoji: v.string(), by: v.array(v.string()) })),
+    ),
+  })
+    .index("byConversation", ["conversationId"])
+    .index("byAuthor", ["authorClerkId"]),
+
+  /**
+   * One row per pair of people, in either state.
+   *
+   * `userA` is always the lexicographically smaller Clerk id, which is what
+   * makes a friendship a single row rather than two that can disagree. The cost
+   * is that listing your friends is two indexed reads — one for each side you
+   * might be on — merged in the handler. That is cheaper than the alternative,
+   * which is two mirrored rows and a bug the first time one of them fails to
+   * update.
+   *
+   * `requestedBy` is kept because it is the only thing that distinguishes a
+   * request you sent from one you received, and both appear in the same list.
+   */
+  friendships: defineTable({
+    userA: v.string(),
+    userB: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted")),
+    requestedBy: v.string(),
+    requestedAt: v.number(),
+    respondedAt: v.optional(v.number()),
+  })
+    .index("byPair", ["userA", "userB"])
+    .index("byUserA", ["userA", "status"])
+    .index("byUserB", ["userB", "status"]),
+
+  /**
+   * One row per direction, because blocking is not mutual.
+   *
+   * Blocking somebody stops them reaching you and stops you seeing them, and
+   * says nothing about what they can see of anybody else. The `byBlocked` index
+   * exists so the send path can ask "has the person I am writing to blocked me"
+   * without reading their profile, and `byBlocker` so a thread can be filtered
+   * against the viewer's own list in one read.
+   *
+   * Not an array on the profile: Convex caps an array field at 8,192 elements
+   * and a document at a megabyte, and more immediately, a list that has to be
+   * rewritten in full to add one entry is a write conflict waiting to happen.
+   */
+  blocks: defineTable({
+    blocker: v.string(),
+    blocked: v.string(),
+    createdAt: v.number(),
+  })
+    .index("byBlocker", ["blocker", "blocked"])
+    .index("byBlocked", ["blocked"]),
+
+  /**
+   * Somebody saying that something was wrong.
+   *
+   * Nobody reads these. That is not an oversight — there are no moderators, by
+   * design — so a report is not a message to a human, it is an input to the same
+   * arithmetic that everything else feeds. Which makes the shape of this table
+   * mostly about abuse of it.
+   *
+   * `byReporterMessage` enforces one report per person per message, so a single
+   * account cannot become a crowd. `weight` is stored rather than recomputed
+   * because it is a judgement made at the time — it depends on the reporter's
+   * own standing when they filed it — and recomputing it later would let
+   * somebody retroactively strengthen their old reports by keeping their record
+   * clean, or weaken them by not.
+   *
+   * The rest of the guard is in `convex/moderation/limits.ts`: a daily cap per
+   * reporter, and a hard ceiling on how much of anyone's standing can ever come
+   * from reports at all. A group can get somebody muted for a day. It cannot get
+   * them banned; only the filter, reading what was actually said, can do that.
+   */
+  reports: defineTable({
+    reporterClerkId: v.string(),
+    messageId: v.optional(v.id("messages")),
+    targetClerkId: v.string(),
+    conversationId: v.optional(v.id("conversations")),
+    reason: v.union(
+      v.literal("abuse"),
+      v.literal("harassment"),
+      v.literal("sexual"),
+      v.literal("self-harm"),
+      v.literal("spam"),
+      v.literal("contact"),
+      v.literal("other"),
+    ),
+    createdAt: v.number(),
+    /** The reporter's weight at the moment they filed. Never recomputed. */
+    weight: v.number(),
+  })
+    .index("byReporterMessage", ["reporterClerkId", "messageId"])
+    .index("byMessage", ["messageId"])
+    .index("byReporter", ["reporterClerkId", "createdAt"])
+    .index("byTarget", ["targetClerkId"])
+    // So a conversation being deleted can take the reports filed inside it.
+    // Without this they outlive the messages they are about and point at ids
+    // that no longer resolve.
+    .index("byConversation", ["conversationId"]),
+
+  /**
+   * The ledger, and the whole of enforcement.
+   *
+   * Standing is the sum of the rows here that have not expired; the ladder in
+   * `convex/moderation/limits.ts` turns that number into a mute or a ban.
+   * Nothing else is consulted anywhere.
+   *
+   * It is a table of rows rather than a counter on the profile for one reason:
+   * the person it happened to is shown it. A number that says `14` is an
+   * accusation. Fourteen rows, each with a rule, a date, an excerpt of what was
+   * said, and the day it stops counting, is an explanation — and on a system
+   * with no appeal, an explanation is the only thing standing between automated
+   * enforcement and somebody being punished by a machine for reasons they will
+   * never learn.
+   *
+   * `expiresAt` is the index key so the nightly sweep can find what is dead
+   * without scanning, and so a read can stop early. Expired rows are also
+   * ignored at read time, because the sweep runs once a day and correctness
+   * cannot wait on it.
+   */
+  strikes: defineTable({
+    clerkId: v.string(),
+    at: v.number(),
+    weight: v.number(),
+    /** A `Refusal` from `convex/moderation/rules.ts`. */
+    rule: v.string(),
+    source: v.union(
+      v.literal("filter"),
+      v.literal("reports"),
+      v.literal("rate"),
+    ),
+    conversationId: v.optional(v.id("conversations")),
+    /** Enough of the message to recognise. Never enough to republish. */
+    excerpt: v.optional(v.string()),
+    expiresAt: v.number(),
+  })
+    .index("byUser", ["clerkId", "expiresAt"])
+    // The sweep's index. `byUser` cannot answer "everything dead everywhere",
+    // because its first field is the account and there is no account to fix.
+    .index("byExpiry", ["expiresAt"]),
 });

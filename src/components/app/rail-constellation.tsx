@@ -34,26 +34,6 @@ import { cn } from "@/lib/utils";
  * one.
  *
  * ---------------------------------------------------------------------------
- * The burst entrance
- *
- * `burstFrom` is the whole of what the unlock overlay needed, and it is a
- * handful of lines rather than a second constellation because the field it
- * wants to end up with is *this* field, unchanged: the same spacing, the same
- * drift, the same web, the same response to the cursor.
- *
- * So the arrangement is not computed from the explosion. It is seeded exactly
- * as it always is — points scattered across the box at the usual density — and
- * then every point is handed an offset that puts it on top of the origin, and
- * that offset is decayed away. The points fly *to* the constellation rather
- * than the constellation being whatever the points happen to land in.
- *
- * It rides on the same mechanism as the pointer's shove, for the same reason
- * that one is a displacement over a base position rather than a force on
- * velocity: a displacement cannot accumulate, cannot overshoot, and is over
- * when it says it is. The two compose, so the cursor works during the
- * entrance.
- *
- * ---------------------------------------------------------------------------
  * What this costs, and why it is shaped the way it is
  *
  * The arithmetic was never the problem: the whole step — drift, the pointer
@@ -122,29 +102,6 @@ const DRIFT = 0.32;
 const CHASE = 0.226;
 
 /**
- * How much of the entrance offset is given up each frame, and the point at
- * which what is left is not worth drawing.
- *
- * Stated for 60fps, not the 30 everything else here runs at: a point crossing
- * the whole box in under a second is the one thing this component ever draws
- * that is fast enough to strobe at half rate, so `step` lifts the cadence
- * while an entrance is in flight and drops back to 30 the moment it lands.
- */
-const BURST_DECAY = 0.93;
-const BURST_DONE = 0.4;
-
-/**
- * The web is faded in over the entrance instead of being drawn through it.
- *
- * Every point starts on top of every other point, so on the first frame every
- * pair is inside `LINK` and the honest drawing of that is six thousand
- * hairlines stacked into a white disc. Scaling the line alpha by how far the
- * entrance has decayed lets the dots fly out visibly while the web condenses
- * out of them as they slow — which is the effect anyway, and cheaper than the
- * alternative of suppressing pairs by distance.
- */
-
-/**
  * Line alphas are quantised into this many steps so the whole web can be drawn
  * as a handful of paths.
  *
@@ -174,10 +131,6 @@ type Point = {
   dy: number;
   tx: number;
   ty: number;
-  /** What is left of the entrance offset. Zero unless `burstFrom` was given,
-   *  and on its way to zero if it was. */
-  ex: number;
-  ey: number;
   /** `x + dx`, `y + dy` — held here so a frame allocates nothing. */
   px: number;
   py: number;
@@ -198,19 +151,11 @@ export function RailConstellation({
   className,
   areaPerPoint = AREA_PER_POINT,
   maxPoints = MAX_POINTS,
-  burstFrom,
 }: {
   className?: string;
   areaPerPoint?: number;
   maxPoints?: number;
-  /**
-   * Arrive by flying out of this point, in viewport coordinates, rather than
-   * by simply being there. Read once, when the field is first seeded; a resize
-   * later on fills the gaps normally rather than setting the whole thing off
-   * again.
-   */
-  burstFrom?: { x: number; y: number };
-}) {
+} = {}) {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -234,15 +179,6 @@ export function RailConstellation({
     let visible = !document.hidden;
     let intersecting = true;
     let onscreen = visible;
-
-    // The entrance, if there is one. `entering` is also what lifts the frame
-    // rate, and `mix` is the web's fade — both run down together so the field
-    // has one clock, not three.
-    let entering = burstFrom !== undefined;
-    let mix = entering ? 1 : 0;
-    // Only the first seeding flies in. A point added later — the box grew, or
-    // the window came back — belongs to a field that has already arrived.
-    let seeding = true;
 
     // One reusable pair of coordinate buffers per alpha bucket. The line set
     // changes completely every frame but its *size* barely moves, so these
@@ -278,12 +214,6 @@ export function RailConstellation({
       const box = rail.getBoundingClientRect();
       if (!box.width || !box.height) return;
 
-      // Viewport coordinates in, local coordinates out — the caller knows
-      // where the thing it is bursting from sits on the screen, not where it
-      // sits inside this canvas.
-      const originX = burstFrom ? burstFrom.x - box.left : 0;
-      const originY = burstFrom ? burstFrom.y - box.top : 0;
-
       const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
       width = box.width;
       height = box.height;
@@ -301,12 +231,9 @@ export function RailConstellation({
       points = points.filter((point) => point.x < width && point.y < height);
       while (points.length > wanted) points.pop();
       while (points.length < wanted) {
-        const x = random(0, width);
-        const y = random(0, height);
-
         points.push({
-          x,
-          y,
+          x: random(0, width),
+          y: random(0, height),
           // Slow enough that the web looks like it is breathing rather than
           // travelling: a point crosses the rail in something like a minute.
           vx: random(-DRIFT, DRIFT),
@@ -316,16 +243,10 @@ export function RailConstellation({
           dy: 0,
           tx: 0,
           ty: 0,
-          // The offset that puts this point on the origin to begin with. It is
-          // the *whole* distance home, so decaying it is the flight.
-          ex: seeding && burstFrom ? originX - x : 0,
-          ey: seeding && burstFrom ? originY - y : 0,
           px: 0,
           py: 0,
         });
       }
-
-      seeding = false;
     };
 
     /**
@@ -340,11 +261,6 @@ export function RailConstellation({
     const advance = () => {
       const drifting = !still.matches;
       let moving = drifting;
-
-      if (entering) {
-        mix *= BURST_DECAY;
-        moving = true;
-      }
 
       for (const point of points) {
         if (drifting) {
@@ -382,29 +298,11 @@ export function RailConstellation({
         point.dx += (point.tx - point.dx) * CHASE;
         point.dy += (point.ty - point.dy) * CHASE;
 
-        if (entering) {
-          point.ex *= BURST_DECAY;
-          point.ey *= BURST_DECAY;
-        }
-
         // A tenth of a pixel is under the smallest thing this can draw.
         if (Math.abs(point.dx) > 0.1 || Math.abs(point.dy) > 0.1) moving = true;
 
-        // Both displacements, over the drifting base. Neither can accumulate,
-        // so a cursor swept across a field that is still arriving cannot leave
-        // it anywhere it would not have ended up anyway.
-        point.px = point.x + point.dx + point.ex;
-        point.py = point.y + point.dy + point.ey;
-      }
-
-      // Ends on the offsets rather than on the fade, because the fade is
-      // asymptotic and the offsets are what anyone can actually see.
-      if (entering) {
-        entering = points.some(
-          (point) =>
-            Math.abs(point.ex) > BURST_DONE || Math.abs(point.ey) > BURST_DONE,
-        );
-        if (!entering) mix = 0;
+        point.px = point.x + point.dx;
+        point.py = point.y + point.dy;
       }
 
       return moving;
@@ -438,7 +336,7 @@ export function RailConstellation({
         const bucket = buckets[step];
         if (bucket.length === 0) continue;
 
-        const alpha = ((step + 0.5) / ALPHA_STEPS) * 0.5 * fade * (1 - mix);
+        const alpha = ((step + 0.5) / ALPHA_STEPS) * 0.5 * fade;
         context.strokeStyle = `rgba(${ink}, ${alpha})`;
         context.beginPath();
         for (let k = 0; k < bucket.length; k += 4) {
@@ -460,7 +358,7 @@ export function RailConstellation({
           // batched — there are at most a handful, and they are the one thing
           // here whose gradient of opacity is actually looked at.
           const strength = 1 - Math.sqrt(d2) / REACH;
-          context.strokeStyle = `rgba(${ink}, ${strength * 0.85 * fade * (1 - mix)})`;
+          context.strokeStyle = `rgba(${ink}, ${strength * 0.85 * fade})`;
           context.beginPath();
           context.moveTo(point.px, point.py);
           context.lineTo(pointer.x, pointer.y);
@@ -522,11 +420,7 @@ export function RailConstellation({
       // rAF is tied to the display, so 30fps is a gate rather than a timer.
       // The slack keeps a frame that lands a hair early from being dropped
       // outright, which is what turns a steady 30 into a stuttering 20.
-      //
-      // The gate comes off for an entrance and goes straight back on when it
-      // lands. Half rate is free for a field that takes a minute to cross the
-      // box and visibly cheap for one crossing it in under a second.
-      if (!entering && now - last < FRAME_MS - 2) {
+      if (now - last < FRAME_MS - 2) {
         frame = requestAnimationFrame(step);
         return;
       }
@@ -665,7 +559,7 @@ export function RailConstellation({
       rail.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [areaPerPoint, maxPoints, burstFrom]);
+  }, [areaPerPoint, maxPoints]);
 
   return (
     <canvas

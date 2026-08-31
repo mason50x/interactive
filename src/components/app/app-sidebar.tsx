@@ -1,18 +1,26 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { AgreementCard } from "@/components/app/agreement-card";
+import { useChat } from "@/components/app/chat/chat-provider";
 import { InviteCard } from "@/components/app/invite-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import { usePreferences } from "@/components/preferences-provider";
 import { RailSearch } from "@/components/app/rail-search";
 import { UserMenu } from "@/components/app/user-menu";
-import { navItems } from "@/lib/nav";
+import { NAV_HREFS, navItems } from "@/lib/nav";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
+import { useWarmRoutes } from "@/lib/warm";
 
 /**
  * The signed-in app's chrome: a vertical rail, not a header.
@@ -54,10 +62,25 @@ import { cn } from "@/lib/utils";
 export function AppSidebar() {
   const pathname = usePathname();
   const { preferences } = usePreferences();
+  const { hasUnread } = useChat();
   const list = useRef<HTMLUListElement>(null);
   const [pill, setPill] = useState<{ top: number; height: number } | null>(
     null,
   );
+
+  // The row that has been clicked and is waiting on the server, if any. See
+  // `NavPending` at the bottom of this file for why this is state up here
+  // rather than something each row reads for itself.
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Functional, and matched on the way down, so two rows reporting in either
+  // order cannot leave a stale one lit: only the row that claimed the pending
+  // state can release it.
+  const report = useCallback((href: string, pending: boolean) => {
+    setPendingHref((current) =>
+      pending ? href : current === href ? null : current,
+    );
+  }, []);
 
   // Exactly one item is lit: the one whose href is the *longest* prefix of the
   // current path. Testing each item on its own would light every ancestor too,
@@ -80,6 +103,22 @@ export function AppSidebar() {
     return matches && item.href.length > best.length ? item.href : best;
   }, "");
 
+  // Which row wears the pill. A click lights its row *now* and lets the URL
+  // catch up, rather than the other way round: every route under `/dashboard`
+  // reads cookies and so is rendered on demand, and until `src/lib/warm.ts` has
+  // been round the rail the answer arrives some hundreds of milliseconds after
+  // the click. Waiting for `pathname` to move means waiting all of that with
+  // the rail showing the row you just left — which reads as a click that
+  // missed, and gets clicked again.
+  //
+  // Only the pill and the ink follow this. `aria-current` stays on the route
+  // actually being shown, because that is what it means; a screen reader saying
+  // "current page" of a page that has not arrived is a lie, and a navigation
+  // that fails would leave it as one.
+  const litHref = pendingHref ?? activeHref;
+
+  const warm = useWarmRoutes(NAV_HREFS, pathname);
+
   // Where the lit face has to be. Read off the row rather than computed from
   // the row height and the gap, so the two cannot drift apart: this is laid
   // out by Tailwind classes a few lines below, and arithmetic here would be a
@@ -90,11 +129,9 @@ export function AppSidebar() {
   // needs no observer — every row is a fixed `h-11`, at both widths of the
   // rail, so nothing but the selection moves them.
   useLayoutEffect(() => {
-    const row = list.current?.querySelector<HTMLElement>(
-      '[aria-current="page"]',
-    );
+    const row = list.current?.querySelector<HTMLElement>('[data-lit="true"]');
     setPill(row ? { top: row.offsetTop, height: row.offsetHeight } : null);
-  }, [activeHref]);
+  }, [litHref]);
 
   return (
     <nav
@@ -109,6 +146,7 @@ export function AppSidebar() {
         <Link
           href="/dashboard"
           aria-label={`${brand.name} dashboard`}
+          {...warm("/dashboard")}
           className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
         >
           <span className="lg:hidden">
@@ -149,6 +187,7 @@ export function AppSidebar() {
 
         {navItems.map((item) => {
           const active = item.href === activeHref;
+          const lit = item.href === litHref;
           const { outline: Outline, solid: Solid } = item.icon;
 
           return (
@@ -156,6 +195,8 @@ export function AppSidebar() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                data-lit={lit ? "true" : undefined}
+                {...warm(item.href)}
                 className={cn(
                   // Positioned so it paints above the pill, and bordered on the
                   // base — transparent — so the label sits at the same inset
@@ -166,7 +207,7 @@ export function AppSidebar() {
                   // as a second, brighter border. These get an inset ring
                   // instead, which sits inside the face rather than orbiting it.
                   "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
-                  active
+                  lit
                     ? // The ink is switched, not faded: zero duration behind a
                       // delay, so the label holds the colour it already had and
                       // then changes in one frame. Anything that interpolates
@@ -211,17 +252,40 @@ export function AppSidebar() {
                   <Outline
                     className={cn(
                       "absolute inset-0 size-5 transition-[opacity] delay-[70ms] duration-0",
-                      active && "opacity-0",
+                      lit && "opacity-0",
                     )}
                   />
                   <Solid
                     className={cn(
                       "absolute inset-0 size-5 transition-[opacity] delay-[70ms] duration-0",
-                      !active && "opacity-0",
+                      !lit && "opacity-0",
                     )}
                   />
                 </span>
                 <span className="hidden lg:inline">{item.label}</span>
+
+                {/* A dot and never a number. The rail is a list of places, and
+                    a count on it would be a second thing to read on a row whose
+                    whole job is to be recognised at a glance — the conversation
+                    list is where "how many, and from whom" belongs.
+
+                    Absolutely positioned on the icon rather than placed after
+                    the label, because below `lg` there is no label to place it
+                    after and the row must not change shape between the two
+                    widths. It rides the same colour switch as everything else
+                    on a lit row: white on the pill, brand blue off it. */}
+                {item.unread && hasUnread ? (
+                  <span
+                    aria-label="Unread messages"
+                    role="status"
+                    className={cn(
+                      "absolute top-2.5 left-[2.125rem] size-2 rounded-full transition-[background-color] delay-[70ms] duration-0 lg:left-[1.9375rem]",
+                      lit ? "bg-primary-foreground" : "bg-primary",
+                    )}
+                  />
+                ) : null}
+
+                <NavPending href={item.href} report={report} />
               </Link>
             </li>
           );
@@ -246,4 +310,37 @@ export function AppSidebar() {
       </div>
     </nav>
   );
+}
+
+/**
+ * Reports whether the row it sits in has been clicked and is still waiting.
+ *
+ * `useLinkStatus` only answers inside a `Link`, so this has to be a child of
+ * one — which is also why the pending row is state on `AppSidebar` and not on
+ * each row: the pill is one element for the whole list, so the list is what has
+ * to know which row to send it to.
+ *
+ * Renders nothing. The visible half of this is the pill and the ink, which the
+ * rail already knows how to move.
+ *
+ * The cleanup releases the claim as well as the effect, so a row unmounting
+ * mid-navigation cannot leave the rail lit on a destination nobody is going to.
+ * Both paths report the same thing, which is why it is safe for them to run
+ * back to back on the commit that resolves the click.
+ */
+function NavPending({
+  href,
+  report,
+}: {
+  href: string;
+  report: (href: string, pending: boolean) => void;
+}) {
+  const { pending } = useLinkStatus();
+
+  useEffect(() => {
+    report(href, pending);
+    return () => report(href, false);
+  }, [href, pending, report]);
+
+  return null;
 }

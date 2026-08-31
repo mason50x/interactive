@@ -331,6 +331,69 @@
 
   /* Dark rails take less light, so the face is pulled down a step and the
      specular line thinned — the light-theme values glare against #0f0f0f. */
+  /*
+   * A light travelling across a word, for a wait too short to deserve a
+   * skeleton and too long to leave silent.
+   *
+   * The gradient is painted on the text itself — `background-clip: text` with
+   * transparent ink — and slid, rather than an overlay swept across an opaque
+   * word: an overlay has to know the colour behind it, and this sits on the
+   * panel, on white and on #171717 alike. The band is narrow and the two ends
+   * of the gradient are the same faint grey, so what moves is a highlight and
+   * not an edge.
+   */
+  @keyframes text-shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+
+  .text-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      var(--faint) 0%,
+      var(--faint) 42%,
+      var(--foreground) 50%,
+      var(--faint) 58%,
+      var(--faint) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: text-shimmer 1.5s linear infinite;
+  }
+
+  /* Still a word, just no longer a moving one. */
+  @media (prefers-reduced-motion: reduce) {
+    .text-shimmer {
+      animation: none;
+      background-image: none;
+      color: var(--faint);
+    }
+  }
+
+  /* A person, as a letter on a colour. The hue is set inline from the handle
+     (see `handleHue` in `src/lib/chat.ts`); the lightness and chroma live here
+     because an inline style cannot carry a dark variant, and a monogram that
+     stays pale on a dark surface is a bright disc in the middle of a thread.
+
+     Chroma is deliberately low. A list of these is a column of forty coloured
+     circles, and at full saturation it reads as a bag of sweets rather than as
+     a set of people. */
+  .monogram {
+    background-color: oklch(0.92 0.045 var(--monogram-hue));
+    color: oklch(0.42 0.11 var(--monogram-hue));
+  }
+
+  :root[data-theme="dark"] .monogram {
+    background-color: oklch(0.32 0.05 var(--monogram-hue));
+    color: oklch(0.86 0.09 var(--monogram-hue));
+  }
+
   :root[data-theme="dark"] .nav-pill {
     background-image: linear-gradient(
       to bottom,
@@ -464,6 +527,24 @@
 
 .animate-rise-in {
   animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A refusal arriving over the chat composer. Short and slightly under-scaled
+   at the start, so it reads as having come up out of the input it is about
+   rather than as a thing that was always there and just became visible. */
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-notice-in {
+  animation: notice-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* ---------------------------------------------------------------------------
@@ -671,277 +752,6 @@
 
 .animate-scrim-in {
   animation: scrim-in 0.3s ease-out both;
-}
-
-/* ---------------------------------------------------------------------------
- * The unlock: what a new session sees once, before it sees the app.
- *
- * Shaped like the fire above it — transform and opacity on a handful of
- * elements, no blur filters, the glow a radial gradient scaling in place — for
- * the same reason, except that this one is on screen for five seconds and the
- * first five seconds of an account are the ones worth not dropping a frame in.
- *
- * The layers are nested rather than stacked because they all animate
- * `transform` and an element only has one: `.lock-stage` carries the arrival
- * and the shatter, `.lock-shake` carries the rattle, and the shackle inside
- * the SVG carries the swing. Flatten any two of them together and the later
- * animation simply wins the property.
- * ------------------------------------------------------------------------ */
-
-/* The lock lands. Scale from small with a long settle, so it arrives with
-   weight rather than popping into place. */
-@keyframes lock-arrive {
-  from {
-    opacity: 0;
-    transform: scale(0.62) translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* The strain, and with no glow behind it the only thing carrying that beat.
-   Amplitude climbs across the run — it starts as a twitch and ends as
-   something about to give — and the scale creeps up with it, which is what
-   sells the shake as pressure from inside rather than a wobble.
-
-   The rotations do not alternate on a fixed beat: a shake that ticks
-   left-right-left at one frequency reads as a UI error state, and this is
-   supposed to read as a thing straining. */
-@keyframes lock-rattle {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
-  }
-  9% {
-    transform: translate3d(-2px, 1px, 0) rotate(-0.9deg) scale(1.008);
-  }
-  18% {
-    transform: translate3d(2px, -1px, 0) rotate(1.1deg) scale(1.014);
-  }
-  26% {
-    transform: translate3d(-3px, 0, 0) rotate(-0.6deg) scale(1.02);
-  }
-  35% {
-    transform: translate3d(3px, 1px, 0) rotate(1.6deg) scale(1.026);
-  }
-  44% {
-    transform: translate3d(-4px, -1px, 0) rotate(-1.9deg) scale(1.032);
-  }
-  53% {
-    transform: translate3d(4px, 1px, 0) rotate(1.4deg) scale(1.038);
-  }
-  62% {
-    transform: translate3d(-5px, -2px, 0) rotate(-2.4deg) scale(1.045);
-  }
-  71% {
-    transform: translate3d(5px, 1px, 0) rotate(2.6deg) scale(1.052);
-  }
-  80% {
-    transform: translate3d(-6px, -1px, 0) rotate(-2.1deg) scale(1.058);
-  }
-  89% {
-    transform: translate3d(4px, 2px, 0) rotate(2.8deg) scale(1.064);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1.07);
-  }
-}
-
-/* The shackle giving. A hair *further closed* first — the press before a latch
-   lets go — and then all the way open and held there by `both`.
-
-   The pivot is the foot of the right leg, stated in the SVG's own user units,
-   which only works because the element declares `transform-box: view-box`.
-   Left at the default the shackle would swing about the top left of the
-   drawing and leave the frame.
-
-   Clockwise, and that is the whole difference between a lock opening and a
-   lock breaking. SVG's y-axis points down, so a positive angle swings the free
-   leg *up and out* of the case — which is the shape everyone recognises as an
-   open padlock. Counter-clockwise drives that same leg down through the case
-   and reads as the shackle flopping over. The lift is written before the
-   rotation for the same kind of reason: transforms compose right to left, so a
-   translate after the rotation would run along the shackle's own tilted axis
-   rather than up the screen. */
-@keyframes shackle-open {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  16% {
-    transform: translateY(1px) rotate(-3.5deg);
-  }
-  100% {
-    transform: translateY(-4px) rotate(46deg);
-  }
-}
-
-/* One ring off the lock as the shackle lets go. One shot, not a pulse: this is
-   a latch releasing, and a repeating ring would turn it into a heartbeat. */
-@keyframes unlock-ring {
-  from {
-    opacity: 0.85;
-    transform: scale(0.42);
-  }
-  to {
-    opacity: 0;
-    transform: scale(2.9);
-  }
-}
-
-/* The lock going. Fast, and *outwards* — it hands off to the particles, which
-   leave from where it was, so the two have to overlap rather than take turns. */
-@keyframes lock-shatter {
-  from {
-    opacity: 1;
-    transform: scale(1.07);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.5);
-  }
-}
-
-/* The whole overlay standing down, and the dashboard coming back up behind it.
-   Slower than the streak overlay's exit: that one leaves a page you were
-   already reading, and this one is the first sight of a page you have never
-   seen. */
-@keyframes unlock-leave {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.animate-unlock-scrim {
-  animation: scrim-in 0.6s ease-out both;
-}
-
-.lock-stage {
-  animation: lock-arrive 0.66s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.lock-stage[data-phase="burst"] {
-  animation: lock-shatter 0.24s ease-in both;
-}
-
-.lock-shake {
-  animation: lock-rattle var(--strain-ms) cubic-bezier(0.4, 0, 0.6, 1) both;
-}
-
-.unlock-shackle {
-  transform-box: view-box;
-  transform-origin: 65px 43px;
-  animation: shackle-open 0.44s cubic-bezier(0.34, 1.42, 0.64, 1) both;
-}
-
-.unlock-ring {
-  animation: unlock-ring 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.animate-unlock-leave {
-  animation: unlock-leave 0.48s ease-in both;
-}
-
-/* ---------------------------------------------------------------------------
- * The hazard bar: the agreement card's state, when the state is "you cannot
- * get in yet".
- *
- * The invite card's pips draw an amount, so an unfilled slot is a grey rail
- * and that is the whole message. This one is not an amount — it is a barrier,
- * and a grey rail says nothing about being one. Red with white slashes running
- * across it is the thing every barrier in the physical world is painted as,
- * which is why it needs no label to be read.
- *
- * The stripes move by tiling rather than by travelling: the tile is a square
- * whose side is the stripe period measured along x (the 8px period across the
- * gradient's own axis, over cos 45deg), so sliding the background by exactly
- * one tile width lands the pattern back on itself and the loop has no seam.
- * Changing the stop positions means recomputing that number — 8 * sqrt(2).
- *
- * `background-position` on a 2px-tall strip is about as cheap as a repeating
- * animation gets, and the reduced-motion rule at the foot of this file parks
- * it. Parked is fine here, unlike the embers: still stripes are still stripes.
- * ------------------------------------------------------------------------ */
-@keyframes hazard-drift {
-  to {
-    background-position: 11.3137px 0;
-  }
-}
-
-.hazard-bar {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    #fff 0 2px,
-    var(--destructive) 2px 8px
-  );
-  background-size: 11.3137px 11.3137px;
-  animation: hazard-drift 0.7s linear infinite;
-}
-
-/* ---------------------------------------------------------------------------
- * The send-off: the four seconds between agreeing and the card being gone.
- *
- * Transform and opacity only, on three elements, once per account ever. The
- * ring is a border scaling out rather than anything blurred, for the same
- * reason the flame's halo is a gradient: this runs in the rail, beside a
- * dashboard that is loading.
- * ------------------------------------------------------------------------ */
-
-/* The tick landing. A little past its size and back, which is the difference
-   between a mark that arrives and one that is simply switched on. */
-@keyframes agree-pop {
-  0% {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  62% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* One ring off it, not a pulse — the same reasoning as `unlock-ring`. */
-@keyframes agree-ring {
-  from {
-    opacity: 0.55;
-    transform: scale(0.65);
-  }
-  to {
-    opacity: 0;
-    transform: scale(2.1);
-  }
-}
-
-@keyframes agree-rise {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.agree-pop {
-  animation: agree-pop 0.52s cubic-bezier(0.34, 1.42, 0.64, 1) both;
-}
-
-.agree-ring {
-  animation: agree-ring 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* Held back until the tick has most of its size: the word is the caption to
-   the mark, and a caption that arrives first is just a word. */
-.agree-rise {
-  animation: agree-rise 0.4s ease-out 0.2s both;
 }
 
 /* The one part of the fire that has to be removed rather than stilled.
