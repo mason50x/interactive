@@ -252,67 +252,56 @@ curl -sI https://clerk.interactivelearningresources.org/.well-known/jwks.json
 
 ## Deployments
 
-`main` is connected to `mason50x/interactive-learning` (private) and deploys to
-production on every push. Other branches get preview deployments.
+`main` is connected to `mason50x/interactive-learning` (private), but the git
+integration does not currently build anything. Deploy with `npm run deploy`.
 
-### Commit authorship
+### Why pushing does not deploy
 
-The repository is private and `cognify` is a Hobby team, and the Hobby plan does
-not support collaboration on private repositories. So Vercel builds a commit
-only when its author is the team owner. Which half of the author it compares
-depends on how the deploy was created, and the deploy history shows both:
+`cognify` is a Hobby team and the repository is private, and the Hobby plan does
+not support collaboration on private repositories — so Vercel builds a commit
+only when it can match the author to the team owner. It compares the GitHub
+account under **Login Connections**, or, when no account is connected, the
+verified addresses on the Vercel account.
 
-| deploy source | author email | GitHub login | result |
-| --- | --- | --- | --- |
-| git | masonsyzn@ | mason50x | READY, then BLOCKED |
-| git | masonsingel20@ | Msingelhassio | BLOCKED |
-| cli | masonsingel20@ | — | READY |
-| cli | masonsyzn@ | — | BLOCKED |
+Neither matches here, and no local git setting changes that. Every git deploy
+since 2026-08-31 07:55 CDT has been `BLOCKED` regardless of who authored it —
+`masonsyzn@` / `mason50x` and `masonsingel20@` / `Msingelhassio` alike — while
+CLI deploys of those same commits went `READY` minutes apart. The block is on
+the account, not in the commit. It arrives with no build and no log to read; the
+only trace is the deployment's `errorLink`, which points at
+[troubleshoot-project-collaboration][collab].
 
-A git deploy carries `githubCommitAuthorLogin`, and Vercel matches that against
-the login connected to the account. A CLI deploy has no login, so it falls back
-to the verified addresses on the account — which is why the same commit can be
-blocked through git and build through the CLI. The `masonsyzn@` git deploys
-built until the GitHub connection lapsed and the fallback started applying.
+[collab]: https://vercel.com/docs/deployments/troubleshoot-project-collaboration#team-configuration
 
-So both halves have to line up: the connected login must be the account that
-authors the commits, and that account's address must also be verified on Vercel
-so the fallback agrees. Two addresses have authored here, which is what makes
-this worth writing down.
+Two settings fix it, and both halves have to line up because the second is the
+fallback for the first:
 
-A commit authored under the wrong address is accepted by GitHub and pushed
-normally; the deploy is then created and immediately `BLOCKED`, with no build
-and no log to read. Nothing about the push says so.
+- **Account Settings → Login Connections** — connect the GitHub account that
+  authors the commits, `mason50x`.
+- **Account Settings → Email** — add and verify every address that authors
+  commits here, `masonsyzn@gmail.com` alongside `masonsingel20@gmail.com`.
 
-`.githooks/pre-commit` refuses to write such a commit and `.githooks/pre-push`
-refuses to push one that arrived from somewhere the first hook did not run —
-another machine, a cloud agent, the GitHub web editor. `npm install` runs
-`prepare`, which points `core.hooksPath` at `.githooks`, so a fresh clone is
-covered without anyone remembering. The address is `vercel.authorEmail` in git
-config, defaulting to the one the Vercel account carries; `VERCEL_AUTHOR_CHECK=0`
-skips the check for a commit that genuinely belongs to someone else.
+Fixing the account does not rescue anything already blocked. A blocked
+deployment can never be rebuilt — the API refuses it with
+`deployment_can_never_deploy`, "Please try again from a fresh commit" — so the
+only way to confirm the account is working again is to push a new commit and
+watch what the deploy does.
 
-The hooks only keep the repository consistent. What makes Vercel accept the
-address is on the account: under **Account Settings → Login Connections** the
-GitHub account must be connected and must be the one that authors the commits,
-and under **Account Settings → Email** every address used to author commits
-should be added and verified, which covers the fallback. A commit blocked for
-this reason needs no new commit once the account is fixed — redeploying it from
-the dashboard is enough.
-
-Until then the CLI is the way out, deploying from a tree with no git metadata at
-all so neither check applies:
+### Deploying
 
 ```sh
-d=$(mktemp -d) && git archive HEAD | tar -x -C "$d"
-mkdir -p "$d/.vercel" && cp .vercel/project.json "$d/.vercel/"
-(cd "$d" && vercel deploy --prod)
+npm run deploy               # production
+npm run deploy -- --preview  # a preview URL
 ```
 
-That ships exactly what is committed — `git archive` carries tracked files only,
-so `.cache`, `node_modules` and `.env*` stay out — and the build runs on Vercel
-against the Production environment, so `CONVEX_DEPLOY_KEY` is present and the
-Convex backend ships with it as usual.
+`scripts/deploy.mjs` exports `HEAD` with `git archive` into a temporary
+directory and runs `vercel deploy` there. A CLI deploy carries no commit author,
+so the ownership check does not apply. Exporting rather than uploading the
+working directory is what keeps the deploy honest about what shipped: `git
+archive` carries tracked files only, so `.cache`, `node_modules` and `.env*`
+stay out, and what lands is exactly what is committed. The build still runs on
+Vercel against the Production environment, so `CONVEX_DEPLOY_KEY` is present and
+the Convex backend ships with it as usual.
 
 A production build ships the Convex backend along with the frontend.
 `vercel.json` overrides the build command with:

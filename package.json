@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prepare": "git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks || true"
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
