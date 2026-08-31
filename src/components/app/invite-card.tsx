@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDownIcon, TicketIcon } from "@heroicons/react/24/solid";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import {
   useCallback,
   useEffect,
@@ -19,22 +19,33 @@ import { api } from "../../../convex/_generated/api";
 /**
  * The allowance, live.
  *
- * `undefined` is Convex's loading state and `null` means signed out. Both
- * collapse to "no numbers yet", which is what every caller here wants.
+ * `null` is "no numbers yet" — the state the card draws as a bare rail with no
+ * count beside it — and it covers both of the ways there can be none.
+ *
+ * The query is skipped until Clerk's token has actually reached the Convex
+ * client rather than run and answered `null` for "nobody is signed in". The
+ * answer is the same either way here, but the two are not the same thing, and
+ * the agreement card next door was reading exactly that `null` as a settled
+ * reply and asking accounts that had already agreed to agree again on every
+ * refresh. On a cold load this is a second or two of Clerk booting, which is
+ * why the card can sit on its skeleton for a moment before the pips arrive.
  */
 export function useInvites() {
-  return useQuery(api.invites.mine) ?? null;
+  const { isAuthenticated } = useConvexAuth();
+  return useQuery(api.invites.mine, isAuthenticated ? {} : "skip") ?? null;
 }
 
 /**
  * The allowance, drawn as slots rather than counted in a sentence.
  *
- * Five is small enough to take in at a glance, so the shape of the thing —
- * finite, and nearly gone — reads faster as a row of pips than as a fraction.
- * They fill left to right with what is *spent*, so the blue that is left is
- * the blue you still have.
+ * The allowance is small enough to take in at a glance, so the shape of the
+ * thing — finite, and nearly gone — reads faster as a row of pips than as a
+ * fraction.
+ * The blue is what is left, and it drains right to left, the way a bar that
+ * fills left to right empties — so the run of blue starts at the same edge the
+ * row starts at and shortens towards it as the allowance goes.
  */
-function Pips({ spent, limit }: { spent: number; limit: number }) {
+function Pips({ remaining, limit }: { remaining: number; limit: number }) {
   return (
     <div aria-hidden className="flex gap-1">
       {Array.from({ length: limit }, (_, index) => (
@@ -42,7 +53,7 @@ function Pips({ spent, limit }: { spent: number; limit: number }) {
           key={index}
           className={cn(
             "h-1.5 flex-1 rounded-full transition-colors duration-300",
-            index < spent ? "bg-border-strong" : "bg-primary",
+            index < remaining ? "bg-primary" : "bg-border-strong",
           )}
         />
       ))}
@@ -97,7 +108,6 @@ export function InviteCard() {
 
   const remaining = invites?.remaining ?? 0;
   const limit = invites?.limit ?? 0;
-  const spent = limit - remaining;
   const exhausted = invites !== null && remaining === 0;
 
   // A card reopened onto the last attempt's error — or onto the last one's
@@ -280,7 +290,7 @@ export function InviteCard() {
             {invites === null ? (
               <div className="h-1.5 rounded-full bg-muted" />
             ) : (
-              <Pips spent={spent} limit={limit} />
+              <Pips remaining={remaining} limit={limit} />
             )}
           </div>
         </button>

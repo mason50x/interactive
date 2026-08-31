@@ -42,6 +42,26 @@ export default defineSchema({
     streakCount: v.optional(v.number()),
     streakBest: v.optional(v.number()),
     streakLastDay: v.optional(v.string()),
+
+    /**
+     * The terms this account has accepted, mirrored onto the user.
+     *
+     * The record of the acceptance is the `agreements` row — that is the table
+     * with the index the gate reads and the one that survives a user row being
+     * rebuilt by the Clerk webhook. These two fields are the same fact written
+     * where anyone looking at an account will actually see it: a support
+     * question is always "pull up this user", and an answer that needs a second
+     * table joined by hand is an answer nobody looks up.
+     *
+     * `convex/agreement.ts` writes both in one transaction, so they cannot
+     * disagree. If they ever do, the `agreements` row is the one that counts —
+     * nothing gates on these.
+     *
+     * Optional, because every account that existed before this shipped has
+     * neither, which reads as "has not agreed" without a backfill.
+     */
+    agreementVersion: v.optional(v.number()),
+    agreedAt: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"]),
 
   /**
@@ -83,6 +103,29 @@ export default defineSchema({
   })
     .index("byInviter", ["inviterClerkId"])
     .index("byEmail", ["email"]),
+
+  /**
+   * One row per account that has accepted the terms in the rail's agreement
+   * card, and the gate every activity is behind.
+   *
+   * A row rather than a flag on the user: what is worth keeping is *when* and
+   * *which version*, and both of those are the record if the account is ever
+   * taken down. The row is also written by the account itself — see
+   * `convex/agreement.ts` — so it does not wait on the Clerk webhook that
+   * creates the `users` row, and an account that signed up before that webhook
+   * existed can still agree.
+   *
+   * `version` is what makes the terms re-agreeable. The current version lives
+   * in `convex/agreement.ts`; a row below it reads as not agreed, which is the
+   * whole migration for a change of wording — nobody is grandfathered into
+   * terms they never saw.
+   */
+  agreements: defineTable({
+    clerkId: v.string(),
+    /** The version of the terms this account accepted. */
+    version: v.number(),
+    agreedAt: v.number(),
+  }).index("byClerkId", ["clerkId"]),
 
   /**
    * One row per user, holding the choices that are theirs rather than the

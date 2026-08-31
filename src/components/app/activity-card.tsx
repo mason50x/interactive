@@ -1,8 +1,11 @@
 "use client";
 
+import { LockClosedIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useState } from "react";
+import { useAgreement } from "@/components/app/agreement-provider";
 import { type Activity, popularityLabel, thumbnailSrc } from "@/lib/activity";
+import { requestAgreement } from "@/lib/agreement";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -58,17 +61,33 @@ export function ActivityCard({
   const art = artFailed ? null : thumbnailSrc(activity);
   const meta = GENRES[activity.genre];
 
-  return (
-    <Link
-      href={`/dashboard/activities/${activity.slug}`}
-      style={{ "--hue": meta.hue } as React.CSSProperties}
-      className={cn(
-        "group relative block aspect-video w-full overflow-hidden rounded-xl",
-        "border border-border bg-surface-muted",
-        "transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-lg",
-        "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      )}
-    >
+  /**
+   * Until the terms are accepted this is not a link.
+   *
+   * Explicitly `=== false` rather than falsy: the context is `null` until the
+   * answer is known, and locking all 318 tiles on a maybe — then unlocking
+   * them — is a worse first second than letting a click through to a route
+   * that refuses on the server. The dashboard layout renders the answer in, so
+   * that window is normally no window at all. See `AgreementProvider` and
+   * `src/lib/agreement-gate.ts` — this is the courtesy, not the gate.
+   */
+  const locked = useAgreement()?.agreed === false;
+
+  const hue = { "--hue": meta.hue } as React.CSSProperties;
+
+  const shell = cn(
+    "group relative block aspect-video w-full overflow-hidden rounded-xl",
+    "border border-border bg-surface-muted",
+    "transition-[transform,box-shadow] duration-300",
+    // A tile that lifts under the pointer is a tile saying it will open. The
+    // locked one still responds — it opens the agreement — but it says so with
+    // the plate over it rather than by pretending.
+    !locked && "hover:-translate-y-0.5 hover:shadow-lg",
+    "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+  );
+
+  const face = (
+    <>
       {art ? (
         /* Deliberately not `next/image`. At six kilobytes there is nothing for
            an optimiser to save, and routing 318 tiles through it would bill a
@@ -130,9 +149,47 @@ export function ActivityCard({
         {/* Sits in the space the plate vacates. At rest it is directly behind
             the title at zero opacity, so it costs no height. */}
         <p className="label-small absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-          {note ?? popularityLabel(activity)}
+          {locked ? "Agreement required" : (note ?? popularityLabel(activity))}
         </p>
       </div>
+    </>
+  );
+
+  // Clicking it is not nothing, and that is the point: a dead tile leaves the
+  // person to work out why on their own. This one asks the rail for the
+  // agreement card, which opens with the field focused — see
+  // `requestAgreement`. The label carries the reason too, because a lock glyph
+  // over the art is only a reason if you can see it.
+  if (locked) {
+    return (
+      <button
+        type="button"
+        onClick={requestAgreement}
+        aria-label={`${activity.title} — accept the agreement to open it`}
+        style={hue}
+        className={cn(shell, "cursor-pointer text-left")}
+      >
+        {face}
+
+        {/* Over the scrims rather than under them, so it reads on the bright
+            art as well as the dark. The veil is what makes the whole tile look
+            held back; the chip is what says by what. */}
+        <div className="absolute inset-0 bg-black/45" />
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-white/85 backdrop-blur-sm">
+          <LockClosedIcon className="size-3" />
+          <span className="label-small">Locked</span>
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={`/dashboard/activities/${activity.slug}`}
+      style={hue}
+      className={shell}
+    >
+      {face}
     </Link>
   );
 }

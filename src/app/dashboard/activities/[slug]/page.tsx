@@ -2,8 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ActivityFrame } from "@/components/app/activity-frame";
+import { AgreementRequired } from "@/components/app/agreement-required";
 import { ViewRecorder } from "@/components/app/view-recorder";
 import { findActivity } from "@/lib/activities";
+import { hasAgreed } from "@/lib/agreement-gate";
 import { activityFrameSrc } from "@/lib/learn";
 
 export async function generateMetadata({
@@ -33,6 +35,19 @@ export default async function ActivityPage({
 
   const activity = findActivity(slug);
   if (!activity) notFound();
+
+  // The gate, on the side that decides. The tiles in the catalogue are inert
+  // until the terms are accepted, but a tile is a courtesy — this is the
+  // check, and `/learn/<slug>` below it makes the same one, because the URL in
+  // the frame is reachable without ever passing through this page.
+  //
+  // Refused in place rather than redirected: the person asked for this
+  // activity, and answering with a different page and no explanation is how a
+  // block turns into a bug report. `ViewRecorder` is deliberately below the
+  // branch — nothing was opened, so nothing is recorded as opened.
+  if (!(await hasAgreed())) {
+    return <AgreementRequired title={activity.title} />;
+  }
 
   return (
     <>

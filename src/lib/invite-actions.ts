@@ -12,7 +12,7 @@ import { inviteUser, revokeInvitation } from "./invitations";
  *
  * The work is split across two systems and neither half can do it alone.
  * Convex owns the accounting — it is the only one of the two that can count
- * five transactionally — and Clerk owns the invitation itself, because
+ * the allowance transactionally — and Clerk owns the invitation itself, because
  * `invitations.createInvitation` is a Backend API call and the secret key
  * lives here, in Next.js, not in the browser and not in Convex. So this file
  * is the seam: it authenticates the caller, has Convex reserve a credit, makes
@@ -63,7 +63,7 @@ const refusals: Record<string, string> = {
  * Spends one credit and has Clerk mail the invitation.
  *
  * The order is the whole design: reserve, then send, then confirm. Reserving
- * first is what stops two quick clicks from both passing a five-credit check;
+ * first is what stops two quick clicks from both passing the same check;
  * confirming last is what keeps a Clerk failure from costing a credit.
  */
 export async function sendInvite(email: string): Promise<InviteResult> {
@@ -115,7 +115,7 @@ export async function sendInvite(email: string): Promise<InviteResult> {
  *
  * Clerk goes first. Refunding before the link is dead would leave an
  * invitation someone can still act on that this side has stopped counting —
- * a sixth account from a five-invite allowance.
+ * one more account than the allowance actually pays for.
  */
 export async function revokeInvite(inviteId: string): Promise<InviteResult> {
   const session = await convexAuth();

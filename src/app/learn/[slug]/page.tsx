@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HostedActivity } from "@/components/activity/hosted-activity";
+import { hasAgreed } from "@/lib/agreement-gate";
 import { activityBundleUrl } from "@/lib/assets";
 import { findActivity } from "@/lib/activities";
 
@@ -30,6 +31,14 @@ export default async function LearnPage({ params }: PageProps<"/learn/[slug]">) 
 
   const activity = findActivity(slug);
   if (!activity) notFound();
+
+  // The same gate the dashboard page applies, applied again here because this
+  // is where the bundle URL is actually resolved and this page is reachable on
+  // its own — the session gets it from `src/proxy.ts` whether or not it came
+  // through a frame. A 404 rather than an explanation: this page is only ever
+  // seen inside an iframe, and the page that owns that frame has already said
+  // why. See `src/lib/agreement-gate.ts`.
+  if (!(await hasAgreed())) notFound();
 
   // `null` means no asset origin is configured, so there is nowhere to load
   // this from. A 404 is the honest answer and matches every other way this

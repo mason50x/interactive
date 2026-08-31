@@ -11,16 +11,21 @@ import {
 /**
  * The per-account allowance, and the only place it is written down.
  *
- * Everyone gets the same five, invited accounts included: a new user's budget
- * is five minus the rows they own, and a brand new user owns none. There is
- * deliberately no grant step and no counter to seed — being a user *is* the
- * grant, so nothing has to run at sign-up for the fifth generation of invitee
- * to get the same allowance as the first.
+ * Everyone gets the same allowance, invited accounts included: a user's budget
+ * is this number minus the rows they own, and a brand new user owns none.
+ * There is deliberately no grant step and no counter to seed — being a user
+ * *is* the grant, so nothing has to run at sign-up for the tenth generation of
+ * invitee to get the same allowance as the first.
+ *
+ * Because the budget is derived rather than stored, lowering this number does
+ * not disturb invitations already sent: a user holding more live rows than the
+ * new limit simply has nothing remaining (`mine` floors the subtraction at
+ * zero) and their outstanding invitations stay valid.
  *
  * Not exported: Convex modules are function modules, and the UI has no
  * business hardcoding this anyway. `mine` hands it out.
  */
-const INVITE_LIMIT = 5;
+const INVITE_LIMIT = 2;
 
 /**
  * Why the quota lives here and the sending lives in Next.js.

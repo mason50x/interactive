@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
+import { AgreementCard } from "@/components/app/agreement-card";
 import { InviteCard } from "@/components/app/invite-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import { usePreferences } from "@/components/preferences-provider";
@@ -226,6 +227,11 @@ export function AppSidebar() {
           );
         })}
       </ul>
+
+      {/* The terms sit above the allowance because they outrank it: until they
+          are accepted the catalogue is inert and nothing opens, so this is the
+          one control in the rail that has to be found. See `AgreementCard`. */}
+      <AgreementCard />
 
       {/* The allowance sits above the account button rather than inside its
           menu: it is the one thing in this chrome that moves on its own, and

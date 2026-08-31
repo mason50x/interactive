@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { StreakCelebration } from "@/components/app/streak-celebration";
+import { useWelcomePlaying } from "@/components/welcome-provider";
 import { api } from "../../convex/_generated/api";
 
 export type Streak = {
@@ -47,6 +48,14 @@ export function useStreak() {
  */
 export function StreakProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
+
+  // A first ever sign-in claims its first day, so `extended` and the welcome
+  // unlock land on the same tick — two overlays, one on top of the other,
+  // neither readable. The claim still happens on time and the number is still
+  // right; only the celebration waits, and it waits by not being mounted,
+  // which is what lets it start its own timers from the moment it appears
+  // rather than from the moment it was owed.
+  const welcoming = useWelcomePlaying();
 
   // Read once and kept. This is a query argument, so a fresh value every
   // render would mean a fresh subscription every render. A tab left open
@@ -108,7 +117,7 @@ export function StreakProvider({ children }: { children: ReactNode }) {
       {/* Mounted only for the few seconds it is on screen, so it starts each
           celebration from a clean slate rather than from the end of the last
           one's exit. */}
-      {celebrating !== null && (
+      {celebrating !== null && !welcoming && (
         <StreakCelebration
           streak={celebrating}
           best={streak?.best ?? celebrating}
