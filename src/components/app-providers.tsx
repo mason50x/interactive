@@ -7,7 +7,7 @@ import { StoreUser } from "@/components/store-user";
 import { ThemeProvider } from "@/components/theme-provider";
 
 /**
- * Everything the app needs and a game must never get.
+ * Everything the app needs and an activity must never get.
  *
  * This sits in the three route trees that make up the app — `(site)`, `/auth`,
  * `/dashboard` — rather than in the root layout, because the root layout also
@@ -15,7 +15,7 @@ import { ThemeProvider } from "@/components/theme-provider";
  * the player origin and set its cookies there, which is precisely the thing
  * the separate origin exists to prevent: `src/lib/player.ts` has the reasoning.
  *
- * Analytics rides along for the same reason. A game frame firing its own
+ * Analytics rides along for the same reason. An activity frame firing its own
  * pageviews would double-count every session.
  *
  * The theme is here rather than in the root layout for a third reason: the

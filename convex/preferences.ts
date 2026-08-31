@@ -62,9 +62,10 @@ export const mine = query({
  *
  * The values are checked for shape, not for meaning. `accent` is an id the
  * client resolves against its own palette and falls back on if it is unknown,
- * and `panicUrl` is required to be an ordinary http(s) URL: this is the only
- * value in the table that later becomes a navigation, so it is the only one
- * where a bad string would do something rather than be ignored.
+ * and `panicUrl` is required to be `about:blank` or an ordinary http(s) URL:
+ * this is the only value in the table that later becomes a navigation, so it
+ * is the only one where a bad string would do something rather than be
+ * ignored.
  */
 export const save = mutation({
   args: {
@@ -104,10 +105,17 @@ export const save = mutation({
  * the ones that matter — this string is handed to `location.replace` on the
  * app's own origin, which would run them as us — and an unparseable string is
  * refused for the same reason: whatever it is, it is not somewhere to go.
+ *
+ * `about:blank` — the default, and the fastest of the destinations, since the
+ * browser has it already — is the one exception, matched as a whole string so
+ * that the rest of the `about:` family stays out.
  */
 function safeUrl(url: string): string {
+  const trimmed = url.trim();
+  if (trimmed === "about:blank") return trimmed;
+
   try {
-    const parsed = new URL(url.trim());
+    const parsed = new URL(trimmed);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
     return parsed.toString().slice(0, 512);
   } catch {

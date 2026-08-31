@@ -17,6 +17,11 @@ const POP_MS = 800;
  * a name: how many days in a row you have turned up. When there is a
  * subscription to read, it goes beside this rather than instead of it.
  *
+ * A flame and a count, and nothing else. The chip sits on the page's own card
+ * ground — white over the light rail, a step up out of the dark one — and is
+ * lifted off it by a shadow rather than tinted into it, so the fire is the
+ * only colour in the shape and the word after the number is the only word.
+ *
  * The number is the account's, so it comes from the account's subscription and
  * not from a prop — `UserMenu` should not have to thread a streak through
  * itself to reach the one span that draws it.
@@ -51,7 +56,7 @@ export function StreakBadge() {
   // above it does not shift when the number lands. The row itself is a fixed
   // `h-14`, so this is about the two lines inside it, not the rail.
   if (streak === null) {
-    return <span aria-hidden className="mt-1 block h-[1.0625rem]" />;
+    return <span aria-hidden className="mt-1 block h-[1.1875rem]" />;
   }
 
   const lit = current > 0;
@@ -59,19 +64,19 @@ export function StreakBadge() {
   return (
     <span
       className={cn(
-        // A gradient rather than a flat tint: the chip is lit from the flame
-        // end, which is the side the fire is on.
-        "mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-gradient-to-r from-fire/[0.18] to-fire/[0.06] py-[0.0625rem] pr-2 pl-1 text-[0.6875rem] font-medium text-fire-ink ring-1 ring-fire/20 ring-inset",
-        !lit && "bg-none text-muted-foreground ring-border",
+        // Raised, not tinted: a card-coloured chip with a hairline and a soft
+        // drop under it. The hairline flips with the theme because a shadow
+        // alone is invisible on the dark rail, which is nearly the same value
+        // as the shadow itself.
+        "mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-card py-[0.125rem] pr-2 pl-1.5 text-[0.6875rem] font-medium text-fire-ink shadow-sm shadow-black/[0.08] ring-1 ring-black/[0.06] ring-inset dark:ring-white/[0.07]",
+        !lit && "text-muted-foreground",
         // The transform has to be its own element's, and this span is the one
         // that has a shape worth scaling.
         popping && "animate-streak-pop",
       )}
     >
       <Flame className="size-3.5 shrink-0" lit={lit} />
-      <span className="truncate tabular-nums">
-        {lit ? streakLabel(current) : "Start a streak"}
-      </span>
+      <span className="truncate tabular-nums">{streakLabel(current)}</span>
     </span>
   );
 }

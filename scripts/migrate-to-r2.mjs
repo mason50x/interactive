@@ -21,7 +21,7 @@
  *
  * ## What gets staged
  *
- * Only the directories named in `src/lib/games.catalogue.json`, the tile art,
+ * Only the directories named in `src/lib/activities.catalogue.json`, the tile art,
  * and `storage/ruffle` — see `RUFFLE_SOURCE`. Not upstream's whole tree: its
  * `apps/` and `seraphim/` directories are the proxy and site chrome we do not
  * serve, the rest of `storage/` is theirs, and the ROM-bearing game
@@ -54,7 +54,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const CATALOGUE = join(ROOT, "src", "lib", "games.catalogue.json");
+const CATALOGUE = join(ROOT, "src", "lib", "activities.catalogue.json");
 
 /**
  * Where the upstream checkout is staged, and deliberately not a temp dir.
@@ -75,13 +75,20 @@ const UPSTREAM_REF = "main";
 
 /** Upstream's tile art, and where it lands: the repo, not the bucket. Under
  *  2 MB in total, so it ships with the code — see `THUMBNAIL_PATH` in
- *  `src/lib/games.ts`. */
+ *  `src/lib/activity.ts`. */
 const THUMBNAILS_SOURCE = "images/thumbnails";
 const PUBLIC_THUMBNAILS = join(ROOT, "public", "thumbnails");
 
-/** Bundle prefix in the bucket. Must match `GAMES_PREFIX` in
- *  `src/lib/assets.ts`, which is what builds the URLs to read them back. */
-const GAMES_PREFIX = "games";
+/** Upstream Seraph lays its bundles out under `games/<slug>` — that is the
+ *  sparse-checkout path and the staging layout, so it is fixed by upstream. */
+const UPSTREAM_PREFIX = "games";
+
+/** Prefix the bundles land under in the bucket. Must match `ACTIVITIES_PREFIX`
+ *  in `src/lib/assets.ts`, which is what builds the URLs to read them back.
+ *  Deliberately not `games/`: the client carries no such path — see the note
+ *  in `src/lib/assets.ts`. rclone copies local `<staging>/games` into this
+ *  destination prefix, so the two names differ on purpose. */
+const BUCKET_PREFIX = "activities";
 
 /**
  * Ruffle, the Flash emulator, and the one path outside `games/` we upload.
@@ -277,7 +284,7 @@ async function main() {
     await stat(join(staging, ".git"));
     await Promise.all(
       games.map((game) =>
-        stat(join(staging, GAMES_PREFIX, game.slug, "index.html")),
+        stat(join(staging, UPSTREAM_PREFIX, game.slug, "index.html")),
       ),
     );
     reusable = true;
@@ -315,7 +322,7 @@ async function main() {
         "-C", staging, "sparse-checkout", "set",
         THUMBNAILS_SOURCE,
         RUFFLE_SOURCE,
-        ...games.map((game) => `${GAMES_PREFIX}/${game.slug}`),
+        ...games.map((game) => `${UPSTREAM_PREFIX}/${game.slug}`),
       ]);
 
       console.log("\n→ materialising files");
@@ -328,7 +335,7 @@ async function main() {
     const absent = [];
     for (const game of games) {
       try {
-        await stat(join(staging, GAMES_PREFIX, game.slug, "index.html"));
+        await stat(join(staging, UPSTREAM_PREFIX, game.slug, "index.html"));
       } catch {
         absent.push(game.slug);
       }
@@ -345,13 +352,13 @@ async function main() {
     console.log("\n→ patching game pages");
     let patched = 0;
     for (const game of games) {
-      const directory = join(staging, GAMES_PREFIX, game.slug);
+      const directory = join(staging, UPSTREAM_PREFIX, game.slug);
       for (const file of await readdir(directory, { recursive: true })) {
         if (!file.endsWith(".html")) continue;
         const path = join(directory, file);
         const original = await readFile(path, "utf8");
         const rewritten = patchGameHtml(original);
-        assertPatched(join(GAMES_PREFIX, game.slug, file), rewritten);
+        assertPatched(join(UPSTREAM_PREFIX, game.slug, file), rewritten);
         if (rewritten !== original) {
           await writeFile(path, rewritten);
           patched += 1;
@@ -397,8 +404,8 @@ async function main() {
       "rclone",
       [
         "sync",
-        join(staging, GAMES_PREFIX),
-        `R2:${bucket}/${GAMES_PREFIX}`,
+        join(staging, UPSTREAM_PREFIX),
+        `R2:${bucket}/${BUCKET_PREFIX}`,
         // Cone-mode sparse checkout brings down files sitting beside the
         // directories we asked for, which includes upstream's own catalogue
         // page. Serving it would publish a game list linking to the titles
@@ -422,7 +429,7 @@ async function main() {
     );
 
     // Thumbnails go into the repo, not the bucket — see `THUMBNAIL_PATH` in
-    // `src/lib/games.ts` for why. Refreshed here rather than by hand so that
+    // `src/lib/activity.ts` for why. Refreshed here rather than by hand so that
     // one command keeps the art, the catalogue, and the bundles agreeing:
     // a game added upstream cannot end up with a tile pointing at art nobody
     // copied.

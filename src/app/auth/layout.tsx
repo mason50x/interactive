@@ -60,14 +60,14 @@ export default function AuthLayout({ children }: LayoutProps<"/auth">) {
           <p className="text-center text-[0.8125rem] text-faint">
             By continuing you agree to our{" "}
             <Link
-              href="#"
+              href="/tos"
               className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
             >
               Terms
             </Link>{" "}
             and{" "}
             <Link
-              href="#"
+              href="/pp"
               className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
             >
               Privacy Policy

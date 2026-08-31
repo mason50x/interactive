@@ -1,6 +1,6 @@
-import { SignUpButton } from "@clerk/nextjs";
 import { hero } from "@/lib/content";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { AuthButton } from "@/components/auth-button";
+import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { MarkedText } from "./marked-text";
 
@@ -16,9 +16,7 @@ export function Hero() {
           className="animate-rise-in mt-10 flex flex-col gap-4 sm:flex-row sm:items-center"
           style={{ animationDelay: "120ms" }}
         >
-          <SignUpButton>
-            <Button size="xl">{hero.primaryCta}</Button>
-          </SignUpButton>
+          <AuthButton size="xl">{hero.primaryCta}</AuthButton>
           <ButtonLink href="#platform" variant="secondary" size="xl">
             {hero.secondaryCta}
             <span aria-hidden>↓</span>

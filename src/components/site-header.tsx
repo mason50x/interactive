@@ -6,6 +6,8 @@ import { XMarkIcon as XMarkIconSolid } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { headerMenus, site, type HeaderMenu } from "@/lib/content";
+import { useAuthPending } from "@/components/auth-button";
+import { Spinner } from "@/components/ui/spinner";
 import { Wordmark } from "@/components/wordmark";
 import {
   NavigationMenu,
@@ -150,6 +152,12 @@ export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  // One per trigger: the mobile sheet's "Sign in" is a separate button from the
+  // bar's, and only the one actually clicked should spin.
+  const signIn = useAuthPending();
+  const signUp = useAuthPending();
+  const mobileSignIn = useAuthPending();
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -223,12 +231,22 @@ export function SiteHeader() {
 
           <Show when="signed-out">
             <SignInButton>
-              <button className="hidden cursor-pointer rounded-full px-3 py-2 text-[0.9375rem] text-foreground/75 transition-colors hover:text-foreground sm:block">
+              <button
+                aria-busy={signIn.pending}
+                onClick={signIn.start}
+                className="hidden cursor-pointer items-center gap-2 rounded-full px-3 py-2 text-[0.9375rem] text-foreground/75 transition-colors hover:text-foreground sm:inline-flex"
+              >
+                {signIn.pending && <Spinner aria-hidden className="size-3.5" />}
                 Sign in
               </button>
             </SignInButton>
             <SignUpButton>
-              <button className="h-10 cursor-pointer rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]">
+              <button
+                aria-busy={signUp.pending}
+                onClick={signUp.start}
+                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]"
+              >
+                {signUp.pending && <Spinner aria-hidden className="size-3.5" />}
                 Start Learning
               </button>
             </SignUpButton>
@@ -273,7 +291,14 @@ export function SiteHeader() {
 
         <Show when="signed-out">
           <SignInButton>
-            <button className="mt-6 cursor-pointer text-[0.9375rem] text-muted-foreground">
+            <button
+              aria-busy={mobileSignIn.pending}
+              onClick={mobileSignIn.start}
+              className="mt-6 inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] text-muted-foreground"
+            >
+              {mobileSignIn.pending && (
+                <Spinner aria-hidden className="size-3.5" />
+              )}
               Sign in
             </button>
           </SignInButton>

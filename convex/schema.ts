@@ -115,11 +115,110 @@ export default defineSchema({
     accent: v.optional(v.string()),
     /**
      * The panic key: a canonical combo string (`"shift+`"`, `"f9"`) and the
-     * page to replace the tab with. Held together because either one alone is
-     * not a working setting.
+     * page to replace the tab with — `about:blank` by default, which is the
+     * one destination that needs no request to reach. Held together because
+     * either one alone is not a working setting.
      */
     panicEnabled: v.optional(v.boolean()),
     panicKey: v.optional(v.string()),
     panicUrl: v.optional(v.string()),
   }).index("byClerkId", ["clerkId"]),
+
+  /**
+   * One row per account per activity, holding everything that account has ever
+   * done with it.
+   *
+   * A row per *view* would be the honest log and is what a real analytics
+   * pipeline keeps. Nothing here ever asks a question that needs one: the home
+   * page wants "what do I open most", "what did I open last", and "how long
+   * have I spent", and all three are a running total that a view folds into.
+   * Keeping the total means the reads are a handful of indexed rows rather
+   * than a scan over every session an account has ever had, and it bounds the
+   * table at one row per activity you have opened — 318 in the worst case,
+   * against a log that grows forever.
+   *
+   * What it gives up is history: this cannot say what you opened on a Tuesday
+   * in March. `userDays` carries the shape of that answer at day resolution,
+   * which is the only resolution anything on the dashboard draws.
+   *
+   * `count` is opens and `seconds` is time actually spent with the frame on
+   * screen, and they are deliberately two numbers. Opening something and
+   * bouncing straight out is a view and nearly no seconds, which is exactly
+   * the difference between an activity you keep trying and one you keep using.
+   */
+  views: defineTable({
+    clerkId: v.string(),
+    /** A slug from `src/lib/activities.ts`. Not validated against the
+     *  catalogue here — see `convex/views.ts` for why the shape is the check. */
+    slug: v.string(),
+    /** Times this account has opened it. */
+    count: v.number(),
+    /** Seconds the frame has been open *and visible*, accumulated. */
+    seconds: v.number(),
+    firstViewedAt: v.number(),
+    lastViewedAt: v.number(),
+  })
+    // The upsert path: find this account's row for this activity, or learn there
+    // isn't one.
+    .index("byUserActivity", ["clerkId", "slug"])
+    // "Your favourites" — descending on this index is most-viewed-first,
+    // without reading a row that isn't in the answer.
+    .index("byUserCount", ["clerkId", "count"])
+    // "Jump back in", the same way.
+    .index("byUserLastViewed", ["clerkId", "lastViewedAt"]),
+
+  /**
+   * The global daily board: one row per activity per day, across everyone.
+   *
+   * Separate from `views` because it answers a question no per-account table
+   * can — what the *room* is opening — and because it has to be cheap to read
+   * top-first. A "most popular today" computed by scanning every account's
+   * rows would grow with the user count on every dashboard load; this is one
+   * indexed range over a table whose size is bounded by (activities opened
+   * today), and old days are simply never read again.
+   *
+   * ## The day here is UTC, and the day in `userDays` is not
+   *
+   * A global bucket has to have one definition or it is not a bucket: if the
+   * key were each reader's local day, someone in Auckland and someone in Los
+   * Angeles would write the same moment into two different rows and the
+   * board would be counting two overlapping half-days. So this one is
+   * UTC and the same for everybody. `userDays` is the opposite case — it is a
+   * person's own record of their own day, and their midnight is the only
+   * boundary that makes sense there.
+   */
+  activityDays: defineTable({
+    /** `YYYY-MM-DD`, UTC. */
+    day: v.string(),
+    slug: v.string(),
+    views: v.number(),
+    seconds: v.number(),
+  })
+    .index("byDayActivity", ["day", "slug"])
+    // The read: `eq(day)` then descending is the top of today's board.
+    .index("byDayViews", ["day", "views"]),
+
+  /**
+   * One row per account per day they were here, in *their* local day.
+   *
+   * Two things read it. The stats card sums `seconds` over a window — today,
+   * and the last seven days — which is a range over this index and nothing
+   * else. And the streak strip asks which of the last seven days exist at all,
+   * because a row existing is the record that the day was claimed.
+   *
+   * `visited` is written by the streak claim and `views`/`seconds` by the
+   * viewer, so a row can exist with zero of either: turning up and opening
+   * nothing is still a day on the streak. The reverse cannot happen — the
+   * claim runs when the app shell mounts, which is strictly before any activity
+   * can be opened inside it.
+   */
+  userDays: defineTable({
+    clerkId: v.string(),
+    /** `YYYY-MM-DD` in the account's local day — see `convex/days.ts`. */
+    day: v.string(),
+    /** The streak claim landed on this day. */
+    visited: v.boolean(),
+    views: v.number(),
+    seconds: v.number(),
+  }).index("byUserDay", ["clerkId", "day"]),
 });

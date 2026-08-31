@@ -81,7 +81,7 @@ function DeadLink() {
 }
 
 function WrongAccount({ ticket }: { ticket: string }) {
-  // Coming back here rather than to the sign-up form keeps the ticket in play:
+  // Coming back here rather than to the sign-up form keeps the ticket alive:
   // once the session is gone this page routes it onward exactly as it would
   // have on the first visit.
   const returnTo = `/auth/accept-invite?${TICKET_PARAM}=${encodeURIComponent(ticket)}`;

@@ -1,4 +1,12 @@
 import { v } from "convex/values";
+import {
+  clampOffset,
+  dayKey,
+  dayWindow,
+  foldUserDay,
+  userDaysBetween,
+  DAY_MS,
+} from "./days";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 
 /**
@@ -8,42 +16,18 @@ import { mutation, query, type QueryCtx } from "./_generated/server";
  * costs more than the single indexed document read the caller was already
  * doing. Two functions use it — a read that says what the streak is *now*,
  * and a write that claims today — and both derive the day the same way, from
- * the one helper below.
+ * `convex/days.ts`, which is also where the reasoning about local midnight and
+ * the client-supplied offset lives.
  *
- * ## Why the client sends an offset and not a date
- *
- * The day boundary has to be the user's local midnight: a streak counted in
- * UTC breaks at 5pm for half the world. Only the browser knows which midnight
- * that is, so it has to say — but what it sends is `getTimezoneOffset()`, a
- * number of minutes, never the date itself. The clock stays the server's, so
- * the worst a client can do by lying is move its own midnight, which is the
- * one thing it is entitled to decide. A client-supplied `"2026-08-31"` would
- * instead be a free extra day, every day.
+ * The claim additionally writes a row in `userDays`. That table is not the
+ * streak — the streak is still the three fields on the user, and still needs
+ * no history to be correct — it is the record of *which* days, which is what
+ * the strip of seven dots on the home page draws and what the counters beside
+ * it sum over.
  */
 
-/** Milliseconds in a day. Used only to step one whole day back. */
-const DAY_MS = 86_400_000;
-
-/**
- * Real UTC offsets run from −12:00 to +14:00. Anything outside that is a
- * broken or hostile client, and the clamp keeps it from shifting the day key
- * far enough to matter rather than rejecting the whole call over it.
- */
-function clampOffset(minutes: number): number {
-  if (!Number.isFinite(minutes)) return 0;
-  return Math.max(-14 * 60, Math.min(12 * 60, Math.round(minutes)));
-}
-
-/**
- * The `YYYY-MM-DD` the given instant falls on, in the caller's local day.
- *
- * `Date.prototype.getTimezoneOffset` reports minutes *behind* UTC — UTC−5 is
- * `300` — so subtracting it slides the instant onto the caller's wall clock,
- * where `toISOString` (which is always UTC) then reads off the right date.
- */
-function dayKey(atMs: number, offsetMinutes: number): string {
-  return new Date(atMs - offsetMinutes * 60_000).toISOString().slice(0, 10);
-}
+/** How many days the strip on the home page shows. */
+const WEEK = 7;
 
 async function callerRow(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -112,6 +96,58 @@ export const mine = query({
   },
 });
 
+/** One dot on the home page's strip. */
+export type StreakDay = {
+  /** `YYYY-MM-DD` in the caller's local day. */
+  day: string;
+  /** Whether the day was claimed. The last entry is today. */
+  visited: boolean;
+  /** Seconds spent that day, which is what makes a lit dot vary in weight. */
+  seconds: number;
+};
+
+/**
+ * The last seven days, oldest first, always exactly seven long.
+ *
+ * The missing days are filled in here rather than left for the client to
+ * notice, because "did nothing on Tuesday" and "there is no Tuesday in this
+ * array" draw the same dot and only one of them is a shape a component can
+ * map over without guarding every index.
+ *
+ * Separate from `mine` rather than folded into it: `mine` is subscribed to by
+ * the badge in the rail on every page of the app, and there is no reason for a
+ * chip showing one number to also be watching seven rows it never draws.
+ */
+export const week = query({
+  args: { tzOffsetMinutes: v.number() },
+  handler: async (ctx, { tzOffsetMinutes }): Promise<StreakDay[]> => {
+    const offset = clampOffset(tzOffsetMinutes);
+    const days = dayWindow(dayKey(Date.now(), offset), WEEK);
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      return days.map((day) => ({ day, visited: false, seconds: 0 }));
+    }
+
+    const rows = await userDaysBetween(
+      ctx,
+      identity.subject,
+      days[0],
+      days[days.length - 1],
+    );
+    const byDay = new Map(rows.map((row) => [row.day, row]));
+
+    return days.map((day) => {
+      const row = byDay.get(day);
+      return {
+        day,
+        visited: row?.visited ?? false,
+        seconds: row?.seconds ?? 0,
+      };
+    });
+  },
+});
+
 /**
  * What a claim tells the client.
  *
@@ -167,6 +203,12 @@ export const claimToday = mutation({
       streakBest: best,
       streakLastDay: today,
     });
+
+    // The day's own row, so the strip has something to light. Inside the same
+    // branch as the patch above, which is what keeps this at one write per day
+    // rather than one per page load: every later call today returns at the
+    // `streakLastDay === today` check and never reaches here.
+    await foldUserDay(ctx, row.clerkId, today, { visited: true });
 
     return {
       current,

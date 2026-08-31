@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-urls.mjs && concurrently -n next,convex -c cyan,magenta --kill-others \"npm:dev:next\" \"npm:dev:convex\"",
+    "domains": "node scripts/domains.mjs",
     "dev:next": "next dev",
     "dev:convex": "convex dev",
     "build": "next build",
@@ -22,6 +23,7 @@
     "postprocessing": "^6.39.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "shadcn": "^4.19.0",
     "svix": "^2.1.0",
     "tailwind-merge": "^3.6.0",

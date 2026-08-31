@@ -4,8 +4,7 @@ import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useDeferredValue, useMemo, useState } from "react";
 import { ActivityShelf } from "@/components/app/activity-shelf";
 import { useSearch } from "@/components/app/search-provider";
-import type { Genre } from "@/lib/games";
-import { GAMES, SHELVES, searchGames } from "@/lib/games";
+import { filterActivities, type Genre, type Shelf } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +18,17 @@ import { cn } from "@/lib/utils";
  * design, no layout that appears only when you type, and the thing you were
  * looking at stays where it was on screen while the set shrinks under it.
  *
- * All 318 entries are in the client bundle. That sounds worse than it is — the
- * catalogue is six short fields per game, about 10 KB gzipped, and shipping it
- * means search is instant and offline: no route handler, no request per
- * keystroke, no loading state to design.
+ * The shelves arrive as a prop rather than as an import, and that is a
+ * boundary, not a style choice. Importing the catalogue here would put all 318
+ * entries into a `/_next/static` chunk, which is served with no session in
+ * front of it — the route would be gated and the data would not. As a prop it
+ * travels in this page's RSC payload instead, behind the same `auth.protect()`
+ * as everything else on it. See `src/lib/activities.ts`.
+ *
+ * What does not change is the filtering: the whole catalogue is still in the
+ * browser once the page has loaded — six short fields per activity, about
+ * 10 KB gzipped — so search stays instant and local. No route handler, no
+ * request per keystroke, no loading state to design.
  *
  * The 318 thumbnails are *not* eagerly loaded. Every `<img>` is lazy, and a
  * card sitting off the right-hand end of its row counts as off-screen, so an
@@ -31,8 +37,19 @@ import { cn } from "@/lib/utils";
 
 type Sort = "popular" | "title";
 
-export function ActivitiesBrowser() {
+export function ActivitiesBrowser({
+  shelves: catalogue,
+}: {
+  shelves: readonly Shelf[];
+}) {
   const { query, setQuery } = useSearch();
+
+  // The shelves partition the catalogue, so this is its size. Counted here
+  // rather than passed alongside, so there is no second number to keep in step.
+  const total = useMemo(
+    () => catalogue.reduce((sum, shelf) => sum + shelf.activities.length, 0),
+    [catalogue],
+  );
 
   const [genre, setGenre] = useState<Genre | "all">("all");
   const [sort, setSort] = useState<Sort>("popular");
@@ -44,36 +61,33 @@ export function ActivitiesBrowser() {
   const needle = deferred.trim();
   const searching = needle.length > 0;
 
-  // A set rather than a list, because the result has to be intersected with
-  // each shelf and `searchGames` already walks the catalogue once.
-  const matches = useMemo(
-    () => (searching ? new Set(searchGames(needle).map((g) => g.slug)) : null),
-    [needle, searching],
-  );
-
   const shelves = useMemo(
     () =>
-      SHELVES.filter((shelf) => genre === "all" || shelf.genre === genre)
+      catalogue
+        .filter((shelf) => genre === "all" || shelf.genre === genre)
         .map((shelf) => {
-          const games = matches
-            ? shelf.games.filter((game) => matches.has(game.slug))
-            : shelf.games;
+          // Per shelf rather than once over the whole catalogue and then
+          // intersected: the shelves partition it, so the two are the same set
+          // and this way is one pass instead of a pass plus a lookup per card.
+          const activities = searching
+            ? filterActivities(shelf.activities, needle)
+            : shelf.activities;
 
           return {
             genre: shelf.genre,
             // `SHELVES` is already rank-ascending, so "popular" is the array
             // as it stands and only the alphabetical order costs a sort.
-            games:
+            activities:
               sort === "title"
-                ? [...games].sort((a, b) => a.title.localeCompare(b.title))
-                : games,
+                ? [...activities].sort((a, b) => a.title.localeCompare(b.title))
+                : activities,
           };
         })
-        .filter((shelf) => shelf.games.length > 0),
-    [genre, matches, sort],
+        .filter((shelf) => shelf.activities.length > 0),
+    [catalogue, genre, needle, searching, sort],
   );
 
-  const total = shelves.reduce((sum, shelf) => sum + shelf.games.length, 0);
+  const shown = shelves.reduce((sum, shelf) => sum + shelf.activities.length, 0);
 
   return (
     <div className="flex flex-col gap-10">
@@ -93,7 +107,7 @@ export function ActivitiesBrowser() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${GAMES.length} activities by name`}
+              placeholder={`Search ${total} activities by name`}
               aria-label="Search activities"
               className={cn(
                 "h-10 w-full rounded-lg border border-border bg-surface pr-9 pl-9 text-[0.9375rem] text-foreground transition-[border-color,box-shadow] outline-none",
@@ -123,13 +137,13 @@ export function ActivitiesBrowser() {
         {/* Horizontal scroll rather than wrap, so the bar is one line tall at
             every width and the shelves below never shift down a row when the
             window narrows. */}
-        <div className="no-scrollbar -mx-6 flex gap-2 overflow-x-auto px-6 sm:-mx-10 sm:px-10">
+        <div className="-mx-6 flex gap-2 overflow-x-auto px-6 sm:-mx-10 sm:px-10">
           <FilterChip
             label="Everything"
             selected={genre === "all"}
             onClick={() => setGenre("all")}
           />
-          {SHELVES.map((shelf) => (
+          {catalogue.map((shelf) => (
             <FilterChip
               key={shelf.genre}
               label={GENRES[shelf.genre].label}
@@ -150,7 +164,7 @@ export function ActivitiesBrowser() {
         <>
           {searching && (
             <p className="label-small -mb-4 text-faint">
-              {total} of {GAMES.length} match “{needle}”
+              {shown} of {total} match “{needle}”
             </p>
           )}
 
@@ -159,10 +173,10 @@ export function ActivitiesBrowser() {
               <ActivityShelf
                 key={shelf.genre}
                 genre={shelf.genre}
-                games={shelf.games}
+                activities={shelf.activities}
                 countLabel={
                   searching
-                    ? `${shelf.games.length} ${shelf.games.length === 1 ? "match" : "matches"}`
+                    ? `${shelf.activities.length} ${shelf.activities.length === 1 ? "match" : "matches"}`
                     : undefined
                 }
               />

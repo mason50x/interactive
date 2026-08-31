@@ -3,11 +3,11 @@
  *
  * This is the inner half of a nested frame, and the nesting is deliberate:
  *
- *     app origin        GameFrame          grant in the URL, CSP frame-ancestors
+ *     app origin        ActivityFrame          grant in the URL, CSP frame-ancestors
  *       └─ player origin  this component   grant verified by src/proxy.ts
  *            └─ asset origin  the bundle   static files, no session anywhere near
  *
- * The obvious alternative — point `GameFrame` straight at the bucket and drop
+ * The obvious alternative — point `ActivityFrame` straight at the bucket and drop
  * a level — loses two things. The grant would no longer gate anything, because
  * the bucket never sees the proxy that verifies it; and `frame-ancestors`
  * would be unenforceable, because that header has to come from the framed
@@ -20,10 +20,10 @@
  * entire reason the bucket exists.
  *
  * No `postMessage` handling here. The app's score protocol is something our
- * own games opt into; upstream bundles know nothing about it, so there is
- * nothing to relay and `GameFrame` simply never hears from them.
+ * own activities opt into; upstream bundles know nothing about it, so there is
+ * nothing to relay and `ActivityFrame` simply never hears from them.
  */
-export function HostedGame({ title, src }: { title: string; src: string }) {
+export function HostedActivity({ title, src }: { title: string; src: string }) {
   return (
     <iframe
       src={src}
@@ -31,9 +31,9 @@ export function HostedGame({ title, src }: { title: string; src: string }) {
       /**
        * A nested frame can only ever be more restricted than the one holding
        * it, never less — so every capability here must also be granted by
-       * `GameFrame`'s sandbox, or it is silently dropped at this level.
+       * `ActivityFrame`'s sandbox, or it is silently dropped at this level.
        *
-       * `allow-same-origin` is safe for the same reason it is in `GameFrame`:
+       * `allow-same-origin` is safe for the same reason it is in `ActivityFrame`:
        * the bucket is already a different origin to this document, so it buys
        * the bundle its own storage bucket for save states and reaches nothing
        * of ours. `allow-pointer-lock` is what the driving and 3D titles need

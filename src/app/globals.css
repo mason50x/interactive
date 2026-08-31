@@ -234,9 +234,9 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* The ink follows the accent rather than being white, for the same reason
-     the nav pill's does: three of the six accents are light enough that a
-     white word on them is not a word you can read. */
+  /* `--primary-foreground` rather than a bare white, so a retuned palette
+     carries the highlight with it — though every accent is cut deep enough
+     that white is what this resolves to. See `src/lib/preferences.ts`. */
   ::selection {
     background: var(--primary);
     color: var(--primary-foreground);
@@ -245,6 +245,19 @@
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
+  }
+
+  /* No scrollbars anywhere. Every scroller in the app is paged by arrows,
+     by touch, or by the wheel, and a permanent gutter down the side of each
+     one is a stripe across the layout. Scrolling itself is untouched — only
+     the bar is gone. Both forms are needed: Firefox honours
+     `scrollbar-width`, WebKit only the pseudo-element. */
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -374,19 +387,24 @@
   .label-small {
     font-size: 0.75rem;
   }
+}
 
-  /* A scroller with no scrollbar. Used by the activity shelves, where the
-     row is paged by arrows and by touch, and a permanent 15px gutter under
-     every row of cards is a stripe across the whole page. Both declarations
-     are needed: Firefox honours `scrollbar-width`, WebKit only the
-     pseudo-element. */
-  .no-scrollbar {
-    scrollbar-width: none;
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
+/*
+ * Clerk's card draws the logo uploaded to the Clerk dashboard, and there is
+ * only one of those — a black mark, which is right on the light card and
+ * all but gone on the dark one. Inverting it is the whole fix: the mark is
+ * monochrome, so a flip is the light-on-dark version of the same artwork.
+ *
+ * Keyed to the same attribute as everything else in this file. Clerk follows
+ * the `color-scheme` that `src/lib/theme.ts` writes alongside it, so the card
+ * and the mark on it turn over together — including when the user has
+ * overridden their OS.
+ *
+ * Unlayered on purpose: Clerk injects its own stylesheet, and a rule written
+ * inside one of our layers would be the one that loses.
+ */
+:root[data-theme="dark"] .cl-logoImage {
+  filter: invert(1);
 }
 
 @keyframes drift {

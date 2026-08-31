@@ -26,6 +26,9 @@ export type Preferences = {
   panicUrl: string;
 };
 
+/** The empty document every browser already has. See `panicPresets`. */
+export const BLANK_PAGE = "about:blank";
+
 /**
  * The brand blue is the default because it is the one the rest of the app was
  * drawn against; everything else here is a deviation someone asked for.
@@ -39,7 +42,7 @@ export const defaultPreferences: Preferences = {
   accent: "blue",
   panicEnabled: false,
   panicKey: "shift+escape",
-  panicUrl: "https://classroom.google.com/",
+  panicUrl: BLANK_PAGE,
 };
 
 /**
@@ -81,14 +84,15 @@ export function resolvePreferences(
 /* -------------------------------------------------------------------------- */
 
 /**
- * One colour each, and the ink that goes on top of it.
+ * One colour each, all cut to the same depth.
  *
- * `on` is not a matter of taste. White reads on the blue, the violet and the
- * rose and does not read on the amber, the emerald or the cyan — those are
- * light enough that a white label on a filled button falls below the contrast
- * a person can actually read. It is stated per accent rather than computed,
- * because a luminance threshold picks the wrong side of the line for exactly
- * the colours that sit near it, which is all three of those.
+ * The seven are a palette rather than seven independent picks: every one of
+ * them is dark enough that a white label reads on it, which is what lets a single
+ * ink serve the whole set. That constraint is why the emerald, the amber and
+ * the cyan are not the bright mid-tones they would be on their own — those
+ * sit light enough that white falls apart on them, and the fix for that is a
+ * darker swatch, not a second, darker ink that makes one accent behave unlike
+ * the other five.
  *
  * Everything an accent touches — the hover, the focus ring, the tinted surface
  * behind a highlighted row — is mixed from this single value against tokens
@@ -97,13 +101,20 @@ export function resolvePreferences(
  * is a line rather than a design exercise. See `accentVariables`.
  */
 export const accents = [
-  { id: "blue", label: "Blue", color: "#3c85f7", on: "#ffffff" },
-  { id: "violet", label: "Violet", color: "#8b5cf6", on: "#ffffff" },
-  { id: "emerald", label: "Emerald", color: "#10b981", on: "#04231a" },
-  { id: "amber", label: "Amber", color: "#f59e0b", on: "#291a00" },
-  { id: "rose", label: "Rose", color: "#f43f5e", on: "#ffffff" },
-  { id: "cyan", label: "Cyan", color: "#06b6d4", on: "#032329" },
+  { id: "blue", label: "Blue", color: "#3c85f7" },
+  { id: "violet", label: "Violet", color: "#8b5cf6" },
+  { id: "emerald", label: "Emerald", color: "#059669" },
+  { id: "amber", label: "Amber", color: "#ca6a06" },
+  { id: "rose", label: "Rose", color: "#f43f5e" },
+  { id: "pink", label: "Pink", color: "#ec4899" },
+  { id: "cyan", label: "Cyan", color: "#0891b2" },
 ] as const;
+
+/**
+ * The ink on top of any of them. One value, not a column in the table above:
+ * the palette is chosen so this is always the right answer.
+ */
+export const ACCENT_INK = "#ffffff";
 
 export type AccentId = (typeof accents)[number]["id"];
 
@@ -139,12 +150,10 @@ export function accentVariables(id: AccentId): [string, string][] {
   const tint = `color-mix(in oklab, ${color} 12%, var(--background))`;
   const tintForeground = `color-mix(in oklab, ${color} 65%, var(--foreground))`;
 
-  const on = (accents.find((accent) => accent.id === id) ?? accents[0]).on;
-
   return [
     ["--primary", color],
-    ["--primary-foreground", on],
-    ["--sidebar-primary-foreground", on],
+    ["--primary-foreground", ACCENT_INK],
+    ["--sidebar-primary-foreground", ACCENT_INK],
     ["--primary-hover", hover],
     ["--ring", color],
     ["--accent", tint],
@@ -178,15 +187,28 @@ export function applyAccent(id: AccentId): void {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Somewhere plausible to be found, at a glance, by someone standing behind
- * you. A blank page would be the giveaway.
+ * The blank page the browser already has, and then somewhere plausible to be
+ * found by someone standing behind you.
  *
- * Written in the form `new URL().toString()` produces — trailing slash and
- * all — because that is what comes back out of the database: both this file
- * and `convex/preferences.ts` normalise before storing, and a preset written
- * without the slash is one that can never match the row it just wrote.
+ * `about:blank` is the default, and the one to reach for. It is the only
+ * destination that costs nothing to arrive at: the browser holds it already,
+ * so the swap happens in the same frame as the keystroke instead of after a
+ * round trip, and because there is no round trip there is nothing to find
+ * afterwards — no request, no history entry, no cached copy, no line in
+ * anyone's log. Every other preset is a page that has to be fetched, which is
+ * both a moment of the old one still on screen and a trail. They are the
+ * softer answer rather than the safer one: a blank tab is plainly a blank tab,
+ * and a decoy is what you want when the problem is the person behind you
+ * rather than the machine in front of you.
+ *
+ * The http(s) ones are written in the form `new URL().toString()` produces —
+ * trailing slash and all — because that is what comes back out of the
+ * database: both this file and `convex/preferences.ts` normalise before
+ * storing, and a preset written without the slash is one that can never match
+ * the row it just wrote.
  */
 export const panicPresets = [
+  { label: "Blank page", url: BLANK_PAGE },
   { label: "Google Classroom", url: "https://classroom.google.com/" },
   { label: "Google Docs", url: "https://docs.google.com/document/u/0/" },
   { label: "Gmail", url: "https://mail.google.com/" },
@@ -272,10 +294,17 @@ export function isRiskyCombo(combo: string): boolean {
  * to `location.replace` from the app's own origin, which would run them as us.
  * The server checks this too, in `convex/preferences.ts`; this is the copy
  * that keeps the sheet from accepting something it would then have to explain.
+ *
+ * `about:blank` is the one exception, and it is allowed by string equality
+ * rather than by its scheme: the whole `about:` family is not being opened up
+ * here, only the empty document itself.
  */
 export function safePanicUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (trimmed === BLANK_PAGE) return BLANK_PAGE;
+
   try {
-    const parsed = new URL(url.trim());
+    const parsed = new URL(trimmed);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return null;
     }

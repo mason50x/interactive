@@ -166,7 +166,10 @@ export function StreakCelebration({
           {streak}
         </p>
         <p className="mt-2 text-[1.125rem] text-foreground">
-          {/* Singular `day` on purpose — see `streakLabel`. */}
+          {/* Singular `day` on purpose: it qualifies "streak" here rather
+              than counting anything, so "14 days streak" would be the same
+              mistake as "a two miles walk". The chip's `streakLabel` counts,
+              and does take the plural. */}
           day streak
         </p>
         <p className="mt-1 text-[0.9375rem] text-muted-foreground">

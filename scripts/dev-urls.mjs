@@ -11,49 +11,34 @@
  * logging.
  *
  * It also reports the asset origin, because the way that one fails is worse
- * than a broken frame: with `NEXT_PUBLIC_ASSET_ORIGIN` unset the games grid
+ * than a broken frame: with `ASSET_ORIGIN` unset the games grid
  * still renders, just with every hosted game absent. That reads as a bug in
  * the page rather than a variable nobody pulled.
  *
- * See src/lib/player.ts and src/lib/assets.ts for why the split exists at all.
+ * See src/lib/player.ts and src/lib/assets.ts for why the split exists at all,
+ * and `npm run domains` for what moving any of the three costs.
  */
 
 import { readFileSync } from "node:fs";
-
-/** Minimal `.env` reader: enough for `KEY=value` and `KEY="value"`, which is
- *  all `vercel env pull` ever writes. */
-function readEnvFile(path) {
-  const values = {};
-  let contents;
-  try {
-    contents = readFileSync(path, "utf8");
-  } catch {
-    return values;
-  }
-
-  for (const line of contents.split("\n")) {
-    const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
-    if (!match) continue;
-    values[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
-  }
-  return values;
-}
+import { resolveDomains } from "./resolve-domains.mjs";
 
 /** The catalogue. Plain JSON, so it can be parsed rather than scraped — which
  *  matters here because this runs as plain Node, before the bundler exists,
  *  so the TypeScript module that wraps it is not loadable. */
 function readHostedGames() {
   try {
-    return JSON.parse(readFileSync("src/lib/games.catalogue.json", "utf8"));
+    return JSON.parse(readFileSync("src/lib/activities.catalogue.json", "utf8"));
   } catch {
     return [];
   }
 }
 
-const env = { ...readEnvFile(".env.local"), ...process.env };
-const app = (env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
-const player = (env.NEXT_PUBLIC_PLAYER_ORIGIN || "").replace(/\/$/, "");
-const assets = (env.NEXT_PUBLIC_ASSET_ORIGIN || "").replace(/\/$/, "");
+// Shared with `npm run domains` rather than re-derived, so the banner and the
+// move checklist can never print origins that disagree with each other.
+const domains = resolveDomains();
+const app = domains.site.url;
+const player = domains.player.url || "";
+const assets = domains.asset.url || "";
 
 const dim = (text) => `\u001b[2m${text}\u001b[0m`;
 const bold = (text) => `\u001b[1m${text}\u001b[0m`;
@@ -93,7 +78,7 @@ if (assets) {
   lines.push(`  Assets  ${assets}${dim(`   (${games.length} games)`)}`);
 } else {
   lines.push(
-    warn("  NEXT_PUBLIC_ASSET_ORIGIN is unset"),
+    warn("  ASSET_ORIGIN is unset"),
     dim(`  All ${games.length} games are hidden — every one of them loads from`),
     dim("  the bucket. Run `vercel env pull`."),
   );

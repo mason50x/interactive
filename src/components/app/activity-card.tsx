@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Game } from "@/lib/games";
-import { popularityLabel, thumbnailSrc } from "@/lib/games";
+import { type Activity, popularityLabel, thumbnailSrc } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +13,10 @@ import { cn } from "@/lib/utils";
  * ships is a 480x100 strip — a 4.8:1 letterbox against a 1.78:1 frame — so
  * `object-cover` scales it to the frame's height and takes the middle of it.
  * The alternative, showing the strip whole inside the tile, leaves two thirds
- * of the card to be filled with something that is not the game.
+ * of the card to be filled with something that is not the activity.
  *
  * The crop is centred because there is nothing better to go on: these are
- * arbitrary gameplay grabs rather than logos, with no focal point recorded
+ * arbitrary screen grabs rather than logos, with no focal point recorded
  * anywhere. Regenerating `public/thumbnails` at 16:9 is what actually fixes
  * it; until then this shows a smaller part of the art at a useful size rather
  * than all of it at a useless one.
@@ -40,17 +39,28 @@ import { cn } from "@/lib/utils";
  * layer is created now or on the first frame of the hover, and for one card at
  * a time the browser can afford to decide that itself.
  */
-export function ActivityCard({ game }: { game: Game }) {
+export function ActivityCard({
+  activity,
+  /**
+   * The line revealed under the title on hover, when the caller knows
+   * something more useful than the catalogue rank — "opened 11 times", "2
+   * hours ago", "6 views today". Left off, the rank is what there is.
+   */
+  note,
+}: {
+  activity: Activity;
+  note?: string;
+}) {
   // A handful of upstream tiles point at art that is not in the repo, and one
   // broken-image glyph in a row of tiles is louder than a plain colour block.
   const [artFailed, setArtFailed] = useState(false);
 
-  const art = artFailed ? null : thumbnailSrc(game);
-  const meta = GENRES[game.genre];
+  const art = artFailed ? null : thumbnailSrc(activity);
+  const meta = GENRES[activity.genre];
 
   return (
     <Link
-      href={`/dashboard/activities/${game.slug}`}
+      href={`/dashboard/activities/${activity.slug}`}
       style={{ "--hue": meta.hue } as React.CSSProperties}
       className={cn(
         "group relative block aspect-video w-full overflow-hidden rounded-xl",
@@ -113,14 +123,14 @@ export function ActivityCard({ game }: { game: Game }) {
           </div>
 
           <p className="mt-1 truncate text-[0.9375rem] font-medium text-white">
-            {game.title}
+            {activity.title}
           </p>
         </div>
 
         {/* Sits in the space the plate vacates. At rest it is directly behind
             the title at zero opacity, so it costs no height. */}
         <p className="label-small absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-          {popularityLabel(game)}
+          {note ?? popularityLabel(activity)}
         </p>
       </div>
     </Link>

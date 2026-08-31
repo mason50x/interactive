@@ -1,6 +1,6 @@
-import { SignUpButton } from "@clerk/nextjs";
 import { closingCta } from "@/lib/content";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { AuthButton } from "@/components/auth-button";
+import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 
 export function ClosingCta() {
@@ -43,11 +43,9 @@ export function ClosingCta() {
               {closingCta.body}
             </p>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-              <SignUpButton>
-                <Button variant="inverted" size="xl">
-                  {closingCta.primary}
-                </Button>
-              </SignUpButton>
+              <AuthButton variant="inverted" size="xl">
+                {closingCta.primary}
+              </AuthButton>
               <ButtonLink href="#educators" variant="inverted-outline" size="xl">
                 {closingCta.secondary}
               </ButtonLink>

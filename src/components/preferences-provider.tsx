@@ -100,7 +100,7 @@ export function usePreferences() {
  * The panic key, listening on the whole document.
  *
  * Bound in the capture phase so it runs before anything on the page can
- * swallow the keystroke — a menu that traps Escape, a game canvas that eats
+ * swallow the keystroke — a menu that traps Escape, an activity canvas that eats
  * every key — and deliberately *not* skipped while a field has focus. A panic
  * key that does not work because the cursor is in the search box is a panic
  * key that does not work; the sheet warns about bare letters for exactly this
@@ -109,7 +109,7 @@ export function usePreferences() {
  * `replace` rather than `assign`: the page you were on should not be one Back
  * press away.
  *
- * The one place it cannot reach is inside a game. Games run in a frame on
+ * The one place it cannot reach is inside an activity. Activities run in a frame on
  * their own origin, and the browser gives their keystrokes to that document
  * alone — no listener here can see them, and nothing on this side can inject
  * one there. The frame has to lose focus first, which a click anywhere in the

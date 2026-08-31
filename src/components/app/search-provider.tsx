@@ -19,9 +19,9 @@ const SearchContext = createContext<Search | null>(null);
  * The obvious wiring — push `?q=` on every keystroke — would put a server
  * round trip behind each letter, because the activities page is a Server
  * Component and its search params are server input. There is nothing to fetch:
- * the whole catalogue is already in the client bundle (see `ActivitiesBrowser`),
- * so the filtering is local and the only thing that has to travel is a string
- * between two components in the same tree.
+ * that page already handed the browser the whole catalogue as a prop (see
+ * `ActivitiesBrowser`), so the filtering is local and the only thing that has
+ * to travel is a string between two components in the same tree.
  *
  * It lives on the dashboard layout, which is the nearest thing that contains
  * both the rail and the page beside it. The query deliberately does not

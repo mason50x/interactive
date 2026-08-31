@@ -2,7 +2,7 @@
  * Access grants for the player origin.
  *
  * The player origin cannot use the session. That is the entire point of it
- * existing — a Clerk cookie there is a cookie game code can read — so the
+ * existing — a Clerk cookie there is a cookie activity code can read — so the
  * usual answer of "run the auth middleware on it too" is the one answer
  * unavailable. Instead the app, which does hold the session, signs a short
  * grant, and the player origin verifies the signature before serving anything.
@@ -10,24 +10,24 @@
  * request is a 404.
  *
  * A grant says one thing: this came from someone signed in, recently. It is
- * not scoped to a game — being signed in is the whole entitlement, so scoping
- * it per game would only mean re-minting the same permission under a different
- * name. If games ever stop being uniformly available (a title someone has not
+ * not scoped to an activity — being signed in is the whole entitlement, so scoping
+ * it per activity would only mean re-minting the same permission under a different
+ * name. If activities ever stop being uniformly available (a title someone has not
  * unlocked, say), that check belongs on the dashboard route that decides to
  * render the frame at all, not here.
  *
- * A grant is still deliberately weak. It authorises loading games for a couple
+ * A grant is still deliberately weak. It authorises loading activities for a couple
  * of hours and nothing else — it is not a session, cannot be exchanged for
  * one, and carries no ability to reach Convex or read anything about the
  * user.
  *
- * It is also readable by the game, since it travels in the URL. That is why
+ * It is also readable by the activity, since it travels in the URL. That is why
  * the subject is a keyed hash of the Clerk user id rather than the id itself:
  * we keep the ability to tie a request back to an account server-side without
- * handing game code the identifier that would let it do the same.
+ * handing activity code the identifier that would let it do the same.
  */
 
-/** Long enough to survive a game left open over a lesson, short enough that a
+/** Long enough to survive an activity left open over a lesson, short enough that a
  *  leaked URL is worth little. Only checked when the document loads, so it
  *  never interrupts a run in progress. */
 const GRANT_TTL_SECONDS = 2 * 60 * 60;
@@ -97,7 +97,7 @@ export async function mintPlayerGrant(userId: string): Promise<string> {
   const key = secret();
   if (!key) {
     // Loud rather than silent: a missing secret must not degrade into serving
-    // games unauthenticated, and the dashboard is the right place to notice.
+    // activities unauthenticated, and the dashboard is the right place to notice.
     throw new Error(
       "PLAYER_TOKEN_SECRET is not set — the player origin cannot be gated. " +
         "Run `vercel env pull`, or set it on the deployment.",

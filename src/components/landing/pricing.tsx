@@ -1,6 +1,5 @@
-import { SignUpButton } from "@clerk/nextjs";
 import { pricing } from "@/lib/content";
-import { Button } from "@/components/ui/button";
+import { AuthButton } from "@/components/auth-button";
 import { Container } from "@/components/ui/container";
 import { Section, SectionHeading } from "@/components/ui/section";
 
@@ -52,15 +51,13 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <SignUpButton>
-                <Button
-                  variant={plan.featured ? "primary" : "secondary"}
-                  size="xl"
-                  className="mt-8 w-full"
-                >
-                  {plan.cta}
-                </Button>
-              </SignUpButton>
+              <AuthButton
+                variant={plan.featured ? "primary" : "secondary"}
+                size="xl"
+                className="mt-8 w-full"
+              >
+                {plan.cta}
+              </AuthButton>
             </div>
           ))}
         </div>

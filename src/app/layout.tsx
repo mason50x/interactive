@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import { brand } from "@/lib/brand";
+import { consoleGreetingScript } from "@/lib/console-greeting";
 import { themeScript } from "@/lib/theme";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             and snap to dark on hydration. */}
         <script
           dangerouslySetInnerHTML={{ __html: themeScript }}
+          suppressHydrationWarning
+        />
+        {/* After the theme script, never before it: the theme is racing the
+            first paint and this is not. Nothing else logs this early, so the
+            greeting is still the first line in the console. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: consoleGreetingScript }}
           suppressHydrationWarning
         />
         {children}

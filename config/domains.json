@@ -1,0 +1,5 @@
+{
+  "$comment": "The only domain literal in the repo. See config/domains.md.",
+  "site": "https://interactivelearningresources.org",
+  "mail": null
+}

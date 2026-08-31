@@ -2,7 +2,7 @@
  {
   "slug": "slope",
   "title": "Slope",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "slope.jpg",
   "rank": 0,
   "bytes": 13996582
@@ -10,7 +10,7 @@
  {
   "slug": "subwaysurfers",
   "title": "Subway Surfers",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "subwaysurfers.jpeg",
   "rank": 1,
   "bytes": 90001271
@@ -18,7 +18,7 @@
  {
   "slug": "flappy",
   "title": "Flappy Bird",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "flappybird.jpg",
   "rank": 2,
   "bytes": 1185425
@@ -26,7 +26,7 @@
  {
   "slug": "papaspizzaria",
   "title": "Papa's Pizzaria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papaspizzeria.jpg",
   "rank": 3,
   "bytes": 9557833
@@ -34,7 +34,7 @@
  {
   "slug": "papasburgeria",
   "title": "Papa's Burgeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papasburgeria.jpg",
   "rank": 4,
   "bytes": 7975216
@@ -42,7 +42,7 @@
  {
   "slug": "sm64",
   "title": "Super Mario 64",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "sm64.jpg",
   "rank": 5,
   "bytes": 23626654
@@ -50,7 +50,7 @@
  {
   "slug": "run3",
   "title": "Run 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "run3.jpg",
   "rank": 6,
   "bytes": 12818856
@@ -58,7 +58,7 @@
  {
   "slug": "bitlife",
   "title": "Bitlife",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "bitlife.jpg",
   "rank": 7,
   "bytes": 20406341
@@ -66,7 +66,7 @@
  {
   "slug": "crossy",
   "title": "Crossy Road",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "crossyroad.jpg",
   "rank": 8,
   "bytes": 6705344
@@ -74,7 +74,7 @@
  {
   "slug": "mc",
   "title": "Minecraft [v1.5.2]",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "mc.jpg",
   "rank": 9,
   "bytes": 16508626
@@ -82,7 +82,7 @@
  {
   "slug": "cookieclicker",
   "title": "Cookie Clicker",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "cookieclick.jpg",
   "rank": 10,
   "bytes": 5803517
@@ -90,7 +90,7 @@
  {
   "slug": "templerun2",
   "title": "Temple Run 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "templerun2.jpg",
   "rank": 11,
   "bytes": 27024347
@@ -98,7 +98,7 @@
  {
   "slug": "ducklife4",
   "title": "Duck Life 4",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "ducklife4.jpg",
   "rank": 12,
   "bytes": 15553659
@@ -106,7 +106,7 @@
  {
   "slug": "dinogame",
   "title": "Chrome Dino Game",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "chromedino.jpg",
   "rank": 13,
   "bytes": 166153
@@ -114,7 +114,7 @@
  {
   "slug": "jetpackjoyride",
   "title": "Jetpack Joyride",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "jetpackjoyride.jpg",
   "rank": 14,
   "bytes": 16813514
@@ -122,7 +122,7 @@
  {
   "slug": "retrobowl",
   "title": "Retro Bowl",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "retrobowl.jpg",
   "rank": 15,
   "bytes": 48688145
@@ -130,7 +130,7 @@
  {
   "slug": "fruitninja",
   "title": "Fruit Ninja",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "fruitninja.jpg",
   "rank": 16,
   "bytes": 37223129
@@ -138,7 +138,7 @@
  {
   "slug": "doodlejump",
   "title": "Doodle Jump",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "doodlejump.jpg",
   "rank": 17,
   "bytes": 4104186
@@ -146,7 +146,7 @@
  {
   "slug": "2048",
   "title": "2048",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "2048.jpg",
   "rank": 18,
   "bytes": 599509
@@ -154,7 +154,7 @@
  {
   "slug": "tetris",
   "title": "Tetris",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "tetris.jpg",
   "rank": 19,
   "bytes": 775930
@@ -162,7 +162,7 @@
  {
   "slug": "fancypantsadventure",
   "title": "Fancy Pants Adventure",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "fancypantsadventure.jpg",
   "rank": 20,
   "bytes": 2674348
@@ -170,7 +170,7 @@
  {
   "slug": "happywheels",
   "title": "Happy Wheels",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "happywheels.jpg",
   "rank": 21,
   "bytes": 4406460
@@ -178,7 +178,7 @@
  {
   "slug": "papashotdoggeria",
   "title": "Papa's Hotdoggeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papashotdoggeria.jpg",
   "rank": 22,
   "bytes": 13267998
@@ -186,7 +186,7 @@
  {
   "slug": "paperio2",
   "title": "Paperio2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "paperio2.jpg",
   "rank": 23,
   "bytes": 1377811
@@ -194,7 +194,7 @@
  {
   "slug": "superhot",
   "title": "Super Hot",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "superhot.jpg",
   "rank": 24,
   "bytes": 46031880
@@ -202,7 +202,7 @@
  {
   "slug": "thebindingofisaac",
   "title": "The Binding of Isaac",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "thebindingofisaac.jpg",
   "rank": 25,
   "bytes": 9254861
@@ -210,7 +210,7 @@
  {
   "slug": "townscaper",
   "title": "Townscaper",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "townscaper.jpg",
   "rank": 26,
   "bytes": 56933327
@@ -218,7 +218,7 @@
  {
   "slug": "tunnelrush",
   "title": "Tunnel Rush",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "tunnelrush.jpg",
   "rank": 27,
   "bytes": 18538188
@@ -226,7 +226,7 @@
  {
   "slug": "themehotel",
   "title": "Theme Hotel",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "themehotel.jpg",
   "rank": 28,
   "bytes": 3300931
@@ -234,7 +234,7 @@
  {
   "slug": "escapingtheprison",
   "title": "Escaping the Prison",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "escapingtheprison.jpg",
   "rank": 29,
   "bytes": 9736149
@@ -242,7 +242,7 @@
  {
   "slug": "stealingthediamond",
   "title": "Stealing the Diamond",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "stealingthediamond.jpg",
   "rank": 30,
   "bytes": 14590997
@@ -250,7 +250,7 @@
  {
   "slug": "infiltratingtheairship",
   "title": "Infiltrating the Airship",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "infiltratingtheairship.jpg",
   "rank": 31,
   "bytes": 29779755
@@ -258,7 +258,7 @@
  {
   "slug": "fleeingthecomplex",
   "title": "Fleeing the Complex",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "fleeingthecomplex.jpg",
   "rank": 32,
   "bytes": 34527577
@@ -266,7 +266,7 @@
  {
   "slug": "theimpossiblequiz",
   "title": "The Impossible Quiz",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "theimpossiblequiz.jpg",
   "rank": 33,
   "bytes": 8371752
@@ -274,7 +274,7 @@
  {
   "slug": "solitaire",
   "title": "Solitaire",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "solitaire.jpg",
   "rank": 34,
   "bytes": 18613
@@ -282,7 +282,7 @@
  {
   "slug": "drifthunters",
   "title": "Drift Hunters",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "drifthunters.jpg",
   "rank": 35,
   "bytes": 141293130
@@ -290,7 +290,7 @@
  {
   "slug": "vex6",
   "title": "Vex 6",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex6.jpg",
   "rank": 36,
   "bytes": 24794162
@@ -298,7 +298,7 @@
  {
   "slug": "amongus",
   "title": "Among Us Fangame",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "amongus.jpg",
   "rank": 37,
   "bytes": 13115393
@@ -306,7 +306,7 @@
  {
   "slug": "surf",
   "title": "Edge Surf",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "surf.jpg",
   "rank": 38,
   "bytes": 3197938
@@ -314,7 +314,7 @@
  {
   "slug": "motox3m",
   "title": "Motox3m",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "motox3m.jpeg",
   "rank": 39,
   "bytes": 9813985
@@ -322,7 +322,7 @@
  {
   "slug": "fnaf",
   "title": "Fnaf 1",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "fnaf.jpg",
   "rank": 40,
   "bytes": 53858854
@@ -330,7 +330,7 @@
  {
   "slug": "fnaf-2",
   "title": "Fnaf 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "fnaf2.jpg",
   "rank": 41,
   "bytes": 51373533
@@ -338,7 +338,7 @@
  {
   "slug": "fnaf-3",
   "title": "Fnaf 3",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "fnaf3.jpg",
   "rank": 42,
   "bytes": 32369899
@@ -346,7 +346,7 @@
  {
   "slug": "fnaf-4",
   "title": "Fnaf 4",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "fnaf4.jpg",
   "rank": 43,
   "bytes": 76174961
@@ -354,7 +354,7 @@
  {
   "slug": "driftboss",
   "title": "Drift Boss",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "driftboss.jpg",
   "rank": 44,
   "bytes": 7543758
@@ -362,7 +362,7 @@
  {
   "slug": "fnf",
   "title": "Friday Night Funkin",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "fnf.jpg",
   "rank": 45,
   "bytes": 583910872
@@ -370,7 +370,7 @@
  {
   "slug": "pacman",
   "title": "Pacman",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "pacman.jpg",
   "rank": 46,
   "bytes": 2316225
@@ -378,7 +378,7 @@
  {
   "slug": "papaspancakeria",
   "title": "Papa's Pancakeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papaspancakeria.jpg",
   "rank": 47,
   "bytes": 6498020
@@ -386,7 +386,7 @@
  {
   "slug": "rooftop",
   "title": "Rooftop Snipers",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "rooftopsnipers.jpg",
   "rank": 48,
   "bytes": 8511480
@@ -394,7 +394,7 @@
  {
   "slug": "baldisbasics",
   "title": "Baldi's Basics",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "baldisbasics.jpg",
   "rank": 49,
   "bytes": 37525157
@@ -402,7 +402,7 @@
  {
   "slug": "bobtherobber2",
   "title": "Bob the Robber 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "bobtherobber2.jpg",
   "rank": 50,
   "bytes": 25405904
@@ -410,7 +410,7 @@
  {
   "slug": "minesweeper",
   "title": "Minesweeper",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "minesweeper.jpg",
   "rank": 51,
   "bytes": 6156284
@@ -418,7 +418,7 @@
  {
   "slug": "thereisnogame",
   "title": "There Is No Game",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "thereisnogame.jpg",
   "rank": 57,
   "bytes": 7476784
@@ -426,7 +426,7 @@
  {
   "slug": "worldshardestgame",
   "title": "World's Hardest Game",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "worldshardestgame.jpg",
   "rank": 58,
   "bytes": 745881
@@ -434,7 +434,7 @@
  {
   "slug": "dogeminer",
   "title": "Doge Miner",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "dogeminer.jpg",
   "rank": 71,
   "bytes": 4298486
@@ -442,7 +442,7 @@
  {
   "slug": "tanukisunset",
   "title": "Tanuki Sunset",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "tanukisunset.jpg",
   "rank": 72,
   "bytes": 55431141
@@ -450,7 +450,7 @@
  {
   "slug": "aquaparkslides",
   "title": "Aquapark Slides",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "aquaparkslides.jpg",
   "rank": 73,
   "bytes": 34617784
@@ -458,7 +458,7 @@
  {
   "slug": "colorswitch",
   "title": "Color Switch",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "colorswitch.jpg",
   "rank": 74,
   "bytes": 3710586
@@ -466,7 +466,7 @@
  {
   "slug": "papasfreezeria",
   "title": "Papa's Freezeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papasfreezeria.jpg",
   "rank": 75,
   "bytes": 5169283
@@ -474,7 +474,7 @@
  {
   "slug": "adofai",
   "title": "Adofai",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "adofai.jpg",
   "rank": 84,
   "bytes": 19273235
@@ -482,7 +482,7 @@
  {
   "slug": "supersmashflash",
   "title": "Super Smash Flash",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "supersmashflash.jpg",
   "rank": 85,
   "bytes": 8834905
@@ -490,7 +490,7 @@
  {
   "slug": "supermeatboy",
   "title": "Super Meat Boy",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "supermeatboy.jpg",
   "rank": 86,
   "bytes": 5547984
@@ -498,7 +498,7 @@
  {
   "slug": "stickmanhook",
   "title": "Stickman Hook",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "stickmanhook.jpg",
   "rank": 87,
   "bytes": 3987156
@@ -506,7 +506,7 @@
  {
   "slug": "defendthetank",
   "title": "Defend the Tank",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "defendthetank.jpg",
   "rank": 88,
   "bytes": 5064485
@@ -514,7 +514,7 @@
  {
   "slug": "sortthecourt",
   "title": "Sort the Court",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "sortthecourt.jpg",
   "rank": 89,
   "bytes": 16068786
@@ -522,7 +522,7 @@
  {
   "slug": "thisistheonlylevel",
   "title": "This Is the Only Level",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "thisistheonlylevel.jpg",
   "rank": 90,
   "bytes": 1328596
@@ -530,7 +530,7 @@
  {
   "slug": "run",
   "title": "Run",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "run.jpg",
   "rank": 91,
   "bytes": 738789
@@ -538,7 +538,7 @@
  {
   "slug": "run2",
   "title": "Run 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "run2.jpg",
   "rank": 92,
   "bytes": 904942
@@ -546,7 +546,7 @@
  {
   "slug": "battleships",
   "title": "Battleships",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "battleships.jpg",
   "rank": 93,
   "bytes": 379665
@@ -554,7 +554,7 @@
  {
   "slug": "breakingthebank",
   "title": "Breaking the Bank",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "breakingthebank.jpg",
   "rank": 94,
   "bytes": 3145446
@@ -562,7 +562,7 @@
  {
   "slug": "ducklife",
   "title": "Duck Life",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "ducklife.jpg",
   "rank": 95,
   "bytes": 1283979
@@ -570,7 +570,7 @@
  {
   "slug": "ducklife2",
   "title": "Duck Life 2",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "ducklife2.jpg",
   "rank": 96,
   "bytes": 1861776
@@ -578,7 +578,7 @@
  {
   "slug": "ducklife3",
   "title": "Duck Life 3",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "ducklife3.jpg",
   "rank": 97,
   "bytes": 6052805
@@ -586,7 +586,7 @@
  {
   "slug": "linerider",
   "title": "Line Rider",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "linerider.jpg",
   "rank": 98,
   "bytes": 104450
@@ -594,7 +594,7 @@
  {
   "slug": "mariocombat",
   "title": "Mario Combat",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "mariocombat.jpg",
   "rank": 99,
   "bytes": 3935969
@@ -602,7 +602,7 @@
  {
   "slug": "raftwars2",
   "title": "Raft Wars 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "raftwars2.jpg",
   "rank": 100,
   "bytes": 4026729
@@ -610,7 +610,7 @@
  {
   "slug": "spaceinvaders",
   "title": "Space Invaders",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "spaceinvaders.jpg",
   "rank": 101,
   "bytes": 26254
@@ -618,7 +618,7 @@
  {
   "slug": "gunmayhem",
   "title": "Gun Mayhem",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "gunmayhem.jpg",
   "rank": 107,
   "bytes": 5968505
@@ -626,7 +626,7 @@
  {
   "slug": "learntofly",
   "title": "Learn to Fly",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "learntofly.jpg",
   "rank": 108,
   "bytes": 962008
@@ -634,7 +634,7 @@
  {
   "slug": "rooftop2",
   "title": "Rooftop Snipers 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "rooftopsnipers2.jpg",
   "rank": 109,
   "bytes": 27679019
@@ -642,7 +642,7 @@
  {
   "slug": "fireboywatergirl",
   "title": "Fireboy and Watergirl",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "fireboyandwatergirl.jpg",
   "rank": 110,
   "bytes": 10225662
@@ -650,7 +650,7 @@
  {
   "slug": "chibiknight",
   "title": "Chibi Knight",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "chibiknight.jpg",
   "rank": 111,
   "bytes": 6945292
@@ -658,7 +658,7 @@
  {
   "slug": "clusterrush",
   "title": "Cluster Rush",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "clusterrush.jpg",
   "rank": 112,
   "bytes": 43694560
@@ -666,7 +666,7 @@
  {
   "slug": "doodledefender",
   "title": "Doodle Defender",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "doodledefender.jpg",
   "rank": 113,
   "bytes": 4266480
@@ -674,7 +674,7 @@
  {
   "slug": "learntofly2",
   "title": "Learn to Fly 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "learntofly2.jpg",
   "rank": 114,
   "bytes": 5370545
@@ -682,7 +682,7 @@
  {
   "slug": "papasscooperia",
   "title": "Papa's Scooperia",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papasscooperia.jpg",
   "rank": 115,
   "bytes": 20621991
@@ -690,7 +690,7 @@
  {
   "slug": "papassushiria",
   "title": "Papa's Sushiria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papaswingeria.jpg",
   "rank": 116,
   "bytes": 15585070
@@ -698,7 +698,7 @@
  {
   "slug": "papaswingeria",
   "title": "Papa's Wingeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papassushiria.jpg",
   "rank": 117,
   "bytes": 7688849
@@ -706,7 +706,7 @@
  {
   "slug": "raftwars",
   "title": "Raft Wars",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "raftwars.jpg",
   "rank": 118,
   "bytes": 1915585
@@ -714,7 +714,7 @@
  {
   "slug": "unfairmario",
   "title": "Unfair Mario",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "unfairmario.jpg",
   "rank": 119,
   "bytes": 1682434
@@ -722,7 +722,7 @@
  {
   "slug": "boxingphysics2",
   "title": "Boxing Physics 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "boxingphysics2.jpg",
   "rank": 120,
   "bytes": 43431512
@@ -730,7 +730,7 @@
  {
   "slug": "theimpossiblequiz2",
   "title": "The Impossible Quiz 2",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "theimpossiblequiz2.jpg",
   "rank": 130,
   "bytes": 9815800
@@ -738,7 +738,7 @@
  {
   "slug": "papasdonuteria",
   "title": "Papa's Donuteria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papasdonuteria.jpg",
   "rank": 131,
   "bytes": 12265461
@@ -746,7 +746,7 @@
  {
   "slug": "fancypantsadventure2",
   "title": "Fancy Pants Adventure 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "fancypantsadventure2.jpg",
   "rank": 132,
   "bytes": 9473962
@@ -754,7 +754,7 @@
  {
   "slug": "tinyfishing",
   "title": "Tiny Fishing",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "tinyfishing.jpg",
   "rank": 133,
   "bytes": 4372073
@@ -762,7 +762,7 @@
  {
   "slug": "bigredbutton",
   "title": "Big Red Button",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "bigredbutton.jpg",
   "rank": 134,
   "bytes": 20728
@@ -770,7 +770,7 @@
  {
   "slug": "achievementunlocked",
   "title": "Achievement Unlocked",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "achievementunlocked.jpg",
   "rank": 135,
   "bytes": 2501705
@@ -778,7 +778,7 @@
  {
   "slug": "badicecream",
   "title": "Bad Ice Cream",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "badicecream.jpg",
   "rank": 139,
   "bytes": 5280354
@@ -786,7 +786,7 @@
  {
   "slug": "badicecream2",
   "title": "Bad Ice Cream 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "badicecream2.jpg",
   "rank": 140,
   "bytes": 6563702
@@ -794,7 +794,7 @@
  {
   "slug": "badicecream3",
   "title": "Bad Ice Cream 3",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "badicecream3.jpg",
   "rank": 141,
   "bytes": 7356601
@@ -802,7 +802,7 @@
  {
   "slug": "adventurecapitalist",
   "title": "Adventure Captialist",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "adventurecaptialist.jpg",
   "rank": 142,
   "bytes": 498876
@@ -810,7 +810,7 @@
  {
   "slug": "monkeymart",
   "title": "Monkey Mart",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "monkeymart.jpg",
   "rank": 143,
   "bytes": 14709915
@@ -818,7 +818,7 @@
  {
   "slug": "getawayshootout",
   "title": "Getaway Shootout",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "getawayshootout.jpg",
   "rank": 156,
   "bytes": 13711982
@@ -826,7 +826,7 @@
  {
   "slug": "rabbitsamurai",
   "title": "Rabbit Samurai",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "rabbitsamurai.jpg",
   "rank": 157,
   "bytes": 11574163
@@ -834,7 +834,7 @@
  {
   "slug": "papascheeseria",
   "title": "Papa's Cheeseria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papascheeseria.jpg",
   "rank": 167,
   "bytes": 12341267
@@ -842,7 +842,7 @@
  {
   "slug": "papascupcakeria",
   "title": "Papa's Cupcakeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papascupcakeria.jpg",
   "rank": 168,
   "bytes": 8917320
@@ -850,7 +850,7 @@
  {
   "slug": "papasbakeria",
   "title": "Papa's Bakeria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papasbakeria.jpg",
   "rank": 169,
   "bytes": 14441491
@@ -858,7 +858,7 @@
  {
   "slug": "papaspastaria",
   "title": "Papa's Pastaria",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papaspastaria.jpg",
   "rank": 170,
   "bytes": 10580601
@@ -866,7 +866,7 @@
  {
   "slug": "gunmayhem2",
   "title": "Gun Mayhem 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "gunmayhem2.jpg",
   "rank": 171,
   "bytes": 8884294
@@ -874,7 +874,7 @@
  {
   "slug": "gunmayhemredux",
   "title": "Gun Mayhem Redux",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "gunmayhemredux.jpg",
   "rank": 172,
   "bytes": 7270042
@@ -882,7 +882,7 @@
  {
   "slug": "achievementunlocked2",
   "title": "Achievement Unlocked 2",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "achievementunlocked2.jpg",
   "rank": 173,
   "bytes": 3335489
@@ -890,7 +890,7 @@
  {
   "slug": "achievementunlocked3",
   "title": "Achievement Unlocked 3",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "achievementunlocked3.jpg",
   "rank": 174,
   "bytes": 2099521
@@ -898,7 +898,7 @@
  {
   "slug": "factoryballs",
   "title": "Factory Balls",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "factoryballs.jpg",
   "rank": 175,
   "bytes": 287826
@@ -906,7 +906,7 @@
  {
   "slug": "skywire",
   "title": "Skywire",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "skywire.jpg",
   "rank": 176,
   "bytes": 1157658
@@ -914,7 +914,7 @@
  {
   "slug": "supermarioflash",
   "title": "Super Mario Flash",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "supermarioflash.jpg",
   "rank": 177,
   "bytes": 2238534
@@ -922,7 +922,7 @@
  {
   "slug": "ducklife5",
   "title": "Duck Life 5",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "ducklife5.jpg",
   "rank": 182,
   "bytes": 5411022
@@ -930,7 +930,7 @@
  {
   "slug": "learntofly3",
   "title": "Learn to Fly 3",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "learntofly3.jpg",
   "rank": 183,
   "bytes": 20367215
@@ -938,7 +938,7 @@
  {
   "slug": "bloxors",
   "title": "Bloxors",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "bloxors.jpg",
   "rank": 184,
   "bytes": 2209093
@@ -946,7 +946,7 @@
  {
   "slug": "electricman2",
   "title": "Electric Man 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "electricman2.jpg",
   "rank": 185,
   "bytes": 3272632
@@ -954,7 +954,7 @@
  {
   "slug": "portal",
   "title": "Portal",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "portal.jpg",
   "rank": 186,
   "bytes": 7105896
@@ -962,7 +962,7 @@
  {
   "slug": "portal2",
   "title": "Portal 2",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "portal2.jpg",
   "rank": 187,
   "bytes": 4341826
@@ -970,7 +970,7 @@
  {
   "slug": "skywire2",
   "title": "Skywire 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "skywire2.jpg",
   "rank": 188,
   "bytes": 2995485
@@ -978,7 +978,7 @@
  {
   "slug": "ducklife6",
   "title": "Duck Life 6",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "ducklife6.jpg",
   "rank": 189,
   "bytes": 7732908
@@ -986,7 +986,7 @@
  {
   "slug": "boxingrandom",
   "title": "Boxing Random",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "boxingrandom.jpg",
   "rank": 190,
   "bytes": 4761614
@@ -994,7 +994,7 @@
  {
   "slug": "cellmachine",
   "title": "Cell Machine",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "cellmachine.jpg",
   "rank": 191,
   "bytes": 10444864
@@ -1002,7 +1002,7 @@
  {
   "slug": "stickmanboost",
   "title": "Stickman Boost",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "stickmanboost.jpg",
   "rank": 192,
   "bytes": 3813163
@@ -1010,7 +1010,7 @@
  {
   "slug": "vex3",
   "title": "Vex 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex3.jpg",
   "rank": 193,
   "bytes": 7359601
@@ -1018,7 +1018,7 @@
  {
   "slug": "vex4",
   "title": "Vex 4",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex4.jpg",
   "rank": 194,
   "bytes": 12955932
@@ -1026,7 +1026,7 @@
  {
   "slug": "skibidi1v100",
   "title": "Skibidi Toilet 1v100",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "skibiditoilet1v100.jpg",
   "rank": 195,
   "bytes": 21141410
@@ -1034,7 +1034,7 @@
  {
   "slug": "badpiggies",
   "title": "Bad Piggies",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "badpiggies.jpg",
   "rank": 228,
   "bytes": 2399704
@@ -1042,7 +1042,7 @@
  {
   "slug": "supermarioflash2",
   "title": "Super Mario Flash 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "supermarioflash2.jpg",
   "rank": 229,
   "bytes": 3849630
@@ -1050,7 +1050,7 @@
  {
   "slug": "swordsandsandals",
   "title": "Swords and Sandals",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "swordsandsandals.jpg",
   "rank": 230,
   "bytes": 1205323
@@ -1058,7 +1058,7 @@
  {
   "slug": "swordsandsandals2",
   "title": "Swords and Sandals 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "swordsandsandals2.jpg",
   "rank": 231,
   "bytes": 2687226
@@ -1066,7 +1066,7 @@
  {
   "slug": "wordle",
   "title": "Wordle",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "wordle.jpg",
   "rank": 232,
   "bytes": 2862341
@@ -1074,7 +1074,7 @@
  {
   "slug": "vex",
   "title": "Vex",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex.jpg",
   "rank": 233,
   "bytes": 4035264
@@ -1082,7 +1082,7 @@
  {
   "slug": "vex2",
   "title": "Vex 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex2.jpg",
   "rank": 234,
   "bytes": 4357986
@@ -1090,7 +1090,7 @@
  {
   "slug": "vex5",
   "title": "Vex 5",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex5.jpg",
   "rank": 235,
   "bytes": 5594097
@@ -1098,7 +1098,7 @@
  {
   "slug": "vex7",
   "title": "Vex 7",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "vex7.jpg",
   "rank": 236,
   "bytes": 30646574
@@ -1106,7 +1106,7 @@
  {
   "slug": "stack",
   "title": "Stack",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "stack.jpg",
   "rank": 237,
   "bytes": 623519
@@ -1114,7 +1114,7 @@
  {
   "slug": "skibiditoiletattack",
   "title": "Skibidi Toilet Attack",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "skibiditoiletattack.jpg",
   "rank": 238,
   "bytes": 18521314
@@ -1122,7 +1122,7 @@
  {
   "slug": "motox3mpool",
   "title": "Motox3m Pool",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "motox3mpool.jpg",
   "rank": 239,
   "bytes": 8902098
@@ -1130,7 +1130,7 @@
  {
   "slug": "offlineparadise",
   "title": "Offline Paradise",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "offlineparadise.jpg",
   "rank": 240,
   "bytes": 121744
@@ -1138,7 +1138,7 @@
  {
   "slug": "worldshardestgame2",
   "title": "Worlds Hardest Game 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "worldshardestgame2.jpg",
   "rank": 250,
   "bytes": 2379118
@@ -1146,7 +1146,7 @@
  {
   "slug": "bubbletanks2",
   "title": "Bubble Tanks 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "bubbletanks2.jpg",
   "rank": 251,
   "bytes": 1544152
@@ -1154,7 +1154,7 @@
  {
   "slug": "chooseyourweapon",
   "title": "Choose Your Weapon",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "chooseyourweapon.jpg",
   "rank": 252,
   "bytes": 3133759
@@ -1162,7 +1162,7 @@
  {
   "slug": "chooseyourweapon2",
   "title": "Choose Your Weapon 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "chooseyourweapon2.jpg",
   "rank": 253,
   "bytes": 2727104
@@ -1170,7 +1170,7 @@
  {
   "slug": "chooseyourweapon3",
   "title": "Choose Your Weapon 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "chooseyourweapon3.jpg",
   "rank": 254,
   "bytes": 2903311
@@ -1178,7 +1178,7 @@
  {
   "slug": "connect4",
   "title": "Connect 4",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "connect4.jpg",
   "rank": 255,
   "bytes": 379140
@@ -1186,7 +1186,7 @@
  {
   "slug": "electricbox",
   "title": "Electric Box",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "electricbox.jpg",
   "rank": 256,
   "bytes": 3137287
@@ -1194,7 +1194,7 @@
  {
   "slug": "mctowerdefence2",
   "title": "Mc Tower Defence 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "mctowerdefence2.jpg",
   "rank": 257,
   "bytes": 12055453
@@ -1202,7 +1202,7 @@
  {
   "slug": "championisland",
   "title": "Champion Island",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "championisland.jpg",
   "rank": 271,
   "bytes": 57579690
@@ -1210,7 +1210,7 @@
  {
   "slug": "supermarioconstruct",
   "title": "Super Mario Construct",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "supermarioconstruct.jpg",
   "rank": 272,
   "bytes": 68519181
@@ -1218,7 +1218,7 @@
  {
   "slug": "clickerheroes",
   "title": "Clicker Heroes",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "clickerheroes.jpg",
   "rank": 273,
   "bytes": 22861114
@@ -1226,7 +1226,7 @@
  {
   "slug": "stairrace3d",
   "title": "Stair Race 3d",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "stairrace3d.jpg",
   "rank": 274,
   "bytes": 17015696
@@ -1234,7 +1234,7 @@
  {
   "slug": "slope2",
   "title": "Slope 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "slope2.jpg",
   "rank": 275,
   "bytes": 7946545
@@ -1242,7 +1242,7 @@
  {
   "slug": "paperio3d",
   "title": "Paper Io 3d",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "paperio3d.jpg",
   "rank": 276,
   "bytes": 1873175
@@ -1250,7 +1250,7 @@
  {
   "slug": "motox3mspooky",
   "title": "Motox3m Spooky",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "motox3mspooky.jpg",
   "rank": 277,
   "bytes": 9738001
@@ -1258,7 +1258,7 @@
  {
   "slug": "motox3mwinter",
   "title": "Motox3m Winter",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "motox3mwinter.jpg",
   "rank": 278,
   "bytes": 8732263
@@ -1266,7 +1266,7 @@
  {
   "slug": "snake",
   "title": "Snake",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "snake.jpg",
   "rank": 279,
   "bytes": 1365842
@@ -1274,7 +1274,7 @@
  {
   "slug": "papastacomia",
   "title": "Papa's Tacomia",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "papastacomia.jpg",
   "rank": 280,
   "bytes": 10742995
@@ -1282,7 +1282,7 @@
  {
   "slug": "ovo",
   "title": "Ovo",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "ovo.jpg",
   "rank": 281,
   "bytes": 42309542
@@ -1290,7 +1290,7 @@
  {
   "slug": "knifehit",
   "title": "Knife Hit",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "knifehit.jpg",
   "rank": 282,
   "bytes": 3971852
@@ -1298,7 +1298,7 @@
  {
   "slug": "cubefield",
   "title": "Cubefield",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "cubefield.jpg",
   "rank": 283,
   "bytes": 1336546
@@ -1306,7 +1306,7 @@
  {
   "slug": "burgerandfrights",
   "title": "Burger and Frights",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "burgerandfrights.jpg",
   "rank": 284,
   "bytes": 45884532
@@ -1314,7 +1314,7 @@
  {
   "slug": "chess",
   "title": "Chess",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "chess.jpg",
   "rank": 285,
   "bytes": 361729
@@ -1322,7 +1322,7 @@
  {
   "slug": "fnfmidfight",
   "title": "Fnf Mid Fight Masses",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "midfightmasses.jpg",
   "rank": 286,
   "bytes": 54435366
@@ -1330,7 +1330,7 @@
  {
   "slug": "thumbfighter",
   "title": "Thumb Fighter",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "thumbfighter.jpg",
   "rank": 287,
   "bytes": 6926542
@@ -1338,7 +1338,7 @@
  {
   "slug": "snowbattleio",
   "title": "Snow Battle Io",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "snowbattleio.jpg",
   "rank": 288,
   "bytes": 18673593
@@ -1346,7 +1346,7 @@
  {
   "slug": "lazyjump3d",
   "title": "Lazy Jump 3d",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "lazyjump3d.jpg",
   "rank": 289,
   "bytes": 15163185
@@ -1354,7 +1354,7 @@
  {
   "slug": "goball",
   "title": "Go Ball",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "goball.jpg",
   "rank": 290,
   "bytes": 1447028
@@ -1362,7 +1362,7 @@
  {
   "slug": "flippyfish",
   "title": "Flippy Fish",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "flippyfish.jpg",
   "rank": 291,
   "bytes": 22716365
@@ -1370,7 +1370,7 @@
  {
   "slug": "shopempire",
   "title": "Shop Empire",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "shopempire.jpg",
   "rank": 292,
   "bytes": 1696732
@@ -1378,7 +1378,7 @@
  {
   "slug": "monsterbrawl",
   "title": "Monster Brawl",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "monsterbrawl.jpg",
   "rank": 293,
   "bytes": 5071309
@@ -1386,7 +1386,7 @@
  {
   "slug": "multitask",
   "title": "Multitask",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "multitask.jpg",
   "rank": 294,
   "bytes": 3121601
@@ -1394,7 +1394,7 @@
  {
   "slug": "shift",
   "title": "Shift",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "shift.jpg",
   "rank": 295,
   "bytes": 245971
@@ -1402,7 +1402,7 @@
  {
   "slug": "shift2",
   "title": "Shift 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "shift2.jpg",
   "rank": 296,
   "bytes": 1905728
@@ -1410,7 +1410,7 @@
  {
   "slug": "shift3",
   "title": "Shift 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "shift3.jpg",
   "rank": 297,
   "bytes": 1021797
@@ -1418,7 +1418,7 @@
  {
   "slug": "shift4",
   "title": "Shift 4",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "shift4.jpg",
   "rank": 298,
   "bytes": 3547900
@@ -1426,7 +1426,7 @@
  {
   "slug": "pizzatower",
   "title": "Pizza Tower",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "pizzatower.jpg",
   "rank": 302,
   "bytes": 45263596
@@ -1434,7 +1434,7 @@
  {
   "slug": "territorialio",
   "title": "Territorial Io",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "territorialio.jpg",
   "rank": 303,
   "bytes": 1423573
@@ -1442,7 +1442,7 @@
  {
   "slug": "1v1lol",
   "title": "1v1lol",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "1v1lol.jpg",
   "rank": 304,
   "bytes": 1356622
@@ -1450,7 +1450,7 @@
  {
   "slug": "ballisticchickens",
   "title": "Ballistic Chickens",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "ballisticchickens.jpg",
   "rank": 305,
   "bytes": 3257621
@@ -1458,7 +1458,7 @@
  {
   "slug": "basketbrosio",
   "title": "Basketbros Io",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "basketbrosio.jpg",
   "rank": 306,
   "bytes": 5212287
@@ -1466,7 +1466,7 @@
  {
   "slug": "mcclassic",
   "title": "Minecraft Classic",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "mcclassic.jpg",
   "rank": 307,
   "bytes": 11749624
@@ -1474,7 +1474,7 @@
  {
   "slug": "deathrun3d",
   "title": "Death Run 3d",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "deathrun3d.jpg",
   "rank": 308,
   "bytes": 6357465
@@ -1482,7 +1482,7 @@
  {
   "slug": "soccerrandom",
   "title": "Soccer Random",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "soccerrandom.jpg",
   "rank": 309,
   "bytes": 2358160
@@ -1490,7 +1490,7 @@
  {
   "slug": "sprinter",
   "title": "Sprinter",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "sprinter.jpg",
   "rank": 310,
   "bytes": 409914
@@ -1498,7 +1498,7 @@
  {
   "slug": "tron",
   "title": "Tron",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "tron.jpg",
   "rank": 311,
   "bytes": 304799
@@ -1506,7 +1506,7 @@
  {
   "slug": "1on1soccer",
   "title": "1 on 1 Soccer",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "1on1soccer.jpg",
   "rank": 312,
   "bytes": 301348
@@ -1514,7 +1514,7 @@
  {
   "slug": "badtimesimulator",
   "title": "Bad Time Simulator",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "badtimesimulator.jpg",
   "rank": 313,
   "bytes": 2685848
@@ -1522,7 +1522,7 @@
  {
   "slug": "amazingropepolice",
   "title": "Amazing Rope Police",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "amazingropepolice.jpg",
   "rank": 314,
   "bytes": 75785443
@@ -1530,7 +1530,7 @@
  {
   "slug": "celeste",
   "title": "Celeste",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "celeste.jpg",
   "rank": 315,
   "bytes": 1543315
@@ -1538,7 +1538,7 @@
  {
   "slug": "justfalllol",
   "title": "Just Fall Lol",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "justfalllol.jpg",
   "rank": 316,
   "bytes": 19897614
@@ -1546,7 +1546,7 @@
  {
   "slug": "ngon",
   "title": "Ngon",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "ngon.jpg",
   "rank": 317,
   "bytes": 18939637
@@ -1554,7 +1554,7 @@
  {
   "slug": "rocketsoccer",
   "title": "Rocket Soccer",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "rocketsoccer.jpg",
   "rank": 318,
   "bytes": 60213161
@@ -1562,7 +1562,7 @@
  {
   "slug": "stickmanclimb",
   "title": "Stickman Climb",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "stickmanclimb.jpg",
   "rank": 319,
   "bytes": 8189036
@@ -1570,7 +1570,7 @@
  {
   "slug": "osumania",
   "title": "Osu!mania",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "osumania.jpg",
   "rank": 320,
   "bytes": 65942036
@@ -1578,7 +1578,7 @@
  {
   "slug": "helixjump",
   "title": "Helix Jump",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "helixjump.jpg",
   "rank": 321,
   "bytes": 2109931
@@ -1586,7 +1586,7 @@
  {
   "slug": "dadish",
   "title": "Dadish",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "dadish.jpg",
   "rank": 322,
   "bytes": 7446823
@@ -1594,7 +1594,7 @@
  {
   "slug": "dadish2",
   "title": "Dadish 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "dadish2.jpg",
   "rank": 323,
   "bytes": 7609782
@@ -1602,7 +1602,7 @@
  {
   "slug": "dadish3",
   "title": "Dadish 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "dadish3.jpg",
   "rank": 324,
   "bytes": 23204318
@@ -1610,7 +1610,7 @@
  {
   "slug": "snowrider3d",
   "title": "Snow Rider 3d",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "snowrider3d.jpg",
   "rank": 325,
   "bytes": 13398168
@@ -1618,7 +1618,7 @@
  {
   "slug": "tubejumpers",
   "title": "Tube Jumpers",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "tubejumpers.jpg",
   "rank": 326,
   "bytes": 6373228
@@ -1626,7 +1626,7 @@
  {
   "slug": "yohoho",
   "title": "Yohoho Io",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "yohoho.jpg",
   "rank": 327,
   "bytes": 6881250
@@ -1634,7 +1634,7 @@
  {
   "slug": "10minutestilldawn",
   "title": "10 Minutes Till Dawn",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "10minutestilldawn.jpg",
   "rank": 328,
   "bytes": 50529379
@@ -1642,7 +1642,7 @@
  {
   "slug": "volleyrandom",
   "title": "Volley Random",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "volleyrandom.jpg",
   "rank": 329,
   "bytes": 2523919
@@ -1650,7 +1650,7 @@
  {
   "slug": "waterworks",
   "title": "Waterworks",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "waterworks.jpg",
   "rank": 330,
   "bytes": 24039275
@@ -1658,7 +1658,7 @@
  {
   "slug": "geometryrash",
   "title": "Geometry Rash",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "geometryrash.jpg",
   "rank": 331,
   "bytes": 8081667
@@ -1666,7 +1666,7 @@
  {
   "slug": "holeio",
   "title": "Hole Io",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "holeio.jpg",
   "rank": 332,
   "bytes": 15516082
@@ -1674,7 +1674,7 @@
  {
   "slug": "sandtrix",
   "title": "Sandtrix",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "sandtrix.jpg",
   "rank": 333,
   "bytes": 18865717
@@ -1682,7 +1682,7 @@
  {
   "slug": "shapeshipper",
   "title": "Shapeshipper",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "shapeshipper.jpg",
   "rank": 334,
   "bytes": 3252707
@@ -1690,7 +1690,7 @@
  {
   "slug": "slopeball",
   "title": "Slope Ball",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "slopeball.jpg",
   "rank": 335,
   "bytes": 3165506
@@ -1698,7 +1698,7 @@
  {
   "slug": "stickmangolf",
   "title": "Stickman Golf",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "stickmangolf.jpg",
   "rank": 336,
   "bytes": 3772582
@@ -1706,7 +1706,7 @@
  {
   "slug": "tabs",
   "title": "Totally Accurate Battle Sim",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "totallyaccuratebattlesim.jpg",
   "rank": 337,
   "bytes": 10773706
@@ -1714,7 +1714,7 @@
  {
   "slug": "watermelongame",
   "title": "Watermelon Game",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "watermelongame.jpg",
   "rank": 338,
   "bytes": 1379573
@@ -1722,7 +1722,7 @@
  {
   "slug": "wallsmash",
   "title": "Wall Smash",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "wallsmash.jpg",
   "rank": 339,
   "bytes": 424776
@@ -1730,7 +1730,7 @@
  {
   "slug": "crimsonfantasia",
   "title": "Crimson Fantasia",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "crimsonfantasia.jpg",
   "rank": 340,
   "bytes": 81276983
@@ -1738,7 +1738,7 @@
  {
   "slug": "cuttherope",
   "title": "Cut the Rope",
-  "genre": "mobile",
+  "genre": "touch",
   "thumbnail": "cuttherope.jpg",
   "rank": 341,
   "bytes": 26084326
@@ -1746,7 +1746,7 @@
  {
   "slug": "funnymadracing",
   "title": "Funny Mad Racing",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "funnymadracing.jpg",
   "rank": 342,
   "bytes": 45678207
@@ -1754,7 +1754,7 @@
  {
   "slug": "gdlite",
   "title": "Geometry Dash Lite",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "geometrydashlite.jpg",
   "rank": 343,
   "bytes": 54997500
@@ -1762,7 +1762,7 @@
  {
   "slug": "grandtheftgrotto",
   "title": "Grand Theft Grotto",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "grandtheftgrotto.jpg",
   "rank": 344,
   "bytes": 1279736
@@ -1770,7 +1770,7 @@
  {
   "slug": "driftmania",
   "title": "Drift Mania",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "driftmania.jpg",
   "rank": 345,
   "bytes": 1738438
@@ -1778,7 +1778,7 @@
  {
   "slug": "risehigher",
   "title": "Rise Higher",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "risehigher.jpg",
   "rank": 346,
   "bytes": 1786233
@@ -1786,7 +1786,7 @@
  {
   "slug": "burritobison",
   "title": "Burrito Bison",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "burritobison.jpg",
   "rank": 347,
   "bytes": 33697538
@@ -1794,7 +1794,7 @@
  {
   "slug": "pool",
   "title": "Pool",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "pool.jpg",
   "rank": 348,
   "bytes": 100345
@@ -1802,7 +1802,7 @@
  {
   "slug": "redball1",
   "title": "Redball",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "redball.jpg",
   "rank": 349,
   "bytes": 890200
@@ -1810,7 +1810,7 @@
  {
   "slug": "redball3",
   "title": "Redball 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "redball3.jpg",
   "rank": 350,
   "bytes": 10112910
@@ -1818,7 +1818,7 @@
  {
   "slug": "redball4",
   "title": "Redball 4",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "redball4.jpg",
   "rank": 351,
   "bytes": 9219874
@@ -1826,7 +1826,7 @@
  {
   "slug": "redballv2",
   "title": "Redball 4 Vol 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "redball4vol2.jpg",
   "rank": 352,
   "bytes": 6225096
@@ -1834,7 +1834,7 @@
  {
   "slug": "redballv3",
   "title": "Redball 4 Vol 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "redball4vol3.jpg",
   "rank": 353,
   "bytes": 5442230
@@ -1842,7 +1842,7 @@
  {
   "slug": "roughdino",
   "title": "Rough Dino",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "roughdino.jpg",
   "rank": 354,
   "bytes": 41115739
@@ -1850,7 +1850,7 @@
  {
   "slug": "timeshooter1",
   "title": "Time Shooter",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "timeshooter.jpg",
   "rank": 355,
   "bytes": 20074774
@@ -1858,7 +1858,7 @@
  {
   "slug": "timeshooter2",
   "title": "Time Shooter 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "timeshooter2.jpg",
   "rank": 356,
   "bytes": 9455523
@@ -1866,7 +1866,7 @@
  {
   "slug": "timeshooter3",
   "title": "Time Shooter 3",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "timeshooter3.jpg",
   "rank": 357,
   "bytes": 8802090
@@ -1874,7 +1874,7 @@
  {
   "slug": "abudathealien",
   "title": "Abuda the Alien",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "abudathealien.jpg",
   "rank": 406,
   "bytes": 4389712
@@ -1882,7 +1882,7 @@
  {
   "slug": "battlebeavers",
   "title": "Battle Beavers",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "battlebeavers.jpg",
   "rank": 407,
   "bytes": 5709016
@@ -1890,7 +1890,7 @@
  {
   "slug": "controlcraft2",
   "title": "Control Craft 2",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "controlcraft2.jpg",
   "rank": 408,
   "bytes": 7235313
@@ -1898,7 +1898,7 @@
  {
   "slug": "ageofwar",
   "title": "Age of War",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "ageofwar.jpg",
   "rank": 409,
   "bytes": 3630240
@@ -1906,7 +1906,7 @@
  {
   "slug": "ageofwar2",
   "title": "Age of War 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "ageofwar2.jpg",
   "rank": 410,
   "bytes": 11415442
@@ -1914,7 +1914,7 @@
  {
   "slug": "amorphous",
   "title": "Amorphous",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "amorphous.jpg",
   "rank": 411,
   "bytes": 5782597
@@ -1922,7 +1922,7 @@
  {
   "slug": "bubblespinner",
   "title": "Bubble Spinner",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "bubblespinner.jpg",
   "rank": 412,
   "bytes": 150460
@@ -1930,7 +1930,7 @@
  {
   "slug": "crushthecastle",
   "title": "Crush the Castle",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "crushthecastle.jpg",
   "rank": 413,
   "bytes": 2353312
@@ -1938,7 +1938,7 @@
  {
   "slug": "crushthecastle2",
   "title": "Crush the Castle 2",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "crushthecastle2.jpg",
   "rank": 414,
   "bytes": 10985295
@@ -1946,7 +1946,7 @@
  {
   "slug": "epicbattlefantasy",
   "title": "Epic Battle Fantasy",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "epicbattlefantasy.jpg",
   "rank": 415,
   "bytes": 8391640
@@ -1954,7 +1954,7 @@
  {
   "slug": "epicbattlefantasy2",
   "title": "Epic Battle Fantasy 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "epicbattlefantasy2.jpg",
   "rank": 416,
   "bytes": 13833261
@@ -1962,7 +1962,7 @@
  {
   "slug": "epicbattlefantasy3",
   "title": "Epic Battle Fantasy 3",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "epicbattlefantasy3.jpg",
   "rank": 417,
   "bytes": 25312201
@@ -1970,7 +1970,7 @@
  {
   "slug": "fancypantsadventure3",
   "title": "Fancy Pants Adventure 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "fancypantsadventure3.jpg",
   "rank": 418,
   "bytes": 35361011
@@ -1978,7 +1978,7 @@
  {
   "slug": "floodrunner2",
   "title": "Flood Runner 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "floodrunner2.jpg",
   "rank": 419,
   "bytes": 1783923
@@ -1986,7 +1986,7 @@
  {
   "slug": "floodrunner3",
   "title": "Flood Runner 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "floodrunner3.jpg",
   "rank": 420,
   "bytes": 2908100
@@ -1994,7 +1994,7 @@
  {
   "slug": "dragonboy2",
   "title": "Dragon Boy 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "dragonboy2.jpg",
   "rank": 421,
   "bytes": 10377634
@@ -2002,7 +2002,7 @@
  {
   "slug": "neonrider",
   "title": "Neon Rider",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "neonrider.jpg",
   "rank": 422,
   "bytes": 1411513
@@ -2010,7 +2010,7 @@
  {
   "slug": "pandemic2",
   "title": "Pandemic 2",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "pandemic2.jpg",
   "rank": 423,
   "bytes": 4378837
@@ -2018,7 +2018,7 @@
  {
   "slug": "stickwar",
   "title": "Stick War",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "stickwar.jpg",
   "rank": 424,
   "bytes": 7005245
@@ -2026,7 +2026,7 @@
  {
   "slug": "stickwar2",
   "title": "Stick War 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "stickwar2.jpg",
   "rank": 425,
   "bytes": 18888003
@@ -2034,7 +2034,7 @@
  {
   "slug": "ultimateflashsonic",
   "title": "Ultimate Flash Sonic",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "ultimateflashsonic.jpg",
   "rank": 426,
   "bytes": 1508219
@@ -2042,7 +2042,7 @@
  {
   "slug": "zombocalypse",
   "title": "Zombocalypse",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "zombocalpyse.jpg",
   "rank": 427,
   "bytes": 5901680
@@ -2050,7 +2050,7 @@
  {
   "slug": "zombotron",
   "title": "Zombotron",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "zombotron.jpg",
   "rank": 428,
   "bytes": 8428288
@@ -2058,7 +2058,7 @@
  {
   "slug": "zombotron2",
   "title": "Zombotron 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "zombotron2.jpg",
   "rank": 429,
   "bytes": 12100905
@@ -2066,7 +2066,7 @@
  {
   "slug": "backrooms2d",
   "title": "Backrooms 2d",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "backrooms2d.jpg",
   "rank": 430,
   "bytes": 106817431
@@ -2074,7 +2074,7 @@
  {
   "slug": "basketrandom",
   "title": "Basket Random",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "basketrandom.jpg",
   "rank": 431,
   "bytes": 3428126
@@ -2082,7 +2082,7 @@
  {
   "slug": "csgoclicker",
   "title": "Csgo Clicker",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "csgoclicker.jpg",
   "rank": 432,
   "bytes": 521360
@@ -2090,7 +2090,7 @@
  {
   "slug": "doom",
   "title": "Doom",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "doom.jpg",
   "rank": 433,
   "bytes": 6862983
@@ -2098,7 +2098,7 @@
  {
   "slug": "funnyshooter2",
   "title": "Funny Shooter 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "funnyshooter2.jpg",
   "rank": 434,
   "bytes": 66637288
@@ -2106,7 +2106,7 @@
  {
   "slug": "gunfest",
   "title": "Gun Fest",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "gunfest.jpg",
   "rank": 435,
   "bytes": 31662328
@@ -2114,7 +2114,7 @@
  {
   "slug": "infinitecraft",
   "title": "Infinite Craft",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "infinitecraft.jpg",
   "rank": 436,
   "bytes": 77341
@@ -2122,7 +2122,7 @@
  {
   "slug": "lowsadventures2",
   "title": "Lows Adventures 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "lowsadventures2.jpg",
   "rank": 437,
   "bytes": 5753975
@@ -2130,7 +2130,7 @@
  {
   "slug": "pakohighway",
   "title": "Pako Highway",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "pakohighway.jpg",
   "rank": 438,
   "bytes": 98170549
@@ -2138,7 +2138,7 @@
  {
   "slug": "recoil",
   "title": "Recoil",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "recoil.jpg",
   "rank": 439,
   "bytes": 2992057
@@ -2146,7 +2146,7 @@
  {
   "slug": "run3plus",
   "title": "Run 3 Plus",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "run3plus.jpg",
   "rank": 440,
   "bytes": 44649553
@@ -2154,7 +2154,7 @@
  {
   "slug": "slopecity",
   "title": "Slope City",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "slopecity.jpg",
   "rank": 441,
   "bytes": 29825300
@@ -2162,7 +2162,7 @@
  {
   "slug": "stateio",
   "title": "State Io",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "stateio.jpg",
   "rank": 442,
   "bytes": 3355929
@@ -2170,7 +2170,7 @@
  {
   "slug": "sudoku",
   "title": "Sudoku",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "sudoku.jpg",
   "rank": 443,
   "bytes": 19001
@@ -2178,7 +2178,7 @@
  {
   "slug": "superherodrop",
   "title": "Superhero Drop",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "superherodrop.jpg",
   "rank": 444,
   "bytes": 40539060
@@ -2186,7 +2186,7 @@
  {
   "slug": "balloonrun",
   "title": "Balloon Run",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "balloonrun.jpg",
   "rank": 445,
   "bytes": 36099761
@@ -2194,7 +2194,7 @@
  {
   "slug": "crazytunnel3d",
   "title": "Crazy Tunnel 3d",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "crazytunnel3d.jpg",
   "rank": 446,
   "bytes": 28627544
@@ -2202,7 +2202,7 @@
  {
   "slug": "eagler1.8",
   "title": "Minecraft [v1.8]",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "mc1.8.jpg",
   "rank": 447,
   "bytes": 30677184
@@ -2210,7 +2210,7 @@
  {
   "slug": "geometrydashsky",
   "title": "Geometry Dash Sky",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "geometrydashsky.jpg",
   "rank": 448,
   "bytes": 38061862
@@ -2218,7 +2218,7 @@
  {
   "slug": "wubzzysamazingadventure",
   "title": "Wubzzys Adventure",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "wubzzysamazingadventure.jpg",
   "rank": 449,
   "bytes": 572690
@@ -2226,7 +2226,7 @@
  {
   "slug": "golddiggerfrvr",
   "title": "Gold Digger Frvr",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "golddiggerfrvr.jpg",
   "rank": 450,
   "bytes": 2030278
@@ -2234,7 +2234,7 @@
  {
   "slug": "hexgl",
   "title": "Hexgl",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "hexgl.jpg",
   "rank": 451,
   "bytes": 20420206
@@ -2242,7 +2242,7 @@
  {
   "slug": "houseofhazards",
   "title": "House of Hazards",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "houseofhazards.jpg",
   "rank": 452,
   "bytes": 42679303
@@ -2250,7 +2250,7 @@
  {
   "slug": "pickcrafter",
   "title": "Pick Crafter",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "pickcrafter.jpg",
   "rank": 453,
   "bytes": 1115853
@@ -2258,7 +2258,7 @@
  {
   "slug": "precisionclient",
   "title": "Precision Client",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "precisionclient.jpg",
   "rank": 454,
   "bytes": 20202697
@@ -2266,7 +2266,7 @@
  {
   "slug": "subwayrunner",
   "title": "Subway Runner",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "subwayrunner.jpg",
   "rank": 455,
   "bytes": 43216911
@@ -2274,7 +2274,7 @@
  {
   "slug": "xx142-b2.exe",
   "title": "Xx142-b2.exe",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "xx142b2.exe.jpg",
   "rank": 456,
   "bytes": 36508
@@ -2282,7 +2282,7 @@
  {
   "slug": "canopy",
   "title": "Canopy",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "canopy.jpg",
   "rank": 457,
   "bytes": 1982184
@@ -2290,7 +2290,7 @@
  {
   "slug": "cavechaos",
   "title": "Cave Chaos",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "cavechaos.jpg",
   "rank": 458,
   "bytes": 1372716
@@ -2298,7 +2298,7 @@
  {
   "slug": "changetype",
   "title": "Change Type",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "changetype.jpg",
   "rank": 459,
   "bytes": 2091798
@@ -2306,7 +2306,7 @@
  {
   "slug": "cheesedreams",
   "title": "Cheese Dreams",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "cheesedreams.jpg",
   "rank": 460,
   "bytes": 1761397
@@ -2314,7 +2314,7 @@
  {
   "slug": "chisel",
   "title": "Chisel",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "chisel.jpg",
   "rank": 461,
   "bytes": 1322601
@@ -2322,7 +2322,7 @@
  {
   "slug": "chisel2",
   "title": "Chisel 2",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "chisel2.jpg",
   "rank": 462,
   "bytes": 2859912
@@ -2330,7 +2330,7 @@
  {
   "slug": "ditto",
   "title": "Ditto",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "ditto.jpg",
   "rank": 463,
   "bytes": 2362180
@@ -2338,7 +2338,7 @@
  {
   "slug": "feedme",
   "title": "Feed Me",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "feedme.jpg",
   "rank": 464,
   "bytes": 1128493
@@ -2346,7 +2346,7 @@
  {
   "slug": "finalninja",
   "title": "Final Ninja",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "finalninja.jpg",
   "rank": 465,
   "bytes": 2424031
@@ -2354,7 +2354,7 @@
  {
   "slug": "frostbite",
   "title": "Frost Bite",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "frostbite.jpg",
   "rank": 466,
   "bytes": 718396
@@ -2362,7 +2362,7 @@
  {
   "slug": "frostbite2",
   "title": "Frost Bite 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "frostbite2.jpg",
   "rank": 467,
   "bytes": 1486575
@@ -2370,7 +2370,7 @@
  {
   "slug": "icebreaker",
   "title": "Icebreaker",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "icebreaker.jpg",
   "rank": 468,
   "bytes": 1555153
@@ -2378,7 +2378,7 @@
  {
   "slug": "mutiny",
   "title": "Mutiny",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "mutiny.jpg",
   "rank": 469,
   "bytes": 1090079
@@ -2386,7 +2386,7 @@
  {
   "slug": "nitromemustdie",
   "title": "Nitrome Must Die",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "nitromemustdie.jpg",
   "rank": 470,
   "bytes": 5513551
@@ -2394,7 +2394,7 @@
  {
   "slug": "oodlegobs",
   "title": "Oodlegobs",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "oodlegobs.jpg",
   "rank": 471,
   "bytes": 1748324
@@ -2402,7 +2402,7 @@
  {
   "slug": "supertreadmill",
   "title": "Super Treadmill",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "supertreadmill.jpg",
   "rank": 472,
   "bytes": 1439365
@@ -2410,7 +2410,7 @@
  {
   "slug": "swindler",
   "title": "Swindler",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "swindler.jpg",
   "rank": 473,
   "bytes": 2006092
@@ -2418,7 +2418,7 @@
  {
   "slug": "testsubjectarena",
   "title": "Test Subject Arena",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "testsubjectarena.jpg",
   "rank": 474,
   "bytes": 4418042
@@ -2426,7 +2426,7 @@
  {
   "slug": "testsubjectcomplete",
   "title": "Test Subject Complete",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "testsubjectcomplete.jpg",
   "rank": 475,
   "bytes": 5859085
@@ -2434,7 +2434,7 @@
  {
   "slug": "twinshot",
   "title": "Twin Shot",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "twinshot.jpg",
   "rank": 476,
   "bytes": 1670690
@@ -2442,7 +2442,7 @@
  {
   "slug": "twinshot2",
   "title": "Twin Shot 2",
-  "genre": "adventure",
+  "genre": "exploration",
   "thumbnail": "twinshot2.jpg",
   "rank": 477,
   "bytes": 3486234
@@ -2450,7 +2450,7 @@
  {
   "slug": "3line",
   "title": "Three Line",
-  "genre": "puzzle",
+  "genre": "problem-solving",
   "thumbnail": "threeline.jpg",
   "rank": 478,
   "bytes": 47934
@@ -2458,7 +2458,7 @@
  {
   "slug": "bikechamp",
   "title": "Bike Champ",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "bikechamp.jpg",
   "rank": 479,
   "bytes": 2128318
@@ -2466,7 +2466,7 @@
  {
   "slug": "bikechamp2",
   "title": "Bike Champ 2",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "bikechamp2.jpg",
   "rank": 480,
   "bytes": 2995009
@@ -2474,7 +2474,7 @@
  {
   "slug": "corporationinc",
   "title": "Corporation Inc",
-  "genre": "arcade",
+  "genre": "reaction",
   "thumbnail": "corporationinc.jpg",
   "rank": 481,
   "bytes": 3991829
@@ -2482,7 +2482,7 @@
  {
   "slug": "shopempirefable",
   "title": "Shop Empire Fable",
-  "genre": "simulation",
+  "genre": "systems",
   "thumbnail": "shopempirefable.jpg",
   "rank": 482,
   "bytes": 3745274
@@ -2490,7 +2490,7 @@
  {
   "slug": "cactusmccoy",
   "title": "Cactus Mccoy",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "cactusmccoy.jpg",
   "rank": 483,
   "bytes": 6915172
@@ -2498,7 +2498,7 @@
  {
   "slug": "cactusmccoy2",
   "title": "Cactus Mccoy 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "cactusmccoy2.jpg",
   "rank": 484,
   "bytes": 10382607
@@ -2506,7 +2506,7 @@
  {
   "slug": "papalouie",
   "title": "Papa Louie",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "papalouie.jpg",
   "rank": 485,
   "bytes": 2567678
@@ -2514,7 +2514,7 @@
  {
   "slug": "papalouie2",
   "title": "Papa Louie 2",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "papalouie2.jpg",
   "rank": 486,
   "bytes": 9123761
@@ -2522,7 +2522,7 @@
  {
   "slug": "papalouie3",
   "title": "Papa Louie 3",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "papalouie3.jpg",
   "rank": 487,
   "bytes": 12107951
@@ -2530,7 +2530,7 @@
  {
   "slug": "steakandjake",
   "title": "Steak and Jake",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "steakandjake.jpg",
   "rank": 488,
   "bytes": 4975732
@@ -2538,7 +2538,7 @@
  {
   "slug": "steakandjakemidnightmarch",
   "title": "Steak and Jake Midnight",
-  "genre": "platformer",
+  "genre": "coordination",
   "thumbnail": "steakandjakemidnightmarch.jpg",
   "rank": 489,
   "bytes": 5155696

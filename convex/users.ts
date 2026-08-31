@@ -148,12 +148,38 @@ export const deleteFromClerk = internalMutation({
       await ctx.db.delete(row._id);
     }
 
+    // What they opened, and how long for. Both are keyed by the Clerk id
+    // rather than owned by the user document, so neither goes with it.
+    //
+    // `activityDays` is deliberately *not* swept. It is the global board, and
+    // a row in it is a count with nobody's name on it — there is no per-account
+    // contribution recorded there to subtract, and decrementing it from the
+    // rows below would be inventing one. What leaves with the account is
+    // everything that says *who*, which is these two tables.
+    const views = await ctx.db
+      .query("views")
+      .withIndex("byUserCount", (q) => q.eq("clerkId", clerkId))
+      .collect();
+    for (const row of views) {
+      await ctx.db.delete(row._id);
+    }
+
+    const days = await ctx.db
+      .query("userDays")
+      .withIndex("byUserDay", (q) => q.eq("clerkId", clerkId))
+      .collect();
+    for (const row of days) {
+      await ctx.db.delete(row._id);
+    }
+
     // Add deletes for any other table keyed by this user above this line.
 
     return {
       deleted: users.length,
       invites: invites.length,
       preferences: preferences.length,
+      views: views.length,
+      days: days.length,
     };
   },
 });

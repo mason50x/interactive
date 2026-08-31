@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Regenerates `src/lib/games.catalogue.json` from the upstream Seraph repo.
+ * Regenerates `src/lib/activities.catalogue.json` from the upstream Seraph repo.
  *
  * The catalogue is generated rather than hand-written because it has 300-odd
  * entries and every one of them has to agree with a directory that exists in
@@ -31,7 +31,7 @@ const REF = "main";
 
 /** Upstream's directory holding one subdirectory per game. */
 const GAMES_PREFIX = "games";
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "lib", "games.catalogue.json");
+const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "lib", "activities.catalogue.json");
 
 /**
  * Console ROM containers. A directory holding one of these is dropped from the
@@ -98,15 +98,38 @@ function titleCase(value) {
     .join(" ");
 }
 
-/** Upstream's `data-genre` values include typos and one-off tags. The select
- *  element on their own page offers only the six on the right. */
+/**
+ * Upstream's `data-genre` value to ours.
+ *
+ * Two jobs in one table now. It has always folded upstream's typos and
+ * one-off tags into the six their own select element offers; it now also
+ * renames those six, because our catalogue is organised by what an activity
+ * asks of you rather than by the genre vocabulary upstream inherited. See
+ * `GENRES` in `src/lib/genres.ts`, which is keyed by the values on the right.
+ *
+ * The mapping has to be total, which is the difference from before. Passing an
+ * unmapped value through used to be survivable — it was still one of
+ * upstream's own words — and now it is not: nothing downstream has a label,
+ * colour, or icon for a key that is not on the right-hand side here. So an
+ * unrecognised genre stops the build rather than quietly reaching the page as
+ * a shelf with no head.
+ */
 const GENRE_ALIASES = {
-  aracde: "arcade",
-  simulator: "simulation",
-  amorphous: "arcade",
-  minecraft: "adventure",
-  tetris: "puzzle",
-  "": "arcade",
+  // Upstream's six.
+  platformer: "coordination",
+  arcade: "reaction",
+  puzzle: "problem-solving",
+  adventure: "exploration",
+  simulation: "systems",
+  mobile: "touch",
+
+  // Their typos and one-off tags, folded into the same six.
+  aracde: "reaction",
+  simulator: "systems",
+  amorphous: "reaction",
+  minecraft: "exploration",
+  tetris: "problem-solving",
+  "": "reaction",
 };
 
 async function fetchText(path) {
@@ -212,17 +235,33 @@ function parseCatalogue(html) {
 
   const entries = [];
   const seen = new Set();
+  const unknownGenres = new Set();
   for (const match of html.matchAll(pattern)) {
     const [, slug, thumbnail, genre, title] = match;
     if (seen.has(slug)) continue;
     seen.add(slug);
+
+    const raw = genre.trim();
+    const mapped = GENRE_ALIASES[raw];
+    if (mapped === undefined) unknownGenres.add(raw);
+
     entries.push({
       slug,
       title: titleCase(title.split(/\s+/).join(" ").trim()),
-      genre: GENRE_ALIASES[genre.trim()] ?? genre.trim(),
+      genre: mapped,
       thumbnail: thumbnail.split("/").pop(),
     });
   }
+
+  // Loudly, and with the value in hand, because the fix is one line in
+  // `GENRE_ALIASES` and the alternative is a shelf that renders blank.
+  if (unknownGenres.size > 0) {
+    throw new Error(
+      `Unmapped upstream genre(s): ${[...unknownGenres].map((g) => JSON.stringify(g)).join(", ")}. ` +
+        `Add them to GENRE_ALIASES.`,
+    );
+  }
+
   return entries;
 }
 

@@ -62,16 +62,16 @@ export function AppSidebar() {
   // current path. Testing each item on its own would light every ancestor too,
   // and since every route here sits under `/dashboard`, an item pointing at
   // the root would be lit on every page of the app.
-  // A game is running in a frame beside this rail, and a game is the most
+  // An activity is running in a frame beside this rail, and an activity is the most
   // expensive thing this app ever puts on a screen. The constellation is
   // decoration; it comes off while the machine has real work to do, and comes
-  // back the moment you leave the game. Every other route keeps it.
+  // back the moment you leave the activity. Every other route keeps it.
   //
   // Read off the path rather than signalled from the page, because the page is
   // a server component — see `src/app/dashboard/activities/[slug]/page.tsx`.
-  // `/dashboard/activities` itself is the browser, not a game, so this wants
+  // `/dashboard/activities` itself is the browser, not an activity, so this wants
   // the trailing segment and not just the prefix.
-  const playing = /^\/dashboard\/activities\/[^/]+/.test(pathname);
+  const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname);
 
   const activeHref = navItems.reduce((best, item) => {
     const matches =
@@ -100,7 +100,7 @@ export function AppSidebar() {
       aria-label="Dashboard"
       className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col lg:w-60"
     >
-      {preferences.constellation && !playing && <RailConstellation />}
+      {preferences.constellation && !viewing && <RailConstellation />}
 
       {/* Also the only route back to `/dashboard` itself: the overview has no
           row of its own in the list. */}
@@ -159,7 +159,7 @@ export function AppSidebar() {
                   // Positioned so it paints above the pill, and bordered on the
                   // base — transparent — so the label sits at the same inset
                   // whether or not the pill is under it.
-                  "relative flex h-11 items-center justify-center gap-3 rounded-lg border border-transparent text-[0.9375rem] lg:justify-start lg:px-3",
+                  "relative flex h-11 items-center justify-center gap-3 rounded-lg border border-transparent text-[0.9375rem] font-medium lg:justify-start lg:px-3",
                   // The global focus ring is a 2px outline held 2px off the
                   // element — around a row that is already filled blue it lands
                   // as a second, brighter border. These get an inset ring
@@ -178,7 +178,16 @@ export function AppSidebar() {
                       // it stops: `ease-out` puts it here about a third of the
                       // way through the 200ms, and the switch has to land under
                       // cover. Retime it if that travel changes.
-                      "text-primary-foreground transition-[color] delay-[70ms] duration-0"
+                      //
+                      // The weight rides the same beat, and for the same
+                      // reason. A lit row is set heavier than an unlit one —
+                      // white on a filled face needs the extra stroke to hold
+                      // its edges — and thickening a word changes its width,
+                      // so the letters shuffle. That has to happen under the
+                      // pill too, which is why `font-weight` is in the
+                      // transition list rather than left to change on the
+                      // frame the URL does.
+                      "font-semibold text-primary-foreground transition-[color,font-weight] delay-[70ms] duration-0"
                     : // Only the unlit rows blur what is behind them, and it
                       // is the constellation they are blurring — a label over
                       // a live web of lines is a label with lines through it.

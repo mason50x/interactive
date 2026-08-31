@@ -86,6 +86,7 @@ export function InviteCard() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const [pending, startTransition] = useTransition();
   const [panelHeight, setPanelHeight] = useState(0);
 
@@ -99,11 +100,13 @@ export function InviteCard() {
   const spent = limit - remaining;
   const exhausted = invites !== null && remaining === 0;
 
-  // A card reopened onto the last attempt's error would be reporting on
-  // something the person has already moved past.
+  // A card reopened onto the last attempt's error — or onto the last one's
+  // receipt — would be reporting on something the person has already moved
+  // past.
   const close = useCallback(() => {
     setOpen(false);
     setError(null);
+    setSent(false);
   }, []);
 
   // Opening the card is the whole of the intent — nobody expands this to
@@ -160,19 +163,26 @@ export function InviteCard() {
     if (address === "") return;
 
     setError(null);
+    setSent(false);
     startTransition(async () => {
       const result = await sendInvite(address);
-      // Nothing is said on success. The address drops off the field and
-      // appears in the list below it a moment later with a pip spent beside
-      // it — a sentence saying so is the same news, twice, in a card small
-      // enough that it has to push everything else down to fit.
-      if (result.ok) setEmail("");
-      else setError(result.message);
+      // That it sent is not the news — the address drops off the field and
+      // turns up in the list below with a pip spent beside it, which says so
+      // already. The spam folder is: the mail comes from Clerk rather than
+      // from anyone the recipient knows, so the one thing worth a line here
+      // is the place they will have to go looking for it.
+      if (result.ok) {
+        setEmail("");
+        setSent(true);
+      } else {
+        setError(result.message);
+      }
     });
   }
 
   function revoke(inviteId: string) {
     setError(null);
+    setSent(false);
     startTransition(async () => {
       const result = await revokeInvite(inviteId);
       if (!result.ok) setError(result.message);
@@ -324,7 +334,11 @@ export function InviteCard() {
               </Button>
             </form>
 
-            {error && (
+            {/* One slot, one message. An error replaces the receipt rather
+                than stacking under it: the send that produced the receipt is
+                over, and two lines of status in a card this size push the
+                list of who you have invited off the bottom of the rail. */}
+            {error ? (
               <p
                 // Assertive would talk over the person mid-correction; this
                 // is a result they arrive at after submitting, not an
@@ -334,6 +348,15 @@ export function InviteCard() {
               >
                 {error}
               </p>
+            ) : (
+              sent && (
+                <p
+                  role="status"
+                  className="mt-2.5 text-[0.8125rem] leading-relaxed text-muted-foreground"
+                >
+                  Sent. Tell them to check spam or junk if it does not turn up.
+                </p>
+              )
             )}
 
             {invites !== null && invites.invites.length > 0 && (

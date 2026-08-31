@@ -14,6 +14,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import {
   accents,
+  BLANK_PAGE,
   canonicalCombo,
   comboParts,
   isRiskyCombo,
@@ -113,8 +114,8 @@ export function SettingsSheet({
         </Section>
 
         <p className="px-5 pb-6 text-[0.75rem] leading-relaxed text-faint">
-          A game runs in its own frame, and the browser gives keystrokes there
-          to the game alone — click outside it first and the key works again.
+          An activity runs in its own frame, and the browser gives keystrokes there
+          to the activity alone — click outside it first and the key works again.
         </p>
       </SheetContent>
     </Sheet>
@@ -185,7 +186,7 @@ function AccentPicker({
   onChange: (accent: AccentId) => void;
 }) {
   return (
-    <div role="radiogroup" aria-label="Accent colour" className="flex gap-1.5">
+    <div role="radiogroup" aria-label="Accent colour" className="flex gap-1">
       {accents.map((accent) => {
         const checked = accent.id === value;
 
@@ -197,9 +198,9 @@ function AccentPicker({
             aria-checked={checked}
             aria-label={accent.label}
             onClick={() => onChange(accent.id)}
-            style={{ backgroundColor: accent.color, color: accent.on }}
+            style={{ backgroundColor: accent.color }}
             className={cn(
-              "flex size-6 cursor-pointer items-center justify-center rounded-full transition-transform duration-150 outline-none hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
+              "flex size-6 cursor-pointer items-center justify-center rounded-full text-white transition-transform duration-150 outline-none hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
               checked && "scale-110",
             )}
           >
@@ -293,9 +294,14 @@ function ComboRecorder({
 }
 
 /**
- * Six places anyone might plausibly be, and a field for the one nobody
- * guessed. The presets exist because the worst moment to be composing a URL is
- * the moment you are setting up for.
+ * The blank page first, then six places anyone might plausibly be, then a
+ * field for the one nobody guessed. The presets exist because the worst moment
+ * to be composing a URL is the moment you are setting up for.
+ *
+ * The note under them is the whole argument for the default: `about:blank` is
+ * the only choice that does not have to be fetched, which is what makes it
+ * both the fast one and the quiet one. The others are there because speed is
+ * not always what is being asked for.
  */
 function DestinationPicker({
   value,
@@ -319,6 +325,7 @@ function DestinationPicker({
 
   const parsed = safePanicUrl(draft);
   const dirty = draft.trim() !== value;
+  const blank = safePanicUrl(value) === BLANK_PAGE;
 
   function commit() {
     if (parsed && dirty) onChange(parsed);
@@ -365,7 +372,7 @@ function DestinationPicker({
             }
           }}
           aria-label="Panic key destination"
-          placeholder="https://"
+          placeholder="https:// or about:blank"
           className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
         />
         <Button
@@ -381,7 +388,19 @@ function DestinationPicker({
 
       {draft.trim() !== "" && !parsed && (
         <p className="mt-2 text-[0.75rem] text-destructive">
-          That needs to be a full web address, starting with https://.
+          That needs to be a full web address starting with https://, or
+          about:blank.
+        </p>
+      )}
+
+      {blank && (
+        <p className="mt-2.5 text-[0.75rem] leading-relaxed text-muted-foreground">
+          The blank page is instant, and the most secure of these. The browser
+          already has it, so it arrives in the same moment as the key rather
+          than after a page load — and because nothing is fetched, it leaves no
+          request, no history entry and no cached page behind. Every other
+          destination has to load, which costs both a pause and a trail: pick
+          one of those only if you would rather the tab look like something.
         </p>
       )}
     </>

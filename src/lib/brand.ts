@@ -3,7 +3,71 @@
  * the geometry of the IL monogram. Everything else — the favicon, the app
  * icons, the OG image, the header lockup, the JSON-LD — is derived from here,
  * so the brand can only ever be changed in one place.
+ *
+ * The domain is not spelled out here. `url` resolves from
+ * `NEXT_PUBLIC_SITE_URL` and falls back to `config/domains.json`, which is the
+ * only place in the repo a domain literal lives, and `domain` is derived from
+ * `url` rather than stored beside it. That derivation is the point: the role
+ * addresses in `src/lib/legal.ts` and `src/lib/content.ts` are built on
+ * `domain`, so a stored copy would go stale the moment the site moved and the
+ * symptom would be a privacy policy quoting an address that no longer accepts
+ * mail. See `config/domains.md`.
  */
+
+import domains from "../../config/domains.json";
+
+/** The site's own origin, most-explicit first. Preview deployments set nothing
+ *  and resolve their own host at runtime — see `src/lib/site-url.ts`, which
+ *  does the same walk for the invitation links that must not guess wrong. */
+function resolveUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL ?? domains.site;
+  return configured.replace(/\/$/, "");
+}
+
+/**
+ * Hosts that are a deployment, not a brand.
+ *
+ * `url` is whatever origin this deployment answers on, which on a preview is a
+ * generated `*.vercel.app` name and locally is `localhost:3000`. Those are
+ * correct answers for a canonical URL and useless ones for an email address:
+ * a privacy policy is a document a reader may act on, and rendering
+ * `privacy@localhost:3000` in one is worse than rendering a stale domain,
+ * because the stale domain at least looks like something a person could write
+ * to. So the derivation covers the production case and declines the rest.
+ */
+function isDeploymentHost(host: string): boolean {
+  return (
+    host === "localhost" ||
+    host.startsWith("localhost:") ||
+    host.startsWith("127.0.0.1") ||
+    host.endsWith(".vercel.app")
+  );
+}
+
+/**
+ * The bare domain the role addresses sit on.
+ *
+ * Derived from `url`, with `NEXT_PUBLIC_BRAND_DOMAIN` as the escape hatch for
+ * the one case where the two genuinely differ: a cutover where the site has
+ * moved and mail has not. Without that override the choice would be between
+ * moving both at once or hard-coding one of them again — and hard-coding is
+ * exactly what leaves a privacy policy quoting an address that stopped
+ * accepting mail two domains ago.
+ */
+function resolveDomain(url: string): string {
+  const override = process.env.NEXT_PUBLIC_BRAND_DOMAIN ?? domains.mail;
+  if (override) return override.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+  const fallback = new URL(domains.site).host;
+  try {
+    const host = new URL(url).host;
+    return isDeploymentHost(host) ? fallback : host;
+  } catch {
+    return fallback;
+  }
+}
+
+const url = resolveUrl();
 
 export const brand = {
   name: "Interactive Learning",
@@ -15,10 +79,8 @@ export const brand = {
   /** Kept short enough to survive Google's ~155 character description clamp. */
   metaDescription:
     "Turn dense course material into concept maps, animated walkthroughs, and practice that adapts to what you have not understood yet.",
-  domain: "interactivelearningresources.org",
-  url:
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    "https://interactivelearningresources.org",
+  domain: resolveDomain(url),
+  url,
   locale: "en_US",
   keywords: [
     "interactive learning",

@@ -68,8 +68,8 @@ function playerRobots(): NextResponse {
   });
 }
 
-/** A request with no game behind it, answered identically whatever the reason
- *  — missing grant, wrong game, expired, forged, or simply no such slug. */
+/** A request with no activity behind it, answered identically whatever the reason
+ *  — missing grant, wrong activity, expired, forged, or simply no such slug. */
 function notFound(): NextResponse {
   return new NextResponse(null, { status: 404 });
 }
@@ -81,19 +81,19 @@ function notFound(): NextResponse {
  * rewritten into `/player` and never sees Clerk, and the app host cannot
  * reach `/player` at all. Both halves matter. Running `clerkMiddleware` on
  * the player host would set Clerk's cookies *on the player origin*, handing
- * game code the session the separate origin exists to keep away from it; and
- * leaving `/player` reachable on the app host would let a game be framed
+ * activity code the session the separate origin exists to keep away from it; and
+ * leaving `/player` reachable on the app host would let an activity be framed
  * same-origin, where the sandbox attribute is decorative.
  *
  * Nothing on the player origin is public. Since the session cannot cross the
  * boundary, the app signs a short grant instead and this is where it is
  * checked — before any rewrite, so an unsigned request never reaches a route
  * at all. The grant says only that a signed-in user asked for this; which
- * games exist is the catalogue's business, and an unknown slug still 404s from
+ * activities exist is the catalogue's business, and an unknown slug still 404s from
  * the route itself. See `src/lib/player-token.ts`.
  *
  * With no player host configured this is a single-origin deployment (preview,
- * or a bare `next dev`); games stay behind the same grant, just on the app's
+ * or a bare `next dev`); activities stay behind the same grant, just on the app's
  * own origin — see `playerOrigin`.
  */
 export default async function proxy(req: NextRequest, event: NextFetchEvent) {
@@ -113,7 +113,7 @@ export default async function proxy(req: NextRequest, event: NextFetchEvent) {
 
   if (path.startsWith(PLAYER_PATH_PREFIX)) {
     // On the app host the player segment is not a route. On a single-origin
-    // deployment it is the only one games have, and it is gated the same way.
+    // deployment it is the only one activities have, and it is gated the same way.
     if (PLAYER_HOST) return notFound();
 
     if (!(await verifyPlayerGrant(req.nextUrl.searchParams.get(GRANT_PARAM)))) {

@@ -22,6 +22,11 @@
  */
 
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** The Clerk app these instances belong to; `clerk apps list` prints it. */
 const APP_ID = "app_3IeTzFGEUgQClhGLEgdxK3bkkdS";
@@ -30,13 +35,34 @@ const APP_ID = "app_3IeTzFGEUgQClhGLEgdxK3bkkdS";
 const ACCEPT_INVITE_PATH = "/auth/accept-invite";
 
 /**
+ * The production origin, resolved rather than written down.
+ *
+ * This script used to carry its own copy of the domain, which made it the
+ * second place a root-domain move had to land — and the one place where
+ * getting it wrong is unrecoverable, because Clerk stamps `redirect_url` into
+ * the email at send time. `config/domains.json` is now the only literal in the
+ * repo and `PROD_SITE_URL` overrides it, so a move touches one file or one
+ * variable and this follows. See `config/domains.md`.
+ */
+function prodOrigin() {
+  if (process.env.PROD_SITE_URL) {
+    return process.env.PROD_SITE_URL.replace(/\/$/, "");
+  }
+
+  const { site } = JSON.parse(
+    readFileSync(join(ROOT, "config", "domains.json"), "utf8"),
+  );
+  return site.replace(/\/$/, "");
+}
+
+/**
  * The origin per instance. Preview deployments are not listed: they resolve
  * their own origin at runtime from `VERCEL_URL`, so invites sent from a preview
  * come back to that same preview without configuration.
  */
 const ORIGINS = {
   dev: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  prod: "https://interactivelearningresources.org",
+  prod: prodOrigin(),
 };
 
 function usage(message) {
