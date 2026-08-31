@@ -273,13 +273,17 @@ only trace is the deployment's `errorLink`, which points at
 
 [collab]: https://vercel.com/docs/deployments/troubleshoot-project-collaboration#team-configuration
 
-Two settings fix it, and both halves have to line up because the second is the
-fallback for the first:
+The connection is not missing. It points at the wrong GitHub account. The Vercel
+account's `preferredScopesAndGitNamespaces` names git namespace `69379218`,
+which is the GitHub user `Ariana222`; the repositories are owned by `mason50x`,
+id `214569386`, and that is also who authors the commits. Those two never match,
+which is why every git deploy is blocked whatever address is on it, and why
+reconnecting GitHub without changing which account is underneath changes
+nothing.
 
-- **Account Settings → Login Connections** — connect the GitHub account that
-  authors the commits, `mason50x`.
-- **Account Settings → Email** — add and verify every address that authors
-  commits here, `masonsyzn@gmail.com` alongside `masonsingel20@gmail.com`.
+The fix is **Account Settings → Login Connections**: disconnect GitHub and
+reconnect it as `mason50x`. Confirm another sign-in method works first, since
+that connection may be how the account signs in.
 
 Fixing the account does not rescue anything already blocked. A blocked
 deployment can never be rebuilt — the API refuses it with
