@@ -273,13 +273,23 @@ only trace is the deployment's `errorLink`, which points at
 
 [collab]: https://vercel.com/docs/deployments/troubleshoot-project-collaboration#team-configuration
 
-The connection is not missing. It points at the wrong GitHub account. The Vercel
-account's `preferredScopesAndGitNamespaces` names git namespace `69379218`,
-which is the GitHub user `Ariana222`; the repositories are owned by `mason50x`,
-id `214569386`, and that is also who authors the commits. Those two never match,
-which is why every git deploy is blocked whatever address is on it, and why
-reconnecting GitHub without changing which account is underneath changes
-nothing.
+The connection went stale rather than missing, which is why the account looked
+connected while nothing built. `/v2/user` kept reporting
+`importFlowGitProvider: github`, but
+`/v1/integrations/git-namespaces?provider=github` returned `[]` — the connection
+reached no GitHub account at all. With no namespace to resolve the author
+against, every commit fails the ownership check equally, which is what made the
+blocks look indifferent to who authored them.
+
+That endpoint is the one to check, because it is the only one that distinguishes
+a live connection from a stale one. Reconnecting repopulates it:
+
+```json
+[{ "provider": "github", "slug": "mason50x", "id": 69379218, "ownerType": "user" }]
+```
+
+The `id` there is Vercel's own namespace id, not a GitHub user id — looking it up
+against GitHub's user API returns an unrelated account.
 
 The fix is at [vercel.com/account/authentication][auth] — avatar → **Settings** →
 **Authentication** in the left sidebar. Remove the GitHub connection there and
