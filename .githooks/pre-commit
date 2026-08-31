@@ -1,0 +1,13 @@
+#!/bin/sh
+# Refuse to write a commit Vercel will not build. See .githooks/author-email.
+set -e
+. "$(dirname "$0")/author-email"
+
+[ "${VERCEL_AUTHOR_CHECK:-1}" = 0 ] && exit 0
+
+author=$(git var GIT_AUTHOR_IDENT | sed -n 's/.*<\(.*\)>.*/\1/p')
+
+if [ "$author" != "$(allowed_email)" ]; then
+	report "This commit is authored by $author." "It was not created."
+	exit 1
+fi

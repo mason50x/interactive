@@ -255,6 +255,35 @@ curl -sI https://clerk.interactivelearningresources.org/.well-known/jwks.json
 `main` is connected to `mason50x/interactive-learning` (private) and deploys to
 production on every push. Other branches get preview deployments.
 
+### Commit authorship
+
+The repository is private and `cognify` is a Hobby team, and the Hobby plan does
+not support collaboration on private repositories. So Vercel builds a commit
+only when its author is the team owner, matched against the owner's git provider
+login — or, if the Vercel account has no provider connected, against the
+verified email addresses on the account.
+
+A commit authored under any other address is accepted by GitHub and pushed
+normally; the deploy is then created and immediately `BLOCKED`, with no build
+and no log to read. Nothing about the push says so. That is worth knowing
+because this repository has been committed to from more than one address.
+
+`.githooks/pre-commit` refuses to write such a commit and `.githooks/pre-push`
+refuses to push one that arrived from somewhere the first hook did not run —
+another machine, a cloud agent, the GitHub web editor. `npm install` runs
+`prepare`, which points `core.hooksPath` at `.githooks`, so a fresh clone is
+covered without anyone remembering. The address is `vercel.authorEmail` in git
+config, defaulting to the one the Vercel account carries; `VERCEL_AUTHOR_CHECK=0`
+skips the check for a commit that genuinely belongs to someone else.
+
+The hooks only keep the repository consistent. What makes Vercel accept the
+address is on the account: under **Account Settings → Login Connections** the
+GitHub account must be connected and must be the one that authors the commits,
+and under **Account Settings → Email** every address used to author commits
+should be added and verified, which covers the fallback if the connection is
+ever dropped. A commit blocked for this reason needs no new commit once the
+account is fixed — redeploying it from the dashboard is enough.
+
 A production build ships the Convex backend along with the frontend.
 `vercel.json` overrides the build command with:
 
