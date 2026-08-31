@@ -112,11 +112,6 @@ export function SettingsSheet({
             />
           </div>
         </Section>
-
-        <p className="px-5 pb-6 text-[0.75rem] leading-relaxed text-faint">
-          An activity runs in its own frame, and the browser gives keystrokes there
-          to the activity alone — click outside it first and the key works again.
-        </p>
       </SheetContent>
     </Sheet>
   );

@@ -7,7 +7,7 @@ import { mutation, query, type QueryCtx } from "../_generated/server";
 import {
   blockedEitherWay,
   callerProfile,
-  dmKeyFor,
+  ensureDm,
   friendship,
   membership,
   profileFor,
@@ -145,14 +145,21 @@ export type OpenResult =
 /**
  * Open a direct message, or find the one that is already open.
  *
- * `dmKey` is what makes this idempotent — both people pressing the button at
- * the same moment land on the same row rather than on two half-built
- * conversations, because the key is derived from the pair rather than from who
- * asked first.
+ * The thread itself is `ensureDm`'s job, and it is idempotent — so this is the
+ * gate rather than the construction. What is left here is the set of bars a
+ * pair has to clear before a thread between them is allowed to exist at all.
  *
  * The default policy is `friends`, and this is where that becomes real: a
  * stranger cannot open a thread with you at all, so the friend request is the
  * gate rather than a formality that a determined person can walk around.
+ *
+ * Nothing in the app calls it today. Accepting a request now builds the thread
+ * — see `linkDm` in `convex/chat/friends.ts` — so the "Message" button this
+ * was written for is gone, and every route the interface offers to a direct
+ * message goes through a friendship. It is kept because it is a public
+ * endpoint on a live deployment either way, and because it is where
+ * `dmPolicy: "anyone"` is enforced: delete it and the setting is a promise
+ * with nothing behind it.
  */
 export const openDm = mutation({
   args: { peerClerkId: v.string() },
@@ -178,62 +185,10 @@ export const openDm = mutation({
       }
     }
 
-    const dmKey = dmKeyFor(profile.clerkId, peerClerkId);
-    const existing = await ctx.db
-      .query("conversations")
-      .withIndex("byDmKey", (q) => q.eq("dmKey", dmKey))
-      .unique();
-
-    if (existing !== null) {
-      // Either side may have left; opening it again puts them back.
-      for (const [who, other] of [
-        [profile.clerkId, peerClerkId],
-        [peerClerkId, profile.clerkId],
-      ]) {
-        const member = await membership(ctx, existing._id, who);
-        if (member === null) {
-          await ctx.db.insert("conversationMembers", {
-            conversationId: existing._id,
-            clerkId: who,
-            kind: "dm",
-            role: "member",
-            status: "active",
-            joinedAt: Date.now(),
-            lastReadAt: 0,
-            dmPeer: other,
-          });
-        } else if (member.status !== "active") {
-          await ctx.db.patch(member._id, { status: "active" });
-        }
-      }
-      return { ok: true, conversationId: existing._id };
-    }
-
-    const now = Date.now();
-    const conversationId = await ctx.db.insert("conversations", {
-      kind: "dm",
-      dmKey,
-      createdBy: profile.clerkId,
-      createdAt: now,
-      lastMessageAt: now,
-    });
-
-    for (const [who, other] of [
-      [profile.clerkId, peerClerkId],
-      [peerClerkId, profile.clerkId],
-    ]) {
-      await ctx.db.insert("conversationMembers", {
-        conversationId,
-        clerkId: who,
-        kind: "dm",
-        role: "member",
-        status: "active",
-        joinedAt: now,
-        lastReadAt: 0,
-        dmPeer: other,
-      });
-    }
-
+    // Usually already there: accepting a friend request builds the thread, so
+    // by the time anybody presses "message" this is a lookup. See `linkDm` in
+    // `convex/chat/friends.ts`.
+    const conversationId = await ensureDm(ctx, profile.clerkId, peerClerkId);
     return { ok: true, conversationId };
   },
 });
@@ -246,8 +201,8 @@ export type CreateResult =
  * Make a group.
  *
  * The title goes through `screenStatic` rather than the message pipeline: it
- * has no sender history to check against, and tier-three words are refused here
- * rather than flagged, because a name is not a thing said once in passing.
+ * has no sender history to check against, and no arrangement to read either,
+ * because a name is not a thing said once in passing.
  */
 export const createGroup = mutation({
   args: {

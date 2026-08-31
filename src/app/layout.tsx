@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import { brand } from "@/lib/brand";
 import { consoleGreetingScript } from "@/lib/console-greeting";
+import { accentScript } from "@/lib/preferences";
 import { themeScript } from "@/lib/theme";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -106,9 +107,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: themeScript }}
           suppressHydrationWarning
         />
-        {/* After the theme script, never before it: the theme is racing the
-            first paint and this is not. Nothing else logs this early, so the
-            greeting is still the first line in the console. */}
+        {/* And the accent the account was last seen in, from the
+            `localStorage` cache `PreferencesProvider` keeps. Same bind as the
+            theme: the settings arrive over a Convex subscription that is still
+            opening while the page is on screen, so without this every refresh
+            starts in the default blue. It sits here rather than in
+            `AppProviders`, whose routes are the only ones painted in an accent,
+            because this is the one layout a client-side navigation never
+            re-renders — a `<script>` React creates on the client is a tag that
+            never runs. The script skips `/learn` on its own instead. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: accentScript }}
+          suppressHydrationWarning
+        />
+        {/* After the scripts racing the first paint, never before them; this
+            one is not. Nothing else logs this early, so the greeting is still
+            the first line in the console. */}
         <script
           dangerouslySetInnerHTML={{ __html: consoleGreetingScript }}
           suppressHydrationWarning

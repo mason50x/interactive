@@ -348,32 +348,3 @@ function writeCache(lat: number, lon: number, weather: Weather): void {
   }
 }
 
-/**
- * A line tying the weather to the thing this app is for.
- *
- * The card is on a page about staying indoors, so the forecast's job is
- * not to be a forecast — it is to say whether today is a day for this. That is
- * the only reason a weather widget belongs on this dashboard at all, and the
- * copy is what makes the connection rather than leaving the reader to.
- */
-export function weatherRemark(weather: Weather): string {
-  switch (weather.kind) {
-    case "storm":
-      return "Stay in. Nothing out there is better than this.";
-    case "snow":
-      return "Snow day energy.";
-    case "rain":
-    case "drizzle":
-      return "Indoor weather, conveniently.";
-    case "fog":
-      return "Can't see a thing out there anyway.";
-    case "cloudy":
-      return "Grey enough to justify a screen.";
-    case "partly":
-      return "Half decent out, if you're the outdoors type.";
-    case "clear":
-      return weather.isDay
-        ? "It's lovely out, for the record."
-        : "Clear night. Nothing out there but the dark.";
-  }
-}

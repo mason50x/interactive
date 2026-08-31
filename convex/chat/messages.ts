@@ -10,13 +10,14 @@ import {
 } from "../moderation/limits";
 import type { Refusal } from "../moderation/rules";
 import { screen, type SendContext } from "../moderation/verdict";
-import { mutation, query } from "../_generated/server";
+import { mutation, query, type QueryCtx } from "../_generated/server";
 import {
   applyStrike,
   blockedBy,
   blockedEitherWay,
   callerProfile,
   membership,
+  profileFor,
   pushRecent,
   standingFor,
 } from "./shared";
@@ -140,7 +141,9 @@ export const send = mutation({
       authorHandle: profile.handle,
       body: verdict.body,
       status: "visible",
-      flags: verdict.flags,
+      // Always empty now that tier three is refused rather than allowed — see
+      // `flags` in `convex/schema.ts` for why the column stays anyway.
+      flags: [],
     });
 
     await ctx.db.patch(profile._id, {
@@ -149,7 +152,8 @@ export const send = mutation({
         at: now,
         conversationId,
         hash: verdict.hash,
-        flagged: verdict.flagged,
+        // Likewise: nothing that reaches this line carries a tier-three word.
+        flagged: false,
       }),
     });
 
@@ -338,3 +342,149 @@ export const remove = mutation({
     await ctx.db.delete(messageId);
   },
 });
+
+/**
+ * How many rows the search index is asked for before permissions are applied.
+ *
+ * The index cannot know which conversations the caller is in — see
+ * `searchBody` in `convex/schema.ts` — so it answers from every message in
+ * the deployment and this handler throws away the ones that are not the
+ * caller's. That means over-fetching: the ratio of kept to scanned is worst
+ * for someone in nothing but the global room, and this number is what decides
+ * whether they get a full palette or three results. Bounded rather than
+ * paginated because there is no "next page" in a palette — you refine the
+ * query instead.
+ */
+const SEARCH_SCAN = 96;
+
+/** How many survive into the palette. */
+const SEARCH_RESULTS = 6;
+
+/**
+ * One message, with enough of its conversation to be named in a list that is
+ * mostly not about chat.
+ *
+ * The conversation is described by the same three fields `conversationName`
+ * in `src/lib/chat.ts` takes, so the palette labels a hit with the function
+ * the conversation list and the thread header already use rather than a
+ * fourth opinion about what a room is called.
+ */
+export type MessageHit = {
+  _id: Id<"messages">;
+  _creationTime: number;
+  conversationId: Id<"conversations">;
+  kind: "global" | "dm" | "group";
+  title?: string;
+  peerHandle?: string;
+  authorHandle: string;
+  body: string;
+};
+
+/**
+ * Full-text search across every message the caller is allowed to read.
+ *
+ * The permission check is the whole of this function. Convex's search index
+ * has no idea who is asking, so a naive handler here would hand back the
+ * contents of every direct message on the site to anyone who guessed a word
+ * in one — which is the single worst bug this file could have. Three things
+ * stand between the index and the reply, and all three run per row:
+ *
+ * - the caller has to be an *active* member of the conversation. `invited`,
+ *   `requested`, `banned` and `left` all fail, so a group somebody was thrown
+ *   out of stops being searchable the moment they leave it;
+ * - the author must not have blocked them, or be blocked by them, which is
+ *   the same set `list` above hides from the thread;
+ * - the message has to be `visible`, which the index itself enforces.
+ *
+ * Membership and conversation naming are cached per conversation for the
+ * length of one call. A search that matches forty messages in the global room
+ * is one membership read, not forty.
+ *
+ * Nothing here is paginated and nothing is ordered by time: the index returns
+ * rows by relevance, the handler keeps the first `SEARCH_RESULTS` that
+ * survive, and a search that wants different results is a search you retype.
+ */
+export const search = query({
+  args: { text: v.string() },
+  handler: async (ctx, { text }): Promise<MessageHit[]> => {
+    const needle = text.trim();
+    // A search index refuses an empty term, and there is nothing to look for
+    // anyway — this is the state the palette is in before the first keystroke.
+    if (needle === "") return [];
+
+    const profile = await callerProfile(ctx);
+    if (profile === null) return [];
+
+    const blocked = await blockedBy(ctx, profile.clerkId);
+
+    const rows = await ctx.db
+      .query("messages")
+      .withSearchIndex("searchBody", (q) =>
+        q.search("body", needle).eq("status", "visible"),
+      )
+      .take(SEARCH_SCAN);
+
+    // Conversation id to how it should be named, or `null` for "not the
+    // caller's". Both answers are worth caching: the misses are what a search
+    // matching a busy room the caller is not in costs.
+    type Named = Pick<MessageHit, "kind" | "title" | "peerHandle">;
+    const known = new Map<string, Named | null>();
+
+    const hits: MessageHit[] = [];
+
+    for (const message of rows) {
+      if (hits.length >= SEARCH_RESULTS) break;
+      if (blocked.has(message.authorClerkId)) continue;
+
+      let named = known.get(message.conversationId);
+      if (named === undefined) {
+        named = await nameFor(ctx, message.conversationId, profile.clerkId);
+        known.set(message.conversationId, named);
+      }
+      if (named === null) continue;
+
+      hits.push({
+        _id: message._id,
+        _creationTime: message._creationTime,
+        conversationId: message.conversationId,
+        authorHandle: message.authorHandle,
+        body: message.body,
+        ...named,
+      });
+    }
+
+    return hits;
+  },
+});
+
+/**
+ * How to label a conversation to this caller, or `null` if it is not theirs.
+ *
+ * The kind and the other person's id come off the caller's own member row
+ * rather than the conversation document, which is the same trick the send path
+ * uses: one indexed read answers both "may they see this" and "what is it",
+ * and the conversation itself is only fetched for a group's title.
+ */
+async function nameFor(
+  ctx: QueryCtx,
+  conversationId: Id<"conversations">,
+  clerkId: string,
+): Promise<Pick<MessageHit, "kind" | "title" | "peerHandle"> | null> {
+  const member = await membership(ctx, conversationId, clerkId);
+  if (member === null || member.status !== "active") return null;
+
+  if (member.kind === "dm") {
+    const peer =
+      member.dmPeer === undefined
+        ? null
+        : await profileFor(ctx, member.dmPeer);
+    return { kind: "dm", peerHandle: peer?.handle };
+  }
+
+  if (member.kind === "group") {
+    const conversation = await ctx.db.get(conversationId);
+    return { kind: "group", title: conversation?.title };
+  }
+
+  return { kind: "global" };
+}

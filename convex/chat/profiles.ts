@@ -1,7 +1,9 @@
 import { v } from "convex/values";
 import { hasAccepted } from "../agreement";
+import { internal } from "../_generated/api";
 import { handleIsClean } from "../moderation/lexicon";
 import {
+  AVATAR_EMOJI,
   AVATAR_HUES,
   GLOBAL_COOLDOWN_MS,
   MAX_HANDLE_CHANGES,
@@ -13,6 +15,7 @@ import {
   blockedEitherWay,
   callerId,
   callerProfile,
+  carriedConsequence,
   ensureGlobalMembership,
   profileFor,
   standingFor,
@@ -45,11 +48,12 @@ import {
  *
  * ## The disc is picked, not written
  *
- * `setAvatar` has no limit on it, because a colour and two letters are not a
- * name: nothing points at them, nobody remembers you by them, and there is
- * nothing to escape by changing them. Both are constrained to a fixed wheel and
- * a two-character shape, so what is stored is a choice from a set and never
- * free text — the same rule a group's face already follows.
+ * `setAvatar` has no limit on it, because a colour and a face are not a name:
+ * nothing points at them, nobody remembers you by them, and there is nothing to
+ * escape by changing them. All of it is constrained — a fixed wheel, a fixed
+ * sheet of emoji, and a two-character shape for the letters — so what is stored
+ * is a choice from a set and never free text, which is the same rule a group's
+ * face already follows and the reason neither needs anybody to review it.
  */
 
 const MIN_HANDLE = 3;
@@ -155,7 +159,19 @@ export type MyProfile = {
   /** Renames spent. The allowance itself is `MAX_HANDLE_CHANGES`. */
   handleChanges: number;
   avatarHue?: number;
+  avatarEmoji?: string;
   avatarInitials?: string;
+  /**
+   * How many messages this account has ever sent.
+   *
+   * It has always been on the row, feeding the trust tier and nothing else.
+   * It comes out now because the settings panel says it back to you next to
+   * your handle — the one number about yourself this app keeps, and one worth
+   * seeing. Nobody else is ever told it: it is on `MyProfile` and deliberately
+   * not on `PublicProfile`, because how much somebody talks is not a thing
+   * strangers should be able to read off them.
+   */
+  messagesSent: number;
   standing: number;
   mutedUntil?: number;
   mutedRule?: string;
@@ -175,11 +191,16 @@ export type PublicProfile = {
   clerkId: string;
   handle: string;
   avatarHue?: number;
+  avatarEmoji?: string;
   avatarInitials?: string;
 };
 
+/** What the field is told while somebody is still typing. See `available`. */
+export type Availability = { ok: true } | { ok: false; reason: HandleRefusal };
+
 export type ClaimResult =
-  | { ok: true }
+  /** The hue the disc was given, so the screen that asked can show it. */
+  | { ok: true; hue: number }
   | {
       ok: false;
       reason:
@@ -218,19 +239,83 @@ export const claimHandle = mutation({
     const vetted = await vet(ctx, handle);
     if (!vetted.ok) return { ok: false, reason: vetted.reason };
 
+    const now = Date.now();
+
+    // A fresh profile, and whatever the ledger says is still owed on it.
+    //
+    // Almost always nothing: the overwhelming majority of people reaching here
+    // have never had a profile at all, and a strike is written against a Clerk
+    // id rather than against a handle. The one case it exists for is somebody
+    // who cleared their chat while muted — see `carriedConsequence` in
+    // `convex/chat/shared.ts`, which is the whole reason erasure may delete the
+    // profile without also deleting the mute that was on it.
+    //
+    // `createdAt` and `messagesSent` start over on purpose. Both only ever feed
+    // the trust tier, and a new identity starting at `fresh` — the slowest rate
+    // limit and no shortcut past the global room's cooldown — is the strict
+    // reading, not the lenient one.
+    // A colour off the wheel, at random.
+    //
+    // The disc has always had one — `handleHue` in `src/lib/chat.ts` hashes the
+    // handle, which is stable everywhere and costs no storage. What it is not
+    // is a *choice*, and two people who picked adjacent handles get adjacent
+    // colours for a reason neither of them can see. This writes one instead, so
+    // the first thing an account owns about how it looks is not a function of
+    // the name it just typed. The hash stays exactly where it was: it is still
+    // what draws anybody who has no `avatarHue`, which is every profile written
+    // before this line existed.
+    //
+    // From the fixed wheel and not from 360, because `setAvatar` will only
+    // accept a value from that list — a random hue somebody could not have
+    // chosen themselves is one they could never get back after changing it.
+    const hue = AVATAR_HUES[Math.floor(Math.random() * AVATAR_HUES.length)];
+
     await ctx.db.insert("chatProfiles", {
       clerkId,
       handle: vetted.handle,
       handleKey: vetted.key,
-      createdAt: Date.now(),
+      createdAt: now,
+      avatarHue: hue,
       dmPolicy: "friends",
       discoverable: true,
       messagesSent: 0,
       recent: [],
+      ...(await carriedConsequence(ctx, clerkId, now)),
     });
 
     await ensureGlobalMembership(ctx, clerkId);
-    return { ok: true };
+    return { ok: true, hue };
+  },
+});
+
+/**
+ * Whether a handle could be claimed, asked while it is still being typed.
+ *
+ * The same `vet` the claim itself runs, which is the point: a field that says
+ * "looks good" and a mutation that then refuses is worse than no field at all.
+ * Nothing here writes, and nothing here reserves — two people typing the same
+ * handle are both told yes, and the one who presses the button first gets it.
+ * That race is the honest one and it is the same race a check-free form has.
+ *
+ * The reason is returned rather than a bare boolean because the caller already
+ * learns it on refusal — `claimError` in `src/lib/chat.ts` has had the whole
+ * list in it since the first version of this screen — so this discloses nothing
+ * new. What it does not disclose is *why* a name is taken: a folded key
+ * colliding with somebody else's handle comes back as `taken`, which is all
+ * "taken" ever meant here, and never as the handle it collided with.
+ *
+ * `null` for a signed-out caller, which the field renders as no answer at all.
+ * A public endpoint that says whether a handle exists is a way to enumerate
+ * who is here, and this is only ever asked by somebody who is already in.
+ */
+export const available = query({
+  args: { handle: v.string() },
+  handler: async (ctx, { handle }): Promise<Availability | null> => {
+    const clerkId = await callerId(ctx);
+    if (clerkId === null) return null;
+
+    const vetted = await vet(ctx, handle);
+    return vetted.ok ? { ok: true } : { ok: false, reason: vetted.reason };
   },
 });
 
@@ -255,7 +340,9 @@ export const mine = query({
       discoverable: profile.discoverable,
       handleChanges: profile.handleChanges ?? 0,
       avatarHue: profile.avatarHue,
+      avatarEmoji: profile.avatarEmoji,
       avatarInitials: profile.avatarInitials,
+      messagesSent: profile.messagesSent,
       standing: await standingFor(ctx, profile.clerkId, now),
       // A mute that has run out is not a mute. Filtered here rather than left
       // to the sweep so the composer unlocks on the minute it should.
@@ -354,6 +441,7 @@ export const search = query({
         clerkId: hit.clerkId,
         handle: hit.handle,
         avatarHue: hit.avatarHue,
+        avatarEmoji: hit.avatarEmoji,
         avatarInitials: hit.avatarInitials,
       });
     }
@@ -416,28 +504,44 @@ export const renameHandle = mutation({
 });
 
 /**
- * The disc: a colour off the wheel, and up to two letters on it.
+ * The disc: a colour off the wheel, and either a face off the sheet or up to
+ * two letters on it.
  *
- * Either may be cleared by sending nothing for it, which puts that half back to
- * what it was derived as. Nothing here is rate-limited or counted, because
- * there is nothing here to escape by changing.
+ * The whole disc every time, and any part cleared by sending nothing for it,
+ * which puts that part back to what it was derived as. Taking the whole thing
+ * is what lets the editor be a picker rather than a form: it holds the face it
+ * is showing, swaps the part you touched, and sends the result — there is no
+ * patch here that could land half of somebody's choice.
+ *
+ * Nothing here is rate-limited or counted, because there is nothing here to
+ * escape by changing. It is the same argument the group's `setLook` is under,
+ * and the checks are the same checks: everything is matched against a closed
+ * set, and anything outside one is dropped rather than refused, because this is
+ * a picker and the only way to send something else is to not be using it.
  */
 export const setAvatar = mutation({
   args: {
     hue: v.optional(v.number()),
+    emoji: v.optional(v.string()),
     initials: v.optional(v.string()),
   },
-  handler: async (ctx, { hue, initials }) => {
+  handler: async (ctx, { hue, emoji, initials }) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
 
-    // A value off the wheel is dropped rather than refused: this is a picker,
-    // and the only way to send one is to not be using the picker.
     const wheel: readonly number[] = AVATAR_HUES;
     const nextHue = hue !== undefined && wheel.includes(hue) ? hue : undefined;
 
+    const faces: readonly string[] = AVATAR_EMOJI;
+    const nextEmoji =
+      emoji !== undefined && faces.includes(emoji) ? emoji : undefined;
+
+    // Only when there is no emoji: the disc has room for one thing, and an
+    // emoji is the more deliberate of the two to have chosen. Same rule, same
+    // order, as a group's face.
     const wanted = (initials ?? "").trim();
     const nextInitials =
+      nextEmoji === undefined &&
       wanted.length >= 1 &&
       wanted.length <= MAX_INITIALS &&
       /^[a-z0-9]+$/i.test(wanted)
@@ -446,12 +550,24 @@ export const setAvatar = mutation({
 
     await ctx.db.patch(profile._id, {
       avatarHue: nextHue,
+      avatarEmoji: nextEmoji,
       avatarInitials: nextInitials,
     });
   },
 });
 
-/** Who may open a direct message with you. */
+/**
+ * Who may open a direct message with you.
+ *
+ * `nobody` is the only one of the three that changes what exists rather than
+ * only what is allowed, because it is the one thing that stops a friendship
+ * from opening a thread — see `linkDm` in `convex/chat/friends.ts`. Turning it
+ * back off therefore has arrears to settle: every friend made while it was on
+ * has no thread, and there is nothing anywhere for them to press to get one. So
+ * the threads are booked here, immediately and out of line, because the number
+ * of them is the number of friends and that is not a number a click should wait
+ * on.
+ */
 export const setDmPolicy = mutation({
   args: {
     policy: v.union(
@@ -463,7 +579,15 @@ export const setDmPolicy = mutation({
   handler: async (ctx, { policy }) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
+
+    const reopening = profile.dmPolicy === "nobody" && policy !== "nobody";
     await ctx.db.patch(profile._id, { dmPolicy: policy });
+
+    if (reopening) {
+      await ctx.scheduler.runAfter(0, internal.chat.friends.linkDms, {
+        clerkId: profile.clerkId,
+      });
+    }
   },
 });
 

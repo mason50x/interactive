@@ -174,20 +174,6 @@ export const DUPLICATE_WINDOW_MS = 10 * 60_000;
 /** The same text into this many conversations this fast is a broadcast. */
 export const BROADCAST = { conversations: 3, ms: 5 * 60_000 };
 
-/** Flagged messages at one conversation this fast is someone being hounded. */
-export const TARGETING = { count: 3, ms: 10 * 60_000 };
-
-/**
- * Whether ordinary profanity is masked on its way in.
- *
- * Ships off, and should stay off. Masking `shit` to `s***` is defeated by
- * anyone who cares in about four seconds, reads as patronising to the many more
- * who do not, and — the real objection — throws away the word, which is the
- * signal the targeting rule in `convex/moderation/rules.ts` actually needs.
- * Flagging it and keeping it is strictly more useful than hiding it.
- */
-export const SOFTEN_TIER_3 = false;
-
 /**
  * Hosts a link may point at. Ships empty, which means no links at all.
  *
@@ -248,6 +234,17 @@ export const GROUP_HUES = [
  * that is deliberately one list.
  */
 export const AVATAR_HUES = GROUP_HUES;
+
+/**
+ * The same faces, for a person.
+ *
+ * Shared with `GROUP_EMOJI` for the reason the wheel is shared, and closed for
+ * the reason that one is closed: a picture somebody picks out of a list is a
+ * picture nobody has to look at afterwards. This is as far as "choose your
+ * avatar" goes on a site with thirteen-year-olds on it and no upload path — see
+ * `monogram.tsx` in the app for the longer version of that argument.
+ */
+export const AVATAR_EMOJI = GROUP_EMOJI;
 
 /**
  * How many letters somebody may put on their own disc.

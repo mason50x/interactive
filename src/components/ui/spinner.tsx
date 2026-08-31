@@ -7,10 +7,12 @@ import { cn } from "@/lib/utils";
  * geometry below is Lucide's `loader`, and this is the only icon the project
  * would have wanted from that package — everything else is Heroicons.
  *
- * The spokes are stepped rather than swept. A ring of separate notches turned
- * continuously reads as a smear; landing it on each spoke in turn is what
- * makes the eye see the notches at all, so the timing function is overridden
- * to eight discrete ticks while `animate-spin` keeps the rest.
+ * The spokes are stepped rather than swept, eight discrete ticks to the turn,
+ * one per spoke. That only reads as motion because the spokes fade as they
+ * trail the leading one: eight identical notches turned by exactly their own
+ * spacing land on themselves every tick, and the eye gets a flash instead of a
+ * spin. The ramp is what the rotation carries around the ring, so the spokes
+ * are ordered clockwise from twelve and the opacities descend with them.
  *
  * `role="status"` with a label is what announces the wait to a screen reader.
  * Where the spinner sits inside a control that already says it is busy, pass
@@ -34,14 +36,14 @@ function Spinner({ className, ...props }: ComponentProps<"svg">) {
       )}
       {...props}
     >
-      <line x1="12" x2="12" y1="2" y2="6" />
-      <line x1="12" x2="12" y1="18" y2="22" />
-      <line x1="4.93" x2="7.76" y1="4.93" y2="7.76" />
-      <line x1="16.24" x2="19.07" y1="16.24" y2="19.07" />
-      <line x1="2" x2="6" y1="12" y2="12" />
-      <line x1="18" x2="22" y1="12" y2="12" />
-      <line x1="4.93" x2="7.76" y1="19.07" y2="16.24" />
-      <line x1="16.24" x2="19.07" y1="7.76" y2="4.93" />
+      <line x1="12" x2="12" y1="2" y2="6" opacity="1" />
+      <line x1="16.24" x2="19.07" y1="7.76" y2="4.93" opacity="0.8" />
+      <line x1="18" x2="22" y1="12" y2="12" opacity="0.65" />
+      <line x1="16.24" x2="19.07" y1="16.24" y2="19.07" opacity="0.5" />
+      <line x1="12" x2="12" y1="18" y2="22" opacity="0.4" />
+      <line x1="4.93" x2="7.76" y1="19.07" y2="16.24" opacity="0.3" />
+      <line x1="2" x2="6" y1="12" y2="12" opacity="0.22" />
+      <line x1="4.93" x2="7.76" y1="4.93" y2="7.76" opacity="0.15" />
     </svg>
   );
 }

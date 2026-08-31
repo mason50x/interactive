@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { untilLabel } from "@/lib/chat";
 
 /**
@@ -114,10 +114,6 @@ export function GlobalUnlock({
   /** The whole wait, so the ring knows how far along it is. */
   total: number;
 }) {
-  // Every gradient in a document shares one id space, and this component can be
-  // on screen more than once in a session's worth of navigation.
-  const gradient = useId();
-
   const progress =
     total <= 0 ? 1 : Math.min(1, Math.max(0, 1 - remaining / total));
 
@@ -136,30 +132,11 @@ export function GlobalUnlock({
         aria-valuemax={100}
         aria-valuenow={Math.round(progress * 100)}
         aria-valuetext={untilLabel(remaining, 0) + " left"}
-        className="relative isolate size-[52px] shrink-0"
+        className="relative size-[52px] shrink-0"
       >
-        {/* The heat, following the fill — barely there at the start and worth
-            looking at by the end, which is the only moment it matters. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-2 -z-10 rounded-full transition-opacity duration-1000 ease-linear"
-          style={{
-            background:
-              "radial-gradient(circle, var(--primary) 0%, transparent 68%)",
-            opacity: 0.08 + progress * 0.24,
-          }}
-        />
-
         {/* Turned so the fill starts at twelve o'clock. The svg is rotated
             rather than the wrapper, which would take the number with it. */}
         <svg viewBox="0 0 52 52" className="size-full -rotate-90" aria-hidden>
-          <defs>
-            <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="var(--primary)" />
-              <stop offset="100%" stopColor="var(--chart-4)" />
-            </linearGradient>
-          </defs>
-
           <circle
             cx="26"
             cy="26"
@@ -180,7 +157,7 @@ export function GlobalUnlock({
             fill="none"
             strokeWidth="4"
             strokeLinecap="round"
-            stroke={`url(#${gradient})`}
+            stroke="var(--primary)"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
             className="transition-[stroke-dashoffset] duration-1000 ease-linear motion-reduce:transition-none"
@@ -191,7 +168,9 @@ export function GlobalUnlock({
           <span className="text-[0.9375rem] leading-none font-semibold tabular-nums">
             {count}
           </span>
-          <span className="text-[0.5625rem] leading-none text-faint">{unit}</span>
+          <span className="text-[0.5625rem] leading-none text-faint">
+            {unit}
+          </span>
         </div>
       </div>
 
@@ -200,8 +179,8 @@ export function GlobalUnlock({
           New accounts wait {untilLabel(total, 0)} before posting to everyone.
         </p>
         <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-muted-foreground">
-          Nothing went wrong and there is nothing to do — this fills on its own.
-          Direct messages and groups work already.
+          The wait clears on its own. Direct messages and groups are open in the
+          meantime.
         </p>
       </div>
     </div>

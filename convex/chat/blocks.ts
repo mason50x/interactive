@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { callerProfile, friendship, hasBlocked, profileFor } from "./shared";
+import {
+  callerProfile,
+  dmKeyFor,
+  friendship,
+  hasBlocked,
+  membership,
+  profileFor,
+} from "./shared";
 
 /**
  * Making somebody go away.
@@ -30,6 +37,16 @@ export type Blocked = { clerkId: string; handle: string };
  * the system has to keep checking around: an accepted friendship is a standing
  * permission to open a direct message, and a block is a standing refusal. One
  * of them has to win, and it should not be the one that was granted earlier.
+ *
+ * The thread goes out of the blocker's list with it, and only theirs. This is
+ * not the deletion `friends.remove` does — nothing is destroyed, and the other
+ * person's list does not change, because the whole point of doing it this way
+ * is that they are not told. What it fixes is a thread the blocker would
+ * otherwise be stuck looking at forever: a direct message has no "leave", the
+ * friendship that could have cleared it is already gone by the line above, and
+ * `messages.send` has refused every word into it since the block landed. The
+ * row is marked rather than deleted, so unblocking and asking again puts the
+ * conversation back where both people left it — see `ensureDm`.
  */
 export const block = mutation({
   args: { peerClerkId: v.string() },
@@ -47,6 +64,19 @@ export const block = mutation({
 
     const friends = await friendship(ctx, profile.clerkId, peerClerkId);
     if (friends !== null) await ctx.db.delete(friends._id);
+
+    const thread = await ctx.db
+      .query("conversations")
+      .withIndex("byDmKey", (q) =>
+        q.eq("dmKey", dmKeyFor(profile.clerkId, peerClerkId)),
+      )
+      .unique();
+    if (thread === null) return;
+
+    const mine = await membership(ctx, thread._id, profile.clerkId);
+    if (mine !== null && mine.status === "active") {
+      await ctx.db.patch(mine._id, { status: "left" });
+    }
   },
 });
 

@@ -12,11 +12,12 @@ import {
   SunIcon,
 } from "@heroicons/react/24/solid";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SettingsSheet } from "@/components/app/settings-sheet";
 import { StreakBadge } from "@/components/app/streak-badge";
 import { useTheme } from "@/components/theme-provider";
 import type { Icon } from "@/lib/icons";
+import { onSettingsRequest } from "@/lib/preferences";
 import { themePreferences, type ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,14 @@ const popupClass =
   // The open/close motion is `.popup-slide` in globals.css rather than
   // utilities here — that rule explains why Tailwind cannot express it.
   "popup-slide rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none";
+
+/** One of the two faces of the sign-out row. Both are dealt into the same grid
+ *  cell so the row keeps its width and the menu never resizes mid-turn; the
+ *  scale and the blur are what carry one out and the other in. `scale` is its
+ *  own property in Tailwind v4, so it is named in the transition rather than
+ *  covered by `transform`. */
+const signOutFaceClass =
+  "pointer-events-none col-start-1 row-start-1 flex origin-left items-center gap-2.5 transition-[opacity,scale,filter] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]";
 
 function Avatar({
   src,
@@ -116,6 +125,31 @@ export function UserMenu() {
   const { openUserProfile, signOut } = useClerk();
   const { preference, setPreference } = useTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const signOutRef = useRef<HTMLElement>(null);
+
+  // The rail's search can name a setting — "constellation", "panic key" — and
+  // what it does with one is open this. It always opens and never toggles: a
+  // result that was clicked means "show me that", and there is no reading of
+  // it under which the answer is to close the panel. See `requestSettings`.
+  useEffect(() => onSettingsRequest(() => setSettingsOpen(true)), []);
+
+  // A press on anything but the sign-out row puts it back. This listens on the
+  // document rather than on the popup because the theme submenu is portalled
+  // out of it — a press on a theme option never passes through the popup the
+  // row lives in — and because a press outside the menu should disarm the row
+  // on the way out, not leave it armed under the close.
+  useEffect(() => {
+    if (!confirmingSignOut) return;
+
+    const disarm = (event: PointerEvent) => {
+      if (signOutRef.current?.contains(event.target as Node)) return;
+      setConfirmingSignOut(false);
+    };
+
+    document.addEventListener("pointerdown", disarm, true);
+    return () => document.removeEventListener("pointerdown", disarm, true);
+  }, [confirmingSignOut]);
 
   if (!isLoaded || !user) {
     // Holds the row's exact height so the rail does not jump when the session
@@ -127,7 +161,15 @@ export function UserMenu() {
 
   return (
     <>
-      <Menu.Root>
+      {/* Deferred to `onOpenChangeComplete` rather than `onOpenChange`: an
+        armed row that reverts the instant the menu is dismissed plays the
+        turn backwards through the closing popup. This waits for the popup to
+        be gone, so the row is simply back the next time it is opened. */}
+      <Menu.Root
+        onOpenChangeComplete={(open) => {
+          if (!open) setConfirmingSignOut(false);
+        }}
+      >
         <Menu.Trigger
           aria-label={`Account: ${name}`}
           className="group flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl text-foreground backdrop-blur-[3px] transition-colors outline-none hover:bg-foreground/[0.05] data-popup-open:bg-foreground/[0.05] lg:justify-start lg:px-2"
@@ -265,12 +307,66 @@ export function UserMenu() {
 
               <Menu.Separator className="-mx-1.5 my-1.5 h-px bg-border" />
 
+              {/* Sign out asks first, and asks in place. The confirmation is
+                not a second row or a dialog: it is the same row turned over,
+                the label shrinking away behind a blur while a filled checkbox
+                comes forward out of one. Nothing around it moves.
+
+                `closeOnClick` is the row's own state, which is what makes the
+                first click inert to the menu — it arms the row and no more —
+                and lets the second one close the popup on its way out. */}
               <Menu.Item
-                className={cn(itemClass, "data-highlighted:text-destructive")}
-                onClick={() => signOut({ redirectUrl: "/" })}
+                ref={signOutRef}
+                // Both faces are in the DOM at all times, so typeahead is told
+                // which one to match on rather than being left to read the
+                // hidden one too.
+                label="Sign out"
+                closeOnClick={confirmingSignOut}
+                className={cn(
+                  itemClass,
+                  "data-highlighted:text-destructive",
+                  confirmingSignOut && "text-destructive",
+                )}
+                onClick={() => {
+                  if (!confirmingSignOut) {
+                    setConfirmingSignOut(true);
+                    return;
+                  }
+
+                  signOut({ redirectUrl: "/" });
+                }}
               >
-                <SignOutIcon className="size-4 shrink-0" />
-                Sign out
+                <span className="grid flex-1 grid-cols-1 grid-rows-1 items-center">
+                  <span
+                    aria-hidden={confirmingSignOut}
+                    className={cn(
+                      signOutFaceClass,
+                      confirmingSignOut
+                        ? "scale-[0.94] opacity-0 blur-[3px]"
+                        : "scale-100 opacity-100 blur-[0px]",
+                    )}
+                  >
+                    <SignOutIcon className="size-4 shrink-0" />
+                    Sign out
+                  </span>
+                  <span
+                    aria-hidden={!confirmingSignOut}
+                    className={cn(
+                      signOutFaceClass,
+                      confirmingSignOut
+                        ? "scale-100 opacity-100 blur-[0px]"
+                        : "scale-[1.08] opacity-0 blur-[3px]",
+                    )}
+                  >
+                    {/* Filled and already checked: the box is the answer, not
+                      a thing to tick. It reuses the menu's own check so the
+                      mark matches the theme rows above it. */}
+                    <span className="flex size-4 shrink-0 items-center justify-center rounded-sm bg-destructive">
+                      <CheckIcon className="size-3 text-destructive-foreground" />
+                    </span>
+                    Confirm?
+                  </span>
+                </span>
               </Menu.Item>
             </Menu.Popup>
           </Menu.Positioner>

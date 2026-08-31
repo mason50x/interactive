@@ -139,10 +139,7 @@ export function HomeBoard({
 
   return (
     <div className="flex flex-col gap-12">
-      <Section
-        title="Most popular today"
-        caption="What everyone else is opening."
-      >
+      <Section title="Most popular today">
         <ActivityRow
           activities={popularRow.map((entry) => entry.activity)}
           note={(activity) => {
@@ -155,7 +152,7 @@ export function HomeBoard({
       </Section>
 
       {recentRow.length > 0 && (
-        <Section title="Jump back in" caption="Where you left off.">
+        <Section title="Jump back in">
           <ActivityRow
             activities={recentRow}
             note={(activity) => {
@@ -170,10 +167,7 @@ export function HomeBoard({
       {/* Two of anything is not a favourites list, it is the two things you
           have opened — and "jump back in" is already showing them. */}
       {favouriteRow.length >= 3 && (
-        <Section
-          title="Your favourites"
-          caption="The ones you keep coming back to."
-        >
+        <Section title="Your favourites">
           <ActivityRow
             activities={favouriteRow}
             note={(activity) => {
@@ -189,21 +183,16 @@ export function HomeBoard({
 
 function Section({
   title,
-  caption,
   children,
 }: {
   title: string;
-  caption: string;
   children: React.ReactNode;
 }) {
   return (
     <section>
-      <div className="min-w-0">
-        <h2 className="text-[1.25rem] leading-tight font-semibold text-foreground">
-          {title}
-        </h2>
-        <p className="label-small mt-0.5 truncate text-faint">{caption}</p>
-      </div>
+      <h2 className="text-[1.25rem] leading-tight font-semibold text-foreground">
+        {title}
+      </h2>
       <div className="mt-4">{children}</div>
     </section>
   );

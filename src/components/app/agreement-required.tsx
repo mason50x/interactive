@@ -1,67 +1,53 @@
 "use client";
 
-import { LockClosedIcon } from "@heroicons/react/24/solid";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { AGREEMENT_CLAUSES, requestAgreement } from "@/lib/agreement";
-import { ACTIVITIES_HREF } from "@/lib/nav";
+import { Button } from "@/components/ui/button";
+import { PixelFloor } from "@/components/visuals/pixel-floor";
+import { requestAgreement } from "@/lib/agreement";
 
 /**
- * What stands where an activity would be when the terms have not been accepted.
+ * What stands where an activity or a chat would be when the terms have not
+ * been accepted.
  *
  * The route already refused on the server (`src/lib/agreement-gate.ts`), so
  * this is not a gate — it is the explanation for one, and it is here rather
  * than a redirect to the catalogue because a click that silently lands you
  * somewhere else is a bug as far as the person clicking is concerned.
  *
- * The terms are repeated in full. Sending someone to a card in the rail to
- * read four sentences they could have read here would be making them hunt for
- * the thing that is blocking them; the button is for signing, not for finding
- * out what.
+ * It used to set the terms out in full, and that was one copy of them too
+ * many. There is exactly one place to read the clauses and exactly one place
+ * to accept them — the card in the rail — and a page that reprints them is a
+ * page that will one day disagree with the card about what was agreed to. So
+ * what is left is a sentence, a way through, and the pattern.
+ *
+ * The sentence is the point of the rewrite. "Chat is behind the agreement" is
+ * a door with a sign on it; "You're almost in" is the same door said from the
+ * side of the person standing at it, which is the honest side — nothing has
+ * gone wrong here and nobody is in trouble. The barrier is still in the room:
+ * it is what the letters are cut out of. See `.hazard-text` in `globals.css`.
+ *
+ * The floor is the same one the handle screen stands on, and deliberately in
+ * the account's accent rather than in the red above it. Two screens, one
+ * threshold, one edge to it.
  */
 export function AgreementRequired({ title }: { title: string }) {
   return (
-    <div className="flex size-full items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 text-destructive">
-          <LockClosedIcon className="size-4 shrink-0" />
-          <span className="text-[0.875rem] font-medium">Locked</span>
-        </div>
+    <div className="relative flex size-full flex-col items-center justify-center overflow-hidden p-6 pb-[16vh]">
+      <PixelFloor />
 
-        <h1 className="mt-3 text-display text-[1.75rem]">
-          {title} is behind the agreement
-        </h1>
+      {/* Which door this is. Said once, for whoever cannot see that they are
+          looking at chat — the line below is the same for all of them. */}
+      <p className="sr-only">{title} is behind the agreement.</p>
 
-        <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">
-          Nothing opens until you accept these. There are four of them:
-        </p>
+      <h1 className="hazard-text text-display text-center text-[clamp(2.25rem,7vw,3.25rem)]">
+        You&rsquo;re almost in
+      </h1>
 
-        <ul className="mt-4 flex flex-col gap-2.5">
-          {AGREEMENT_CLAUSES.map((clause) => (
-            <li
-              key={clause}
-              className="flex gap-2.5 text-[0.9375rem] leading-relaxed text-muted-foreground"
-            >
-              <span
-                aria-hidden
-                className="mt-[0.6rem] size-1 shrink-0 rounded-full bg-border-strong"
-              />
-              <span>{clause}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-6 flex items-center gap-2">
-          {/* Opens the card in the rail with the field already focused. The
-              acceptance lives in one place — see `AgreementCard` — so there is
-              no second form here to keep in step with it. */}
-          <Button onClick={requestAgreement} size="lg">
-            Read and agree
-          </Button>
-          <ButtonLink href={ACTIVITIES_HREF} variant="ghost" size="lg">
-            Back to activities
-          </ButtonLink>
-        </div>
-      </div>
+      {/* Opens the card in the rail with the field already focused. The
+          acceptance lives in one place — see `AgreementCard` — so there is no
+          second form here to keep in step with it. */}
+      <Button onClick={requestAgreement} size="lg" className="relative mt-7">
+        Open agreement
+      </Button>
     </div>
   );
 }

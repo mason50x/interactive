@@ -1,4 +1,4 @@
-import { GLOBAL_COOLDOWN_MS, MAX_BODY, SOFTEN_TIER_3, type Surface } from "./limits";
+import { GLOBAL_COOLDOWN_MS, MAX_BODY, type Surface } from "./limits";
 import { scan, type Match } from "./lexicon";
 import { prepare } from "./normalize";
 import { findPatterns } from "./patterns";
@@ -7,7 +7,6 @@ import {
   hashBody,
   isBroadcast,
   isDuplicate,
-  isHounding,
   isTargeted,
   refusalForCategory,
   refusalForPattern,
@@ -73,7 +72,7 @@ export type StrikeSpec = {
 
 export type Verdict =
   | { allow: false; refusal: Refusal; strike: StrikeSpec | null }
-  | { allow: true; body: string; hash: string; flags: string[]; flagged: boolean };
+  | { allow: true; body: string; hash: string };
 
 /** A refusal that costs nothing and says nothing to the ledger. */
 function refuse(refusal: Refusal): Verdict {
@@ -156,25 +155,20 @@ export function screen(raw: string, context: SendContext): Verdict {
     return strikeFor(refusalForPattern(patterns[0].category), clean);
   }
 
-  // Everything left is tier three: allowed on its own, and the question is only
-  // whether it has been pointed at somebody.
-  const flagged = matches.filter((match) => match.tier === 3);
-  const flaggedTokens = flagged
-    .map((match) => match.token)
-    .filter((token): token is string => token !== undefined);
+  // Everything left is tier three: ordinary swearing, which does not go
+  // through. The only question left is what it costs, and that is the
+  // arrangement rather than the word — pointed at somebody it is harassment and
+  // goes on the record, and on its own it is a refusal that costs nothing.
+  const profanity = matches.filter((match) => match.tier === 3);
+  if (profanity.length > 0) {
+    const tokens = profanity
+      .map((match) => match.token)
+      .filter((token): token is string => token !== undefined);
+    if (isTargeted(forms.tokens, tokens)) return strikeFor("harassment", clean);
+    return refuse("profanity");
+  }
 
   const hash = hashBody(forms.squashed);
-
-  if (flagged.length > 0 && isTargeted(forms.tokens, flaggedTokens)) {
-    return strikeFor("harassment", clean);
-  }
-
-  if (
-    flagged.length > 0 &&
-    isHounding(context.recent, context.conversationId, context.now)
-  ) {
-    return strikeFor("harassment", clean);
-  }
 
   if (isDuplicate(context.recent, hash, context.now)) return refuse("duplicate");
 
@@ -182,13 +176,7 @@ export function screen(raw: string, context: SendContext): Verdict {
     return strikeFor("broadcast", clean);
   }
 
-  return {
-    allow: true,
-    body: SOFTEN_TIER_3 ? soften(clean, flaggedTokens) : clean,
-    hash,
-    flags: flagged.map((match) => match.term),
-    flagged: flagged.length > 0,
-  };
+  return { allow: true, body: clean, hash };
 }
 
 /**
@@ -197,9 +185,10 @@ export function screen(raw: string, context: SendContext): Verdict {
  * A group title is read by everyone who sees the group and has no sender, no
  * conversation and no history, so the standing checks, the rate windows and the
  * cross-message rules have nothing to work on. What is left is the part that
- * reads the text itself — shape, lexicon, patterns — and tier three is refused
- * here rather than flagged, because a name is not something you say once. There
- * is no arrangement of words that makes a group called `shitheads` fine.
+ * reads the text itself — shape, lexicon, patterns. Tier three is refused here
+ * as it is in `screen`, with the difference that there is no arrangement to
+ * read: a name is not something you say once, and no pronoun nearby is going to
+ * make a group called `shitheads` fine.
  */
 export function screenStatic(
   raw: string,
@@ -223,29 +212,4 @@ export function screenStatic(
   }
 
   return { ok: true, text: clean };
-}
-
-/**
- * Replace the flagged words with their first letter and asterisks.
- *
- * Only reachable when `SOFTEN_TIER_3` is on, which it is not. Kept working so
- * that turning it on is a one-line change rather than a one-line change and
- * then an afternoon, and written against the cleaned text rather than the
- * folded one because the cleaned text is what gets stored.
- */
-function soften(clean: string, terms: string[]): string {
-  let output = clean;
-  for (const term of terms) {
-    if (term.includes(" ")) continue;
-    const lowered = output.toLowerCase();
-    let from = 0;
-    for (;;) {
-      const at = lowered.indexOf(term, from);
-      if (at === -1) break;
-      const masked = output[at] + "*".repeat(term.length - 1);
-      output = output.slice(0, at) + masked + output.slice(at + term.length);
-      from = at + term.length;
-    }
-  }
-  return output;
 }

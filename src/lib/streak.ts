@@ -27,32 +27,6 @@ const milestones: { at: number; name: string; line: string }[] = [
 ];
 
 /**
- * The next run worth stopping for, and how far into it you are.
- *
- * `from` is the milestone just cleared rather than zero, which is what makes
- * the bar mean something on day 31: measured from zero, the month behind you
- * would fill 8% of the way to a hundred days and read as no progress at all.
- * Measured from thirty it reads as one day into the next stretch, which is
- * what actually happened.
- *
- * `null` once the longest milestone is behind you. There is nothing left to
- * be counting towards, and inventing a target past a year would be the card
- * moving the goalposts on someone who has already won.
- */
-export function nextMilestone(
-  current: number,
-): { at: number; name: string; from: number } | null {
-  // Ordered longest first, so the last entry above `current` is the nearest
-  // one ahead of it.
-  const ahead = milestones.filter(({ at }) => at > current);
-  const next = ahead[ahead.length - 1];
-  if (!next) return null;
-
-  const cleared = milestones.find(({ at }) => at <= current);
-  return { at: next.at, name: next.name, from: cleared?.at ?? 0 };
-}
-
-/**
  * The line under the number.
  *
  * A personal best outranks a milestone, because it is the rarer thing to have

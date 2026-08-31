@@ -25,7 +25,7 @@
  * is the more useful axis for a catalogue somebody browses to pick something
  * up. `GENRE_ALIASES` in `scripts/build-catalogue.mjs` is where the two are
  * reconciled, and it is total: an upstream tag with no mapping stops the build
- * rather than reaching a shelf that has no head for it.
+ * rather than reaching a catalogue that has no label or colour for it.
  */
 export type Genre =
   | "coordination"
@@ -51,9 +51,6 @@ export type Activity = {
   /** Directory size upstream, for the migration script's accounting. */
   bytes: number;
 };
-
-/** A genre and everything in it, in catalogue order. */
-export type Shelf = { genre: Genre; activities: readonly Activity[] };
 
 /**
  * Tile art, served from `public/` rather than from the asset bucket.
@@ -114,7 +111,7 @@ function normalise(value: string): string {
  *
  * It takes the list rather than reaching for one, which is what lets the same
  * function run on the server against `ACTIVITIES` and in the browser against
- * whatever shelf a component was handed.
+ * whatever slice of it a component was handed.
  */
 export function filterActivities(
   activities: readonly Activity[],

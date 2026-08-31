@@ -78,11 +78,12 @@ export function ActivityCard({
   const shell = cn(
     "group relative block aspect-video w-full overflow-hidden rounded-xl",
     "border border-border bg-surface-muted",
-    "transition-[transform,box-shadow] duration-300",
-    // A tile that lifts under the pointer is a tile saying it will open. The
-    // locked one still responds — it opens the agreement — but it says so with
-    // the plate over it rather than by pretending.
-    !locked && "hover:-translate-y-0.5 hover:shadow-lg",
+    "transition-[box-shadow] duration-300",
+    // The tile does not move under the pointer — the shadow is what says it
+    // will open. The locked one gets neither: it still responds, by opening
+    // the agreement, but it says so with the plate over it rather than by
+    // pretending.
+    !locked && "hover:shadow-lg",
     "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   );
 
@@ -125,29 +126,27 @@ export function ActivityCard({
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100" />
 
-      <div className="absolute inset-x-0 bottom-0 p-3.5">
+      <div className="absolute inset-x-0 bottom-0 p-3.5 pb-9">
         {/*
-         * The plate rises to make room for the line below it, instead of the
-         * line growing and pushing it. Same picture, but a transform runs on
-         * the compositor where an animated `grid-template-rows` puts a layout
-         * pass in every frame — and there are up to 82 of these in a row.
+         * The plate does not move. The line below it is revealed into space
+         * this padding already holds open, rather than by lifting the title
+         * out of the way — the title is truncated at either height, so the
+         * motion bought nothing and cost a moving target to read.
          */}
-        <div className="transition-transform duration-300 group-hover:-translate-y-5 group-focus-visible:-translate-y-5">
-          <div className="flex items-center gap-1.5">
-            <meta.icon
-              className="size-3.5 shrink-0"
-              style={{ color: "color-mix(in oklab, var(--hue) 70%, white)" }}
-            />
-            <span className="label-small text-white/75">{meta.label}</span>
-          </div>
-
-          <p className="mt-1 truncate text-[0.9375rem] font-medium text-white">
-            {activity.title}
-          </p>
+        <div className="flex items-center gap-1.5">
+          <meta.icon
+            className="size-3.5 shrink-0"
+            style={{ color: "color-mix(in oklab, var(--hue) 70%, white)" }}
+          />
+          <span className="label-small text-white/75">{meta.label}</span>
         </div>
 
-        {/* Sits in the space the plate vacates. At rest it is directly behind
-            the title at zero opacity, so it costs no height. */}
+        <p className="mt-1 truncate text-[0.9375rem] font-medium text-white">
+          {activity.title}
+        </p>
+
+        {/* Sits in the space the plate's bottom padding keeps for it, so
+            revealing it is opacity and nothing else. */}
         <p className="label-small absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
           {locked ? "Agreement required" : (note ?? popularityLabel(activity))}
         </p>

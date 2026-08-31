@@ -28,6 +28,17 @@ import { cn } from "@/lib/utils";
  * Every override is optional and they fall back independently — a hue with no
  * initials is your first letter on a colour you chose, initials with no hue is
  * your initials on the colour your handle hashes to.
+ *
+ * The letters are raised here and not in the stylesheet. `text-transform` is
+ * ruled out project-wide, and rightly — but that rule is about type being *set*
+ * in a case it was not written in, and this is not type being set. It is one or
+ * two letters standing in for a person on a disc, which is a mark, and a mark
+ * has no lowercase. Handles are stored lowercase and initials are typed however
+ * they are typed, so without this the same disc reads `ms` next to somebody
+ * else's `MS`. The account avatar in the rail has always done this.
+ *
+ * The emoji is left exactly as it came. Uppercasing it is a no-op, and doing it
+ * anyway would be an invitation to wonder why.
  */
 export function Monogram({
   handle,
@@ -56,7 +67,7 @@ export function Monogram({
       // them — see `.monogram` there.
       style={{ "--monogram-hue": hue } as CSSProperties}
     >
-      {emoji ?? initials ?? handle.slice(0, 1)}
+      {emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase()}
     </span>
   );
 }

@@ -2,18 +2,27 @@
  * The settings behind the account menu's sheet: what they are, and how a
  * stored row becomes something the page can use.
  *
- * There is no second copy of any of this. Convex is the store — a live
- * subscription, so a change made in one tab is on the page in the other
- * without anything here arranging it — and `convex/preferences.ts` is the only
- * thing that persists. What lives in this file is the vocabulary: the
- * defaults, the palette, the panic-key presets, and the pure functions that
- * turn a row into custom properties or a keystroke into a string.
+ * Convex is the store — a live subscription, so a change made in one tab is on
+ * the page in the other without anything here arranging it — and
+ * `convex/preferences.ts` is the only thing that persists. What lives in this
+ * file is the vocabulary: the defaults, the palette, the panic-key presets,
+ * and the pure functions that turn a row into custom properties or a keystroke
+ * into a string.
+ *
+ * The one other copy of the answer is a cache rather than a second source of
+ * truth: the last row this browser saw, in `localStorage`, written only from a
+ * row and read only until one arrives. Without it every refresh is spent in
+ * the default blue for the length of the Clerk and Convex handshake, which is
+ * a visible repaint of the whole page for anyone who chose otherwise. See
+ * `PREFERENCES_STORAGE_KEY` and `accentScript`.
  *
  * The theme is deliberately not part of this. It is a property of the screen
  * you are looking at rather than of the account — a laptop in a bright room
  * and a phone in bed want different answers — so it stays device-local in
  * `src/lib/theme.ts`.
  */
+
+import { LEARN_PATH_PREFIX } from "@/lib/learn";
 
 export type Preferences = {
   /** The drifting mesh behind the dashboard rail. */
@@ -36,12 +45,21 @@ export const BLANK_PAGE = "about:blank";
  * The panic key ships off. It is a feature that takes the page away from you,
  * and one that fires on a keystroke nobody has agreed to yet is a bug wearing
  * a feature's clothes.
+ *
+ * `ctrl+shift+x` and not the more obvious `shift+escape`, which Chrome keeps
+ * for its own task manager on Windows, Linux and ChromeOS — the page is never
+ * told the key was pressed, so the default would have been dead on most of the
+ * machines this runs on. The recorder will still take Shift+Esc from anyone
+ * who wants it; it is only a bad thing to hand out unasked. What is left is
+ * bound by nothing in any browser, and Ctrl, Shift and X sit in the same
+ * bottom-left corner of the board, so it is a one-handed reach rather than a
+ * shape to find under pressure.
  */
 export const defaultPreferences: Preferences = {
   constellation: true,
   accent: "blue",
   panicEnabled: false,
-  panicKey: "shift+escape",
+  panicKey: "ctrl+shift+x",
   panicUrl: BLANK_PAGE,
 };
 
@@ -145,7 +163,17 @@ export function accentColor(id: AccentId): string {
  * chrome, and the rail is where most of this is actually seen.
  */
 export function accentVariables(id: AccentId): [string, string][] {
-  const color = accentColor(id);
+  return accentVariablesFor(accentColor(id));
+}
+
+/**
+ * The same list, for a colour rather than an id.
+ *
+ * Split out for `accentScript`, which builds the list once with a placeholder
+ * where the hex goes and ships that instead of six expanded copies. Nothing
+ * else should need it — an accent is an id everywhere but there.
+ */
+function accentVariablesFor(color: string): [string, string][] {
   const hover = `color-mix(in oklab, ${color} 86%, var(--foreground))`;
   const tint = `color-mix(in oklab, ${color} 12%, var(--background))`;
   const tintForeground = `color-mix(in oklab, ${color} 65%, var(--foreground))`;
@@ -181,6 +209,136 @@ export function applyAccent(id: AccentId): void {
     else root.style.setProperty(name, value);
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/*  The local copy                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Where the last row this browser saw is kept.
+ *
+ * A cache of the server's answer, not a place a setting is ever *made*: it is
+ * written from a row that came back from Convex and read only while no such
+ * row has arrived yet. The sheet still writes to Convex and nowhere else, so
+ * the two cannot disagree about anything except how old they are — and the
+ * moment the subscription lands, this one is overwritten.
+ *
+ * It is cleared on sign-out rather than left behind, so a shared laptop does
+ * not open the next person's session in the last person's accent.
+ */
+export const PREFERENCES_STORAGE_KEY = "il-preferences";
+
+/**
+ * The raw string, not the object.
+ *
+ * `useSyncExternalStore` compares snapshots by identity and calls this on every
+ * render; parsing here would hand it a new object each time and spin. The
+ * parse belongs in a `useMemo` on the other side.
+ *
+ * Storage access is wrapped because it throws outright — not returns null — in
+ * a browser set to block site data, exactly as in `src/lib/theme.ts`.
+ */
+export function readCachedPreferences(): string | null {
+  try {
+    return window.localStorage.getItem(PREFERENCES_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** `null` for nothing cached, or for anything that is not the shape we wrote. */
+export function parseCachedPreferences(raw: string | null): Preferences | null {
+  if (!raw) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return resolvePreferences(parsed as Record<string, unknown>);
+  } catch {
+    return null;
+  }
+}
+
+export function cachePreferences(preferences: Preferences): void {
+  try {
+    window.localStorage.setItem(
+      PREFERENCES_STORAGE_KEY,
+      JSON.stringify(preferences),
+    );
+  } catch {
+    // Ignored: the settings still apply for this page view, and the only cost
+    // is the next refresh starting on the defaults again.
+  }
+}
+
+export function clearCachedPreferences(): void {
+  try {
+    window.localStorage.removeItem(PREFERENCES_STORAGE_KEY);
+  } catch {
+    // Ignored, as above.
+  }
+}
+
+/**
+ * The `storage` event, which fires in the *other* tabs and never the one that
+ * wrote the key. That is all this needs: a tab that wrote the key already has
+ * the row it wrote from, and a tab that is still loading is the only one with
+ * anything to learn here.
+ */
+export function subscribeToCachedPreferences(
+  onStoreChange: () => void,
+): () => void {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+/**
+ * The accent, on the document before the first paint.
+ *
+ * This is the same trick `themeScript` plays and it is here for the same
+ * reason: the settings arrive over a Convex subscription that cannot open
+ * until Clerk has a token, which is hundreds of milliseconds after the page is
+ * already on screen. A component cannot close that gap — React has no storage
+ * to read on the server — so every refresh would paint the app blue and then
+ * repaint it violet once the query landed.
+ *
+ * The declarations are not written out a second time. `accentVariablesFor` is
+ * called once here with a placeholder where the hex goes, and the script swaps
+ * the chosen colour in; if a variable is added or a mix retuned above, this
+ * follows without being touched. `PreferencesProvider` re-applies the same
+ * accent on mount and corrects it if the cache was stale, so the two can only
+ * ever differ for the length of one query.
+ *
+ * The default accent is deliberately absent from the table: the stylesheet
+ * already says blue, so there is nothing for the script to do — which also
+ * means a browser with no cache does exactly nothing, which is the right
+ * answer for a first visit.
+ *
+ * `/learn` is skipped from inside the script rather than by mounting it
+ * somewhere that shell does not reach. It has to run in the root layout — the
+ * only layout a client-side navigation never re-renders, and a `<script>` React
+ * creates on the client is a tag that never executes — and the root layout is
+ * shared with the activity shell, which is painted in nothing of ours.
+ */
+const ACCENT_PLACEHOLDER = "__accent__";
+
+export const accentScript = `(function(){try{var p=location.pathname;if(p===${JSON.stringify(
+  LEARN_PATH_PREFIX,
+)}||p.indexOf(${JSON.stringify(
+  `${LEARN_PATH_PREFIX}/`,
+)})===0)return;var r=localStorage.getItem(${JSON.stringify(
+  PREFERENCES_STORAGE_KEY,
+)});if(!r)return;var c=${JSON.stringify(
+  Object.fromEntries(
+    accents
+      .filter((accent) => accent.id !== defaultPreferences.accent)
+      .map((accent) => [accent.id, accent.color]),
+  ),
+)}[JSON.parse(r).accent];if(!c)return;var v=${JSON.stringify(
+  accentVariablesFor(ACCENT_PLACEHOLDER),
+)},e=document.documentElement;for(var i=0;i<v.length;i++){e.style.setProperty(v[i][0],v[i][1].split(${JSON.stringify(
+  ACCENT_PLACEHOLDER,
+)}).join(c))}}catch(_){}})()`;
 
 /* -------------------------------------------------------------------------- */
 /*  The panic key                                                              */
@@ -312,4 +470,31 @@ export function safePanicUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * How anything gets the settings sheet open without owning it.
+ *
+ * The sheet is mounted by `UserMenu`, at the very bottom of the rail, because
+ * that is where the gear that opens it lives. The rail's search is at the top
+ * of the same column and has no way to reach that state — and threading a
+ * provider through the layout for one boolean would be a context whose only
+ * two participants are eight inches apart on the same screen.
+ *
+ * So: a window event, exactly as `requestAgreement` in `src/lib/agreement.ts`
+ * does it, and for the same reason. Callers need nothing but this module, and
+ * the menu listens and opens itself.
+ */
+const SETTINGS_EVENT = "50x:settings-request";
+
+/** Ask the settings sheet to open. Nothing happens if the rail is not
+ *  mounted, which is every page outside `/dashboard`. */
+export function requestSettings() {
+  window.dispatchEvent(new Event(SETTINGS_EVENT));
+}
+
+/** The menu's side of it. Returns the unsubscribe, for an effect's cleanup. */
+export function onSettingsRequest(handler: () => void) {
+  window.addEventListener(SETTINGS_EVENT, handler);
+  return () => window.removeEventListener(SETTINGS_EVENT, handler);
 }

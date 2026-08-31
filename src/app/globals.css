@@ -43,6 +43,13 @@
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: #ffffff;
 
+  /* The other half of the answer a field can give. Only ever ink — there is no
+     green surface anywhere in this app — so it is cut dark enough to be read
+     as text on the background rather than as a fill, which is the same rule
+     the accents follow and the reason this is not the brighter green a tick
+     usually is. */
+  --success: #058c56;
+
   --border: #e3e3e3;
   --input: #e3e3e3;
   --ring: #3c85f7;
@@ -71,6 +78,24 @@
   --surface-muted: #efefef;
   --faint: #8a8a8a;
   --border-strong: #d2d2d2;
+
+  /* Card elevation, as three shadows rather than one.
+
+     A single blur reads as a glow around the card; what makes an object look
+     like it is resting on a page is the *contact* — a tight, nearly opaque
+     shadow right under the edge — with the wide, faint one further out doing
+     the ambient occlusion. The middle layer only exists to keep the two from
+     showing a seam. All three are pulled up by their spread so nothing leaks
+     out of the top edge: light in this app comes from above.
+
+     Cast in the foreground ink rather than pure black, so the shadow is the
+     same hue as the page rather than a grey the palette never uses. */
+  --elevation-card:
+    0 1px 2px -1px rgb(15 15 15 / 0.07), 0 5px 12px -6px rgb(15 15 15 / 0.09),
+    0 20px 36px -20px rgb(15 15 15 / 0.16);
+  --elevation-card-hover:
+    0 2px 4px -2px rgb(15 15 15 / 0.09), 0 12px 24px -10px rgb(15 15 15 / 0.12),
+    0 36px 64px -28px rgb(15 15 15 / 0.24);
 
   /* The inverted panel. Stays dark in both themes by design. */
   --panel: #0f0f0f;
@@ -125,6 +150,8 @@
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: #ffffff;
 
+  --success: #34d399;
+
   --border: #272727;
   --input: #272727;
   --ring: #3c85f7;
@@ -142,6 +169,19 @@
   --surface-muted: #1f1f1f;
   --faint: #767676;
   --border-strong: #383838;
+
+  /* Dark cards get the same three layers, cast much harder — a shadow at
+     light-theme opacity is invisible against #0f0f0f — plus a fourth the
+     light theme has no need of: a hairline of white along the top edge. On a
+     dark page a shadow alone cannot lift anything, because there is nothing
+     below the card to darken; the lift comes from the card's own top edge
+     catching the light. */
+  --elevation-card:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.045), 0 1px 2px -1px rgb(0 0 0 / 0.6),
+    0 6px 14px -6px rgb(0 0 0 / 0.55), 0 24px 44px -22px rgb(0 0 0 / 0.7);
+  --elevation-card-hover:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.65),
+    0 14px 26px -10px rgb(0 0 0 / 0.6), 0 40px 72px -30px rgb(0 0 0 / 0.8);
 
   --panel: #171717;
   --panel-elevated: #202020;
@@ -171,6 +211,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -201,6 +242,11 @@
   --color-panel-border: var(--panel-border);
   --color-fire: var(--fire);
   --color-fire-ink: var(--fire-ink);
+
+  /* `shadow-card` / `shadow-card-hover`. Named off the raw tokens rather than
+     declared here, so both themes can answer the same utility differently. */
+  --shadow-card: var(--elevation-card);
+  --shadow-card-hover: var(--elevation-card-hover);
 
   --font-sans: var(--font-inter);
   --font-serif: var(--font-display-serif);
@@ -266,6 +312,19 @@
   .text-display {
     line-height: 0.95;
     font-weight: 600;
+  }
+
+  /* Half a step down from `.text-display`, for the two headings that carry it
+     at full page-title size — 600 reads heavy at 2.75rem in a way it does not
+     at the 1.5rem the utility is also used at. Inter is loaded as a variable
+     font with no pinned weight, so 550 is a real instance rather than a
+     rounded one.
+
+     It lives here rather than as `font-medium` on the element because this
+     block is emitted after Tailwind's own weight utilities and `.text-display`
+     would win the cascade against them. */
+  .text-display-title {
+    font-weight: 550;
   }
 
   .text-serif-display {
@@ -352,13 +411,19 @@
   }
 
   .text-shimmer {
+    /* The two colours the band is made of, named so a caller on a surface the
+       theme knows nothing about can say what "unlit" and "lit" mean there —
+       see `.packet-caption`, which shimmers on a black cover. Everywhere else
+       they resolve to the theme's own pair and nothing changes. */
+    --shimmer-base: var(--faint);
+    --shimmer-crest: var(--foreground);
     background-image: linear-gradient(
       100deg,
-      var(--faint) 0%,
-      var(--faint) 42%,
-      var(--foreground) 50%,
-      var(--faint) 58%,
-      var(--faint) 100%
+      var(--shimmer-base) 0%,
+      var(--shimmer-base) 42%,
+      var(--shimmer-crest) 50%,
+      var(--shimmer-base) 58%,
+      var(--shimmer-base) 100%
     );
     background-size: 200% 100%;
     background-clip: text;
@@ -372,7 +437,7 @@
     .text-shimmer {
       animation: none;
       background-image: none;
-      color: var(--faint);
+      color: var(--shimmer-base);
     }
   }
 
@@ -394,6 +459,69 @@
     color: oklch(0.86 0.09 var(--monogram-hue));
   }
 
+  /*
+   * The barrier, as a fill.
+   *
+   * The invite card fills its pips as they are spent, and the obvious way to
+   * draw the agreement card's one slot with nothing in it is an empty track.
+   * That was wrong beside the pink row above it: an empty grey track reads as
+   * "nothing yet", and this is not nothing yet — it is the one thing standing
+   * between the account and everything the tiles open. So it is drawn as what
+   * it is, which is a barrier: hazard stripes, in the same red the header's
+   * triangle and the word `Required` are already in.
+   *
+   * It moves because a static barrier is scenery. One tile's travel per period,
+   * so the pattern lands exactly on itself and the loop has no seam — shifting
+   * by anything other than `background-size` is a stripe that jumps every time
+   * it repeats. The tile and the period are variables so a larger surface can
+   * scale both together and keep the stripes travelling at the same speed;
+   * scaling one alone is the same material moving at a different rate, which
+   * reads as a second, unrelated pattern.
+   *
+   * `.hazard-text` is the same fill clipped to the glyphs, which is why the
+   * ink is so much stronger there: on a 6px bar the stripes are the shape, and
+   * inside a letterform they are what is left of it after the counters and the
+   * stems have taken their bite. `color: transparent` is not a hidden label —
+   * the text is in the DOM and read out exactly as if it were painted.
+   *
+   * Nothing is needed for reduced motion. The blanket rule at the foot of this
+   * file stops the travel, and what is left is the barrier itself, still saying
+   * the same thing without moving.
+   */
+  .hazard-bar,
+  .hazard-text {
+    --hazard-tile: 12px;
+    --hazard-period: 620ms;
+    background-color: var(--hazard-base);
+    background-image: linear-gradient(
+      -45deg,
+      var(--hazard-stripe) 25%,
+      transparent 25%,
+      transparent 50%,
+      var(--hazard-stripe) 50%,
+      var(--hazard-stripe) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: var(--hazard-tile) var(--hazard-tile);
+    animation: hazard-slide var(--hazard-period) linear infinite;
+  }
+
+  .hazard-bar {
+    --hazard-base: color-mix(in oklab, var(--destructive) 14%, transparent);
+    --hazard-stripe: color-mix(in oklab, var(--destructive) 62%, transparent);
+  }
+
+  .hazard-text {
+    --hazard-tile: 20px;
+    --hazard-period: 1030ms;
+    --hazard-base: color-mix(in oklab, var(--destructive) 58%, transparent);
+    --hazard-stripe: var(--destructive);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   :root[data-theme="dark"] .nav-pill {
     background-image: linear-gradient(
       to bottom,
@@ -405,6 +533,88 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.18),
       inset 0 -1px 0 rgba(0, 0, 0, 0.2),
       0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+
+  /*
+   * Message bubbles, built the way the rail's selected pill is built.
+   *
+   * Same three parts, same order, for the same reason: a face lit from above,
+   * a specular line along the top edge, and a border a shade darker than the
+   * foot of the gradient so the bubble sits on the thread rather than glows
+   * off it. A thread is a column of small objects and the rail is a column of
+   * small objects, and one of them looking pressed out of plastic while the
+   * other is a flat tint is the kind of difference nobody names and everybody
+   * sees.
+   *
+   * Yours mixes off `--primary`, so it is the account's accent and moves when
+   * that does — the same mix percentages as `.nav-pill`, because your messages
+   * and your selected page are the same object in two places.
+   *
+   * Everybody else's mixes off `--surface-muted`, and is quieter on purpose:
+   * the same construction with the contrast taken out of it. The highlight is
+   * nearly white in the light theme because it is a light grey catching light,
+   * and almost nothing in the dark one, where a 30% white line on #1f1f1f is
+   * a stripe rather than a rim.
+   *
+   * The `bg-*` utility stays on the element under all of this. The gradient
+   * covers it, but it is what the bubble is if the gradient does not paint —
+   * and it is what the text colour was picked against.
+   */
+  .bubble-mine {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 88%, #ffffff),
+      color-mix(in oklab, var(--primary) 93%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--primary) 84%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+      0 1px 2px
+        color-mix(
+          in oklab,
+          color-mix(in oklab, var(--primary) 50%, #000000) 30%,
+          transparent
+        );
+  }
+
+  .bubble-theirs {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--surface-muted) 86%, #ffffff),
+      color-mix(in oklab, var(--surface-muted) 97%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--surface-muted) 87%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(15, 15, 15, 0.07);
+  }
+
+  :root[data-theme="dark"] .bubble-mine {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 94%, #ffffff),
+      color-mix(in oklab, var(--primary) 90%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--primary) 72%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+
+  :root[data-theme="dark"] .bubble-theirs {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--surface-muted) 92%, #ffffff),
+      color-mix(in oklab, var(--surface-muted) 94%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--surface-muted) 60%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+      0 1px 2px rgba(0, 0, 0, 0.4);
   }
 
   /*
@@ -423,7 +633,8 @@
    * and sharing one declaration between them is what makes the exit the
    * entrance run backwards.
    */
-  .popup-slide {
+  .popup-slide,
+  .popup-drop {
     transition:
       transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
       opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -447,6 +658,17 @@
     transform: translateY(0.625rem);
   }
 
+  /* The same thing for a popup that hangs below its trigger instead of above
+     it: it starts a little higher and settles downward, so it still reads as
+     having come out of the thing that was pressed rather than up off the page.
+     Everything else about it is `.popup-slide`, which is why the two share the
+     declaration above. */
+  .popup-drop[data-starting-style],
+  .popup-drop[data-ending-style] {
+    opacity: 0;
+    transform: translateY(-0.625rem);
+  }
+
   .label-small {
     font-size: 0.75rem;
   }
@@ -468,6 +690,13 @@
  */
 :root[data-theme="dark"] .cl-logoImage {
   filter: invert(1);
+}
+
+/* One tile, whatever the tile has been set to. See the note on `.hazard-bar`. */
+@keyframes hazard-slide {
+  to {
+    background-position: calc(var(--hazard-tile) * -1) 0;
+  }
 }
 
 @keyframes drift {
@@ -754,6 +983,60 @@
   animation: scrim-in 0.3s ease-out both;
 }
 
+/* ---------------------------------------------------------------------------
+ * The handle ceremony.
+ *
+ * Two halves of one dissolve: the account's photograph goes out of focus and
+ * away, the letter that replaces it in chat arrives out of the same blur. They
+ * are stacked on each other and run together, so what you see is one thing
+ * turning into another rather than two things swapping places.
+ *
+ * A blur *is* the expensive filter this file otherwise refuses — see the note
+ * on the flame — and it is affordable here for the one reason it is not there:
+ * this runs once, for three quarters of a second, on a screen nobody ever
+ * returns to. Nothing in chat animates a filter.
+ *
+ * `both` matters more than usual. Under reduced motion the blanket rule at the
+ * foot of this file collapses both of these to a single instant, and the fill
+ * is what makes that instant land on the *end* of the animation: the picture
+ * gone, the letter there. Without it the reduced-motion path would leave the
+ * photograph on screen and the monogram invisible, which is not a quieter
+ * version of the moment but the wrong one.
+ * ------------------------------------------------------------------------- */
+@keyframes handle-dissolve {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    filter: blur(18px);
+    transform: scale(1.08);
+  }
+}
+
+@keyframes handle-resolve {
+  from {
+    opacity: 0;
+    filter: blur(18px);
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+.animate-handle-dissolve {
+  animation: handle-dissolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-handle-resolve {
+  animation: handle-resolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* The one part of the fire that has to be removed rather than stilled.
    The blanket rule at the foot of this file collapses every animation to a
    single instant, which for the sparks and the rings means they never travel
@@ -778,4 +1061,512 @@
        wait for a motion that no longer happens is just a stall. */
     transition-delay: 0ms !important;
   }
+}
+
+/* The orb of pixels that turns in the rail's search panel before anything has
+   been typed.
+
+   Fifty square dots placed on an actual sphere and spun, rather than a circle
+   of dots pretending. Each dot's transform is the standard spherical
+   placement — swing by longitude, tilt by latitude, push out by the radius —
+   inside a `preserve-3d` shell under a short `perspective`, so the browser
+   does the projection. That projection is most of what sells it: the dots
+   bunch up at the silhouette and thin out across the middle on their own, and
+   the near face spreads wider than the far one, neither of which is written
+   anywhere here.
+
+   ## The shading is stepped, not smooth
+
+   A dot cannot be dimmed by its own depth in CSS — there is no way to read a
+   computed z back out. But the depth is knowable in advance: a dot at
+   longitude L faces the camera exactly when the shell has turned by -L, so its
+   brightness over one revolution is a fixed cycle that is merely *offset* by
+   where it sits. That offset is `--phase`, and it is the whole mechanism —
+   every dot runs the identical animation and only the delay differs.
+
+   The cycle steps through eight fixed levels rather than fading between them,
+   which is deliberate and is what keeps this in the same world as the square,
+   whole-pixel dots: quantised shading is how a sphere is drawn with a limited
+   palette, and eight bands read as banding on purpose rather than as a
+   gradient that failed.
+
+   Latitude is left out of the brightness on purpose. A dot near a pole is
+   genuinely closer to the axis and would shade to nothing, which is correct
+   and looks worse — the poles are the part that makes the shape legible as a
+   ball rather than a barrel, and they are worth keeping lit.
+
+   ## Stilled
+
+   Under `prefers-reduced-motion` the blanket rule at the foot of this file
+   collapses both animations, and every dot falls back to the `--rest` opacity
+   written on it: the same eight-level shading, frozen at the rotation the
+   sphere starts at. So the still version is a lit orb rather than a flat
+   scatter of identical dots — which is the difference between a stilled
+   animation and a broken one. */
+@keyframes pixel-orb-spin {
+  from {
+    transform: rotateX(-16deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-16deg) rotateY(360deg);
+  }
+}
+
+@keyframes pixel-orb-face {
+  0% {
+    opacity: 1;
+  }
+  12.5% {
+    opacity: 0.85;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  37.5% {
+    opacity: 0.38;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  62.5% {
+    opacity: 0.38;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  87.5% {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pixel-orb {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  /* Shallow enough to be visible and long enough not to fish-eye the near
+     face. The sphere is 44px across inside a 56px box; anything under about
+     150px here starts bending it. */
+  perspective: 200px;
+}
+
+.pixel-orb-shell {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* Written as a base as well as animated, so the tilt survives the animation
+     being collapsed. A sphere seen exactly edge-on at the equator has its two
+     poles hidden behind the middle, which is the one angle at which a point
+     cloud reads as a ring again. */
+  transform: rotateX(-16deg);
+  animation: pixel-orb-spin 6s linear infinite;
+}
+
+.pixel-orb-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  /* Half the dot, so the placement below measures from the sphere's centre
+     rather than from the dot's top-left corner. */
+  margin: -1.5px 0 0 -1.5px;
+  background: currentColor;
+  opacity: var(--rest);
+  transform: rotateY(calc(var(--lon) * 1deg)) rotateX(calc(var(--lat) * 1deg))
+    translateZ(1.375rem);
+  animation: pixel-orb-face 6s steps(1, end) infinite;
+  /* Negative, so every dot is already lit correctly on the first frame. The
+     positive form of the same offset would open with a dark sphere that
+     brightens into place over six seconds. */
+  animation-delay: calc((var(--phase) - 1) * 6s);
+}
+
+/* The speech bubble that stands in for a conversation nobody has started yet,
+   in the empty thread.
+
+   It is a pixel drawing extruded into a solid and turned all the way round. The
+   outline is a small piece of art on a 4px grid — see `BUBBLE_ART` in
+   `thread.tsx`, which is the shape written out as characters — and every dot in
+   it is repeated across five planes 4px apart, so the depth is on the same
+   pitch as the width and the height and the whole thing is built out of one
+   cube. What turns is the shell; the browser does the projection, and the far
+   planes fall behind the near one on their own.
+
+   ## It goes all the way round
+
+   A rock rather than a swing. Twenty pixels of depth is enough that the edge-on
+   quarter of the turn is a wall rather than a line, and the back half is the
+   same drawing seen from behind — which is what a solid does and what a swing
+   is always avoiding having to prove. It turns at a constant rate, like the orb
+   in the rail: an eased rotation reads as something being shown to you, and a
+   linear one reads as something that is simply turning.
+
+   ## The shading has to turn with it
+
+   A brightness fixed to a plane is only right for as long as that plane is the
+   near one. Halfway through a revolution the front of this is at the back, and
+   a wall whose brightest row is the one furthest away is a wall that reads
+   inside out. So each plane is given the two ends of its own cycle — `--near`
+   for the moment it faces the camera, `--far` for the moment it is hidden
+   behind the rest — and half of them run that cycle half a revolution late.
+   The amplitude is widest for the outer planes and nothing at all for the one
+   on the axis, which does not move in depth and so never changes.
+
+   The eased timing is the point: brightness over a turn follows a cosine, and
+   `ease-in-out` between the two ends of the cycle is that curve to within what
+   anybody can see on a 3px square.
+
+   ## The three dots
+
+   The typing dots, on the near plane, lifting toward the reader in turn. They
+   are the one part of this that means something: the bubble is empty, and the
+   dots are the state a conversation is in just before it is not. Bigger than
+   the outline pixels because they are the subject and the outline is the frame.
+
+   Their lift and their shading are two animations on one element, which is only
+   possible because they are on two different properties — the lift is entirely
+   a transform, the shading entirely an opacity. So the dots keep time with the
+   rotation while bouncing to their own.
+
+   ## Stilled
+
+   The blanket rule above collapses every animation to a single instant, and an
+   animation with no fill leaves the element at the style it had underneath. So
+   both the tilt and the shading are written as base values as well as animated:
+   the shell rests at a three-quarter turn, and each plane rests at the
+   brightness that angle earns it. A stilled version is a bubble held where you
+   would hold one to show somebody it has a back, which is a picture rather than
+   a broken animation. */
+@keyframes dot-bubble-turn {
+  from {
+    transform: rotateX(-16deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-16deg) rotateY(360deg);
+  }
+}
+
+@keyframes dot-bubble-face {
+  from {
+    opacity: var(--near);
+  }
+  50% {
+    opacity: var(--far);
+  }
+  to {
+    opacity: var(--near);
+  }
+}
+
+/* The lift is written into every keyframe rather than layered on top of the
+   placement, because a transform is one value and this one is carrying both:
+   where the dot is on the face, and how far it has come off it. */
+@keyframes dot-bubble-lift {
+  from {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  }
+  16% {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 16px);
+  }
+  38% {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  }
+  to {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  }
+}
+
+.dot-bubble {
+  position: relative;
+  width: 3.75rem;
+  height: 3rem;
+  /* One revolution. Named, because the shading has to be timed against it and
+     two numbers that must agree should be one number. */
+  --turn: 8s;
+  /* Short enough that the near face spreads and the far one shrinks — which is
+     most of what makes the turn legible — and long enough not to bend the
+     48px-wide drawing as it passes broadside. */
+  perspective: 240px;
+}
+
+.dot-bubble-shell {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* The angle it rests at when the animation is collapsed. Not the angle it
+     starts the revolution at: a bubble seen exactly face-on has its five planes
+     in a stack behind each other and reads as one flat drawing, which is the
+     one view of this that is worth nothing. */
+  transform: rotateX(-16deg) rotateY(-26deg);
+  animation: dot-bubble-turn var(--turn) linear infinite;
+}
+
+.dot-bubble-pixel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  /* Half the dot, so the coordinates below measure from the middle of the art
+     rather than from a corner of the dot. */
+  margin: -1.5px 0 0 -1.5px;
+  background: currentColor;
+  /* What this plane is worth at the resting angle, and so what it falls back to
+     when the animation below is collapsed. */
+  opacity: var(--rest);
+  transform: translate3d(
+    calc(var(--x) * 1px),
+    calc(var(--y) * 1px),
+    calc(var(--z) * 1px)
+  );
+  animation: dot-bubble-face var(--turn) ease-in-out infinite;
+  /* Negative, so the back planes are already half a revolution into their cycle
+     on the first frame rather than waiting to fall behind. */
+  animation-delay: calc(var(--phase) * var(--turn) * -1);
+}
+
+.dot-bubble-say {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: currentColor;
+  /* The near plane's cycle, because that is the plane they sit on. */
+  --near: 1;
+  --far: 0.22;
+  opacity: var(--near);
+  transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  animation:
+    dot-bubble-lift 1.7s ease-in-out infinite,
+    dot-bubble-face var(--turn) ease-in-out infinite;
+  /* One delay per animation, in the order they are named: the stagger belongs
+     to the bounce, and the shading is in step with the turn. */
+  animation-delay: calc(var(--i) * 0.17s), 0s;
+}
+
+/* ---------------------------------------------------------------------------
+ * The errand that runs in front of a loading activity.
+ *
+ * See `src/components/app/packet-cover.tsx` for what is being drawn and why it
+ * is a joke rather than a progress bar. Everything here is transform and
+ * opacity on about a dozen elements, because this plays for five seconds at a
+ * time while the main thread is busy pulling tens of megabytes of bundle
+ * through two frames — a loader that stutters is worse than no loader.
+ *
+ * Two clocks, and only two. `--run` is one crossing of the scene; `--step` is
+ * one stride. Every other duration here is derived from one of them, so the
+ * legs cannot fall out of step with the body and the laptop cannot flash
+ * before the paper reaches it.
+ *
+ * The blanket reduced-motion rule at line ~1047 collapses durations but leaves
+ * the animation *named*, which for a loop means a frozen first frame — here,
+ * a courier standing invisible at the edge of the scene. So this block ends by
+ * naming `animation: none` and posing the scene by hand: the man halfway
+ * across, holding the paper, lights on. A stilled picture rather than a
+ * broken one.
+ * ------------------------------------------------------------------------ */
+.packet-scene {
+  /* One crossing. The cover holds for five seconds, so 2.5s is exactly two
+     trips — a third one cut off halfway is the thing to avoid. */
+  --run: 2.5s;
+  /* One stride, front foot to front foot. */
+  --step: 0.42s;
+  /* One sheet's flutter. Deliberately not a multiple of the stride: paper
+     coming loose is the one thing in the scene that is not part of the gait. */
+  --flutter: 0.66s;
+}
+
+/* The crossing. He fades in at the rack and out at the laptop rather than
+   snapping back, so the loop has no seam — and he is still moving as he goes,
+   because a figure fading out while its legs run in place reads as a bug. */
+@keyframes packet-run {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  8% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+    transform: translateX(94px);
+  }
+  90%,
+  100% {
+    opacity: 0;
+    transform: translateX(104px);
+  }
+}
+
+/* A limb about its joint. Both ends of the stride are the same magnitude —
+   the asymmetry that makes a run read as a run comes from the lean of the
+   torso and the bob, not from a longer reach forward. */
+@keyframes packet-stride {
+  0%,
+  100% {
+    transform: rotate(26deg);
+  }
+  50% {
+    transform: rotate(-26deg);
+  }
+}
+
+/* The free arm, which travels further than a leg and starts at the opposite
+   end of the swing from the near leg. */
+@keyframes packet-swing {
+  0%,
+  100% {
+    transform: rotate(-34deg);
+  }
+  50% {
+    transform: rotate(30deg);
+  }
+}
+
+/* Twice a stride, because a body rises once per footfall and there are two
+   feet. Small on purpose: 2px at this size is a gait, 6px is a hop. */
+@keyframes packet-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes packet-flutter {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: translate(0, 0) rotate(-10deg);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translate(-3px, -5px) rotate(12deg);
+  }
+}
+
+@keyframes packet-led {
+  0%,
+  45% {
+    opacity: 0.9;
+  }
+  50%,
+  100% {
+    opacity: 0.22;
+  }
+}
+
+/* The hand-off, on the crossing's clock rather than its own so it can only
+   ever fire at the moment the paper arrives — and then *held*, lit, until the
+   next trip sets off. The tail of a crossing is the only stretch with nobody
+   on the stage; a screen that goes dark the moment it is filled leaves an
+   empty scene, and a screen that stays on says the errand worked. It is also
+   what the cover lifts on, since the hold runs out a beat after the second
+   delivery. */
+@keyframes packet-flash {
+  0% {
+    opacity: 0.45;
+  }
+  8%,
+  74% {
+    opacity: 0;
+  }
+  80%,
+  100% {
+    opacity: 0.45;
+  }
+}
+
+.packet-runner {
+  animation: packet-run var(--run) linear infinite;
+}
+
+.packet-body {
+  animation: packet-bob calc(var(--step) / 2) ease-in-out infinite;
+}
+
+/* An SVG element's transform origin is the corner of the *viewBox*, so a leg
+   asked to rotate about its hip would instead swing about the top left of the
+   scene. `fill-box` moves the origin onto the shape's own box, and every limb
+   is drawn as a line hanging down from its joint — so the joint is the top of
+   that box, every time. */
+.packet-limb {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+.packet-leg {
+  --beat: var(--step);
+  animation: packet-stride var(--step) ease-in-out infinite;
+}
+
+.packet-arm {
+  --beat: var(--step);
+  animation: packet-swing var(--step) ease-in-out infinite;
+}
+
+.packet-carry {
+  animation: packet-bob calc(var(--step) / 2) ease-in-out infinite;
+}
+
+.packet-sheet {
+  --beat: var(--flutter);
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: packet-flutter var(--flutter) ease-in-out infinite;
+}
+
+.packet-led {
+  animation: packet-led 1.4s steps(1, end) infinite;
+}
+
+.packet-flash {
+  opacity: 0;
+  animation: packet-flash var(--run) ease-out infinite;
+}
+
+/* Half a beat behind, in whatever cycle the element it is on runs at — the
+   back leg against the front one, the second sheet against the first. Written
+   once because it is one idea, and last because it has to win the delay. */
+.packet-behind {
+  animation-delay: calc(var(--beat) / -2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .packet-runner,
+  .packet-body,
+  .packet-carry,
+  .packet-limb,
+  .packet-sheet,
+  .packet-flash,
+  .packet-led {
+    animation: none;
+  }
+
+  /* Mid-scene, mid-errand: far enough from the rack to have left it, not yet
+     at the laptop. The limbs fall back to the pose they are drawn in, which is
+     a man standing still holding a stack of paper. */
+  .packet-runner {
+    transform: translateX(58px);
+  }
+
+  .packet-led {
+    opacity: 0.9;
+  }
+}
+
+/* The caption under the scene. The shimmer is the same one the handle search
+   uses, but the cover is black regardless of the theme — so the band's two
+   colours are said here rather than borrowed from a palette that may be
+   light. Nothing else on this cover is themed either. */
+.packet-caption {
+  --shimmer-base: rgba(255, 255, 255, 0.42);
+  --shimmer-crest: #ffffff;
 }

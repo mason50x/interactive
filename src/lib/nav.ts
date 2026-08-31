@@ -1,11 +1,11 @@
 import {
   ChatBubbleLeftRightIcon,
-  HomeIcon,
+  HomeModernIcon,
   PuzzlePieceIcon,
 } from "@heroicons/react/24/outline";
 import {
   ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid,
-  HomeIcon as HomeIconSolid,
+  HomeModernIcon as HomeModernIconSolid,
   PuzzlePieceIcon as PuzzlePieceIconSolid,
 } from "@heroicons/react/24/solid";
 import type { IconPair } from "@/lib/icons";
@@ -25,7 +25,10 @@ export type NavItem = {
   unread?: boolean;
 };
 
-/** Where the rail's search sends you, and the only page that reads its query. */
+/**
+ * The catalogue, and the one page that reads the rail's search query as a
+ * filter rather than as a lookup. See `SearchProvider`.
+ */
 export const ACTIVITIES_HREF = "/dashboard/activities";
 
 export const CHAT_HREF = "/dashboard/chat";
@@ -40,7 +43,7 @@ export const navItems: NavItem[] = [
   {
     label: "Home",
     href: "/dashboard",
-    icon: { outline: HomeIcon, solid: HomeIconSolid },
+    icon: { outline: HomeModernIcon, solid: HomeModernIconSolid },
   },
   {
     label: "Activities",

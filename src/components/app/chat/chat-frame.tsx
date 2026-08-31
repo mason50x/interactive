@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { AgreementRequired } from "@/components/app/agreement-required";
 import { useAgreement } from "@/components/app/agreement-provider";
 import { ConversationList } from "@/components/app/chat/conversation-list";
@@ -32,6 +32,16 @@ import { cn } from "@/lib/utils";
  * known yet", so refusing on `!agreed` would flash the locked page at everyone
  * on every cold load. Only `agreed === false` refuses.
  *
+ * ## Why the handle screen can outlive its own reason for being here
+ *
+ * `profile === null` is what puts the gate up, and the profile landing is what
+ * takes it down — which for a screen that ends in a two-second handoff from
+ * your photograph to your monogram would mean cutting that handoff off on its
+ * first frame. So the gate can ask to be held: `held` is set by it before the
+ * claim is sent and cleared when the ceremony has played, and either that or a
+ * missing profile keeps it on screen. Nothing else in this file knows what the
+ * hold is for. See `handle-gate.tsx`.
+ *
  * ## The panes
  *
  * Below `md` the two are one and the route decides which. The width lives on
@@ -43,6 +53,7 @@ export function ChatFrame({ children }: { children: ReactNode }) {
   const { profile, loading } = useChat();
   const agreement = useAgreement();
   const pathname = usePathname();
+  const [held, setHeld] = useState(false);
   const atIndex = pathname === CHAT_HREF;
 
   if (agreement?.agreed === false) return <AgreementRequired title="Chat" />;
@@ -55,7 +66,7 @@ export function ChatFrame({ children }: { children: ReactNode }) {
     );
   }
 
-  if (profile === null) return <HandleGate />;
+  if (profile === null || held) return <HandleGate onHold={setHeld} />;
 
   return (
     <div className="flex size-full min-h-0">

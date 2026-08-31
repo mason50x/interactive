@@ -1,187 +1,178 @@
 "use client";
 
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { Menu } from "@base-ui/react/menu";
+import {
+  CheckIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/solid";
 import { useDeferredValue, useMemo, useState } from "react";
-import { ActivityShelf } from "@/components/app/activity-shelf";
+import { ActivityCard } from "@/components/app/activity-card";
 import { useSearch } from "@/components/app/search-provider";
-import { filterActivities, type Genre, type Shelf } from "@/lib/activity";
+import { type Activity, filterActivities, type Genre } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
 /**
- * The catalogue, as the dashboard browses it: a filter bar over a stack of
- * genre shelves.
+ * The catalogue, as the dashboard browses it: a filter bar over one grid.
  *
- * Filtering never changes the shape of the page. A query and a genre chip both
- * do the same thing — narrow which cards survive into which rows — and a row
- * with nothing left in it drops out. There is no separate results view to
- * design, no layout that appears only when you type, and the thing you were
- * looking at stays where it was on screen while the set shrinks under it.
+ * A grid and not six sideways shelves. A shelf is the right shape when you are
+ * being shown a selection — the home page still uses one — but this page is
+ * where you come to find something, and a horizontal scroller hides most of
+ * its contents behind a gesture. Reaction alone was 130 activities down a
+ * single row. Here every card is on the page and the only motion is the one
+ * the window already does.
  *
- * The shelves arrive as a prop rather than as an import, and that is a
- * boundary, not a style choice. Importing the catalogue here would put all 318
- * entries into a `/_next/static` chunk, which is served with no session in
- * front of it — the route would be gated and the data would not. As a prop it
- * travels in this page's RSC payload instead, behind the same `auth.protect()`
- * as everything else on it. See `src/lib/activities.ts`.
+ * Filtering never changes the shape of the page. A query and a category both
+ * do the same thing — narrow which cards survive — and the grid reflows under
+ * whatever is left, so there is no separate results view to design and no
+ * layout that appears only when you type.
+ *
+ * The catalogue arrives as a prop rather than as an import, and that is a
+ * boundary, not a style choice. Importing it here would put all 318 entries
+ * into a `/_next/static` chunk, which is served with no session in front of it
+ * — the route would be gated and the data would not. As a prop it travels in
+ * this page's RSC payload instead, behind the same `auth.protect()` as
+ * everything else on it. See `src/lib/activities.ts`.
  *
  * What does not change is the filtering: the whole catalogue is still in the
  * browser once the page has loaded — six short fields per activity, about
  * 10 KB gzipped — so search stays instant and local. No route handler, no
  * request per keystroke, no loading state to design.
  *
- * The 318 thumbnails are *not* eagerly loaded. Every `<img>` is lazy, and a
- * card sitting off the right-hand end of its row counts as off-screen, so an
- * untouched page pays for the two or three tiles visible in each shelf.
+ * The 318 thumbnails are *not* eagerly loaded. Every `<img>` is lazy, and in a
+ * vertical grid the ones below the fold are genuinely off-screen, so an
+ * untouched page pays for the first two rows.
  */
 
 type Sort = "popular" | "title";
 
 export function ActivitiesBrowser({
-  shelves: catalogue,
+  activities: catalogue,
 }: {
-  shelves: readonly Shelf[];
+  activities: readonly Activity[];
 }) {
   const { query, setQuery } = useSearch();
-
-  // The shelves partition the catalogue, so this is its size. Counted here
-  // rather than passed alongside, so there is no second number to keep in step.
-  const total = useMemo(
-    () => catalogue.reduce((sum, shelf) => sum + shelf.activities.length, 0),
-    [catalogue],
-  );
 
   const [genre, setGenre] = useState<Genre | "all">("all");
   const [sort, setSort] = useState<Sort>("popular");
 
-  // Typing stays responsive while the shelves re-filter against the full
-  // catalogue: React renders the input from the live value and the rows from
+  // Typing stays responsive while the grid re-filters against the full
+  // catalogue: React renders the input from the live value and the cards from
   // the lagging one, instead of blocking the keystroke on 318 comparisons.
   const deferred = useDeferredValue(query);
   const needle = deferred.trim();
   const searching = needle.length > 0;
 
-  const shelves = useMemo(
-    () =>
-      catalogue
-        .filter((shelf) => genre === "all" || shelf.genre === genre)
-        .map((shelf) => {
-          // Per shelf rather than once over the whole catalogue and then
-          // intersected: the shelves partition it, so the two are the same set
-          // and this way is one pass instead of a pass plus a lookup per card.
-          const activities = searching
-            ? filterActivities(shelf.activities, needle)
-            : shelf.activities;
+  // Which categories the catalogue actually has, best-ranked first. Read off
+  // the array rather than off `GENRES`, because the catalogue is rank-ascending
+  // and so first appearance is the same order the shelves used to be in — the
+  // genre whose best activity ranks highest leads the menu.
+  const genres = useMemo(() => {
+    const order: Genre[] = [];
+    for (const activity of catalogue) {
+      if (!order.includes(activity.genre)) order.push(activity.genre);
+    }
+    return order;
+  }, [catalogue]);
 
-          return {
-            genre: shelf.genre,
-            // `SHELVES` is already rank-ascending, so "popular" is the array
-            // as it stands and only the alphabetical order costs a sort.
-            activities:
-              sort === "title"
-                ? [...activities].sort((a, b) => a.title.localeCompare(b.title))
-                : activities,
-          };
-        })
-        .filter((shelf) => shelf.activities.length > 0),
-    [catalogue, genre, needle, searching, sort],
-  );
+  const shown = useMemo(() => {
+    const inGenre =
+      genre === "all"
+        ? catalogue
+        : catalogue.filter((activity) => activity.genre === genre);
 
-  const shown = shelves.reduce((sum, shelf) => sum + shelf.activities.length, 0);
+    const matched = searching ? filterActivities(inGenre, needle) : inGenre;
+
+    // The catalogue is already rank-ascending, so "popular" is the array as it
+    // stands and only the alphabetical order costs a sort.
+    return sort === "title"
+      ? [...matched].sort((a, b) => a.title.localeCompare(b.title))
+      : matched;
+  }, [catalogue, genre, needle, searching, sort]);
+
+  const filtered = searching || genre !== "all";
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       <div
         className={cn(
-          "sticky top-0 z-20 flex flex-col gap-3 py-4",
-          // Bleeds the frosted background out to the shell's edge so rows
+          "sticky top-0 z-20 flex items-center gap-3 py-4",
+          // Bleeds the frosted background out to the shell's edge so cards
           // passing underneath are covered rather than showing in the gutter.
           "-mx-6 px-6 sm:-mx-10 sm:px-10",
           "border-b border-border bg-surface/80 backdrop-blur-md",
         )}
       >
-        <div className="flex items-center gap-3">
-          <search className="relative min-w-0 flex-1">
-            <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${total} activities by name`}
-              aria-label="Search activities"
-              className={cn(
-                "h-10 w-full rounded-lg border border-border bg-surface pr-9 pl-9 text-[0.9375rem] text-foreground transition-[border-color,box-shadow] outline-none",
-                "placeholder:text-faint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                // Chrome draws its own clear button inside a `type="search"`
-                // field, which would sit beside ours. Ours stays because it is
-                // the one that matches the rest of the app and the one that
-                // exists in every browser.
-                "[&::-webkit-search-cancel-button]:appearance-none",
-              )}
-            />
-            {searching && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-faint transition-colors hover:text-foreground"
-              >
-                <XMarkIcon className="size-4" />
-              </button>
+        <search className="relative min-w-0 flex-1">
+          <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={`Search ${catalogue.length} activities by name`}
+            aria-label="Search activities"
+            className={cn(
+              "h-10 w-full rounded-lg border border-border bg-surface pr-9 pl-9 text-[0.9375rem] text-foreground transition-[border-color,box-shadow] outline-none",
+              "placeholder:text-faint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+              // Chrome draws its own clear button inside a `type="search"`
+              // field, which would sit beside ours. Ours stays because it is
+              // the one that matches the rest of the app and the one that
+              // exists in every browser.
+              "[&::-webkit-search-cancel-button]:appearance-none",
             )}
-          </search>
-
-          <SortToggle sort={sort} onChange={setSort} />
-        </div>
-
-        {/* Horizontal scroll rather than wrap, so the bar is one line tall at
-            every width and the shelves below never shift down a row when the
-            window narrows. */}
-        <div className="-mx-6 flex gap-2 overflow-x-auto px-6 sm:-mx-10 sm:px-10">
-          <FilterChip
-            label="Everything"
-            selected={genre === "all"}
-            onClick={() => setGenre("all")}
           />
-          {catalogue.map((shelf) => (
-            <FilterChip
-              key={shelf.genre}
-              label={GENRES[shelf.genre].label}
-              hue={GENRES[shelf.genre].hue}
-              selected={genre === shelf.genre}
-              onClick={() => setGenre(shelf.genre)}
-            />
-          ))}
-        </div>
+          {searching && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-faint transition-colors hover:text-foreground"
+            >
+              <XMarkIcon className="size-4" />
+            </button>
+          )}
+        </search>
+
+        <CategoryMenu
+          genres={genres}
+          genre={genre}
+          onChange={setGenre}
+          catalogue={catalogue}
+        />
+
+        <SortToggle sort={sort} onChange={setSort} />
       </div>
 
-      {shelves.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="text-[0.9375rem] text-muted-foreground">
           Nothing matches “{needle}”
           {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}.
         </p>
       ) : (
         <>
-          {searching && (
-            <p className="label-small -mb-4 text-faint">
-              {shown} of {total} match “{needle}”
+          {/* Only once something has been narrowed. Unfiltered, the count is
+              the number already sitting in the placeholder of the field above
+              it, and the grid itself is the answer. */}
+          {filtered && (
+            <p className="label-small -mb-2 text-faint">
+              {shown.length} of {catalogue.length}
+              {searching ? ` match “${needle}”` : ""}
+              {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}
             </p>
           )}
 
-          <div className="flex flex-col gap-12">
-            {shelves.map((shelf) => (
-              <ActivityShelf
-                key={shelf.genre}
-                genre={shelf.genre}
-                activities={shelf.activities}
-                countLabel={
-                  searching
-                    ? `${shelf.activities.length} ${shelf.activities.length === 1 ? "match" : "matches"}`
-                    : undefined
-                }
-              />
+          {/* Three across and no further. The tile is the art, and a fourth
+              column buys another card at the price of shrinking every one of
+              them past the point where the thumbnail reads. */}
+          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {shown.map((activity) => (
+              <li key={activity.slug}>
+                <ActivityCard activity={activity} />
+              </li>
             ))}
-          </div>
+          </ul>
         </>
       )}
     </div>
@@ -189,46 +180,140 @@ export function ActivitiesBrowser({
 }
 
 /**
- * A genre filter, carrying its shelf's colour.
+ * The categories, behind the funnel beside the search field.
  *
- * Selected borrows `.nav-pill` from the rail rather than inventing a second
- * selected treatment: one raised blue face means "this is the thing you are
- * on" everywhere in the app. The genre's own hue stays on the unselected chip,
- * as a dot, which is what ties the chip to the shelf it scrolls you to.
+ * They were a row of seven chips under the bar, which cost a whole line of the
+ * page at every width to say something you set once and then read past — and
+ * on a phone that line was itself a sideways scroller, so most of the
+ * categories were hidden anyway. A menu spends nothing until you open it, and
+ * what it costs when closed is one button's worth of bar.
+ *
+ * The trigger still carries the answer: with a category chosen it says which
+ * one, in that category's own colour, so the filter is legible without being
+ * opened. That is the part of the chips worth keeping.
+ *
+ * Radio items rather than plain ones, because these are one choice out of
+ * seven and the menu should say so to a screen reader as well as with the
+ * check. `closeOnClick` is on for the same reason: picking a category is the
+ * whole errand, and Base UI leaves a radio item open by default for menus that
+ * take several answers.
  */
-function FilterChip({
-  label,
-  hue,
-  selected,
-  onClick,
+function CategoryMenu({
+  genres,
+  genre,
+  onChange,
+  catalogue,
 }: {
-  label: string;
-  hue?: string;
-  selected: boolean;
-  onClick: () => void;
+  genres: readonly Genre[];
+  genre: Genre | "all";
+  onChange: (genre: Genre | "all") => void;
+  catalogue: readonly Activity[];
 }) {
+  const counts = useMemo(() => {
+    const tally = new Map<Genre, number>();
+    for (const activity of catalogue) {
+      tally.set(activity.genre, (tally.get(activity.genre) ?? 0) + 1);
+    }
+    return tally;
+  }, [catalogue]);
+
+  const chosen = genre === "all" ? null : GENRES[genre];
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={cn(
-        "flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[0.8125rem] transition-colors",
-        selected
-          ? "nav-pill text-primary-foreground"
-          : "border-border bg-surface text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-      )}
-    >
-      {hue && (
-        <span
-          className="size-1.5 rounded-full"
-          style={{ background: selected ? "currentColor" : hue }}
-        />
-      )}
-      {label}
-    </button>
+    <Menu.Root>
+      <Menu.Trigger
+        aria-label={
+          chosen ? `Category: ${chosen.label}` : "Filter by category"
+        }
+        className={cn(
+          "flex h-10 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-[0.8125rem] transition-colors outline-none",
+          "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+          chosen
+            ? "border-border bg-surface-muted text-foreground"
+            : "border-border bg-surface text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <FunnelIcon className="size-4 shrink-0" />
+        {chosen && (
+          <>
+            <span
+              className="size-1.5 shrink-0 rounded-full"
+              style={{ background: chosen.hue }}
+            />
+            {/* The label is the one part that goes when there is no room for
+                it. The dot and the filled trigger still say a filter is on. */}
+            <span className="hidden sm:inline">{chosen.label}</span>
+          </>
+        )}
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Positioner
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          className="z-50 outline-none"
+        >
+          <Menu.Popup className={popupClass}>
+            <Menu.RadioGroup
+              value={genre}
+              onValueChange={(value) => onChange(value as Genre | "all")}
+            >
+              <Menu.RadioItem value="all" closeOnClick className={itemClass}>
+                <Indicator />
+                <span className="size-1.5 shrink-0 rounded-full bg-faint" />
+                Everything
+                <span className="ml-auto pl-4 text-faint">
+                  {catalogue.length}
+                </span>
+              </Menu.RadioItem>
+
+              {genres.map((value) => (
+                <Menu.RadioItem
+                  key={value}
+                  value={value}
+                  closeOnClick
+                  className={itemClass}
+                >
+                  <Indicator />
+                  <span
+                    className="size-1.5 shrink-0 rounded-full"
+                    style={{ background: GENRES[value].hue }}
+                  />
+                  {GENRES[value].label}
+                  <span className="ml-auto pl-4 text-faint">
+                    {counts.get(value)}
+                  </span>
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioGroup>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
+
+/** The check, in a column the unchecked rows also occupy — so choosing one
+ *  does not shunt every label sideways by the width of a tick. */
+function Indicator() {
+  return (
+    <Menu.RadioItemIndicator
+      keepMounted
+      className="flex size-3.5 shrink-0 items-center justify-center text-foreground data-unchecked:invisible"
+    >
+      <CheckIcon className="size-3.5" />
+    </Menu.RadioItemIndicator>
+  );
+}
+
+const popupClass =
+  // The open/close motion is `.popup-slide` in globals.css rather than
+  // utilities here — that rule explains why Tailwind cannot express it.
+  "popup-slide min-w-[13rem] rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none";
+
+const itemClass =
+  "flex h-9 cursor-default items-center gap-2 rounded-lg px-2.5 text-[0.875rem] text-muted-foreground outline-none select-none data-highlighted:bg-foreground/[0.05] data-highlighted:text-foreground data-checked:text-foreground";
 
 /** Popular or alphabetical, as a two-stop segmented control. */
 function SortToggle({

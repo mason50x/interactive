@@ -37,11 +37,15 @@ import { encodeRuns, matchRuns, tokenStartsWith, type Forms, type Run } from "./
  * Tier two is refused and struck moderately: telling someone to kill
  * themselves, and threats to expose them.
  *
- * Tier three is *allowed* and merely recorded. This is the deliberate one. The
- * audience is thirteen and up, they swear, and a chat that refuses `shit` is a
- * chat they route around within a day. The flag is not wasted: the targeting
- * rule in `convex/moderation/rules.ts` reads it, which is how `this is shit`
- * stays fine and `you are shit`, three times in ten minutes, does not.
+ * Tier three is refused and costs nothing: ordinary swearing. It does not
+ * reach the room, and it does not go on the sender's record either, because a
+ * thirteen-year-old typing `fuck` into a game site has broken a house rule and
+ * not done anything to anybody. The tier is still worth having separately from
+ * tiers one and two precisely because of that split — same refusal, no weight.
+ *
+ * The arrangement still decides the price. `this is shit` is a bounce; `you are
+ * shit` is the same word aimed at a person, and the targeting rule in
+ * `convex/moderation/rules.ts` charges it as harassment.
  */
 
 export type Category =
@@ -210,11 +214,11 @@ const DEGRADING: Source = {
 };
 
 /**
- * Ordinary profanity. Allowed, recorded, and never on its own a strike.
+ * Ordinary profanity. Refused, and never on its own a strike.
  *
- * See the note at the top of this file for why. `SOFTEN_TIER_3` in
- * `convex/moderation/limits.ts` will mask these instead if that turns out to be
- * wrong, and it ships off.
+ * See the note at the top of this file for why. Everything here is one edit
+ * away from being allowed again — drop the tier-three branch in
+ * `convex/moderation/verdict.ts` and these words post with a flag on them.
  */
 const PROFANITY: Source = {
   category: "profanity",

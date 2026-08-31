@@ -293,8 +293,8 @@ export default defineSchema({
    *
    * ## The ring
    *
-   * `recent` is the last twenty sends — when, where, a hash of what, and whether
-   * it was flagged. It is the entire cross-message memory of the moderation
+   * `recent` is the last twenty sends — when, where, a hash of what, and a
+   * `flagged` that is now always false for the reason `flags` above is empty. It is the entire cross-message memory of the moderation
    * system: rate windows, duplicate detection, broadcast detection and
    * repeat-targeting all read this one bounded array on the sender's own
    * document, which means none of them costs a second table, a second index, or
@@ -317,16 +317,23 @@ export default defineSchema({
     /**
      * The disc, when it has been chosen rather than derived.
      *
-     * Both optional and both independent: a hue with no initials is your first
-     * letter on a colour you picked, initials with no hue is your initials on
-     * the colour your handle hashes to. Absent means derived, which is what
-     * every profile started as — see `Monogram` in the app for the fallbacks.
+     * All three optional and the hue independent of the other two: a hue with
+     * no face is your first letter on a colour you picked, a face with no hue
+     * is what you chose on the colour your handle hashes to. Absent means
+     * derived, which is what every profile started as — see `Monogram` in the
+     * app for the fallbacks.
      *
-     * `avatarHue` is checked against `AVATAR_HUES` on the way in and
-     * `avatarInitials` against a two-character shape, because a disc a person
-     * picks must not become a field a person writes in.
+     * `avatarEmoji` and `avatarInitials` are alternatives rather than layers,
+     * exactly as they are on a conversation below: the disc has room for one
+     * thing, and `setAvatar` clears the letters when a face arrives.
+     *
+     * Every part is checked against a closed set on the way in — the hue
+     * against `AVATAR_HUES`, the emoji against `AVATAR_EMOJI`, the initials
+     * against a two-character shape — because a disc a person picks must not
+     * become a field a person writes in.
      */
     avatarHue: v.optional(v.number()),
+    avatarEmoji: v.optional(v.string()),
     avatarInitials: v.optional(v.string()),
     createdAt: v.number(),
     /**
@@ -480,6 +487,47 @@ export default defineSchema({
     .index("byConversationUser", ["conversationId", "clerkId"]),
 
   /**
+   * Who has a conversation open right now.
+   *
+   * Membership says who belongs in a room; this says who is in it at this
+   * moment, which is the only one of the two a green dot can honestly be about.
+   * A group of forty where two people are reading is a quiet room, and the
+   * number that used to sit in the thread header — active memberships — could
+   * not tell those apart.
+   *
+   * One row per person per conversation, rewritten by that person alone every
+   * `HEARTBEAT_MS` while they are looking at it. Nobody else's document is
+   * touched, so two people in the same room at the same moment still conflict
+   * over nothing.
+   *
+   * ## There is no "left" here
+   *
+   * A row is deleted when somebody navigates away, and otherwise it simply
+   * stops being refreshed. Presence is therefore *derived* rather than
+   * declared: a row counts if `lastSeenAt` is inside the window, and a browser
+   * that was closed, crashed, or driven into a tunnel falls out of the count on
+   * its own within a heartbeat or two. Anything that relied on an announced
+   * departure would be wrong every time one did not arrive.
+   *
+   * That also means the count query is only ever as fresh as the last write to
+   * this table for that conversation — which is fine, because the person
+   * reading it is themselves heartbeating into it. Their own beat re-runs their
+   * own subscription, and stale rows drop out of the answer.
+   *
+   * Direct messages keep no rows at all. Nothing reads a count of two.
+   */
+  presence: defineTable({
+    conversationId: v.id("conversations"),
+    clerkId: v.string(),
+    lastSeenAt: v.number(),
+  })
+    .index("byConversationSeen", ["conversationId", "lastSeenAt"])
+    .index("byConversationUser", ["conversationId", "clerkId"])
+    // For the sweep alone: rows nobody has refreshed in a long time, across
+    // every conversation at once. See `sweepPresence` in `convex/chat/sweep.ts`.
+    .index("bySeen", ["lastSeenAt"]),
+
+  /**
    * What was said.
    *
    * Ordered by `_creationTime` through `byConversation`, which is what the
@@ -506,9 +554,13 @@ export default defineSchema({
    * own message back is not a status either: within `DELETE_WINDOW_MS` the row
    * is deleted outright, and after it nothing can be taken back at all.
    *
-   * `flags` is the tier-three words that were allowed through. It is the record
-   * of why a message was permitted, which on a system with nobody reviewing it
-   * is the only account of the decision that exists.
+   * `flags` was the tier-three words that were allowed through, back when tier
+   * three posted. It does not any more — ordinary swearing is refused in
+   * `convex/moderation/verdict.ts` — so every new row writes an empty array.
+   * The column stays because Convex validates the rows already in this table
+   * against this schema, and the rows written before the change still have
+   * words in it: dropping the field is a migration, not an edit, and the old
+   * account of those decisions is worth more than the bytes.
    */
   messages: defineTable({
     conversationId: v.id("conversations"),
@@ -529,7 +581,25 @@ export default defineSchema({
     ),
   })
     .index("byConversation", ["conversationId"])
-    .index("byAuthor", ["authorClerkId"]),
+    .index("byAuthor", ["authorClerkId"])
+    /**
+     * What the rail's search reads.
+     *
+     * `status` is a filter field rather than something the handler drops
+     * afterwards, because a hidden message must not consume one of the rows
+     * the search returns — reports pile up on the worst things anybody said
+     * here, so the hidden set is exactly the set most likely to match a
+     * search and would otherwise crowd out the results that survive.
+     *
+     * Who is allowed to see a match is *not* expressible here. It depends on
+     * the caller's membership rows, which no filter field can name, so the
+     * index is deliberately unscoped and `search` in `convex/chat/messages.ts`
+     * applies permissions to every row before any of it leaves the server.
+     */
+    .searchIndex("searchBody", {
+      searchField: "body",
+      filterFields: ["status"],
+    }),
 
   /**
    * One row per pair of people, in either state.

@@ -2,7 +2,7 @@ import { cronJobs } from "convex/server";
 import { internal } from "./_generated/api";
 
 /**
- * The two jobs nobody has to remember to run.
+ * The jobs nobody has to remember to run.
  *
  * Both are housekeeping and neither is load-bearing: expired strikes are
  * already ignored where standing is computed, and the global room reads
@@ -34,6 +34,15 @@ crons.daily(
   "prune orphaned memberships",
   { hourUTC: 8, minuteUTC: 40 },
   internal.chat.sweep.pruneMemberships,
+  {},
+);
+
+// Long-cold presence rows. Nothing reads them — see `sweepPresence` — so this
+// is the one job here that is purely about the size of a table.
+crons.daily(
+  "clear out old presence",
+  { hourUTC: 9, minuteUTC: 0 },
+  internal.chat.sweep.sweepPresence,
   {},
 );
 

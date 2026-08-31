@@ -11,9 +11,11 @@
 import type * as agreement from "../agreement.js";
 import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_conversations from "../chat/conversations.js";
+import type * as chat_erase from "../chat/erase.js";
 import type * as chat_friends from "../chat/friends.js";
 import type * as chat_groups from "../chat/groups.js";
 import type * as chat_messages from "../chat/messages.js";
+import type * as chat_presence from "../chat/presence.js";
 import type * as chat_profiles from "../chat/profiles.js";
 import type * as chat_reports from "../chat/reports.js";
 import type * as chat_shared from "../chat/shared.js";
@@ -46,9 +48,11 @@ declare const fullApi: ApiFromModules<{
   agreement: typeof agreement;
   "chat/blocks": typeof chat_blocks;
   "chat/conversations": typeof chat_conversations;
+  "chat/erase": typeof chat_erase;
   "chat/friends": typeof chat_friends;
   "chat/groups": typeof chat_groups;
   "chat/messages": typeof chat_messages;
+  "chat/presence": typeof chat_presence;
   "chat/profiles": typeof chat_profiles;
   "chat/reports": typeof chat_reports;
   "chat/shared": typeof chat_shared;

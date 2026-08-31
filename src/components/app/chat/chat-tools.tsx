@@ -1,8 +1,10 @@
 "use client";
 
+import { Menu } from "@base-ui/react/menu";
 import {
   ArrowLeftIcon,
   Cog6ToothIcon,
+  EllipsisHorizontalIcon,
   GlobeAltIcon,
   NoSymbolIcon,
   PlusIcon,
@@ -15,26 +17,26 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { FaceEditor, type Face } from "@/components/app/chat/face-editor";
+import { NameEditor } from "@/components/app/chat/name-editor";
+import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import { Monogram } from "@/components/app/chat/monogram";
 import { OptionTiles } from "@/components/app/chat/option-tiles";
 import { FoundNobody, Searching } from "@/components/app/chat/searching";
 import { SectionLabel } from "@/components/app/chat/section-label";
 import { useChat } from "@/components/app/chat/chat-provider";
-import { groupNameError } from "@/lib/chat";
 import {
-  AVATAR_HUES,
   MAX_HANDLE_CHANGES,
-  MAX_INITIALS,
   changesLeftLabel,
   claimError,
+  groupNameError,
   handleShapeError,
 } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
@@ -52,13 +54,29 @@ import { api } from "../../../../convex/_generated/api";
  * the rail's invite and agreement cards use: the surface grows, the thing you
  * came for is inside it, and the conversation you were reading is still behind.
  *
- * The mechanics are lifted from `InviteCard` deliberately, so the two read as
- * the same object doing the same thing. A `ResizeObserver` keeps the panel's
- * natural height in state and the wrapper transitions to that number — `height:
- * auto` cannot be interpolated, and the `0fr`/`1fr` grid trick squashes the
- * contents on the way through. Measuring means the panel also re-settles when
- * its contents change size under it, which here happens constantly: every
- * keystroke in the search field changes how many results are under it.
+ * ## A mode, not a drawer
+ *
+ * An open panel *is* the column: it takes the whole of it, the list underneath
+ * goes, and the header above stops saying your handle and says which panel you
+ * are in. It used to grow out of the top of the list instead — a measured box
+ * that reserved its own height and pushed the conversations down — which made
+ * it a thing sitting on top of the column rather than the column's other face,
+ * and gave a tall panel nowhere to scroll.
+ *
+ * Nothing dismisses it but the way back in the header. It deliberately does not
+ * close on a press outside itself, and there are two reasons, one of them a
+ * bug this had:
+ *
+ * A panel that has taken the column over is not a popover. There is nothing
+ * behind it to press back to — the list it replaced is *inside* it, one press
+ * away — so a press on the thread beside it means "read that", not "put this
+ * away", and taking the panel away is losing somebody's place in a search they
+ * were half way through typing.
+ *
+ * And an outside press cannot be told apart from a press inside something this
+ * panel opened. A portalled popup — the disc editor in Settings is one — is not
+ * a descendant of this element, so every press in it read as outside and closed
+ * the panel underneath the popup that was still open.
  *
  * One panel and three buttons rather than three panels. Opening one closes the
  * others, because they are three answers to "what do you want to do" and having
@@ -66,7 +84,7 @@ import { api } from "../../../../convex/_generated/api";
  * conversations.
  */
 
-type Panel = "people" | "settings" | "group";
+export type Panel = "people" | "settings" | "group";
 
 /**
  * The three, in the order they sit in the header.
@@ -86,7 +104,12 @@ const TOOLS: readonly {
   title: string;
   icon: Icon;
 }[] = [
-  { panel: "people", label: "Add someone", title: "Friends", icon: UserPlusIcon },
+  {
+    panel: "people",
+    label: "Add someone",
+    title: "Friends",
+    icon: UserPlusIcon,
+  },
   {
     panel: "settings",
     label: "Chat settings",
@@ -97,81 +120,41 @@ const TOOLS: readonly {
 ];
 
 export function ChatTools({
+  open,
   onOpenChange,
 }: {
   /**
-   * Told whenever a panel opens or closes, because the list below is the
-   * caller's and an open panel replaces it. See `ConversationList`.
+   * Which panel is open, or `null` while the column is a list.
+   *
+   * Held by the caller rather than here, because an open panel replaces the
+   * list and the list is the caller's — and because the list can ask for one:
+   * the row that stands in for the friends you do not have yet opens People.
+   * See `ConversationList`.
    */
-  onOpenChange?: (open: boolean) => void;
+  open: Panel | null;
+  onOpenChange: (panel: Panel | null) => void;
 }) {
   const router = useRouter();
   const { waiting } = useChat();
 
-  const [open, setOpen] = useState<Panel | null>(null);
-  // What the panel is drawing. Held separately from `open` so the contents do
-  // not vanish on the frame the panel starts closing — a panel that empties
-  // itself and then collapses reads as two animations, and the second one is
-  // measuring against nothing.
+  // What the panel is drawing. Held separately from `open` so that a panel
+  // which has been closed is still the one that comes back when the same
+  // button is pressed again — the contents are hidden, not thrown away, and a
+  // search somebody typed is still there when they return to it.
   const [shown, setShown] = useState<Panel>("people");
-  const [panelHeight, setPanelHeight] = useState(0);
 
   const panelId = useId();
-  const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
-  const close = useCallback(() => setOpen(null), []);
+  const close = useCallback(() => onOpenChange(null), [onOpenChange]);
 
   function toggle(panel: Panel) {
-    setShown(panel);
-    setOpen((current) => (current === panel ? null : panel));
+    onOpenChange(open === panel ? null : panel);
   }
 
-  useEffect(() => {
-    onOpenChange?.(open !== null);
-  }, [open, onOpenChange]);
-
-  // Measured before the browser paints, and keyed on what is about to be in
-  // there. The ResizeObserver below cannot do this job on its own: it delivers
-  // its callback *after* the render that swapped `shown`, so the frame the
-  // panel starts opening on is aimed at the previous panel's height and only
-  // corrects one frame later. That re-aim mid-flight is what read as the panel
-  // hesitating before its contents arrived.
-  useLayoutEffect(() => {
-    const panel = panelRef.current;
-    if (panel) setPanelHeight(panel.offsetHeight);
-  }, [shown, open]);
-
-  // And this keeps it honest afterwards, for the changes no render of ours
-  // announces — every keystroke in the search field changes how many results
-  // are under it, and a query landing adds rows to a panel already open.
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const observer = new ResizeObserver(() => setPanelHeight(panel.offsetHeight));
-    observer.observe(panel);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (open === null) return;
-
-    // `pointerdown` rather than `click`, so the panel is on its way out by the
-    // time whatever was clicked responds rather than a frame behind it.
-    function onPointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) close();
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") close();
-    }
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, close]);
+  // Adjusted while rendering rather than in an effect, which is what React
+  // asks for when a piece of state is a prop plus a memory of it: an effect
+  // would paint one frame of the old panel first.
+  if (open !== null && open !== shown) setShown(open);
 
   /** Opening a conversation is always the end of whatever the panel was for. */
   const go = useCallback(
@@ -183,14 +166,21 @@ export function ChatTools({
   );
 
   return (
-    <div ref={rootRef} className="shrink-0">
-      <div className="flex items-center px-4 pt-4 pb-2">
+    <div
+      className={cn(
+        "flex w-full min-h-0 flex-col",
+        // Closed, this is a header sitting above a list. Open, it *is* the
+        // column, and the panel inside it is what scrolls.
+        open === null ? "shrink-0" : "flex-1",
+      )}
+    >
+      <div className="flex shrink-0 items-center px-4 pt-4 pb-2">
         {/* What this column is called when it is a list of conversations.
             While a panel is open it is not that, so the header says which of
             the three you are in instead. */}
         <h2 className="min-w-0 flex-1 truncate text-[1.0625rem] font-semibold">
           {open === null
-            ? "My Groups"
+            ? "My Feed"
             : TOOLS.find((tool) => tool.panel === open)!.title}
         </h2>
 
@@ -211,37 +201,37 @@ export function ChatTools({
         ))}
       </div>
 
+      {/* `hidden` rather than a height of zero, and mounted rather than
+          unmounted. A panel that reserves a collapsed box is a panel the list
+          has to start below; a panel that is thrown away loses what was typed
+          into it. This is neither: no space when it is shut, and everything
+          still there when it comes back.
+
+          It arrives on a fade because there is no shape left to animate — the
+          gesture that says something happened is the tool row narrowing to one
+          button and the heading changing behind it, which is above this and
+          plays whether this is open or not. A CSS animation restarts every
+          time an element comes back from `display: none`, which is exactly
+          when this should play.
+
+          There is no rule over it: the list it used to be divided from is not
+          on screen while this is, and a hairline over nothing is just a stray
+          line. */}
       <div
         id={panelId}
         inert={open === null}
-        style={{ height: open === null ? 0 : panelHeight }}
-        className="overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        className={cn(
+          "animate-in fade-in min-h-0 flex-1 overflow-y-auto px-3 pb-3 duration-200",
+          open === null && "hidden",
+        )}
       >
-        {/* The contents fade in from the first frame and out faster than the
-            shape closes. They used to be held back until the panel had most of
-            its height, and waiting a fifth of a second to be shown what you
-            just asked for is not restraint, it is lag. Out is still quicker
-            than in: sliding text up behind a closing edge is the part that
-            reads as clunky, so it is gone before the edge reaches it.
-
-            There is no rule under it: the list it used to be divided from is
-            hidden for as long as this is open, and a hairline over nothing is
-            just a stray line. */}
-        <div
-          ref={panelRef}
-          className={cn(
-            "px-3 pb-3 transition-opacity",
-            open === null ? "opacity-0 duration-100" : "opacity-100 duration-200",
-          )}
-        >
-          {shown === "people" ? (
-            <PeoplePanel open={open === "people"} onOpen={go} />
-          ) : shown === "settings" ? (
-            <SettingsPanel />
-          ) : (
-            <NewGroupPanel open={open === "group"} onCreated={go} />
-          )}
-        </div>
+        {shown === "people" ? (
+          <PeoplePanel open={open === "people"} />
+        ) : shown === "settings" ? (
+          <SettingsPanel />
+        ) : (
+          <NewGroupPanel open={open === "group"} onCreated={go} />
+        )}
       </div>
     </div>
   );
@@ -334,20 +324,20 @@ function Tool({
 }
 
 /**
- * Find somebody, answer the people who found you, and reach the friends you
- * are not currently in a conversation with.
+ * Find somebody, answer the people who found you, and see who your friends are.
  *
  * In that order, because it is the order of how likely each one is to be why
  * the panel was opened, and because the requests move — a list that grows a row
  * above the thing you are typing into would push the field under your cursor.
+ *
+ * Nothing in here opens a conversation any more, and the third section is a
+ * roster rather than a way in. Accepting somebody puts the thread in the list
+ * on the left, so a "Message" button beside every name was offering a second
+ * route to a place the person was already looking at — and its refusals
+ * ("they only take messages from friends") were answers to a question this
+ * panel no longer lets anybody ask.
  */
-function PeoplePanel({
-  open,
-  onOpen,
-}: {
-  open: boolean;
-  onOpen: (conversationId: string) => void;
-}) {
+function PeoplePanel({ open }: { open: boolean }) {
   const field = useRef<HTMLInputElement>(null);
   const [term, setTerm] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -375,27 +365,43 @@ function PeoplePanel({
   const request = useMutation(api.chat.friends.request);
   const accept = useMutation(api.chat.friends.accept);
   const remove = useMutation(api.chat.friends.remove);
+  const block = useMutation(api.chat.blocks.block);
   const respond = useMutation(api.chat.groups.respondToInvite);
-  const openDm = useMutation(api.chat.conversations.openDm);
 
   // Opening this is the whole of the intent — nobody expands it to admire it.
   useEffect(() => {
     if (open) field.current?.focus();
   }, [open]);
 
-  async function message(peerClerkId: string) {
-    const result = await openDm({ peerClerkId });
-    if (result.ok) {
-      onOpen(result.conversationId);
-      return;
+  // What you already are to the person a search turned up.
+  //
+  // The Found row used to draw "Add" for everybody it listed — for the person
+  // you added a second ago, for the person waiting on *your* answer, and for
+  // somebody you have been friends with since March. The press worked every
+  // time and the row never said so, which reads as a button that does nothing,
+  // and the standing was on screen the whole time in another section.
+  const standing = useMemo(() => {
+    const byId = new Map<string, "sent" | "waiting" | "friends">();
+    for (const friend of friends ?? []) byId.set(friend.clerkId, "friends");
+    for (const row of pending ?? []) {
+      byId.set(row.clerkId, row.outgoing ? "sent" : "waiting");
     }
+    return byId;
+  }, [friends, pending]);
+
+  // A request can be refused for reasons the row cannot see — they blocked
+  // you, they are gone — and a refusal that says nothing is the same silence
+  // this whole section was fixing.
+  async function add(peerClerkId: string) {
+    const result = await request({ peerClerkId });
+    if (result.ok) return;
     setNotice(
-      result.reason === "not-friends"
-        ? "They only take messages from friends. Send a request first."
-        : result.reason === "closed"
-          ? "They are not taking direct messages."
-          : result.reason === "blocked"
-            ? "You cannot message this person."
+      result.reason === "blocked"
+        ? "You cannot add this person."
+        : result.reason === "unknown" || result.reason === "no-profile"
+          ? "That account is gone."
+          : result.reason === "already"
+            ? "You have already asked them."
             : "That did not work.",
     );
   }
@@ -445,31 +451,48 @@ function PeoplePanel({
               <FoundNobody />
             ) : (
               <ul className="mt-1 flex flex-col">
-                {found.map((person) => (
-                  <Row
-                    key={person.clerkId}
-                    handle={person.handle}
-                    hue={person.avatarHue}
-                    initials={person.avatarInitials}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() =>
-                        void request({ peerClerkId: person.clerkId })
-                      }
+                {found.map((person) => {
+                  const already = standing.get(person.clerkId);
+                  return (
+                    <Row
+                      key={person.clerkId}
+                      handle={person.handle}
+                      hue={person.avatarHue}
+                      emoji={person.avatarEmoji}
+                      initials={person.avatarInitials}
                     >
-                      Add
-                    </Button>
-                    <Button
-                      size="xs"
-                      className="shadow-none hover:shadow-none"
-                      onClick={() => void message(person.clerkId)}
-                    >
-                      Message
-                    </Button>
-                  </Row>
-                ))}
+                      {/* Adding is the only thing this row does now, so the
+                          two states with nothing left to do say where the row
+                          stands rather than offering a second button. Neither
+                          word is a disabled control: there is nothing to
+                          press, and saying so quietly is the whole of what the
+                          row has to report. */}
+                      {already === "friends" ? (
+                        <span className="px-2 text-xs text-faint">Friends</span>
+                      ) : already === "sent" ? (
+                        <span className="px-2 text-xs text-faint">Asked</span>
+                      ) : already === "waiting" ? (
+                        <Button
+                          size="xs"
+                          className="shadow-none hover:shadow-none"
+                          onClick={() =>
+                            void accept({ peerClerkId: person.clerkId })
+                          }
+                        >
+                          Accept
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          className="shadow-none hover:shadow-none"
+                          onClick={() => void add(person.clerkId)}
+                        >
+                          Add
+                        </Button>
+                      )}
+                    </Row>
+                  );
+                })}
               </ul>
             )}
           </section>
@@ -482,8 +505,22 @@ function PeoplePanel({
                 key={row.clerkId}
                 handle={row.handle}
                 hue={row.avatarHue}
+                emoji={row.avatarEmoji}
                 initials={row.avatarInitials}
               >
+                {/* Turning a request down leaves them free to send another
+                    one, which is the right default and the wrong one for the
+                    person sending the fourth. */}
+                <RowMenu
+                  handle={row.handle}
+                  items={[
+                    {
+                      label: `Block ${row.handle}`,
+                      onClick: () => void block({ peerClerkId: row.clerkId }),
+                      danger: true,
+                    },
+                  ]}
+                />
                 <Button
                   variant="ghost"
                   size="xs"
@@ -551,25 +588,24 @@ function PeoplePanel({
                 key={friend.clerkId}
                 handle={friend.handle}
                 hue={friend.avatarHue}
+                emoji={friend.avatarEmoji}
                 initials={friend.avatarInitials}
               >
-                {/* Swapped rather than shown side by side, the way the invite
-                    card's Revoke is: the row never changes width on hover. */}
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => void remove({ peerClerkId: friend.clerkId })}
-                  className="hidden text-muted-foreground group-hover/row:inline-flex hover:text-destructive"
-                >
-                  Remove
-                </Button>
-                <Button
-                  size="xs"
-                  className="shadow-none hover:shadow-none"
-                  onClick={() => void message(friend.clerkId)}
-                >
-                  Message
-                </Button>
+                <RowMenu
+                  handle={friend.handle}
+                  items={[
+                    {
+                      label: "Remove friend",
+                      onClick: () =>
+                        void remove({ peerClerkId: friend.clerkId }),
+                    },
+                    {
+                      label: `Block ${friend.handle}`,
+                      onClick: () => void block({ peerClerkId: friend.clerkId }),
+                      danger: true,
+                    },
+                  ]}
+                />
               </Row>
             ))}
             {friends !== undefined && friends.length === 0 ? (
@@ -687,25 +723,259 @@ function SettingsPanel() {
           </Group>
         </div>
       ) : null}
+
+      <EraseChat />
     </div>
   );
+}
+
+/**
+ * The way out of chat that is not the way out of the account.
+ *
+ * It lives at the bottom of the panel that holds the handle, the blocks and who
+ * may reach you, because it is the last item on that same list: this is the
+ * screen for everything about who you are in here, and leaving is the end of
+ * it. Deleting the Clerk account is a different button in a different place and
+ * always was — somebody who wants their messages gone should not have to close
+ * the account they use for the rest of the site to get it.
+ *
+ * ## It arms before it fires
+ *
+ * The closed state is a sentence and a button. The open state is the list of
+ * what will actually happen, counted from the server rather than described, and
+ * a field that wants the handle typed back. Counting is the part that matters:
+ * "delete everything" is a phrase anybody can agree to without picturing any of
+ * it, and "the 3 groups you own, and everything anybody said in them" is a
+ * number somebody can recognise as wrong while there is still time.
+ *
+ * The typed handle is checked here and again in `chat.erase.eraseMine`, for the
+ * usual reason — this is a browser, and the mutation can be called without it.
+ *
+ * Nothing here navigates on success. The profile is deleted, so the
+ * subscription behind `useChat` drops it and `ChatFrame` swaps the whole pane
+ * for the handle screen, which is exactly where somebody who has just erased
+ * themselves should be. See `handle-gate.tsx`.
+ */
+function EraseChat() {
+  const { profile } = useChat();
+  const preview = useQuery(api.chat.erase.preview, {});
+  const erase = useMutation(api.chat.erase.eraseMine);
+
+  const field = useRef<HTMLInputElement>(null);
+  const [armed, setArmed] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (armed) field.current?.focus();
+  }, [armed]);
+
+  // Undefined is the query in flight and null is an account with no handle,
+  // which cannot see this panel at all. Neither has anything to draw.
+  if (preview === undefined || preview === null) return null;
+
+  const ready = confirm.trim().toLowerCase() === preview.handle && !busy;
+
+  const lines = ["Every message you have sent, in every conversation."];
+
+  if (preview.owned > 0) {
+    lines.push(
+      preview.owned === 1
+        ? "The group you own, and everything anybody said in it."
+        : `The ${preview.owned} groups you own, and everything anybody said in them.`,
+    );
+  }
+  if (preview.groups > 0) {
+    lines.push(
+      preview.groups === 1
+        ? "You leave the other group you are in."
+        : `You leave the other ${preview.groups} groups you are in.`,
+    );
+  }
+  if (preview.dms > 0) {
+    lines.push(
+      preview.dms === 1
+        ? "Your direct message, deleted for both of you."
+        : `All ${preview.dms} direct messages, deleted for both of you.`,
+    );
+  }
+
+  lines.push(
+    "Your friends, everyone you have blocked, and every report you filed.",
+  );
+  lines.push(
+    preview.banned
+      ? `@${preview.handle} stays yours. A closed account keeps its name.`
+      : `@${preview.handle} is released, and anybody may claim it.`,
+  );
+
+  // Only shown to somebody who has one. For everybody else it is a paragraph
+  // about a consequence they have never had, on the screen where they are
+  // already being asked to read carefully.
+  const record = preview.banned || (profile?.standing ?? 0) > 0;
+
+  async function go() {
+    if (!ready) return;
+    setBusy(true);
+    setError(null);
+    const result = await erase({ confirm });
+    setBusy(false);
+
+    if (!result.ok) {
+      setError(
+        result.reason === "handle"
+          ? "That is not your handle."
+          : "There is nothing here to clear.",
+      );
+      return;
+    }
+    setArmed(false);
+    setConfirm("");
+  }
+
+  return (
+    <div className="mt-7">
+      <SectionLabel>Clearing out</SectionLabel>
+
+      {armed ? (
+        <div className="mt-2 rounded-xl border border-destructive/30 bg-destructive/[0.04] p-3">
+          <ul className="flex flex-col gap-1.5">
+            {lines.map((line) => (
+              <li
+                key={line}
+                className="flex gap-2 text-[0.8125rem] leading-snug text-foreground"
+              >
+                <span
+                  aria-hidden
+                  className="mt-[0.4375rem] size-1 shrink-0 rounded-full bg-destructive"
+                />
+                <span className="min-w-0">{line}</span>
+              </li>
+            ))}
+          </ul>
+
+          {record ? (
+            <p className="mt-2.5 text-[0.75rem] leading-relaxed text-muted-foreground">
+              Your record stays. It is the one thing here that is not yours to
+              clear — the mute is kept on the profile this deletes, so an
+              erasure that took the record with it would be the way out of every
+              mute there is. It names no handle, and it clears itself thirty
+              days after the last strike on it.
+            </p>
+          ) : null}
+
+          <label className="mt-3 block text-[0.8125rem] text-muted-foreground">
+            Type {preview.handle} to confirm
+            <input
+              ref={field}
+              value={confirm}
+              onChange={(event) => {
+                setConfirm(event.target.value);
+                setError(null);
+              }}
+              spellCheck={false}
+              autoComplete="off"
+              maxLength={20}
+              className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-[0.875rem] text-foreground transition-[border-color,box-shadow] outline-none focus-visible:border-destructive focus-visible:ring-1 focus-visible:ring-destructive"
+            />
+          </label>
+
+          <div className="mt-2.5 flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="lg"
+              className="flex-1"
+              onClick={() => {
+                setArmed(false);
+                setConfirm("");
+                setError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="lg"
+              disabled={!ready}
+              onClick={() => void go()}
+              className="flex-1 shadow-none hover:shadow-none"
+            >
+              {busy ? "…" : "Delete everything"}
+            </Button>
+          </div>
+
+          {error === null ? null : (
+            <p role="status" className="mt-2 text-[0.8125rem] text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-1.5 flex items-center gap-3">
+          <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-muted-foreground">
+            Delete your handle and everything you have ever said here. Nothing
+            about it can be undone.
+          </p>
+          <Button
+            type="button"
+            variant="destructive"
+            size="lg"
+            className="shrink-0 shadow-none hover:shadow-none"
+            onClick={() => {
+              setArmed(true);
+              setError(null);
+            }}
+          >
+            Clear chat
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * How many messages this account has ever sent, said in words.
+ *
+ * Grouped by locale, because the number is the point of the line and `1284` is
+ * harder to read at a glance than `1,284`. Zero is not "0 messages sent": an
+ * account that has never spoken is at the beginning of something rather than
+ * holding a count of nothing.
+ */
+function sentLabel(sent: number): string {
+  if (sent === 0) return "No messages yet";
+  if (sent === 1) return "1 message sent";
+  return `${sent.toLocaleString()} messages sent`;
 }
 
 /**
  * Your disc and your handle, which are the only two things about you that
  * anybody else can see.
  *
- * They are set here on very different terms, and the panel says so by how it
- * treats them. The disc — a colour off the wheel and up to two letters — commits
- * the instant you touch it and has no allowance on it, because a colour and two
- * letters are not a name: nothing points at them and nobody remembers you by
- * them. The handle has a Save, which is the only Save in this app's chrome, and
- * it is there precisely because this is the one control that spends something
- * you cannot get back.
+ * One row, and everything about you is in it: the disc, the handle, and the one
+ * number this app keeps about you. Nothing here is a form. The whole section is
+ * what somebody else sees when they come across you, and both halves of it are
+ * changed by pressing the thing itself — the disc opens `FaceEditor`, the
+ * pencil beside the handle opens `NameEditor`, and each of those is a panel
+ * over the column rather than a control that moves everything under it.
  *
- * The preview is the same `Monogram` every list draws, at a larger size and
- * fed from local state rather than from the profile — so the disc changes under
- * your hand rather than after the round trip.
+ * They are still set on very different terms. The disc — a picked face or two
+ * letters, on a picked colour — commits the instant you touch it and has no
+ * allowance on it, because a colour and a picture are not a name: nothing
+ * points at them and nobody remembers you by them. The handle keeps a Save,
+ * which is the only Save in this app's chrome, and it is there precisely
+ * because this is the one control that spends something you cannot get back.
+ * That difference is now said where it matters — inside the panel that spends
+ * it, over the field that spends it — instead of by a permanent input sitting
+ * under the name it duplicates.
+ *
+ * The count is here and nowhere else. `messagesSent` has always been on the
+ * profile, feeding the trust tier; it is on `MyProfile` and deliberately not on
+ * `PublicProfile`, because how much somebody talks is not a fact strangers
+ * should be able to read off them.
  *
  * What renaming does *not* do is rewrite what you have already said. Messages
  * carry the handle they were sent under (see `convex/chat/profiles.ts`), so old
@@ -721,167 +991,61 @@ function Me() {
   const left = MAX_HANDLE_CHANGES - spent;
   const current = profile?.handle ?? "";
 
-  const [hue, setHue] = useState(profile?.avatarHue);
-  const [initials, setInitials] = useState(profile?.avatarInitials ?? "");
-
-  const [handle, setHandle] = useState(current);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  // Follows a rename that lands, and any change made in another tab. Keyed on
-  // the server's value rather than set from the mutation's result, so there is
-  // one source for what the field says.
-  //
-  // Adjusted during render rather than in an effect: this is state derived from
-  // a prop changing, and React re-runs the component before touching the DOM
-  // rather than painting the stale value and correcting it. An effect here
-  // would be a cascading render, and is what the lint rule is about.
-  const [seen, setSeen] = useState(current);
-  if (seen !== current) {
-    setSeen(current);
-    setHandle(current);
-  }
-
-  const trimmed = initials.trim();
-  const worn = trimmed === "" ? undefined : trimmed;
-
-  const commit = useCallback(
-    (nextHue: number | undefined, nextInitials: string | undefined) =>
-      void setAvatar({ hue: nextHue, initials: nextInitials }),
+  // Held steady across renders: the editor debounces the letters against this
+  // callback, and a new function on every render — this component re-renders
+  // whenever the profile query does — would restart that timer each time and
+  // never reach the end of it.
+  const setFace = useCallback(
+    (face: Face) => void setAvatar(face),
     [setAvatar],
   );
 
-  // The letters settle before they are sent; the colour is a click and goes at
-  // once. Both write the whole disc, because `setAvatar` sets both halves and
-  // sending one of them alone would clear the other.
-  useEffect(() => {
-    if ((profile?.avatarInitials ?? "") === trimmed) return;
-    const timer = setTimeout(() => commit(hue, worn), 350);
-    return () => clearTimeout(timer);
-  }, [trimmed, worn, hue, profile?.avatarInitials, commit]);
-
-  const wanted = handle.trim().toLowerCase();
-  const shape = wanted === "" || wanted === current ? null : handleShapeError(wanted);
-  const ready = wanted !== "" && wanted !== current && shape === null && left > 0 && !busy;
-
-  async function save() {
-    if (!ready) return;
-    setBusy(true);
-    setNotice(null);
-    const result = await rename({ handle: wanted });
-    setBusy(false);
-    if (!result.ok) setNotice(claimError(result.reason));
-  }
-
   return (
     <div className="mt-2">
-      <div className="flex items-center gap-3">
-        <Monogram
-          handle={current}
-          hue={hue}
-          initials={worn}
-          className="size-14 text-[1.25rem]"
-        />
-
-        <div className="min-w-0 flex-1">
-          <label className="block text-[0.8125rem] text-muted-foreground">
-            Initials
-            <input
-              value={initials}
-              onChange={(event) => setInitials(event.target.value)}
-              maxLength={MAX_INITIALS}
-              spellCheck={false}
-              autoComplete="off"
-              placeholder={current.slice(0, 1)}
-              className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Twelve, in one row that wraps to two. A swatch is the colour it sets,
-          so there is nothing to label. */}
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        {AVATAR_HUES.map((swatch) => {
-          const on = hue === swatch;
-          return (
-            <button
-              key={swatch}
-              type="button"
-              aria-label={`Colour ${swatch}`}
-              aria-pressed={on}
-              onClick={() => {
-                setHue(swatch);
-                commit(swatch, worn);
-              }}
-              className={cn(
-                "monogram size-6 cursor-pointer rounded-full border-2 transition-[border-color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-                on ? "border-primary" : "border-transparent hover:border-border-strong",
-              )}
-              style={{ "--monogram-hue": swatch } as CSSProperties}
-            />
-          );
-        })}
-
-        {/* Back to the colour the handle hashes to, which is where everybody
-            starts and the only way back to it. */}
-        <button
-          type="button"
-          onClick={() => {
-            setHue(undefined);
-            commit(undefined, worn);
-          }}
-          aria-pressed={hue === undefined}
-          className={cn(
-            "flex h-6 cursor-pointer items-center rounded-full border px-2 text-[0.75rem] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-            hue === undefined
-              ? "border-primary text-foreground"
-              : "border-border text-muted-foreground hover:border-border-strong",
-          )}
-        >
-          Default
-        </button>
-      </div>
-
-      <div className="mt-3 flex gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-background px-3 transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
-          <span className="text-[0.875rem] text-faint">@</span>
-          <input
-            value={handle}
-            onChange={(event) => {
-              setHandle(event.target.value.toLowerCase());
-              setNotice(null);
-            }}
-            disabled={left === 0}
-            maxLength={20}
-            spellCheck={false}
-            autoComplete="off"
-            aria-label="Handle"
-            className="h-9 min-w-0 flex-1 bg-transparent text-[0.875rem] outline-none disabled:cursor-not-allowed"
-          />
-        </div>
-        <Button
-          type="button"
-          size="lg"
-          disabled={!ready}
-          onClick={() => void save()}
-          className="shadow-none hover:shadow-none"
-        >
-          {busy ? "…" : "Save"}
-        </Button>
-      </div>
-
-      {/* The local objection first, then the server's, then what it costs —
-          one line, and never two problems at once. Same order as the handle
-          screen, for the same reason. */}
-      <p
-        className={cn(
-          "mt-1.5 text-[0.8125rem] leading-snug",
-          shape ?? notice ? "text-destructive" : "text-muted-foreground",
-        )}
+      <FaceEditor
+        name={current}
+        label="your picture"
+        face={{
+          emoji: profile?.avatarEmoji,
+          initials: profile?.avatarInitials,
+          hue: profile?.avatarHue,
+        }}
+        onChange={setFace}
       >
-        {shape ?? notice ?? changesLeftLabel(spent)}
-      </p>
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1">
+            {/* The `@` is faint and the handle is not, so the name reads as
+                the name rather than as an address. Both go together while the
+                profile is still in flight: a lone `@` with nothing after it is
+                not a shorter name, it is a broken one. */}
+            <p className="min-w-0 truncate text-[0.9375rem] font-semibold">
+              {current === "" ? null : <span className="text-faint">@</span>}
+              {current}
+            </p>
+
+            <NameEditor
+              value={current}
+              prefix="@"
+              label="handle"
+              title="Handle"
+              maxLength={20}
+              caption={changesLeftLabel(spent)}
+              allowance={{ left, total: MAX_HANDLE_CHANGES }}
+              disabled={left === 0}
+              transform={(raw) => raw.toLowerCase()}
+              check={handleShapeError}
+              onSave={async (handle) => {
+                const result = await rename({ handle });
+                return result.ok ? null : claimError(result.reason);
+              }}
+            />
+          </div>
+
+          <p className="mt-0.5 truncate text-[0.8125rem] text-muted-foreground">
+            {sentLabel(profile?.messagesSent ?? 0)}
+          </p>
+        </div>
+      </FaceEditor>
     </div>
   );
 }
@@ -972,10 +1136,70 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/**
+ * The things you can do to a person that are not "message them".
+ *
+ * Removing a friend and blocking somebody are both rare, both irreversible in
+ * the sense that matters — the friendship does not come back on its own either
+ * way — and both wrong to put in front of a pointer that came to press
+ * Message. So they go behind one glyph, and Message keeps the row.
+ *
+ * This exists because blocking had no door. The mutation has been there since
+ * the moderation work landed and the Settings panel has always listed who you
+ * have blocked and offered to undo it, but the only way *in* was the menu on a
+ * message — which means the person you most want to block, the one who has
+ * stopped talking to you or never started, was the one you could not.
+ *
+ * An ellipsis rather than a cog, and always drawn rather than revealed on
+ * hover. The ellipsis is what the same menu on a message is already called, and
+ * two names for one gesture is worse than a slightly duller glyph; drawing it
+ * always is what makes it exist on a touch screen, where there is no hover to
+ * reveal anything and the old hover-swapped Remove was simply unreachable.
+ */
+function RowMenu({
+  handle,
+  items,
+}: {
+  handle: string;
+  items: readonly { label: string; onClick: () => void; danger?: boolean }[];
+}) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        aria-label={`More for ${handle}`}
+        className="flex size-7 items-center justify-center rounded-lg text-faint transition-colors outline-none hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring data-popup-open:bg-foreground/[0.06] data-popup-open:text-foreground"
+      >
+        <EllipsisHorizontalIcon className="size-4" />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner
+          side="bottom"
+          align="end"
+          sideOffset={6}
+          className="z-50 outline-none"
+        >
+          <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
+            {items.map((item) => (
+              <Menu.Item
+                key={item.label}
+                onClick={item.onClick}
+                className={cn(menuItemClass, item.danger && "text-destructive")}
+              >
+                {item.label}
+              </Menu.Item>
+            ))}
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
 function Row({
   handle,
   detail,
   hue,
+  emoji,
   initials,
   children,
 }: {
@@ -983,14 +1207,16 @@ function Row({
   detail?: string;
   /** The disc, when the row's source carries one. See `PublicProfile`. */
   hue?: number;
+  emoji?: string;
   initials?: string;
   children: ReactNode;
 }) {
   return (
-    <li className="group/row flex h-11 items-center gap-2.5">
+    <li className="flex h-11 items-center gap-2.5">
       <Monogram
         handle={handle}
         hue={hue}
+        emoji={emoji}
         initials={initials}
         className="size-7 text-[0.75rem]"
       />

@@ -40,11 +40,11 @@
 import "server-only";
 
 import catalogue from "@/lib/activities.catalogue.json";
-import { type Activity, filterActivities, type Genre, type Shelf } from "@/lib/activity";
+import { type Activity, filterActivities, type Genre } from "@/lib/activity";
 
 // Re-exported so a Server Component that already needs the catalogue does not
 // have to import its type from a second module.
-export type { Activity, Genre, Shelf };
+export type { Activity, Genre };
 
 /**
  * The catalogue, in upstream's own order.
@@ -71,36 +71,8 @@ export function popularActivities(count: number = POPULAR_COUNT): readonly Activ
 }
 
 /** Substring search across the whole catalogue, in catalogue order. The
- *  browser runs the same matcher over the shelves it was handed; see
+ *  browser runs the same matcher over the catalogue it was handed; see
  *  `filterActivities`. */
 export function searchActivities(query: string): readonly Activity[] {
   return filterActivities(ACTIVITIES, query);
 }
-
-/**
- * The catalogue grouped into shelves, most popular genre first.
- *
- * "Most popular genre" is the rank of its best activity rather than how many activities
- * it holds, because the two disagree and the first is the more useful answer:
- * Reaction is the largest section by a distance, but the activity everyone
- * opens is in Coordination. Ordering by size would bury Slope six shelves
- * down.
- *
- * Computed once at module load. It is a single pass over a few hundred frozen
- * entries and the result never changes, so there is nothing for a hook to
- * memoise per component — and being the whole catalogue in shelf order, it is
- * also what `/dashboard/activities` hands the browser as a prop.
- */
-export const SHELVES: readonly Shelf[] = (() => {
-  const byGenre = new Map<Genre, Activity[]>();
-  for (const activity of ACTIVITIES) {
-    const activities = byGenre.get(activity.genre);
-    if (activities) activities.push(activity);
-    else byGenre.set(activity.genre, [activity]);
-  }
-  // ACTIVITIES is already rank-ascending, so each bucket is too and `activities[0]` is
-  // the genre's best-ranked entry.
-  return [...byGenre.entries()]
-    .map(([genre, activities]) => ({ genre, activities }))
-    .sort((a, b) => a.activities[0].rank - b.activities[0].rank);
-})();

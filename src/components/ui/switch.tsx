@@ -11,13 +11,18 @@ import { cn } from "@/lib/utils";
  * every other filled control. The thumb moves with `translate` rather than by
  * changing its offsets: one property, on the compositor, instead of a layout
  * pass per frame.
+ *
+ * The geometry is exact: a 20x36 track with 2px of padding leaves a 16x32 well,
+ * so the 16px thumb sits flush top and bottom and travels its own width to the
+ * far side. Any border here would eat into that well and cost the thumb its
+ * gutter on the checked end.
  */
 function Switch({ className, ...props }: SwitchPrimitive.Root.Props) {
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-transparent bg-border-strong p-0.5 transition-colors duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-checked:bg-primary",
+        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full bg-border-strong p-0.5 transition-colors duration-200 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-checked:bg-primary",
         className,
       )}
       {...props}

@@ -57,6 +57,7 @@ const REFUSALS: Record<string, string> = {
   "self-harm": "Telling someone to hurt themselves is not allowed here.",
   degrading: "Threatening to expose someone is not allowed here.",
   harassment: "That reads as aimed at someone. Say it about the thing, not the person.",
+  profanity: "Swearing does not go through here. Say it another way and it will.",
 
   contact: "Contact details cannot be shared here — no numbers, handles or usernames.",
   link: "Links are not allowed here.",
@@ -140,15 +141,17 @@ export const GROUP_HUES = [
 export const MAX_TITLE = 40;
 
 /**
- * The wheel a person may draw their own disc on, and how much they may write
- * on it.
+ * The wheel a person may draw their own disc on, the faces they may wear, and
+ * how much they may write instead.
  *
- * The same twelve steps as `GROUP_HUES`, because a person and a group sitting
- * in one list should not come from two palettes. Mirrored from `AVATAR_HUES`
- * and `MAX_INITIALS` in `convex/moderation/limits.ts` for the reason above —
- * here they are the picker, there they are the check.
+ * The same twelve steps and the same sixteen faces a group gets, because a
+ * person and a group sitting in one list should not come from two palettes.
+ * Mirrored from `AVATAR_HUES`, `AVATAR_EMOJI` and `MAX_INITIALS` in
+ * `convex/moderation/limits.ts` for the reason above — here they are the
+ * picker, there they are the check.
  */
 export const AVATAR_HUES = GROUP_HUES;
+export const AVATAR_EMOJI = GROUP_EMOJI;
 export const MAX_INITIALS = 2;
 
 /**
@@ -166,6 +169,21 @@ export const MAX_HANDLE_CHANGES = 2;
  * checks the same window itself and is the one that decides.
  */
 export const DELETE_WINDOW_MS = 30 * 1000;
+
+/**
+ * How often an open conversation says it is still open.
+ *
+ * The other half of `PRESENCE_WINDOW_MS` in `convex/chat/presence.ts`, which is
+ * how long one of these beats counts for. The window is set to comfortably more
+ * than two of these, so a beat lost to a bad connection does not blink somebody
+ * out of a room they never left; shortening the gap here without widening the
+ * window there is how that starts happening.
+ *
+ * Fifteen seconds is the slowest this can be and still be a *live* count. It is
+ * also a write per reader per fifteen seconds, which is the whole cost of the
+ * feature — see the note at the top of `convex/chat/presence.ts`.
+ */
+export const HEARTBEAT_MS = 15 * 1000;
 
 /** Shape only. Everything else about a handle is decided on the server. */
 export function handleShapeError(handle: string): string | null {
@@ -293,4 +311,56 @@ export function untilLabel(until: number, now: number): string {
   if (minutes < 60) return minutes === 1 ? "a minute" : `${minutes} minutes`;
   const hours = Math.round(minutes / 60);
   return hours === 1 ? "an hour" : `${hours} hours`;
+}
+
+/**
+ * Asking the chat column to show a group's panel.
+ *
+ * The panels — who is in a group, what it is called, who may join — take the
+ * conversation column over rather than opening a sheet on top of everything.
+ * That is what they should do: a group's membership is a place in this app, not
+ * a dialog, and a dialog is exactly the thing that goes away the moment you
+ * touch what is behind it.
+ *
+ * The trouble is that the column is not the only place they are opened from.
+ * The cog on a group's row is inside it, but the one in the thread header is in
+ * the other pane entirely, and threading a callback from a conversation row and
+ * a thread header into one piece of state means a context around both, holding
+ * a value neither pane wants to re-render for.
+ *
+ * So: a window event, exactly as `requestSettings` in `src/lib/preferences.ts`
+ * does it, and for the same reason. Callers need nothing but this module, and
+ * the column listens and shows itself.
+ */
+const GROUP_PANEL_EVENT = "50x:group-panel";
+
+/** Which of the two the column should show. */
+export type GroupPanelMode = "add" | "settings";
+
+export type GroupPanelRequest = {
+  conversationId: string;
+  mode: GroupPanelMode;
+};
+
+/** Ask for one. Nothing happens where the conversation column is not mounted,
+ *  which is everywhere outside chat. */
+export function requestGroupPanel(
+  conversationId: string,
+  mode: GroupPanelMode,
+) {
+  window.dispatchEvent(
+    new CustomEvent<GroupPanelRequest>(GROUP_PANEL_EVENT, {
+      detail: { conversationId, mode },
+    }),
+  );
+}
+
+/** The column's side of it. Returns the unsubscribe, for an effect's cleanup. */
+export function onGroupPanelRequest(
+  handler: (request: GroupPanelRequest) => void,
+) {
+  const listener = (event: Event) =>
+    handler((event as CustomEvent<GroupPanelRequest>).detail);
+  window.addEventListener(GROUP_PANEL_EVENT, listener);
+  return () => window.removeEventListener(GROUP_PANEL_EVENT, listener);
 }

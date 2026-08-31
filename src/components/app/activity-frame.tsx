@@ -5,11 +5,15 @@ import {
   ArrowPathIcon,
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
+  EyeSlashIcon,
 } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { PacketCover } from "@/components/app/packet-cover";
+import { usePreferences } from "@/components/preferences-provider";
 import { LogoMark } from "@/components/wordmark";
 import { ACTIVITIES_HREF } from "@/lib/nav";
+import { safePanicUrl } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,6 +65,32 @@ export function ActivityFrame({
   const [run, setRun] = useState(0);
 
   const [open, setOpen] = useState(false);
+
+  /**
+   * The panic key's way in, for the one place the key itself cannot reach.
+   *
+   * Keystrokes inside an activity belong to the bundle's document, which is
+   * cross-origin two frames down — `usePanicKey` listens on this window and
+   * will never be told about them. Outside fullscreen that is survivable,
+   * because any click on the app around the frame hands focus back. In
+   * fullscreen there is no app around the frame, so once someone is playing
+   * the key is gone until they leave, which is exactly the stretch they were
+   * most likely thinking of when they set one.
+   *
+   * So the control pill carries the same destination as a button. It is inside
+   * `stage`, which is the element that goes fullscreen, so it survives the one
+   * case it exists for.
+   */
+  const { preferences } = usePreferences();
+  const panicUrl = preferences.panicEnabled
+    ? safePanicUrl(preferences.panicUrl)
+    : null;
+
+  // `replace`, matching the key: the page you were on should not be one Back
+  // press away. The browser drops fullscreen on its own as the document goes.
+  const onPanic = useCallback(() => {
+    if (panicUrl) window.location.replace(panicUrl);
+  }, [panicUrl]);
 
   // Both of these are the browser's state, not ours, so they are read from it
   // rather than mirrored into a `useState` that can fall out of step. Coming
@@ -121,6 +151,12 @@ export function ActivityFrame({
         className="block size-full border-0"
       />
 
+      {/* Keyed on the same value as the frame, which is the whole of its
+          scheduling: a restart tears both down together, so the cover is
+          already black on the first frame of the new load rather than
+          arriving an effect later. */}
+      <PacketCover key={`cover-${run}`} />
+
       <ActivityControls
         title={title}
         open={open}
@@ -129,6 +165,7 @@ export function ActivityFrame({
         full={full}
         canFull={canFull}
         onToggleFull={toggleFull}
+        onPanic={panicUrl ? onPanic : null}
       />
     </div>
   );
@@ -155,6 +192,12 @@ const subscribeNever = () => () => {};
  * unambiguously the app rather than the activity, which makes it the thing to
  * press when you want out — the same reason a console's home button carries
  * the maker's badge.
+ *
+ * The panic control is the one thing that does not fold away with the rest. A
+ * way out that takes two presses is not a way out, and the first of those two
+ * would be a press that opens a bar and announces itself. It appears only for
+ * an account that has turned the panic key on, so it is never a control
+ * somebody has to explain having.
  */
 function ActivityControls({
   title,
@@ -164,6 +207,7 @@ function ActivityControls({
   full,
   canFull,
   onToggleFull,
+  onPanic,
 }: {
   title: string;
   open: boolean;
@@ -172,11 +216,13 @@ function ActivityControls({
   full: boolean;
   canFull: boolean;
   onToggleFull: () => void;
+  /** `null` when the account has no panic key set. */
+  onPanic: (() => void) | null;
 }) {
   return (
     <div
       className={cn(
-        "absolute top-3 left-3 z-10 flex items-center rounded-full p-1",
+        "absolute top-3 left-3 z-20 flex items-center rounded-full p-1",
         // Its own palette, not the app's. This sits on whatever the activity
         // happens to be drawing, so it cannot borrow a surface token and
         // expect contrast — a dark glass plate reads against all of them.
@@ -192,6 +238,16 @@ function ActivityControls({
       >
         <LogoMark className="h-4 w-[1.1rem]" />
       </button>
+
+      {/* Named plainly, so the one control nobody will be reading carefully
+          when they reach for it says what it does. Still not red: the tooltip
+          is only there once you have already gone looking with the pointer,
+          where a warning colour sits on the screen the whole time. */}
+      {onPanic && (
+        <Control onClick={onPanic} label="PANIC">
+          <EyeSlashIcon className="size-4" />
+        </Control>
+      )}
 
       {/*
        * A grid column animating between `0fr` and `1fr` — the one way to

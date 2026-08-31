@@ -62,6 +62,54 @@ export async function standingFor(
 }
 
 /**
+ * What the surviving ledger already carries, for a profile about to be made.
+ *
+ * This is the one thing standing between `chat.erase.eraseMine` and a mute you
+ * can walk out of. Erasing your chat deletes the profile, and the mute is a
+ * field *on* the profile — so without this, claiming a new handle a second
+ * later would hand back a clean composer to somebody the system had just
+ * stopped. The strikes are deliberately not deleted by that path, and this is
+ * what makes keeping them mean anything.
+ *
+ * The mute is measured from the strike rather than from now. A mute that has
+ * already been running for fifty minutes of its hour has ten minutes left, and
+ * re-deriving it as `now + duration` would restart it — which would turn this
+ * from a guard into a punishment for claiming a handle.
+ *
+ * A ban cannot normally be reached from here: `applyStrike` writes `bannedAt`
+ * the moment one is earned, and a banned profile is kept rather than deleted
+ * precisely so the ban survives. It is handled anyway, because "cannot be
+ * reached" is a claim about today's callers.
+ */
+export async function carriedConsequence(
+  ctx: QueryCtx,
+  clerkId: string,
+  now: number,
+): Promise<{
+  mutedUntil?: number;
+  mutedRule?: string;
+  bannedAt?: number;
+  banRule?: string;
+}> {
+  const rows = await ctx.db
+    .query("strikes")
+    .withIndex("byUser", (q) => q.eq("clerkId", clerkId).gt("expiresAt", now))
+    .collect();
+  if (rows.length === 0) return {};
+
+  // The rule shown is the one from the most recent strike, which is the same
+  // one `applyStrike` would have written had this standing been reached there.
+  const newest = rows.reduce((latest, row) => (row.at > latest.at ? row : latest));
+  const until = muteUntil(activeStanding(rows, now), now);
+
+  if (until === null) return { bannedAt: newest.at, banRule: newest.rule };
+  if (until === undefined) return {};
+
+  const ends = newest.at + (until - now);
+  return ends > now ? { mutedUntil: ends, mutedRule: newest.rule } : {};
+}
+
+/**
  * Write a strike and apply whatever it now adds up to.
  *
  * The single place standing turns into a consequence. Every refusal that costs
@@ -258,5 +306,65 @@ export async function ensureGlobalMembership(
     joinedAt: Date.now(),
     lastReadAt: 0,
   });
+  return conversationId;
+}
+
+/**
+ * The direct message thread for a pair, created if it is not there yet.
+ *
+ * Idempotent on `dmKey`, which is what lets more than one caller reach for it:
+ * `openDm` when somebody presses the button, and `chat/friends.ts` the moment a
+ * request is accepted. Two people arriving at the same instant land on the same
+ * row rather than on two half-built conversations, because the key is derived
+ * from the pair rather than from who asked first.
+ *
+ * It decides nothing about whether the pair may talk. Every caller settles that
+ * first — see `openDm` for the full set of bars.
+ */
+export async function ensureDm(
+  ctx: MutationCtx,
+  clerkId: string,
+  peerClerkId: string,
+): Promise<Id<"conversations">> {
+  const dmKey = dmKeyFor(clerkId, peerClerkId);
+  const now = Date.now();
+
+  const existing = await ctx.db
+    .query("conversations")
+    .withIndex("byDmKey", (q) => q.eq("dmKey", dmKey))
+    .unique();
+
+  const conversationId =
+    existing?._id ??
+    (await ctx.db.insert("conversations", {
+      kind: "dm",
+      dmKey,
+      createdBy: clerkId,
+      createdAt: now,
+      lastMessageAt: now,
+    }));
+
+  // Either side may have left; opening it again puts them back.
+  for (const [who, other] of [
+    [clerkId, peerClerkId],
+    [peerClerkId, clerkId],
+  ]) {
+    const member = await membership(ctx, conversationId, who);
+    if (member === null) {
+      await ctx.db.insert("conversationMembers", {
+        conversationId,
+        clerkId: who,
+        kind: "dm",
+        role: "member",
+        status: "active",
+        joinedAt: now,
+        lastReadAt: 0,
+        dmPeer: other,
+      });
+    } else if (member.status !== "active") {
+      await ctx.db.patch(member._id, { status: "active" });
+    }
+  }
+
   return conversationId;
 }

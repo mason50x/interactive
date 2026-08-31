@@ -1,7 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
+import { EmptyPane } from "@/components/app/chat/empty-pane";
 
 /**
- * What fills the right-hand pane when nothing is open.
+ * What fills the right-hand pane when nothing is open — which, at `md` and up,
+ * is the room. The pane itself explains why; see `EmptyPane`.
  *
  * Only ever seen at `md` and up: below that the conversation list takes the
  * whole width at this route and this page is not rendered at all. See
@@ -10,11 +12,5 @@ import { auth } from "@clerk/nextjs/server";
 export default async function ChatIndexPage() {
   await auth.protect();
 
-  return (
-    <div className="flex size-full items-center justify-center p-6">
-      <p className="max-w-xs text-center text-[0.9375rem] leading-relaxed text-muted-foreground">
-        Pick a conversation, or start one from People.
-      </p>
-    </div>
-  );
+  return <EmptyPane />;
 }

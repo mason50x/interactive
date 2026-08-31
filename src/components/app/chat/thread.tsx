@@ -10,7 +10,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import Link from "next/link";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -18,7 +25,9 @@ import {
   useRemaining,
 } from "@/components/app/chat/global-unlock";
 import { GroupPanel } from "@/components/app/chat/group-panel";
+import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import { Monogram } from "@/components/app/chat/monogram";
+import { Present } from "@/components/app/chat/presence";
 import { StandingBanner } from "@/components/app/chat/standing-banner";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
@@ -27,6 +36,7 @@ import {
   conversationName,
   refusalMessage,
 } from "@/lib/chat";
+import { useStillness } from "@/lib/motion";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
@@ -113,6 +123,28 @@ export function Thread({
 
   const scroller = useRef<HTMLDivElement>(null);
 
+  /** The composer's text box, which is where a message is before it is one. */
+  const field = useRef<HTMLTextAreaElement>(null);
+
+  /** The pending message's row, which is where it is after. */
+  const flyer = useRef<HTMLDivElement>(null);
+
+  /** That row's bubble, without its words — the part that is not sent. */
+  const flyerFace = useRef<HTMLSpanElement>(null);
+
+  /**
+   * Where the words were on screen at the moment Send was pressed.
+   *
+   * A ref and not state: it is read once, by the layout effect that runs on the
+   * very next commit, and nothing renders differently for it. Measured in the
+   * handler rather than in that effect because by then the textarea has been
+   * emptied and has collapsed back to one line — the top of the text somebody
+   * wrote is only knowable while it is still written.
+   */
+  const launch = useRef<{ x: number; y: number } | null>(null);
+
+  const still = useStillness();
+
   /** Whether the reader is at the live end. See the note above. */
   const pinned = useRef(true);
 
@@ -120,6 +152,10 @@ export function Thread({
   async function submit(text: string): Promise<string | null> {
     if (profile === null || userId === null || userId === undefined)
       return null;
+
+    const box = still ? undefined : field.current?.getBoundingClientRect();
+    launch.current =
+      box === undefined ? null : { x: box.left, y: box.top + FIELD_PAD_Y };
 
     setPending({
       _id: crypto.randomUUID() as Id<"messages">,
@@ -146,27 +182,131 @@ export function Thread({
     pinned.current = true;
   }, [conversationId]);
 
-  useEffect(() => {
+  // Before the paint rather than after it. A thread opens at its live end, and
+  // an effect that runs after the browser has drawn shows one frame of the top
+  // of the conversation before it jumps. It also has to be settled before the
+  // flight below measures anything: the message's destination is a position in
+  // a box that is about to be scrolled.
+  useLayoutEffect(() => {
     const element = scroller.current;
     if (element === null || !pinned.current) return;
     element.scrollTop = element.scrollHeight;
   }, [conversationId, newest, pending, results.length]);
 
-  // The thread shares its column with things that change height on their own —
-  // the standing banner opening, the composer growing a second line. Each of
-  // those shortens the pane, and a pane that gets shorter from the bottom takes
-  // the newest message off screen. Watching the box rather than the causes
-  // keeps the live end live through the whole of an animated one.
-  useEffect(() => {
-    const element = scroller.current;
-    if (element === null) return;
+  /**
+   * The message travelling from the box it was typed in to the place it sits.
+   *
+   * Sending is the one moment in this app where a thing you made moves, and it
+   * moves rather than appears because those are two different claims: a bubble
+   * that fades in at the bottom of the thread is a message *arriving*, which is
+   * what everybody else's do, and this one did not arrive — it left.
+   *
+   * ## What travels is the words
+   *
+   * The thing that leaves the composer is the sentence, at the size and weight
+   * it was typed at, starting exactly where it was sitting a frame ago — not a
+   * bubble that appears near the Send button and slides. The bubble is drawn
+   * around the words on the way, from nothing at the start to a full face by
+   * the time they land, so the handoff from the field is the same text carrying
+   * on rather than one object being swapped for another. That is the whole
+   * reason the face is a layer of its own — see `MessageRow`.
+   *
+   * Nothing is scaled: the composer and the bubble set text at the same size,
+   * which is what lets this be a translation and not an effect. The launch
+   * point is the top-left of the *text* in the field, and the landing point the
+   * top-left of the text in the bubble, so the words never jump at either end.
+   *
+   * It is the real row that moves, not a copy of it flown over the top. The
+   * copy is the usual way to do this and it is worse in every way that matters:
+   * two elements holding the same sentence, one of which has to be hidden at
+   * exactly the frame the other stops. Here the row renders where it belongs,
+   * is pushed back to where the words already were, and released.
+   *
+   * ## Three things that make it a movement rather than a stutter
+   *
+   * It is lifted over the composer for the trip. The composer is an opaque bar
+   * on its own blur at `z-10`, and a message that starts underneath it spends
+   * the first half of the journey invisible and appears halfway up the pane out
+   * of nothing.
+   *
+   * It is composited. The bubble is a gradient, a border, two inset shadows and
+   * a drop shadow — see `.bubble-mine` in `globals.css` — and re-rasterising
+   * that on every frame is what turns a move into a sequence of positions.
+   * `will-change` hands both layers to the GPU for the length of the trip and
+   * takes them back after, so the hint never outlives the motion.
+   *
+   * Both animations are single animations rather than transitions between two
+   * inline styles. A transition has to be started by writing one value, forcing
+   * the browser to notice it, then writing another; the middle step is a
+   * synchronous layout read in the frame the message is sent, which is exactly
+   * the frame that can least afford one.
+   *
+   * The push has to be measured before the browser paints — hence a layout
+   * effect — or there is a frame of the message at its destination before it
+   * goes back to fetch itself.
+   */
+  useLayoutEffect(() => {
+    const element = flyer.current;
+    const face = flyerFace.current;
+    const from = launch.current;
+    launch.current = null;
+    if (element === null || face === null || from === null) return;
 
-    const observer = new ResizeObserver(() => {
-      if (pinned.current) element.scrollTop = element.scrollHeight;
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+    const box = face.getBoundingClientRect();
+    const dx = from.x - (box.left + BUBBLE_PAD_X);
+    const dy = from.y - (box.top + BUBBLE_PAD_Y);
+
+    element.style.position = "relative";
+    element.style.zIndex = "20";
+    element.style.willChange = "transform, opacity";
+    face.style.willChange = "opacity";
+
+    const timing: KeyframeAnimationOptions = {
+      duration: FLIGHT_MS,
+      // Most of the distance in the first third and a long settle after it. A
+      // message leaves quickly — the send was a keystroke — and an even glide
+      // across the pane reads as the app moving it rather than as it going.
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+    };
+
+    const flight = element.animate(
+      [
+        // Full weight at the start, because at the start it is still the thing
+        // in the composer, which was never dimmed. It lands at the half opacity
+        // the class on it carries, which is where the animation stops writing.
+        { transform: `translate(${dx}px, ${dy}px)`, opacity: 1 },
+        { transform: "translate(0px, 0px)", opacity: 0.5 },
+      ],
+      timing,
+    );
+
+    // Held off until the words are clear of the composer. A face that starts
+    // growing immediately is a bubble sliding out of the text box, which is the
+    // one reading this is trying not to have.
+    const forming = face.animate(
+      [{ opacity: 0 }, { opacity: 0, offset: 0.3 }, { opacity: 1 }],
+      timing,
+    );
+
+    const land = () => {
+      element.style.position = "";
+      element.style.zIndex = "";
+      element.style.willChange = "";
+      face.style.willChange = "";
+    };
+
+    // `finished` rejects when an animation is cancelled, which is what happens
+    // when the server confirms mid-flight and this row is replaced by the real
+    // one. There is nothing to clean up in that case — the elements are gone —
+    // but an unhandled rejection would be reported as if there were.
+    flight.finished.then(land, () => {});
+
+    return () => {
+      flight.cancel();
+      forming.cancel();
+      land();
+    };
+  }, [pending]);
 
   /**
    * Oldest first, for reading. A copy, because `results` is Convex's own array
@@ -213,14 +353,16 @@ export function Thread({
             <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">
               {detail.kind === "dm" ? `@${name}` : name}
             </h1>
+            {/* Who is in here now, not who belongs here — and asked for in the
+                room as well as in a group, which is where a live number is
+                worth the most and where a count of members was never going to
+                be possible. A direct message has nobody to count. */}
+            {detail.kind === "dm" ? null : (
+              <Present conversationId={conversationId} />
+            )}
+
             {detail.kind === "group" ? (
-              <>
-                <span className="hidden text-[0.8125rem] text-faint sm:inline">
-                  {detail.members.filter((m) => m.status === "active").length}{" "}
-                  in here
-                </span>
-                <GroupPanel conversationId={conversationId} detail={detail} />
-              </>
+              <GroupPanel conversationId={conversationId} />
             ) : null}
           </>
         )}
@@ -247,11 +389,7 @@ export function Thread({
           </div>
         ) : null}
 
-        {status === "Exhausted" && results.length === 0 ? (
-          <p className="py-8 text-center text-[0.875rem] text-muted-foreground">
-            Nothing has been said here yet.
-          </p>
-        ) : null}
+        {status === "Exhausted" && results.length === 0 ? <Quiet /> : null}
 
         {ordered.map((message, index) => (
           <MessageRow
@@ -267,12 +405,13 @@ export function Thread({
             message. Held at reduced opacity so it reads as in flight rather
             than as sent — and it may still be refused. */}
         {pending === null ? null : (
-          <div className="opacity-50">
+          <div ref={flyer} className="opacity-50">
             <MessageRow
               message={pending}
               previous={ordered[ordered.length - 1]}
               mine
               canAct={false}
+              faceRef={flyerFace}
             />
           </div>
         )}
@@ -287,6 +426,7 @@ export function Thread({
         )}
 
         <Composer
+          fieldRef={field}
           onSubmit={submit}
           lock={
             profile !== null &&
@@ -384,12 +524,159 @@ function Outside({ conversationId }: { conversationId: Id<"conversations"> }) {
   );
 }
 
+/**
+ * The speech bubble, drawn once as characters.
+ *
+ * A `#` is a dot on a 4px grid: eight rows of a rounded rectangle and two more
+ * for the tail hanging off its bottom-left corner. Written this way because the
+ * shape is the only thing about it worth reading, and a list of coordinates
+ * hides that behind arithmetic — here you can see the bubble in the source.
+ */
+const BUBBLE_ART = [
+  "..#########..",
+  ".#.........#.",
+  "#...........#",
+  "#...........#",
+  "#...........#",
+  "#...........#",
+  ".#.........#.",
+  "..#########..",
+  "..##.........",
+  "..#..........",
+] as const;
+
+/**
+ * The five planes the outline is repeated across, near to far, and the cycle
+ * each one's brightness runs over a revolution.
+ *
+ * 4px apart, which is the grid's own pitch — the bubble is then one cube size
+ * in all three directions, and the wall reads as stacked pixels rather than as
+ * a shape smeared backwards. Five of them and not three because the quarter of
+ * the turn where the bubble is edge-on is all wall, and a wall wants some
+ * thickness to be one.
+ *
+ * `near` is what a plane is worth facing the camera and `far` what it is worth
+ * hidden behind the others; `phase` is the half-revolution offset that puts the
+ * back planes on the far end of the cycle while the front ones are on the near
+ * end. The amplitude narrows toward the middle because a plane nearer the axis
+ * swings less in depth, and the one *on* the axis does not move at all — so its
+ * two ends are the same number and its cycle is a flat line.
+ *
+ * `rest` is where that cycle sits at the angle the bubble rests at, written
+ * onto the dot as its plain opacity so a bubble with its animations collapsed
+ * is still a *shaded* bubble. See `.dot-bubble-pixel` in `globals.css`.
+ */
+const BUBBLE_PLANES = [
+  { z: 8, near: 1, far: 0.2, phase: 0 },
+  { z: 4, near: 0.82, far: 0.34, phase: 0 },
+  { z: 0, near: 0.55, far: 0.55, phase: 0 },
+  { z: -4, near: 0.82, far: 0.34, phase: 0.5 },
+  { z: -8, near: 1, far: 0.2, phase: 0.5 },
+] as const;
+
+/**
+ * Every pixel of the wall, placed once at module load.
+ *
+ * The art's centre is the origin: the grid is thirteen wide and ten tall, so
+ * halving those puts (0, 0) in the middle of the whole drawing, tail included.
+ * That means the bubble body sits a little high in the box, which is where a
+ * bubble with a tail belongs.
+ */
+const BUBBLE_PIXELS = BUBBLE_PLANES.flatMap((plane) =>
+  BUBBLE_ART.flatMap((row, y) =>
+    [...row].flatMap((cell, x) =>
+      cell === "#"
+        ? [
+            {
+              key: `${plane.z}:${x}:${y}`,
+              x: (x - 6) * 4,
+              y: (y - 4.5) * 4,
+              z: plane.z,
+              near: plane.near,
+              far: plane.far,
+              phase: plane.phase,
+              // The resting angle is a shallow turn away from face-on, so the
+              // front of the bubble is still the front of it: each plane rests
+              // at whichever end of its own cycle it is nearest.
+              rest: plane.phase === 0 ? plane.near : plane.far,
+            },
+          ]
+        : [],
+    ),
+  ),
+);
+
+/**
+ * The three dots inside it. Centred across the body and on its middle line,
+ * two grid cells apart. Their depth is the near plane's and is written in the
+ * stylesheet instead of here, because it is the same 8px in four keyframes.
+ */
+const BUBBLE_SAYING = [-8, 0, 8];
+
+/**
+ * An empty thread.
+ *
+ * A conversation with nothing in it is not an error and should not be reported
+ * like one, so the line is set at the weight of something being told to you
+ * rather than the grey of a caption apologising. Above it, the thing that would
+ * be there if somebody were typing: an empty bubble, turning, with the three
+ * dots already going. It is not a status — nobody is typing, and it says so by
+ * being the only thing on the screen — it is the shape of what this pane is
+ * for, held up for a second before anybody has used it.
+ *
+ * `flex-1` inside the scroller, so this centres in the pane rather than sitting
+ * at the top of an empty column. Everything about how it is built is in
+ * `.dot-bubble` in `globals.css`.
+ */
+function Quiet() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10">
+      {/* The accent, like the search orb — the two pieces of decoration in the
+          app are painted in whatever colour the account picked. */}
+      <div aria-hidden className="dot-bubble text-primary">
+        <div className="dot-bubble-shell">
+          {BUBBLE_PIXELS.map((pixel) => (
+            <span
+              key={pixel.key}
+              className="dot-bubble-pixel"
+              style={
+                {
+                  "--x": pixel.x,
+                  "--y": pixel.y,
+                  "--z": pixel.z,
+                  "--near": pixel.near,
+                  "--far": pixel.far,
+                  "--phase": pixel.phase,
+                  "--rest": pixel.rest,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+
+          {BUBBLE_SAYING.map((x, index) => (
+            <span
+              key={x}
+              className="dot-bubble-say"
+              // The stagger is an index rather than a delay, so the three of
+              // them stay in step with each other if the timing changes.
+              style={
+                { "--x": x, "--y": -4, "--i": index } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
+      </div>
+
+      <p className="text-center text-[0.9375rem] font-semibold text-foreground">
+        Nothing has been said here yet.
+      </p>
+    </div>
+  );
+}
+
 /** The same surface the account popup uses, so a menu here is recognisably the
  *  same object. `.popup-slide` carries the open and close motion — see the rule
  *  in `globals.css` for why it is not expressible as utilities. */
-const popupClass =
-  "popup-slide flex gap-0.5 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none";
-
 /** Messages this close together from the same person are one block. */
 const GROUP_WINDOW_MS = 5 * 60_000;
 
@@ -398,11 +685,16 @@ function MessageRow({
   previous,
   mine,
   canAct,
+  faceRef,
 }: {
   message: ChatMessage;
   previous: ChatMessage | undefined;
   mine: boolean;
   canAct: boolean;
+  // Only the message in flight passes one. See the flight in `Thread`: the
+  // words travel on their own and the bubble is drawn around them as they
+  // land, which needs the two to be separately reachable.
+  faceRef?: RefObject<HTMLSpanElement | null>;
 }) {
   const react = useMutation(api.chat.messages.react);
   const report = useMutation(api.chat.reports.report);
@@ -483,13 +775,30 @@ function MessageRow({
         ) : (
           <p
             className={cn(
-              "rounded-3xl px-3.5 py-2 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap",
+              "relative rounded-3xl px-3.5 py-2 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap",
               mine
-                ? "bg-primary font-semibold text-primary-foreground"
-                : "bg-surface-muted text-foreground",
+                ? "font-semibold text-primary-foreground"
+                : "text-foreground",
             )}
           >
-            {message.body}
+            {/* The bubble itself, behind the words rather than around them.
+                One element for the face and one for the text is what lets a
+                message be sent as the words alone and become a bubble on
+                arrival — and it costs nothing the rest of the time, because
+                an inset layer is the same rectangle the padding already
+                described. The text is positioned too, and after it, so it
+                paints over the face rather than under it. */}
+            <span
+              ref={faceRef}
+              aria-hidden
+              className={cn(
+                "absolute inset-0 rounded-3xl border",
+                mine
+                  ? "bubble-mine bg-primary"
+                  : "bubble-theirs bg-surface-muted",
+              )}
+            />
+            <span className="relative">{message.body}</span>
           </p>
         )}
 
@@ -620,7 +929,7 @@ function MessageRow({
                             onClick={() =>
                               void remove({ messageId: message._id })
                             }
-                            className="rounded-lg px-2.5 py-1.5 text-left text-[0.875rem] text-destructive outline-none select-none hover:bg-foreground/[0.06] data-highlighted:bg-foreground/[0.06]"
+                            className={cn(menuItemClass, "text-destructive")}
                           >
                             Delete
                           </Menu.Item>
@@ -633,7 +942,7 @@ function MessageRow({
                                 does instead is avoid promising a review that is never
                                 going to happen. */}
                             <Menu.SubmenuRoot>
-                              <Menu.SubmenuTrigger className="rounded-lg px-2.5 py-1.5 text-left text-[0.875rem] outline-none select-none hover:bg-foreground/[0.06] data-highlighted:bg-foreground/[0.06]">
+                              <Menu.SubmenuTrigger className={menuItemClass}>
                                 Report this
                               </Menu.SubmenuTrigger>
                               <Menu.Portal>
@@ -657,7 +966,7 @@ function MessageRow({
                                             reason,
                                           })
                                         }
-                                        className="rounded-lg px-2.5 py-1.5 text-left text-[0.875rem] outline-none select-none hover:bg-foreground/[0.06] data-highlighted:bg-foreground/[0.06]"
+                                        className={menuItemClass}
                                       >
                                         {label}
                                       </Menu.Item>
@@ -673,7 +982,7 @@ function MessageRow({
                                   peerClerkId: message.authorClerkId,
                                 })
                               }
-                              className="rounded-lg px-2.5 py-1.5 text-left text-[0.875rem] text-destructive outline-none select-none hover:bg-foreground/[0.06] data-highlighted:bg-foreground/[0.06]"
+                              className={cn(menuItemClass, "text-destructive")}
                             >
                               Block {message.authorHandle}
                             </Menu.Item>
@@ -717,17 +1026,34 @@ const PLACEHOLDER: Record<"muted" | "new", string> = {
   new: "You can post here when the ring fills",
 };
 
+/** How long the message takes to travel. Long enough to be followed and short
+ *  enough that the next one can be typed over the top of it. */
+const FLIGHT_MS = 300;
+
+/** The bubble's own padding, which is `px-3.5 py-2` in pixels, and the field's
+ *  `py-1.5`. The flight lines up the two pieces of *text*, not the two boxes
+ *  around them — a bubble is padded and a textarea is barely padded at all, so
+ *  matching their corners would leave the words a few pixels adrift at both
+ *  ends of the move, which is the part anybody would notice. */
+const BUBBLE_PAD_X = 14;
+const BUBBLE_PAD_Y = 8;
+const FIELD_PAD_Y = 6;
+
 function Composer({
   onSubmit,
   lock,
+  fieldRef,
 }: {
   onSubmit: (text: string) => Promise<string | null>;
   lock: Lock;
+  // Held by the thread, because the thread is what needs to know where a
+  // message was typed in order to move it out of here.
+  fieldRef: RefObject<HTMLTextAreaElement | null>;
 }) {
   const shut = lock !== null;
   const [body, setBody] = useState("");
   const [refused, setRefused] = useState<string | null>(null);
-  const field = useRef<HTMLTextAreaElement>(null);
+  const field = fieldRef;
 
   async function submit() {
     const text = body.trim();

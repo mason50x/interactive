@@ -10,18 +10,15 @@ import {
   fetchWeather,
   geolocationPermission,
   type Weather,
-  weatherRemark,
 } from "@/lib/weather";
 import { cn } from "@/lib/utils";
 
 /**
- * The weather where you are, and an opinion about it.
+ * The weather where you are.
  *
- * A weather widget on a page about staying indoors is either a non-sequitur
- * or a joke, and this one is the joke: the number is real, and
- * the line under it is the card telling you whether today is a day for this.
- * That is the only reason it is here, so `weatherRemark` is not decoration —
- * it is the content, and the temperature is the setup.
+ * The number, where it was taken, and the conditions behind it — no more than
+ * that. A weather widget on a page about staying indoors is close enough to a
+ * joke on its own without the card also making one.
  *
  * ## The permission is asked for once, by a button
  *
@@ -105,8 +102,7 @@ export function WeatherCard() {
 
   return (
     <Card className="flex flex-col justify-between gap-5 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <p className="label-small text-faint">Weather</p>
+      <div className="flex items-start justify-end gap-3">
         <WeatherGlyph
           kind="cloudy"
           className="size-9 shrink-0 text-border-strong"
@@ -163,8 +159,7 @@ function Forecast({ weather }: { weather: Weather }) {
     <Card className="flex flex-col justify-between gap-5 p-5 [--glyph-warm:var(--fire)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="label-small text-faint">Weather</p>
-          <p className="mt-1.5 flex items-baseline gap-1">
+          <p className="flex items-baseline gap-1">
             <span className="text-[2.75rem] leading-none font-semibold tabular-nums text-foreground">
               {weather.temperature}
             </span>
@@ -191,9 +186,6 @@ function Forecast({ weather }: { weather: Weather }) {
         </p>
         <p className="label-small mt-1 text-faint">
           Feels like {weather.apparent}° · {weather.low}° to {weather.high}°
-        </p>
-        <p className="mt-3 text-[0.8125rem] text-muted-foreground">
-          {weatherRemark(weather)}
         </p>
       </div>
     </Card>

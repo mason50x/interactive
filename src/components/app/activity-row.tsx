@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 /**
  * A row of activity tiles you scroll sideways, and the two arrows over it.
  *
- * Lifted out of `ActivityShelf`, which was the only thing that had one until
- * the home page wanted four. What stayed behind there is the genre head — the
- * mark, the label, the line of copy — because that is the part that is about
- * a genre. This is the part that is about a row, and the home page's rows are
- * "most popular today" and "jump back in", which have heads of their own and
- * no genre at all.
+ * Lifted out of the genre shelves the catalogue page used to be, which were
+ * the only thing that had one until the home page wanted four. The shelves are
+ * gone — `/dashboard/activities` is a grid now — and what is left here is the
+ * part that was always about a row rather than about a genre. The home page's
+ * rows are "most popular today" and "jump back in", which have heads of their
+ * own and no genre at all.
  *
  * The row overflows its container on both sides on purpose. Cards running off
  * the right edge of the shell is the affordance — it is what says there is

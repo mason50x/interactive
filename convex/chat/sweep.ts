@@ -189,11 +189,31 @@ export const pruneMemberships = internalMutation({
 /**
  * Take an account's chat out of the system, one bite at a time.
  *
- * Scheduled by `users.deleteFromClerk` rather than run inside it. The Clerk
- * webhook is a request with a timeout on it and this is unbounded work — an
- * account that talked a lot has an unbounded number of messages — so the
- * webhook books it and returns, and Convex guarantees a scheduled mutation runs
- * exactly once.
+ * Two callers reach this and one argument is the whole difference between them.
+ * `users.deleteFromClerk` calls it in `account` mode: the Clerk account itself
+ * is gone, so nothing is left of it anywhere and there is nobody left for a
+ * strike to be about. `chat.erase.eraseMine` calls it in `chat` mode: the
+ * person is still here and has asked only for their chat to end, so the ledger
+ * stays — see the note in `convex/chat/erase.ts` for why clearing it would make
+ * erasure the way out of a mute.
+ *
+ * The other difference is what becomes of a group they own. An account leaving
+ * Clerk hands its groups on, because a group is other people's and nobody asked
+ * for it to close. Somebody clearing their own chat has asked for exactly that,
+ * and is shown how many groups it is before they press it.
+ *
+ * `before` is the instant the erasure was asked for, and nothing made after it
+ * is touched. Deleting the profile is what ends the ability to send and it
+ * happens in the caller rather than here, so between that moment and this one a
+ * new handle can be claimed — and the messages sent under it are not the ones
+ * this was asked to delete. Without the cutoff this would follow the same Clerk
+ * id straight into the new identity and start deleting from it.
+ *
+ * Scheduled rather than run inline by either caller. The webhook is a request
+ * with a timeout on it, the button is a click waiting on a spinner, and this is
+ * unbounded work either way — an account that talked a lot has an unbounded
+ * number of messages. Convex guarantees a scheduled mutation runs exactly once,
+ * so booking it is not a weaker guarantee than doing it, only a later one.
  *
  * Messages first and in batches, because that is the only part that has no
  * ceiling. Everything after it is bounded by the number of conversations
@@ -201,24 +221,43 @@ export const pruneMemberships = internalMutation({
  * are gone rather than racing them.
  */
 export const purgeAuthor = internalMutation({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
+  args: {
+    clerkId: v.string(),
+    /** Absent reads as `account`, which is what the Clerk webhook wants. */
+    mode: v.optional(v.union(v.literal("account"), v.literal("chat"))),
+    /** Absent reads as no cutoff, for the same reason. */
+    before: v.optional(v.number()),
+  },
+  handler: async (ctx, { clerkId, mode, before }) => {
+    const scope = mode ?? "account";
+    const cutoff = before ?? Number.MAX_SAFE_INTEGER;
+    /** The same arguments again, for whatever this pass does not finish. */
+    const again = { clerkId, mode, before };
+
     const messages = await ctx.db
       .query("messages")
-      .withIndex("byAuthor", (q) => q.eq("authorClerkId", clerkId))
+      .withIndex("byAuthor", (q) =>
+        q.eq("authorClerkId", clerkId).lt("_creationTime", cutoff),
+      )
       .take(BATCH);
 
     for (const message of messages) await ctx.db.delete(message._id);
 
     if (messages.length === BATCH) {
-      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, again);
       return { stage: "messages" as const, deleted: messages.length };
     }
 
-    const memberships = await ctx.db
+    const rows = await ctx.db
       .query("conversationMembers")
       .withIndex("byUser", (q) => q.eq("clerkId", clerkId))
       .take(BATCH);
+
+    // `byUser` puts `status` ahead of `_creationTime`, so the cutoff cannot be
+    // a range on the index and is applied here instead. The only rows it ever
+    // excludes are ones made after the erasure was asked for — most likely the
+    // global room, rejoined under a handle claimed in the meantime.
+    const memberships = rows.filter((row) => row._creationTime < cutoff);
 
     for (const member of memberships) {
       // A direct message with a deleted account has no other party. The whole
@@ -226,18 +265,34 @@ export const purgeAuthor = internalMutation({
       // which is why this is a purge rather than a delete of the two member
       // rows. Deleting the conversation and leaving their half of the thread
       // behind is how a table grows rows nothing can ever reach again.
+      //
+      // The row goes first and the rest is booked. `purgeConversation` would
+      // have deleted it too, but not until it had finished with the messages —
+      // and a row still sitting in `byUser` when the next pass reads it is a
+      // conversation this schedules a second purge for.
       if (member.kind === "dm") {
+        await ctx.db.delete(member._id);
         await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
           conversationId: member.conversationId,
         });
         continue;
       }
 
-      // A group whose owner leaves this way still needs an owner, or it is a
-      // room nobody can ever administer again. Oldest admin, then oldest
-      // member — the same order `groups.leave` uses. With nobody left to take
-      // it, the group is over and goes the same way a direct message does.
       if (member.kind === "group" && member.role === "owner") {
+        // Asked for, in so many words, and counted on screen first. See the
+        // note above this mutation.
+        if (scope === "chat") {
+          await ctx.db.delete(member._id);
+          await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
+            conversationId: member.conversationId,
+          });
+          continue;
+        }
+
+        // A group whose owner leaves this way still needs an owner, or it is a
+        // room nobody can ever administer again. Oldest admin, then oldest
+        // member — the same order `groups.leave` uses. With nobody left to take
+        // it, the group is over and goes the same way a direct message does.
         const rest = await ctx.db
           .query("conversationMembers")
           .withIndex("byConversation", (q) =>
@@ -252,6 +307,7 @@ export const purgeAuthor = internalMutation({
           })[0];
 
         if (heir === undefined) {
+          await ctx.db.delete(member._id);
           await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
             conversationId: member.conversationId,
           });
@@ -262,25 +318,28 @@ export const purgeAuthor = internalMutation({
 
       // The global room is never purged — it is everybody's, and this account
       // leaving it is one row. Reaching here means `kind` is `global`, or a
-      // group that still has somebody in it.
+      // group that still has somebody in it. The row is deleted rather than
+      // marked `left`, because there is nothing left for it to remember.
       await ctx.db.delete(member._id);
     }
 
     // More conversations than one pass could carry. The messages above are
-    // already gone, so the next pass falls straight through to here.
-    if (memberships.length === BATCH) {
-      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
+    // already gone, so the next pass falls straight through to here. Guarded on
+    // having removed something, so that a page made entirely of rows past the
+    // cutoff stops rather than booking itself forever.
+    if (rows.length === BATCH && memberships.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, again);
       return { stage: "memberships" as const, deleted: 0 };
     }
 
     for (const table of ["byUserA", "byUserB"] as const) {
-      const rows = await ctx.db
+      const friendships = await ctx.db
         .query("friendships")
         .withIndex(table, (q) =>
           table === "byUserA" ? q.eq("userA", clerkId) : q.eq("userB", clerkId),
         )
         .collect();
-      for (const row of rows) await ctx.db.delete(row._id);
+      for (const row of friendships) await ctx.db.delete(row._id);
     }
 
     const blocksMade = await ctx.db
@@ -298,7 +357,8 @@ export const purgeAuthor = internalMutation({
     // Reports they filed and reports filed against them. The second is the one
     // worth being deliberate about: a report is a record of an accusation, and
     // once the account it was about is gone there is nothing left for it to be
-    // evidence of.
+    // evidence of. In `chat` mode the accusation outlives the report anyway —
+    // what a report was ever worth is the strike it caused, and those stay.
     const filed = await ctx.db
       .query("reports")
       .withIndex("byReporter", (q) => q.eq("reporterClerkId", clerkId))
@@ -309,18 +369,75 @@ export const purgeAuthor = internalMutation({
       .collect();
     for (const row of [...filed, ...against]) await ctx.db.delete(row._id);
 
-    const strikes = await ctx.db
-      .query("strikes")
-      .withIndex("byUser", (q) => q.eq("clerkId", clerkId))
-      .collect();
-    for (const row of strikes) await ctx.db.delete(row._id);
+    // Whoever was first through the door does not own the door.
+    //
+    // The global room is created lazily by whichever account happens to claim
+    // the first handle, and `ensureGlobalRoom` has to put somebody in
+    // `createdBy` because the schema has the field. Nothing reads it for the
+    // global room — it is not a creator in any sense that matters, because the
+    // room outlives every account in it and belongs to none of them. So it is
+    // the one id about this person that would otherwise stay behind after
+    // everything else went, stamped on a row that is never deleted. Cleared to
+    // the empty string, which is what "nobody" looks like in a required field.
+    const room = await ctx.db
+      .query("conversations")
+      .withIndex("byKind", (q) => q.eq("kind", "global"))
+      .first();
+    if (room !== null && room.createdBy === clerkId) {
+      await ctx.db.patch(room._id, { createdBy: "" });
+    }
 
-    const profile = await ctx.db
-      .query("chatProfiles")
-      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-      .unique();
-    if (profile !== null) await ctx.db.delete(profile._id);
+    // The ledger and the profile are the two things `chat` mode leaves alone.
+    // The ledger because it is about a person who is still here; the profile
+    // because `eraseMine` has already dealt with it, and had to — a profile
+    // still standing while this ran is an account that can still send.
+    if (scope === "account") {
+      const strikes = await ctx.db
+        .query("strikes")
+        .withIndex("byUser", (q) => q.eq("clerkId", clerkId))
+        .collect();
+      for (const row of strikes) await ctx.db.delete(row._id);
+
+      const profile = await ctx.db
+        .query("chatProfiles")
+        .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+        .unique();
+      if (profile !== null) await ctx.db.delete(profile._id);
+    }
 
     return { stage: "done" as const, deleted: messages.length };
+  },
+});
+
+/**
+ * Delete presence rows nobody has refreshed in a long time.
+ *
+ * Not for correctness — `chat.presence.count` already ignores anything outside
+ * its window, so a row from last Tuesday is invisible whether or not this ever
+ * runs. It is here because the table would otherwise keep one row per person
+ * per conversation they have ever opened, forever, which is a table of dead
+ * timestamps growing at the rate people look at things.
+ *
+ * An hour rather than the window itself. The window is what the count means and
+ * it is measured in seconds; deleting on the same boundary would have this
+ * fighting live heartbeats for no benefit, since a stale row costs nothing
+ * until the day it is still there.
+ */
+const PRESENCE_TTL_MS = 60 * 60 * 1000;
+
+export const sweepPresence = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const dead = await ctx.db
+      .query("presence")
+      .withIndex("bySeen", (q) => q.lt("lastSeenAt", Date.now() - PRESENCE_TTL_MS))
+      .take(BATCH);
+
+    for (const row of dead) await ctx.db.delete(row._id);
+
+    if (dead.length === BATCH) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.sweepPresence, {});
+    }
+    return dead.length;
   },
 });

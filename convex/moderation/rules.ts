@@ -1,9 +1,4 @@
-import {
-  BROADCAST,
-  DUPLICATE_WINDOW_MS,
-  EXCERPT_CHARS,
-  TARGETING,
-} from "./limits";
+import { BROADCAST, DUPLICATE_WINDOW_MS, EXCERPT_CHARS } from "./limits";
 import type { Category } from "./lexicon";
 import type { PatternCategory } from "./patterns";
 
@@ -12,9 +7,10 @@ import type { PatternCategory } from "./patterns";
  * message to see.
  *
  * The lexicon and the patterns answer "is this in the message". Nothing they
- * return is a decision — `fuck` is fine and `you are a fuck` is not, and the
- * difference is not a word, it is an arrangement of words. This is where the
- * arrangement is read, and where the last four sends are allowed to matter.
+ * return is a decision — `fuck` is a free bounce and `you are a fuck` is a
+ * strike, and the difference is not a word, it is an arrangement of words. This
+ * is where the arrangement is read, and where the last sends are allowed to
+ * matter.
  */
 
 /** Everything a message can be refused for, in the vocabulary the client sees. */
@@ -32,6 +28,7 @@ export type Refusal =
   | "self-harm"
   | "degrading"
   | "harassment"
+  | "profanity"
   | "contact"
   | "link"
   | "location"
@@ -73,6 +70,10 @@ const WEIGHTS: Record<Refusal, number> = {
   "self-harm": 6,
   degrading: 6,
   harassment: 4,
+  // Refused, and free. Swearing at nobody in particular is a house rule, not
+  // something to hold against a thirteen-year-old; the same word aimed at a
+  // person is `harassment` above and is charged there.
+  profanity: 0,
   contact: 3,
   link: 2,
   location: 4,
@@ -95,7 +96,7 @@ export function weightFor(refusal: Refusal): number {
 
 /** A lexicon category, as the client is told about it. */
 export function refusalForCategory(category: Category): Refusal {
-  return category === "profanity" ? "harassment" : category;
+  return category;
 }
 
 export function refusalForPattern(category: PatternCategory): Refusal {
@@ -114,13 +115,13 @@ const SECOND_PERSON = new Set([
 ]);
 
 /**
- * Whether an allowed-but-flagged word is pointed at somebody.
+ * Whether a tier-three word is pointed at somebody.
  *
- * This is the rule that makes tier three worth keeping rather than blocking.
- * `this game is shit` and `you are shit` contain the same word and are not the
- * same message, and the only thing that separates them is a pronoun four tokens
- * away. Four is wide enough for `you are such a shit` and narrow enough not to
- * reach into the next sentence.
+ * This is the rule that decides what swearing costs. `this game is shit` and
+ * `you are shit` contain the same word and are not the same message: both are
+ * refused, and only the second goes on a record. The only thing separating them
+ * is a pronoun four tokens away. Four is wide enough for `you are such a shit`
+ * and narrow enough not to reach into the next sentence.
  */
 export function isTargeted(tokens: string[], flaggedTokens: string[]): boolean {
   const flagged = new Set(flaggedTokens);
@@ -135,7 +136,15 @@ export function isTargeted(tokens: string[], flaggedTokens: string[]): boolean {
   return false;
 }
 
-/** One earlier send, as the ring on the sender's profile remembers it. */
+/**
+ * One earlier send, as the ring on the sender's profile remembers it.
+ *
+ * `flagged` is a leftover from when tier three posted: the ring only ever holds
+ * messages that were allowed, and no allowed message carries a tier-three word
+ * any more, so it is written `false` every time. Kept because Convex validates
+ * the documents already in the table against the schema, and dropping the field
+ * would be a migration rather than an edit.
+ */
 export type RecentSend = {
   at: number;
   conversationId: string;
@@ -189,28 +198,6 @@ export function isBroadcast(
     rooms.add(send.conversationId);
   }
   return rooms.size >= BROADCAST.conversations;
-}
-
-/**
- * Somebody being worn down rather than sworn at once.
- *
- * Three flagged messages into the same conversation inside ten minutes is a
- * pattern that no individual message in it would have been refused for, which
- * is exactly why it needs its own rule. The current message counts.
- */
-export function isHounding(
-  recent: RecentSend[],
-  conversationId: string,
-  now: number,
-): boolean {
-  let count = 1;
-  for (const send of recent) {
-    if (!send.flagged) continue;
-    if (send.conversationId !== conversationId) continue;
-    if (now - send.at >= TARGETING.ms) continue;
-    count += 1;
-  }
-  return count >= TARGETING.count;
 }
 
 /**

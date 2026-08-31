@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/app/app-sidebar";
 import { SearchProvider } from "@/components/app/search-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
+import { ACTIVITIES } from "@/lib/activities";
 import { serverAgreement } from "@/lib/agreement-gate";
 
 export const metadata: Metadata = {
@@ -57,6 +58,19 @@ export default async function DashboardLayout({
   // answer. See `AgreementProvider`.
   const agreement = await serverAgreement();
 
+  // The catalogue, narrowed to what a result row needs, so the rail's search
+  // can find an activity from any page of the app rather than only from the one
+  // that already has the shelves. This is the *only* way the index reaches a
+  // browser — as data in this layout's RSC payload, behind the `auth.protect()`
+  // above — because `@/lib/activities` is `server-only` and a client module
+  // importing it would publish all 318 entries to a static chunk with no
+  // session in front of it. See that file's header.
+  const activities = ACTIVITIES.map(({ slug, title, genre }) => ({
+    slug,
+    title,
+    genre,
+  }));
+
   return (
     <AppProviders>
       {/* Here and not in `AppProviders`, which also wraps the marketing site
@@ -78,7 +92,7 @@ export default async function DashboardLayout({
           <ChatProvider>
             {/* Wraps both the rail and the shell, which is what lets the rail's
                 search box filter a grid it does not render. See `SearchProvider`. */}
-            <SearchProvider>
+            <SearchProvider activities={activities}>
               <div className="flex h-svh overflow-hidden bg-sidebar">
                 <AppSidebar />
                 <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">

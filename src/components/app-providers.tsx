@@ -23,23 +23,31 @@ import { ThemeProvider } from "@/components/theme-provider";
  * *application* of a theme belongs to every route (the root layout's inline
  * script does that, `/learn` included), but the ability to read and change one
  * is only ever used by app chrome.
+ *
+ * The accent's pre-paint script is the one thing that could not follow that
+ * rule. It belongs beside the theme's in the root layout — see `accentScript`,
+ * which skips `/learn` itself — because a `<script>` mounted here is created by
+ * React on the client the moment a navigation re-renders this tree, and a
+ * script element React creates is never executed.
  */
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider>
-      <ConvexClientProvider>
-        <ThemeProvider>
-          {/* Inside Convex, because the settings *are* a Convex subscription,
+    <>
+      <ClerkProvider>
+        <ConvexClientProvider>
+          <ThemeProvider>
+            {/* Inside Convex, because the settings *are* a Convex subscription,
               and inside Clerk, because whose settings they are depends on the
               session. It wraps the children rather than sitting beside them:
               the accent and the panic key apply to the whole tree. */}
-          <PreferencesProvider>
-            <StoreUser />
-            {children}
-            <GoogleAnalytics />
-          </PreferencesProvider>
-        </ThemeProvider>
-      </ConvexClientProvider>
-    </ClerkProvider>
+            <PreferencesProvider>
+              <StoreUser />
+              {children}
+              <GoogleAnalytics />
+            </PreferencesProvider>
+          </ThemeProvider>
+        </ConvexClientProvider>
+      </ClerkProvider>
+    </>
   );
 }

@@ -7,8 +7,34 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { Genre } from "@/lib/activity";
 
-type Search = { query: string; setQuery: (query: string) => void };
+/**
+ * One activity, reduced to the three fields a search needs.
+ *
+ * Not the `Activity` type, deliberately. That carries a thumbnail path, a byte
+ * count and a rank, none of which a result row draws, and this list is handed
+ * to the browser on every page of the dashboard rather than only on the
+ * catalogue — so it is worth being the smallest thing that can answer "what is
+ * this called and where does it live".
+ */
+export type ActivityEntry = { slug: string; title: string; genre: Genre };
+
+type Search = {
+  query: string;
+  setQuery: (query: string) => void;
+  /**
+   * The catalogue, as the rail's search sees it.
+   *
+   * It arrives here as a prop from the dashboard layout and never as an
+   * import: `src/lib/activities.ts` is `server-only`, and a `"use client"`
+   * module reaching for it would put the whole index in a `/_next/static`
+   * chunk that is served with no session in front of it. As a prop it travels
+   * in the layout's RSC payload, behind the `auth.protect()` that layout
+   * already runs. See that file's header for the hole this closes.
+   */
+  activities: readonly ActivityEntry[];
+};
 
 const SearchContext = createContext<Search | null>(null);
 
@@ -28,9 +54,18 @@ const SearchContext = createContext<Search | null>(null);
  * survive a reload: a search box that comes back full of yesterday's word is a
  * page that looks broken until you find the box.
  */
-export function SearchProvider({ children }: { children: ReactNode }) {
+export function SearchProvider({
+  children,
+  activities,
+}: {
+  children: ReactNode;
+  activities: readonly ActivityEntry[];
+}) {
   const [query, setQuery] = useState("");
-  const value = useMemo(() => ({ query, setQuery }), [query]);
+  const value = useMemo(
+    () => ({ query, setQuery, activities }),
+    [query, activities],
+  );
 
   return (
     <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
