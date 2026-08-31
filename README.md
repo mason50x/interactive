@@ -281,9 +281,14 @@ which is why every git deploy is blocked whatever address is on it, and why
 reconnecting GitHub without changing which account is underneath changes
 nothing.
 
-The fix is **Account Settings → Login Connections**: disconnect GitHub and
-reconnect it as `mason50x`. Confirm another sign-in method works first, since
-that connection may be how the account signs in.
+The fix is at [vercel.com/account/authentication][auth] — avatar → **Settings** →
+**Authentication** in the left sidebar. Remove the GitHub connection there and
+add it back as `mason50x`. It has to be removed first: a Hobby team allows only
+one login connection per provider, so there is no way to add the second GitHub
+account alongside the first. Confirm a passkey or email login works before
+removing it, since that connection may be how the account signs in.
+
+[auth]: https://vercel.com/account/authentication
 
 Fixing the account does not rescue anything already blocked. A blocked
 deployment can never be rebuilt — the API refuses it with
