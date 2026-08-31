@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
+import { Instrument_Serif, Inter } from "next/font/google";
 import { brand } from "@/lib/brand";
 import { themeScript } from "@/lib/theme";
 import "./globals.css";
@@ -11,11 +11,6 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 const displaySerif = Instrument_Serif({
@@ -96,7 +91,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={cn(
         "h-full scroll-smooth antialiased font-sans",
         inter.variable,
-        geistMono.variable,
         displaySerif.variable,
       )}
     >

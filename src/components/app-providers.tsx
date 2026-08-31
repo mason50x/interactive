@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { ReactNode } from "react";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { PreferencesProvider } from "@/components/preferences-provider";
 import { StoreUser } from "@/components/store-user";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -27,9 +28,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ClerkProvider>
       <ConvexClientProvider>
         <ThemeProvider>
-          <StoreUser />
-          {children}
-          <GoogleAnalytics />
+          {/* Inside Convex, because the settings *are* a Convex subscription,
+              and inside Clerk, because whose settings they are depends on the
+              session. It wraps the children rather than sitting beside them:
+              the accent and the panic key apply to the whole tree. */}
+          <PreferencesProvider>
+            <StoreUser />
+            {children}
+            <GoogleAnalytics />
+          </PreferencesProvider>
         </ThemeProvider>
       </ConvexClientProvider>
     </ClerkProvider>

@@ -247,17 +247,7 @@ export const showcase = {
 } as const;
 
 export const trustBar = {
-  label: "Built with learners across",
-  items: [
-    "Undergraduate science",
-    "Medical school",
-    "High school AP",
-    "Engineering",
-    "Law",
-    "Self-taught developers",
-    "Language learning",
-    "Test prep",
-  ],
+  label: "Content found from:",
 } as const;
 
 export type Feature = {
@@ -445,24 +435,4 @@ export const closingCta = {
   body: "Bring one chapter. Watch what happens to it. The first five maps are free.",
   primary: "Create your free account",
   secondary: "Book a walkthrough",
-} as const;
-
-/**
- * The left half of the `/auth` split screen. Short on purpose: it is read
- * once, sideways, by someone whose attention is on the form beside it.
- */
-export const authAside = {
-  eyebrow: "The visual learning platform",
-  headline: "Bring one chapter.\nWatch it become a map.",
-  body: "Your maps, walkthroughs, and recall history are waiting where you left them.",
-  points: [
-    "Every idea in your course material, and the links between them",
-    "Practice aimed at the parts you keep skipping",
-    "Shared canvases for the whole study group",
-  ],
-  quote: {
-    text: "I stopped re-reading. I put the chapter in, walked the map twice, and could explain the whole pathway that night.",
-    name: "Priya R.",
-    role: "Second-year medical student",
-  },
 } as const;

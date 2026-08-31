@@ -21,7 +21,7 @@ export function Pricing() {
               key={plan.name}
               className={`relative flex flex-col rounded-[1.5rem] border p-8 transition-all duration-300 ${
                 plan.featured
-                  ? "border-primary bg-surface shadow-[0_24px_60px_-32px_rgba(60,133,247,0.55)] lg:-my-3 lg:py-11"
+                  ? "border-primary bg-surface shadow-[0_24px_60px_-32px_color-mix(in_oklab,var(--primary)_55%,transparent)] lg:-my-3 lg:py-11"
                   : "border-border bg-surface hover:border-border-strong"
               }`}
             >
@@ -31,7 +31,7 @@ export function Pricing() {
                 </span>
               ) : null}
 
-              <h3 className="text-sm font-semibold tracking-tight text-foreground">
+              <h3 className="text-sm font-semibold text-foreground">
                 {plan.name}
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">{plan.body}</p>

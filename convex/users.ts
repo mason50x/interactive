@@ -125,8 +125,35 @@ export const deleteFromClerk = internalMutation({
       await ctx.db.delete(user._id);
     }
 
+    // The invitations this user spent their allowance on. Their own pending
+    // invitations stay live at Clerk — an invitation already in someone's
+    // inbox is addressed to that person, not to the account that sent it, and
+    // there is no signed-in caller here to revoke them as.
+    const invites = await ctx.db
+      .query("invites")
+      .withIndex("byInviter", (q) => q.eq("inviterClerkId", clerkId))
+      .collect();
+    for (const invite of invites) {
+      await ctx.db.delete(invite._id);
+    }
+
+    // Their accent, panic key, and the rest. Nothing else erases this row —
+    // it is keyed by the Clerk id rather than owned by the `users` document,
+    // so deleting the user above leaves it behind.
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .collect();
+    for (const row of preferences) {
+      await ctx.db.delete(row._id);
+    }
+
     // Add deletes for any other table keyed by this user above this line.
 
-    return { deleted: users.length };
+    return {
+      deleted: users.length,
+      invites: invites.length,
+      preferences: preferences.length,
+    };
   },
 });

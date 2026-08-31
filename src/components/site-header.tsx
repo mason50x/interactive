@@ -1,6 +1,8 @@
 "use client";
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { Bars3Icon } from "@heroicons/react/24/outline";
+import { XMarkIcon as XMarkIconSolid } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { headerMenus, site, type HeaderMenu } from "@/lib/content";
@@ -44,7 +46,7 @@ function MenuPanel({ menu }: { menu: HeaderMenu }) {
           <dl className="mt-5 grid grid-cols-3 gap-4 border-t border-border pt-4">
             {menu.facts.map((fact) => (
               <div key={fact.label}>
-                <dt className="text-[1.375rem] font-semibold tracking-tight text-foreground">
+                <dt className="text-[1.375rem] font-semibold text-foreground">
                   {fact.value}
                 </dt>
                 <dd className="mt-0.5 text-[0.75rem] leading-snug text-muted-foreground">
@@ -101,7 +103,7 @@ function MenuPanel({ menu }: { menu: HeaderMenu }) {
               <div key={plan.name}>
                 <p className="label-small text-faint">{plan.name}</p>
                 <p className="mt-2 flex items-baseline gap-1">
-                  <span className="text-[1.75rem] font-semibold tracking-tight text-foreground">
+                  <span className="text-[1.75rem] font-semibold text-foreground">
                     {plan.price}
                   </span>
                   <span className="text-[0.75rem] text-muted-foreground">
@@ -127,7 +129,7 @@ function MenuPanel({ menu }: { menu: HeaderMenu }) {
             {menu.details.map((detail) => (
               <div key={detail.label}>
                 <p className="label-small text-faint">{detail.label}</p>
-                <p className="mt-1.5 font-mono text-[0.8125rem] text-foreground">
+                <p className="mt-1.5 text-[0.8125rem] text-foreground">
                   {detail.value}
                 </p>
                 <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
@@ -226,7 +228,7 @@ export function SiteHeader() {
               </button>
             </SignInButton>
             <SignUpButton>
-              <button className="h-10 cursor-pointer rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_rgba(60,133,247,0.35)]">
+              <button className="h-10 cursor-pointer rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]">
                 Start Learning
               </button>
             </SignUpButton>
@@ -239,21 +241,13 @@ export function SiteHeader() {
             onClick={() => setMobileOpen((v) => !v)}
             className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06] lg:hidden"
           >
-            <svg
-              viewBox="0 0 20 20"
-              width="18"
-              height="18"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              fill="none"
-            >
-              {mobileOpen ? (
-                <path d="M5 5l10 10M15 5L5 15" />
-              ) : (
-                <path d="M3 6h14M3 13h14" />
-              )}
-            </svg>
+            {/* Open is the button's selected state, so it takes the solid
+                cut; closed stays outline. */}
+            {mobileOpen ? (
+              <XMarkIconSolid className="size-5" />
+            ) : (
+              <Bars3Icon className="size-5" />
+            )}
           </button>
         </div>
       </nav>

@@ -26,7 +26,7 @@ export function Features() {
               <div className="mb-7 flex h-[190px] items-center justify-center rounded-xl border border-border bg-background p-4">
                 <FeatureVisual name={feature.visual} />
               </div>
-              <h3 className="text-[1.1875rem] font-semibold tracking-tight text-foreground">
+              <h3 className="text-[1.1875rem] font-semibold text-foreground">
                 {feature.title}
               </h3>
               <p className="mt-2 text-[0.9375rem] leading-relaxed text-muted-foreground">

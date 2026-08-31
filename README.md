@@ -93,11 +93,90 @@ and return 400.
 for erasing someone from Convex. It deletes every `users` row for that Clerk id
 — `.collect()` rather than `.unique()`, so a stray duplicate can't throw and
 wedge the webhook on Svix's retries — and a delete for an unknown user is a
-no-op, which keeps retries and dashboard replays safe to apply twice.
+no-op, which keeps retries and dashboard replays safe to apply twice. It also
+clears the two other tables keyed by that id: the `invites` they spent and
+their `preferences` row. The streak needs no line of its own, being fields on
+the `users` document rather than a table.
+
+One thing it deliberately leaves alone: invitations this user sent that are
+still pending at Clerk. An invitation already in someone's inbox is addressed
+to that person, not to the account that sent it, and there is no signed-in
+caller here to revoke them as.
 
 **When you add a table that holds user-owned rows, delete them in
 `deleteFromClerk` too.** Nothing else erases them, so anything missed there
 outlives the account.
+
+## Invitations
+
+Sign-up is invite-only, and every account gets five invitations of its own —
+invited accounts included, with no grant step: the allowance is five minus the
+rows you own, and a new user owns none.
+
+The work is split because neither system can do it alone. Clerk owns the
+invitation (`invitations.createInvitation` is a Backend API call, so it needs
+the secret key and can never run in a browser) and has no notion of a per-user
+budget. Convex owns the accounting, because it is the side that can count five
+transactionally. `src/lib/invite-actions.ts` is the seam between them, and the
+order is the whole design:
+
+1. `invites.reserve` writes a `sending` row inside the same transaction as the
+   count that allowed it. Two clicks a few milliseconds apart cannot both read
+   four-used.
+2. Clerk mails the invitation.
+3. `invites.confirm` turns the reservation into a spent credit, or
+   `invites.release` deletes it if Clerk refused — a failed send costs nothing.
+
+Revoking runs the other way round: Clerk kills the link *first*, then
+`invites.markRevoked` hands the credit back. Refunding first would leave a live
+invitation in someone's inbox that this side had stopped counting.
+
+The allowance is a count of rows rather than a number being decremented, which
+is what makes a revoke refund for free and what makes the count survive a lost
+response.
+
+Acceptance is learned from the `user.created` webhook and nowhere else — Clerk
+fires no event of its own for it, and the app never sees the sign-up, since the
+recipient completes it on Clerk's side with the ticket from the email. The join
+key is the email address, normalized on both sides.
+
+Every export in `invite-actions.ts` is a Server Action, which means every one
+is a public POST endpoint. Rendering the dialog for signed-in users only is not
+the check; the `auth()` call at the top of each action is, and the ownership
+checks in `convex/invites.ts` are the second one.
+
+`NEXT_PUBLIC_SITE_URL` matters here more than anywhere else. Clerk bakes
+`redirect_url` into the invitation at the moment it is created and mails it
+out, so the origin has to be right *then* — see `src/lib/site-url.ts`. A
+production invite carrying `localhost` is a dead link whose only symptom is
+someone who cannot sign up.
+
+## Streaks and preferences
+
+Two small pieces of per-account state, stored differently on purpose.
+
+**The streak** lives on the `users` row as three fields rather than in a table
+of visits. Nothing ever asks for the log — the only questions are "how many
+days in a row" and "is today one of them" — and keeping it on the document the
+caller already has bounds the write to one patch per user per day. The day key
+is the user's local day, not UTC: a streak is a human counting bedtimes, so the
+client sends its UTC offset and the server does the arithmetic. The date itself
+is never taken from the client. `streakCount` is the run that ended on
+`streakLastDay`, which is not the same as the run in effect now; deciding
+whether it is still alive is the reader's job.
+
+**Preferences** get their own table, and the browser keeps a copy in
+`localStorage` that is what the page actually reads. A preference needing a
+round trip would paint the wrong accent first, and the panic key has to work on
+a page that has not finished loading. The row is what makes the choices follow
+the person to their next browser, and it wins on a conflict: on sign-in it is
+copied down over whatever the device had. The theme is deliberately *not* in
+it — a laptop in a bright room and a phone in bed want different answers from
+the same account, so it stays device-local.
+
+The accent is stored as a name from `src/lib/preferences.ts`, not a colour,
+which is what lets the palette be retuned without rewriting anyone's row and
+makes a bad value a fallback rather than an arbitrary colour on the page.
 
 ## Environment variables
 
@@ -125,6 +204,8 @@ Each environment points at its own backends:
 | `CONVEX_DEPLOY_KEY` | not set | prod deploy key (Sensitive) |
 | `NEXT_PUBLIC_PLAYER_ORIGIN` | `http://127.0.0.1:3000` / unset on Preview | the player domain |
 | `PLAYER_TOKEN_SECRET` | per environment (Sensitive) | per environment (Sensitive) |
+| `NEXT_PUBLIC_ASSET_ORIGIN` | the bucket's public domain (same one) | the bucket's public domain |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` / unset on Preview | `https://interactivelearningresources.org` |
 
 Production's `CLERK_SECRET_KEY` is stored Sensitive, so `vercel env pull
 --environment=production` returns it blank. That is expected — only the build
@@ -150,11 +231,12 @@ Both are set on both deployments. The webhook secret is per Clerk instance, so
 the two deployments hold different `CLERK_WEBHOOK_SECRET` values — see the
 webhook endpoint table above.
 
-### Production DNS (outstanding)
+### Production DNS
 
-The Clerk production instance serves from `clerk.interactivelearningresources.org`,
-which is not yet pointed at Clerk. Until these CNAMEs exist, Convex cannot fetch
-the JWKS and production sign-in will fail:
+The Clerk production instance serves from
+`clerk.interactivelearningresources.org`, and these CNAMEs are live. They are
+what lets Convex fetch the JWKS; without them production sign-in fails, so if
+sign-in ever breaks wholesale this is the first thing to re-check:
 
 | host | CNAME target |
 | --- | --- |
@@ -163,6 +245,10 @@ the JWKS and production sign-in will fail:
 | `clkmail` | `mail.elzh40fke12s.clerk.services` |
 | `clk._domainkey` | `dkim1.elzh40fke12s.clerk.services` |
 | `clk2._domainkey` | `dkim2.elzh40fke12s.clerk.services` |
+
+```bash
+curl -sI https://clerk.interactivelearningresources.org/.well-known/jwks.json
+```
 
 ## Deployments
 
@@ -258,43 +344,150 @@ it the player origin refuses everything rather than falling open.
 Two things it does **not** cover, worth knowing before treating it as a content
 gate. Static chunks under `/_next/` are excluded from the proxy matcher and
 stay public — they are the same bundle the app serves, so there is no game
-content in them, but a real asset pipeline (bundles, ROM blobs) would need its
-own check. And the grant is only tested when the document loads, so a run in
-progress never gets interrupted and a reload after two hours needs a fresh one
-from the dashboard.
+content in them. And the grant is only tested when the document loads, so a run
+in progress never gets interrupted and a reload after two hours needs a fresh
+one from the dashboard.
+
+A third is now live: the asset origin, where hosted bundles are served from,
+sits outside this deployment entirely and so outside the proxy that checks
+grants. See [The asset origin](#the-asset-origin).
 
 `NEXT_PUBLIC_PLAYER_ORIGIN` names the player origin. Leave it unset and games
 fall back to `/player/<slug>` on the app's own origin with no isolation, which
 is how preview deployments work with no configuration; `GameFrame` drops
 `allow-same-origin` from the sandbox to compensate. Production always sets it.
 
-Adding a game is an entry in `src/lib/games.ts`, a component under
-`src/components/player/`, and a line in the `RUNTIMES` map in
-`src/app/player/[slug]/page.tsx`.
+Games are not added one at a time — the catalogue is generated. See below.
+
+## The game catalogue
+
+Every game is a static bundle (HTML, WASM, Unity, Flash) served from the asset
+bucket. There were briefly two kinds, the second being a game compiled into the
+app's own bundle, carried as a discriminated union on a `runtime` field; that
+is gone and so is the union. `src/lib/games.ts` documents the shape to restore
+if one comes back.
+
+The catalogue comes from the [Seraph](https://github.com/a456pur/seraph)
+archive and is generated, never edited:
+
+```bash
+node scripts/build-catalogue.mjs   # rewrites src/lib/games.catalogue.json
+node scripts/migrate-to-r2.mjs     # fills the bucket to match
+```
+
+The generator takes titles, genres, and *order* from upstream's own index
+page. That order is the app's only popularity signal — upstream hand-sorts it
+most-played first — so it becomes `rank`, and the dashboard's popular shelf is
+the head of it. Everything past `POPULAR_COUNT` is reachable only by search,
+which runs client-side over the whole catalogue.
+
+**What the generator drops.** Any game directory containing a console ROM. The
+upstream archive ships ~124 of them — Nintendo, Konami, Sega — as raw `.nds`
+and scene-named `.zip` files. Permission from the archive's maintainer covers
+the archive's own work and cannot extend to those, so the test is on the file
+extension rather than on anyone's assurance: see `EXCLUDED_EXTENSIONS` in
+`scripts/build-catalogue.mjs`. Removing the ROM alone would leave an emulator
+shell that boots to a black screen, so the whole directory goes.
+
+This is a carve-out, not a clearance. Plenty of what remains is commercial web
+content that upstream also had no licence to redistribute; dropping the ROMs
+removes the least defensible class, not the question.
+
+**What the migration rewrites.** Every game page, on the way into the bucket
+— `patchGameHtml` in `scripts/migrate-to-r2.mjs`. Upstream templates the same
+header into all 366 of them, carrying its own Google Analytics measurement id;
+uploaded as-is, every play by a signed-in user would beacon to a third party we
+do not control. The same pass drops a tab-cloaking helper we do not serve and
+repoints the Ruffle loader at our own bucket instead of unpkg. A grep over the
+result fails the run if any of the three survives, so a template change
+upstream stops the migration rather than quietly reintroducing the leak.
+
+**Flash.** 159 of the 366 are `.swf`, including Papa's Pizzaria and Papa's
+Burgeria at fourth and fifth on the popular shelf, and no browser has run Flash
+natively since 2020. They work because [Ruffle](https://ruffle.rs) is uploaded
+alongside them at `storage/ruffle` — 27 MB, the one path outside `games/` the
+migration touches. The relative path in those pages
+(`../../storage/ruffle/ruffle.js`) is why it has to land at exactly that key.
+
+## The asset origin
+
+Hosted bundles are served from a Cloudflare R2 bucket, and
+`src/lib/assets.ts` is the only module that knows its URL
+(`NEXT_PUBLIC_ASSET_ORIGIN`).
+
+They are not in the deployment for two reasons, both hard: there are ~18,000
+files, against a documented Vercel limit of 15,000 per deployment; and 5.4 GB
+served from Vercel bills as Fast Data Transfer, where the Hobby allowance is
+100 GB a month and a single visitor working through the larger titles moves a
+quarter of a gigabyte. R2 charges nothing for egress.
+
+**The bucket is not gated, and this is the one place the grant does not
+reach.** `src/proxy.ts` verifies a grant on requests to *this deployment*; a
+request straight to the bucket never passes through it. So the catalogue, the
+dashboard, and every score path stay behind the session, but a bundle URL,
+once known, fetches without one. That is an accepted trade for a copy of a
+public archive — closing it means short-lived signed bucket URLs minted beside
+the grant, and it should be closed before anything private lands there.
+
+**Do not open a game while `migrate-to-r2.mjs` is running.** R2 serves a 404
+with the same `cache-control: max-age=14400` it puts on a hit, so an asset
+requested a moment before it finished uploading is cached as missing — at the
+Cloudflare edge *and* in the browser — for four hours after the bucket became
+correct. The game stays broken long after the migration succeeded, which reads
+as a failed migration and is not one. If it happens: purge the asset zone's
+cache (Caching → Configuration → Purge Everything) and hard-reload.
+
+Three origins now, and only two of them are boundaries:
+
+| origin | what it is |
+| --- | --- |
+| app | the session, the dashboard, Convex |
+| player | where game code is allowed to run — the boundary that matters |
+| asset | a file server; framed *by* the player, so it inherits that document |
 
 ## Layout
 
 ```
 convex/
-  schema.ts        users table + byClerkId index
+  schema.ts        users, invites, preferences
   auth.config.ts   trusts Clerk-issued JWTs
   users.ts         current / store / upsertFromClerk / deleteFromClerk
+  invites.ts       the five-invite allowance, counted transactionally
+  streaks.ts       the daily streak, one write per user per day
+  preferences.ts   the account-level half of the settings sheet
   http.ts          Clerk webhook endpoint
 src/
   proxy.ts         host dispatch; clerkMiddleware; signed-out-only redirects
   lib/
     player.ts      where games are allowed to run, and why
-    games.ts       the game catalogue
+    assets.ts      where hosted bundles are served from, and what that costs
+    games.ts       the catalogue: authored + generated, one union
+    games.catalogue.json   generated — do not edit
+    nav.ts         the rail's destinations
+    site-url.ts    the origin an invitation link has to be baked with
+    invitations.ts the Clerk Backend API calls
+    invite-actions.ts  the seam: Convex counts, Clerk sends
+    preferences.ts accents, the panic key, and their defaults
+    streak.ts      the client's half of the streak
   app/
     layout.tsx     document shell only — no providers (see Two origins)
     (site)/        landing, marketing chrome
-    auth/          sign-in, sign-up, invitations
-    dashboard/     auth.protect() per page; one route per game
+    auth/          sign-in, sign-up, accept-invite
+    dashboard/
+      activities/  the shelves, and [slug] — one route for every game
     player/[slug]  the player origin's only route
   components/
     app-providers.tsx      Clerk > Convex > analytics; never on /player
+    preferences-provider.tsx  localStorage first, the row second
+    streak-provider.tsx    reports a visit once a day
     app/game-frame.tsx     the app's side of the boundary
-    player/snake-game.tsx  Animal Adventure
+    app/activities-browser.tsx  popular shelf + client-side search
+    app/settings-sheet.tsx accent, constellation, panic key
+    app/invite-card.tsx    the allowance, in the account menu
+    player/hosted-game.tsx frames a bundle from the asset origin
+scripts/
+  build-catalogue.mjs  regenerates the catalogue from upstream
+  migrate-to-r2.mjs    stages and syncs bundles to the bucket
 ```
 
 ## Adding a table

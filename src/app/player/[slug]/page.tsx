@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { SnakeGame } from "@/components/player/snake-game";
+import { HostedGame } from "@/components/player/hosted-game";
+import { gameBundleUrl } from "@/lib/assets";
 import { findGame } from "@/lib/games";
-import { siteUrl } from "@/lib/site-url";
 
 /**
- * Slug to implementation.
+ * The player origin's only route.
  *
- * The catalogue in `src/lib/games.ts` is the metadata; this is the code. They
- * are separate because the app has to render a title and a description for a
- * game without pulling the game's bundle into the app's own origin.
+ * Every game is a static bundle on the asset origin, so this resolves one by
+ * URL from the catalogue rather than mapping slugs to components. It used to
+ * do both, behind a `runtime` discriminant; the compiled-in kind is gone.
+ *
+ * The catalogue in `src/lib/games.ts` is the metadata and this is the frame
+ * around it. They are separate because the app has to render a title and a
+ * description for a game without pulling the game's bundle into the app's own
+ * origin.
  */
-const RUNTIMES: Record<string, (props: { appOrigin: string }) => React.ReactNode> = {
-  "animal-adventure": SnakeGame,
-};
-
 export async function generateMetadata({
   params,
 }: PageProps<"/player/[slug]">): Promise<Metadata> {
@@ -26,12 +27,13 @@ export default async function PlayerPage({ params }: PageProps<"/player/[slug]">
   const { slug } = await params;
 
   const game = findGame(slug);
-  const Runtime = RUNTIMES[slug];
-  if (!game || !Runtime) notFound();
+  if (!game) notFound();
 
-  // Resolved on the server because the client cannot: on the player origin,
-  // `window.location` names the player, and the app's origin is exactly what
-  // a `postMessage` needs as its target. Passing "*" instead would broadcast
-  // to whatever ended up framing this page.
-  return <Runtime appOrigin={siteUrl()} />;
+  // `null` means no asset origin is configured, so there is nowhere to load
+  // this from. A 404 is the honest answer and matches every other way this
+  // route declines — see the note on uniform 404s in `src/proxy.ts`.
+  const src = gameBundleUrl(game.slug);
+  if (!src) notFound();
+
+  return <HostedGame title={game.title} src={src} />;
 }

@@ -55,10 +55,17 @@ export function LogoTile({ className = "" }: { className?: string }) {
 export function Wordmark({
   tone = "default",
   showName = true,
+  short = false,
   className = "",
 }: {
   tone?: "default" | "inverted";
   showName?: boolean;
+  /**
+   * Drop to `brand.shortName`. For the app rail, where the lockup is a place
+   * marker rather than a signature — the name has already been read on the way
+   * in, and at 15rem the full one takes a third of the column to repeat it.
+   */
+  short?: boolean;
   className?: string;
 }) {
   const color =
@@ -70,8 +77,8 @@ export function Wordmark({
     >
       <LogoMark className="h-[0.727em] w-[0.802em] shrink-0" />
       {showName && (
-        <span className="font-semibold tracking-[-0.012em] whitespace-nowrap">
-          {brand.name}
+        <span className="font-semibold whitespace-nowrap">
+          {short ? brand.shortName : brand.name}
         </span>
       )}
     </span>

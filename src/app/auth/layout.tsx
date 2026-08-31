@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { RailConstellation } from "@/components/app/rail-constellation";
 import { AppProviders } from "@/components/app-providers";
-import { AuthAside } from "@/components/auth/auth-aside";
-import { Wordmark } from "@/components/wordmark";
-import { brand } from "@/lib/brand";
 
 export const metadata: Metadata = {
   // Every page under /auth resolves to a form or a redirect. Nothing here is
@@ -12,57 +11,70 @@ export const metadata: Metadata = {
 };
 
 /**
- * The auth shell: information on the left, form on the right, and none of the
- * site chrome. Sitting outside the `(site)` route group is what buys that —
- * the header and footer belong to that group's layout, not to the root.
+ * The auth shell: one centred column, and none of the site chrome. Sitting
+ * outside the `(site)` route group is what buys that — the header and footer
+ * belong to that group's layout, not to the root.
  *
- * Nothing here constrains the form's width, and no `overflow` is set on the
- * column: Clerk's card sizes itself, and its "last used" badge hangs outside
- * its own bounds, so a scroll container here would clip it.
+ * There is no split screen, no marketing panel and no lockup. Clerk's card
+ * already names the product at the top of itself; anything above it was the
+ * same word twice. What is left is the form, the field behind it, and the way
+ * out at the foot.
+ *
+ * `isolate` is for `RailConstellation`, which draws at `-z-10`: without a
+ * stacking context here that layer would fall behind the page background and
+ * never be seen. The constellation is a *child of this element* rather than a
+ * floating layer, and that is load-bearing — it listens for `pointermove` on
+ * its own parent, so only a node the whole page sits inside gets the cursor.
+ *
+ * Nothing here constrains the form's width, and no `overflow` is set: Clerk's
+ * card sizes itself, and its "last used" badge hangs outside its own bounds,
+ * so a scroll container would clip it.
  */
 export default function AuthLayout({ children }: LayoutProps<"/auth">) {
   return (
     <AppProviders>
-      <div className="grid min-h-screen lg:grid-cols-2">
-        <AuthAside />
+      <div className="relative isolate flex min-h-screen flex-col overflow-hidden px-6 py-8 sm:px-10">
+        {/* Thinner and quieter than the rail's. That field is read through
+            seven backdrop blurs down a 15rem column; this one is the entire
+            background of a page whose only job is a form, and at the rail's
+            weight it competes with the thing you came here to fill in. */}
+        <RailConstellation
+          areaPerPoint={13000}
+          maxPoints={64}
+          className="[--web-fade:0.4] dark:[--web-fade:0.34]"
+        />
 
-        <main className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-14 xl:px-20">
-          <div className="flex items-center justify-between">
-            {/* The aside carries the lockup from `lg` up; below that this is the
-                only way back to the site. */}
-            <Link
-              href="/"
-              aria-label={`${brand.name} home`}
-              className="rounded-full transition-opacity hover:opacity-70 lg:invisible"
-            >
-              <Wordmark />
-            </Link>
-            <div className="flex items-center gap-1">
-              <Link
-                href="/"
-                className="hidden rounded-full px-3 py-2 text-[0.9375rem] text-muted-foreground transition-colors hover:text-foreground sm:block"
-              >
-                Back to site
-              </Link>
-            </div>
-          </div>
+        <main className="flex flex-1 items-center justify-center py-12">
+          {children}
+        </main>
 
-          <div className="flex flex-1 items-center justify-center py-12">
-            {children}
-          </div>
+        <footer className="relative flex flex-col items-center gap-4">
+          <Link
+            href="/"
+            className="group flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.875rem] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeftIcon className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+            Back to site
+          </Link>
 
           <p className="text-center text-[0.8125rem] text-faint">
             By continuing you agree to our{" "}
-            <Link href="#" className="underline underline-offset-4 hover:text-muted-foreground">
+            <Link
+              href="#"
+              className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
+            >
               Terms
             </Link>{" "}
             and{" "}
-            <Link href="#" className="underline underline-offset-4 hover:text-muted-foreground">
+            <Link
+              href="#"
+              className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
+            >
               Privacy Policy
             </Link>
             .
           </p>
-        </main>
+        </footer>
       </div>
     </AppProviders>
   );

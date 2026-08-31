@@ -1,3 +1,4 @@
+import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { educators } from "@/lib/content";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -80,10 +81,7 @@ export function Educators() {
             <ul className="mt-2 flex flex-col gap-3">
               {educators.bullets.map((b) => (
                 <li key={b} className="flex items-start gap-3 text-[0.9375rem] text-foreground/80">
-                  <svg viewBox="0 0 16 16" width="16" height="16" className="mt-0.5 shrink-0 text-primary" aria-hidden>
-                    <circle cx="8" cy="8" r="7.25" fill="none" stroke="currentColor" strokeWidth="1.2" />
-                    <path d="M4.8 8.2 7 10.4l4.2-4.6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" />
                   {b}
                 </li>
               ))}

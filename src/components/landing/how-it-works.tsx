@@ -16,7 +16,7 @@ export function HowItWorks() {
           {steps.map((step) => (
             <li key={step.number} className="group relative bg-surface p-8 lg:p-10">
               <span className="label-small text-primary">{step.number}</span>
-              <h3 className="mt-5 text-[1.375rem] font-semibold tracking-tight text-foreground">
+              <h3 className="mt-5 text-[1.375rem] font-semibold text-foreground">
                 {step.title}
               </h3>
               <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">

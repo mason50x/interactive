@@ -1,9 +1,9 @@
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { cva, type VariantProps } from "class-variance-authority"
-import Link from "next/link"
-import type { ComponentProps } from "react"
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { cva, type VariantProps } from "class-variance-authority";
+import Link from "next/link";
+import type { ComponentProps } from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -11,10 +11,10 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover hover:shadow-[0_4px_14px_rgba(60,133,247,0.35)]",
+          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]",
         /** Alias of `default`, kept so brand-led call sites read clearly. */
         primary:
-          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover hover:shadow-[0_4px_14px_rgba(60,133,247,0.35)]",
+          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]",
         /** For use on the inverted panel, which is dark in both themes. */
         inverted:
           "bg-panel-foreground text-panel shadow-[0_1px_2px_rgba(0,0,0,0.4)] hover:bg-panel-foreground/88",
@@ -51,8 +51,8 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 function Button({
   className,
@@ -66,7 +66,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-  )
+  );
 }
 
 /** The same styling applied to a Next.js link, for navigational actions. */
@@ -82,7 +82,7 @@ function ButtonLink({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-  )
+  );
 }
 
-export { Button, ButtonLink, buttonVariants }
+export { Button, ButtonLink, buttonVariants };

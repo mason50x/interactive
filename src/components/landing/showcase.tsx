@@ -6,7 +6,7 @@ import { ConceptMap } from "@/components/visuals/concept-map";
 
 export function Showcase() {
   return (
-    <section id="platform" className="pb-20 sm:pb-28">
+    <section id="platform" className="pt-20 pb-20 sm:pt-28 sm:pb-28">
       <Container>
         <div className="overflow-hidden rounded-[2rem] bg-panel px-6 pt-16 pb-8 sm:px-10 sm:pt-24 lg:px-16">
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
