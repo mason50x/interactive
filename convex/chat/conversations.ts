@@ -443,7 +443,10 @@ export const markRead = mutation({
     const profile = await callerProfile(ctx);
     if (profile === null) return;
     const member = await membership(ctx, conversationId, profile.clerkId);
-    if (member === null) return;
+    // Active members only, the same bar `get` and `list` set: an invitation
+    // or a removal is not a seat in the room, and a row in either state has
+    // no reading position to move.
+    if (member === null || member.status !== "active") return;
     await ctx.db.patch(member._id, { lastReadAt: Date.now() });
   },
 });
