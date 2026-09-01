@@ -11,7 +11,7 @@
   "slug": "subwaysurfers",
   "title": "Subway Surfers",
   "genre": "coordination",
-  "thumbnail": "subwaysurfers.jpeg",
+  "thumbnail": "subwaysurfers.webp",
   "rank": 1,
   "bytes": 90001271
  },
@@ -27,7 +27,7 @@
   "slug": "papaspizzaria",
   "title": "Papa's Pizzaria",
   "genre": "systems",
-  "thumbnail": "papaspizzeria.jpg",
+  "thumbnail": "papaspizzaria.webp",
   "rank": 3,
   "bytes": 9557833
  },
@@ -35,7 +35,7 @@
   "slug": "papasburgeria",
   "title": "Papa's Burgeria",
   "genre": "systems",
-  "thumbnail": "papasburgeria.jpg",
+  "thumbnail": "papasburgeria.webp",
   "rank": 4,
   "bytes": 7975216
  },
@@ -43,7 +43,7 @@
   "slug": "sm64",
   "title": "Super Mario 64",
   "genre": "coordination",
-  "thumbnail": "sm64.jpg",
+  "thumbnail": "sm64.webp",
   "rank": 5,
   "bytes": 23626654
  },
@@ -67,7 +67,7 @@
   "slug": "crossy",
   "title": "Crossy Road",
   "genre": "touch",
-  "thumbnail": "crossyroad.jpg",
+  "thumbnail": "crossy.webp",
   "rank": 8,
   "bytes": 6705344
  },
@@ -75,7 +75,7 @@
   "slug": "mc",
   "title": "Minecraft [v1.5.2]",
   "genre": "exploration",
-  "thumbnail": "mc.jpg",
+  "thumbnail": "mc.webp",
   "rank": 9,
   "bytes": 16508626
  },
@@ -83,7 +83,7 @@
   "slug": "cookieclicker",
   "title": "Cookie Clicker",
   "genre": "reaction",
-  "thumbnail": "cookieclick.jpg",
+  "thumbnail": "cookieclicker.webp",
   "rank": 10,
   "bytes": 5803517
  },
@@ -91,7 +91,7 @@
   "slug": "templerun2",
   "title": "Temple Run 2",
   "genre": "coordination",
-  "thumbnail": "templerun2.jpg",
+  "thumbnail": "templerun2.webp",
   "rank": 11,
   "bytes": 27024347
  },
@@ -99,7 +99,7 @@
   "slug": "ducklife4",
   "title": "Duck Life 4",
   "genre": "systems",
-  "thumbnail": "ducklife4.jpg",
+  "thumbnail": "ducklife4.webp",
   "rank": 12,
   "bytes": 15553659
  },
@@ -107,7 +107,7 @@
   "slug": "dinogame",
   "title": "Chrome Dino Game",
   "genre": "reaction",
-  "thumbnail": "chromedino.jpg",
+  "thumbnail": "dinogame.webp",
   "rank": 13,
   "bytes": 166153
  },
@@ -115,7 +115,7 @@
   "slug": "jetpackjoyride",
   "title": "Jetpack Joyride",
   "genre": "reaction",
-  "thumbnail": "jetpackjoyride.jpg",
+  "thumbnail": "jetpackjoyride.webp",
   "rank": 14,
   "bytes": 16813514
  },
@@ -123,7 +123,7 @@
   "slug": "retrobowl",
   "title": "Retro Bowl",
   "genre": "reaction",
-  "thumbnail": "retrobowl.jpg",
+  "thumbnail": "retrobowl.webp",
   "rank": 15,
   "bytes": 48688145
  },
@@ -139,7 +139,7 @@
   "slug": "doodlejump",
   "title": "Doodle Jump",
   "genre": "coordination",
-  "thumbnail": "doodlejump.jpg",
+  "thumbnail": "doodlejump.webp",
   "rank": 17,
   "bytes": 4104186
  },
@@ -147,7 +147,7 @@
   "slug": "2048",
   "title": "2048",
   "genre": "problem-solving",
-  "thumbnail": "2048.jpg",
+  "thumbnail": "2048.webp",
   "rank": 18,
   "bytes": 599509
  },
@@ -155,7 +155,7 @@
   "slug": "tetris",
   "title": "Tetris",
   "genre": "problem-solving",
-  "thumbnail": "tetris.jpg",
+  "thumbnail": "tetris.webp",
   "rank": 19,
   "bytes": 775930
  },
@@ -163,7 +163,7 @@
   "slug": "fancypantsadventure",
   "title": "Fancy Pants Adventure",
   "genre": "coordination",
-  "thumbnail": "fancypantsadventure.jpg",
+  "thumbnail": "fancypantsadventure.webp",
   "rank": 20,
   "bytes": 2674348
  },
@@ -171,7 +171,7 @@
   "slug": "happywheels",
   "title": "Happy Wheels",
   "genre": "reaction",
-  "thumbnail": "happywheels.jpg",
+  "thumbnail": "happywheels.webp",
   "rank": 21,
   "bytes": 4406460
  },
@@ -187,7 +187,7 @@
   "slug": "paperio2",
   "title": "Paperio2",
   "genre": "reaction",
-  "thumbnail": "paperio2.jpg",
+  "thumbnail": "paperio2.webp",
   "rank": 23,
   "bytes": 1377811
  },
@@ -195,7 +195,7 @@
   "slug": "superhot",
   "title": "Super Hot",
   "genre": "exploration",
-  "thumbnail": "superhot.jpg",
+  "thumbnail": "superhot.webp",
   "rank": 24,
   "bytes": 46031880
  },
@@ -203,7 +203,7 @@
   "slug": "thebindingofisaac",
   "title": "The Binding of Isaac",
   "genre": "exploration",
-  "thumbnail": "thebindingofisaac.jpg",
+  "thumbnail": "thebindingofisaac.webp",
   "rank": 25,
   "bytes": 9254861
  },
@@ -211,7 +211,7 @@
   "slug": "townscaper",
   "title": "Townscaper",
   "genre": "systems",
-  "thumbnail": "townscaper.jpg",
+  "thumbnail": "townscaper.webp",
   "rank": 26,
   "bytes": 56933327
  },
@@ -219,7 +219,7 @@
   "slug": "tunnelrush",
   "title": "Tunnel Rush",
   "genre": "reaction",
-  "thumbnail": "tunnelrush.jpg",
+  "thumbnail": "tunnelrush.webp",
   "rank": 27,
   "bytes": 18538188
  },
@@ -235,7 +235,7 @@
   "slug": "escapingtheprison",
   "title": "Escaping the Prison",
   "genre": "exploration",
-  "thumbnail": "escapingtheprison.jpg",
+  "thumbnail": "escapingtheprison.webp",
   "rank": 29,
   "bytes": 9736149
  },
@@ -243,7 +243,7 @@
   "slug": "stealingthediamond",
   "title": "Stealing the Diamond",
   "genre": "exploration",
-  "thumbnail": "stealingthediamond.jpg",
+  "thumbnail": "stealingthediamond.webp",
   "rank": 30,
   "bytes": 14590997
  },
@@ -251,7 +251,7 @@
   "slug": "infiltratingtheairship",
   "title": "Infiltrating the Airship",
   "genre": "exploration",
-  "thumbnail": "infiltratingtheairship.jpg",
+  "thumbnail": "infiltratingtheairship.webp",
   "rank": 31,
   "bytes": 29779755
  },
@@ -259,7 +259,7 @@
   "slug": "fleeingthecomplex",
   "title": "Fleeing the Complex",
   "genre": "exploration",
-  "thumbnail": "fleeingthecomplex.jpg",
+  "thumbnail": "fleeingthecomplex.webp",
   "rank": 32,
   "bytes": 34527577
  },
@@ -267,7 +267,7 @@
   "slug": "theimpossiblequiz",
   "title": "The Impossible Quiz",
   "genre": "reaction",
-  "thumbnail": "theimpossiblequiz.jpg",
+  "thumbnail": "theimpossiblequiz.webp",
   "rank": 33,
   "bytes": 8371752
  },
@@ -275,7 +275,7 @@
   "slug": "solitaire",
   "title": "Solitaire",
   "genre": "problem-solving",
-  "thumbnail": "solitaire.jpg",
+  "thumbnail": "solitaire.webp",
   "rank": 34,
   "bytes": 18613
  },
@@ -283,7 +283,7 @@
   "slug": "drifthunters",
   "title": "Drift Hunters",
   "genre": "exploration",
-  "thumbnail": "drifthunters.jpg",
+  "thumbnail": "drifthunters.webp",
   "rank": 35,
   "bytes": 141293130
  },
@@ -299,7 +299,7 @@
   "slug": "amongus",
   "title": "Among Us Fangame",
   "genre": "reaction",
-  "thumbnail": "amongus.jpg",
+  "thumbnail": "amongus.webp",
   "rank": 37,
   "bytes": 13115393
  },
@@ -315,7 +315,7 @@
   "slug": "motox3m",
   "title": "Motox3m",
   "genre": "coordination",
-  "thumbnail": "motox3m.jpeg",
+  "thumbnail": "motox3m.webp",
   "rank": 39,
   "bytes": 9813985
  },
@@ -323,7 +323,7 @@
   "slug": "fnaf",
   "title": "Fnaf 1",
   "genre": "exploration",
-  "thumbnail": "fnaf.jpg",
+  "thumbnail": "fnaf.webp",
   "rank": 40,
   "bytes": 53858854
  },
@@ -331,7 +331,7 @@
   "slug": "fnaf-2",
   "title": "Fnaf 2",
   "genre": "exploration",
-  "thumbnail": "fnaf2.jpg",
+  "thumbnail": "fnaf-2.webp",
   "rank": 41,
   "bytes": 51373533
  },
@@ -339,7 +339,7 @@
   "slug": "fnaf-3",
   "title": "Fnaf 3",
   "genre": "exploration",
-  "thumbnail": "fnaf3.jpg",
+  "thumbnail": "fnaf-3.webp",
   "rank": 42,
   "bytes": 32369899
  },
@@ -347,7 +347,7 @@
   "slug": "fnaf-4",
   "title": "Fnaf 4",
   "genre": "exploration",
-  "thumbnail": "fnaf4.jpg",
+  "thumbnail": "fnaf-4.webp",
   "rank": 43,
   "bytes": 76174961
  },
@@ -363,7 +363,7 @@
   "slug": "fnf",
   "title": "Friday Night Funkin",
   "genre": "reaction",
-  "thumbnail": "fnf.jpg",
+  "thumbnail": "fnf.webp",
   "rank": 45,
   "bytes": 583910872
  },
@@ -371,7 +371,7 @@
   "slug": "pacman",
   "title": "Pacman",
   "genre": "reaction",
-  "thumbnail": "pacman.jpg",
+  "thumbnail": "pacman.webp",
   "rank": 46,
   "bytes": 2316225
  },
@@ -379,7 +379,7 @@
   "slug": "papaspancakeria",
   "title": "Papa's Pancakeria",
   "genre": "systems",
-  "thumbnail": "papaspancakeria.jpg",
+  "thumbnail": "papaspancakeria.webp",
   "rank": 47,
   "bytes": 6498020
  },
@@ -387,7 +387,7 @@
   "slug": "rooftop",
   "title": "Rooftop Snipers",
   "genre": "reaction",
-  "thumbnail": "rooftopsnipers.jpg",
+  "thumbnail": "rooftop.webp",
   "rank": 48,
   "bytes": 8511480
  },
@@ -395,7 +395,7 @@
   "slug": "baldisbasics",
   "title": "Baldi's Basics",
   "genre": "exploration",
-  "thumbnail": "baldisbasics.jpg",
+  "thumbnail": "baldisbasics.webp",
   "rank": 49,
   "bytes": 37525157
  },
@@ -411,7 +411,7 @@
   "slug": "minesweeper",
   "title": "Minesweeper",
   "genre": "problem-solving",
-  "thumbnail": "minesweeper.jpg",
+  "thumbnail": "minesweeper.webp",
   "rank": 51,
   "bytes": 6156284
  },
@@ -419,7 +419,7 @@
   "slug": "thereisnogame",
   "title": "There Is No Game",
   "genre": "touch",
-  "thumbnail": "thereisnogame.jpg",
+  "thumbnail": "thereisnogame.webp",
   "rank": 57,
   "bytes": 7476784
  },
@@ -427,7 +427,7 @@
   "slug": "worldshardestgame",
   "title": "World's Hardest Game",
   "genre": "problem-solving",
-  "thumbnail": "worldshardestgame.jpg",
+  "thumbnail": "worldshardestgame.webp",
   "rank": 58,
   "bytes": 745881
  },
@@ -435,7 +435,7 @@
   "slug": "dogeminer",
   "title": "Doge Miner",
   "genre": "systems",
-  "thumbnail": "dogeminer.jpg",
+  "thumbnail": "dogeminer.webp",
   "rank": 71,
   "bytes": 4298486
  },
@@ -443,7 +443,7 @@
   "slug": "tanukisunset",
   "title": "Tanuki Sunset",
   "genre": "reaction",
-  "thumbnail": "tanukisunset.jpg",
+  "thumbnail": "tanukisunset.webp",
   "rank": 72,
   "bytes": 55431141
  },
@@ -459,7 +459,7 @@
   "slug": "colorswitch",
   "title": "Color Switch",
   "genre": "reaction",
-  "thumbnail": "colorswitch.jpg",
+  "thumbnail": "colorswitch.webp",
   "rank": 74,
   "bytes": 3710586
  },
@@ -467,7 +467,7 @@
   "slug": "papasfreezeria",
   "title": "Papa's Freezeria",
   "genre": "systems",
-  "thumbnail": "papasfreezeria.jpg",
+  "thumbnail": "papasfreezeria.webp",
   "rank": 75,
   "bytes": 5169283
  },
@@ -475,7 +475,7 @@
   "slug": "adofai",
   "title": "Adofai",
   "genre": "reaction",
-  "thumbnail": "adofai.jpg",
+  "thumbnail": "adofai.webp",
   "rank": 84,
   "bytes": 19273235
  },
@@ -483,7 +483,7 @@
   "slug": "supersmashflash",
   "title": "Super Smash Flash",
   "genre": "reaction",
-  "thumbnail": "supersmashflash.jpg",
+  "thumbnail": "supersmashflash.webp",
   "rank": 85,
   "bytes": 8834905
  },
@@ -491,7 +491,7 @@
   "slug": "supermeatboy",
   "title": "Super Meat Boy",
   "genre": "coordination",
-  "thumbnail": "supermeatboy.jpg",
+  "thumbnail": "supermeatboy.webp",
   "rank": 86,
   "bytes": 5547984
  },
@@ -499,7 +499,7 @@
   "slug": "stickmanhook",
   "title": "Stickman Hook",
   "genre": "touch",
-  "thumbnail": "stickmanhook.jpg",
+  "thumbnail": "stickmanhook.webp",
   "rank": 87,
   "bytes": 3987156
  },
@@ -515,7 +515,7 @@
   "slug": "sortthecourt",
   "title": "Sort the Court",
   "genre": "systems",
-  "thumbnail": "sortthecourt.jpg",
+  "thumbnail": "sortthecourt.webp",
   "rank": 89,
   "bytes": 16068786
  },
@@ -523,7 +523,7 @@
   "slug": "thisistheonlylevel",
   "title": "This Is the Only Level",
   "genre": "coordination",
-  "thumbnail": "thisistheonlylevel.jpg",
+  "thumbnail": "thisistheonlylevel.webp",
   "rank": 90,
   "bytes": 1328596
  },
@@ -563,7 +563,7 @@
   "slug": "ducklife",
   "title": "Duck Life",
   "genre": "systems",
-  "thumbnail": "ducklife.jpg",
+  "thumbnail": "ducklife.webp",
   "rank": 95,
   "bytes": 1283979
  },
@@ -587,7 +587,7 @@
   "slug": "linerider",
   "title": "Line Rider",
   "genre": "coordination",
-  "thumbnail": "linerider.jpg",
+  "thumbnail": "linerider.webp",
   "rank": 98,
   "bytes": 104450
  },
@@ -611,7 +611,7 @@
   "slug": "spaceinvaders",
   "title": "Space Invaders",
   "genre": "reaction",
-  "thumbnail": "spaceinvaders.jpg",
+  "thumbnail": "spaceinvaders.webp",
   "rank": 101,
   "bytes": 26254
  },
@@ -619,7 +619,7 @@
   "slug": "gunmayhem",
   "title": "Gun Mayhem",
   "genre": "reaction",
-  "thumbnail": "gunmayhem.jpg",
+  "thumbnail": "gunmayhem.webp",
   "rank": 107,
   "bytes": 5968505
  },
@@ -627,7 +627,7 @@
   "slug": "learntofly",
   "title": "Learn to Fly",
   "genre": "reaction",
-  "thumbnail": "learntofly.jpg",
+  "thumbnail": "learntofly.webp",
   "rank": 108,
   "bytes": 962008
  },
@@ -643,7 +643,7 @@
   "slug": "fireboywatergirl",
   "title": "Fireboy and Watergirl",
   "genre": "coordination",
-  "thumbnail": "fireboyandwatergirl.jpg",
+  "thumbnail": "fireboywatergirl.webp",
   "rank": 110,
   "bytes": 10225662
  },
@@ -651,7 +651,7 @@
   "slug": "chibiknight",
   "title": "Chibi Knight",
   "genre": "exploration",
-  "thumbnail": "chibiknight.jpg",
+  "thumbnail": "chibiknight.webp",
   "rank": 111,
   "bytes": 6945292
  },
@@ -667,7 +667,7 @@
   "slug": "doodledefender",
   "title": "Doodle Defender",
   "genre": "reaction",
-  "thumbnail": "doodledefender.jpg",
+  "thumbnail": "doodledefender.webp",
   "rank": 113,
   "bytes": 4266480
  },
@@ -675,7 +675,7 @@
   "slug": "learntofly2",
   "title": "Learn to Fly 2",
   "genre": "exploration",
-  "thumbnail": "learntofly2.jpg",
+  "thumbnail": "learntofly2.webp",
   "rank": 114,
   "bytes": 5370545
  },
@@ -683,7 +683,7 @@
   "slug": "papasscooperia",
   "title": "Papa's Scooperia",
   "genre": "systems",
-  "thumbnail": "papasscooperia.jpg",
+  "thumbnail": "papasscooperia.webp",
   "rank": 115,
   "bytes": 20621991
  },
@@ -691,7 +691,7 @@
   "slug": "papassushiria",
   "title": "Papa's Sushiria",
   "genre": "systems",
-  "thumbnail": "papaswingeria.jpg",
+  "thumbnail": "papassushiria.webp",
   "rank": 116,
   "bytes": 15585070
  },
@@ -699,7 +699,7 @@
   "slug": "papaswingeria",
   "title": "Papa's Wingeria",
   "genre": "systems",
-  "thumbnail": "papassushiria.jpg",
+  "thumbnail": "papaswingeria.webp",
   "rank": 117,
   "bytes": 7688849
  },
@@ -707,7 +707,7 @@
   "slug": "raftwars",
   "title": "Raft Wars",
   "genre": "reaction",
-  "thumbnail": "raftwars.jpg",
+  "thumbnail": "raftwars.webp",
   "rank": 118,
   "bytes": 1915585
  },
@@ -715,7 +715,7 @@
   "slug": "unfairmario",
   "title": "Unfair Mario",
   "genre": "coordination",
-  "thumbnail": "unfairmario.jpg",
+  "thumbnail": "unfairmario.webp",
   "rank": 119,
   "bytes": 1682434
  },
@@ -739,7 +739,7 @@
   "slug": "papasdonuteria",
   "title": "Papa's Donuteria",
   "genre": "systems",
-  "thumbnail": "papasdonuteria.jpg",
+  "thumbnail": "papasdonuteria.webp",
   "rank": 131,
   "bytes": 12265461
  },
@@ -755,7 +755,7 @@
   "slug": "tinyfishing",
   "title": "Tiny Fishing",
   "genre": "reaction",
-  "thumbnail": "tinyfishing.jpg",
+  "thumbnail": "tinyfishing.webp",
   "rank": 133,
   "bytes": 4372073
  },
@@ -771,7 +771,7 @@
   "slug": "achievementunlocked",
   "title": "Achievement Unlocked",
   "genre": "problem-solving",
-  "thumbnail": "achievementunlocked.jpg",
+  "thumbnail": "achievementunlocked.webp",
   "rank": 135,
   "bytes": 2501705
  },
@@ -779,7 +779,7 @@
   "slug": "badicecream",
   "title": "Bad Ice Cream",
   "genre": "reaction",
-  "thumbnail": "badicecream.jpg",
+  "thumbnail": "badicecream.webp",
   "rank": 139,
   "bytes": 5280354
  },
@@ -795,7 +795,7 @@
   "slug": "badicecream3",
   "title": "Bad Ice Cream 3",
   "genre": "reaction",
-  "thumbnail": "badicecream3.jpg",
+  "thumbnail": "badicecream3.webp",
   "rank": 141,
   "bytes": 7356601
  },
@@ -803,7 +803,7 @@
   "slug": "adventurecapitalist",
   "title": "Adventure Captialist",
   "genre": "systems",
-  "thumbnail": "adventurecaptialist.jpg",
+  "thumbnail": "adventurecapitalist.webp",
   "rank": 142,
   "bytes": 498876
  },
@@ -819,7 +819,7 @@
   "slug": "getawayshootout",
   "title": "Getaway Shootout",
   "genre": "reaction",
-  "thumbnail": "getawayshootout.jpg",
+  "thumbnail": "getawayshootout.webp",
   "rank": 156,
   "bytes": 13711982
  },
@@ -835,7 +835,7 @@
   "slug": "papascheeseria",
   "title": "Papa's Cheeseria",
   "genre": "systems",
-  "thumbnail": "papascheeseria.jpg",
+  "thumbnail": "papascheeseria.webp",
   "rank": 167,
   "bytes": 12341267
  },
@@ -843,7 +843,7 @@
   "slug": "papascupcakeria",
   "title": "Papa's Cupcakeria",
   "genre": "systems",
-  "thumbnail": "papascupcakeria.jpg",
+  "thumbnail": "papascupcakeria.webp",
   "rank": 168,
   "bytes": 8917320
  },
@@ -851,7 +851,7 @@
   "slug": "papasbakeria",
   "title": "Papa's Bakeria",
   "genre": "systems",
-  "thumbnail": "papasbakeria.jpg",
+  "thumbnail": "papasbakeria.webp",
   "rank": 169,
   "bytes": 14441491
  },
@@ -859,7 +859,7 @@
   "slug": "papaspastaria",
   "title": "Papa's Pastaria",
   "genre": "systems",
-  "thumbnail": "papaspastaria.jpg",
+  "thumbnail": "papaspastaria.webp",
   "rank": 170,
   "bytes": 10580601
  },
@@ -867,7 +867,7 @@
   "slug": "gunmayhem2",
   "title": "Gun Mayhem 2",
   "genre": "reaction",
-  "thumbnail": "gunmayhem2.jpg",
+  "thumbnail": "gunmayhem2.webp",
   "rank": 171,
   "bytes": 8884294
  },
@@ -883,7 +883,7 @@
   "slug": "achievementunlocked2",
   "title": "Achievement Unlocked 2",
   "genre": "problem-solving",
-  "thumbnail": "achievementunlocked2.jpg",
+  "thumbnail": "achievementunlocked2.webp",
   "rank": 173,
   "bytes": 3335489
  },
@@ -891,7 +891,7 @@
   "slug": "achievementunlocked3",
   "title": "Achievement Unlocked 3",
   "genre": "problem-solving",
-  "thumbnail": "achievementunlocked3.jpg",
+  "thumbnail": "achievementunlocked3.webp",
   "rank": 174,
   "bytes": 2099521
  },
@@ -899,7 +899,7 @@
   "slug": "factoryballs",
   "title": "Factory Balls",
   "genre": "reaction",
-  "thumbnail": "factoryballs.jpg",
+  "thumbnail": "factoryballs.webp",
   "rank": 175,
   "bytes": 287826
  },
@@ -931,7 +931,7 @@
   "slug": "learntofly3",
   "title": "Learn to Fly 3",
   "genre": "reaction",
-  "thumbnail": "learntofly3.jpg",
+  "thumbnail": "learntofly3.webp",
   "rank": 183,
   "bytes": 20367215
  },
@@ -939,7 +939,7 @@
   "slug": "bloxors",
   "title": "Bloxors",
   "genre": "problem-solving",
-  "thumbnail": "bloxors.jpg",
+  "thumbnail": "bloxors.webp",
   "rank": 184,
   "bytes": 2209093
  },
@@ -955,7 +955,7 @@
   "slug": "portal",
   "title": "Portal",
   "genre": "problem-solving",
-  "thumbnail": "portal.jpg",
+  "thumbnail": "portal.webp",
   "rank": 186,
   "bytes": 7105896
  },
@@ -963,7 +963,7 @@
   "slug": "portal2",
   "title": "Portal 2",
   "genre": "problem-solving",
-  "thumbnail": "portal2.jpg",
+  "thumbnail": "portal2.webp",
   "rank": 187,
   "bytes": 4341826
  },
@@ -995,7 +995,7 @@
   "slug": "cellmachine",
   "title": "Cell Machine",
   "genre": "problem-solving",
-  "thumbnail": "cellmachine.jpg",
+  "thumbnail": "cellmachine.webp",
   "rank": 191,
   "bytes": 10444864
  },
@@ -1035,7 +1035,7 @@
   "slug": "badpiggies",
   "title": "Bad Piggies",
   "genre": "reaction",
-  "thumbnail": "badpiggies.jpg",
+  "thumbnail": "badpiggies.webp",
   "rank": 228,
   "bytes": 2399704
  },
@@ -1051,7 +1051,7 @@
   "slug": "swordsandsandals",
   "title": "Swords and Sandals",
   "genre": "reaction",
-  "thumbnail": "swordsandsandals.jpg",
+  "thumbnail": "swordsandsandals.webp",
   "rank": 230,
   "bytes": 1205323
  },
@@ -1059,7 +1059,7 @@
   "slug": "swordsandsandals2",
   "title": "Swords and Sandals 2",
   "genre": "reaction",
-  "thumbnail": "swordsandsandals2.jpg",
+  "thumbnail": "swordsandsandals2.webp",
   "rank": 231,
   "bytes": 2687226
  },
@@ -1067,7 +1067,7 @@
   "slug": "wordle",
   "title": "Wordle",
   "genre": "reaction",
-  "thumbnail": "wordle.jpg",
+  "thumbnail": "wordle.webp",
   "rank": 232,
   "bytes": 2862341
  },
@@ -1099,7 +1099,7 @@
   "slug": "vex7",
   "title": "Vex 7",
   "genre": "coordination",
-  "thumbnail": "vex7.jpg",
+  "thumbnail": "vex7.webp",
   "rank": 236,
   "bytes": 30646574
  },
@@ -1107,7 +1107,7 @@
   "slug": "stack",
   "title": "Stack",
   "genre": "reaction",
-  "thumbnail": "stack.jpg",
+  "thumbnail": "stack.webp",
   "rank": 237,
   "bytes": 623519
  },
@@ -1131,7 +1131,7 @@
   "slug": "offlineparadise",
   "title": "Offline Paradise",
   "genre": "coordination",
-  "thumbnail": "offlineparadise.jpg",
+  "thumbnail": "offlineparadise.webp",
   "rank": 240,
   "bytes": 121744
  },
@@ -1147,7 +1147,7 @@
   "slug": "bubbletanks2",
   "title": "Bubble Tanks 2",
   "genre": "reaction",
-  "thumbnail": "bubbletanks2.jpg",
+  "thumbnail": "bubbletanks2.webp",
   "rank": 251,
   "bytes": 1544152
  },
@@ -1155,7 +1155,7 @@
   "slug": "chooseyourweapon",
   "title": "Choose Your Weapon",
   "genre": "coordination",
-  "thumbnail": "chooseyourweapon.jpg",
+  "thumbnail": "chooseyourweapon.webp",
   "rank": 252,
   "bytes": 3133759
  },
@@ -1179,7 +1179,7 @@
   "slug": "connect4",
   "title": "Connect 4",
   "genre": "reaction",
-  "thumbnail": "connect4.jpg",
+  "thumbnail": "connect4.webp",
   "rank": 255,
   "bytes": 379140
  },
@@ -1203,7 +1203,7 @@
   "slug": "championisland",
   "title": "Champion Island",
   "genre": "exploration",
-  "thumbnail": "championisland.jpg",
+  "thumbnail": "championisland.webp",
   "rank": 271,
   "bytes": 57579690
  },
@@ -1219,7 +1219,7 @@
   "slug": "clickerheroes",
   "title": "Clicker Heroes",
   "genre": "reaction",
-  "thumbnail": "clickerheroes.jpg",
+  "thumbnail": "clickerheroes.webp",
   "rank": 273,
   "bytes": 22861114
  },
@@ -1267,7 +1267,7 @@
   "slug": "snake",
   "title": "Snake",
   "genre": "reaction",
-  "thumbnail": "snake.jpg",
+  "thumbnail": "snake.webp",
   "rank": 279,
   "bytes": 1365842
  },
@@ -1283,7 +1283,7 @@
   "slug": "ovo",
   "title": "Ovo",
   "genre": "coordination",
-  "thumbnail": "ovo.jpg",
+  "thumbnail": "ovo.webp",
   "rank": 281,
   "bytes": 42309542
  },
@@ -1291,7 +1291,7 @@
   "slug": "knifehit",
   "title": "Knife Hit",
   "genre": "reaction",
-  "thumbnail": "knifehit.jpg",
+  "thumbnail": "knifehit.webp",
   "rank": 282,
   "bytes": 3971852
  },
@@ -1299,7 +1299,7 @@
   "slug": "cubefield",
   "title": "Cubefield",
   "genre": "reaction",
-  "thumbnail": "cubefield.jpg",
+  "thumbnail": "cubefield.webp",
   "rank": 283,
   "bytes": 1336546
  },
@@ -1307,7 +1307,7 @@
   "slug": "burgerandfrights",
   "title": "Burger and Frights",
   "genre": "exploration",
-  "thumbnail": "burgerandfrights.jpg",
+  "thumbnail": "burgerandfrights.webp",
   "rank": 284,
   "bytes": 45884532
  },
@@ -1315,7 +1315,7 @@
   "slug": "chess",
   "title": "Chess",
   "genre": "reaction",
-  "thumbnail": "chess.jpg",
+  "thumbnail": "chess.webp",
   "rank": 285,
   "bytes": 361729
  },
@@ -1323,7 +1323,7 @@
   "slug": "fnfmidfight",
   "title": "Fnf Mid Fight Masses",
   "genre": "reaction",
-  "thumbnail": "midfightmasses.jpg",
+  "thumbnail": "fnfmidfight.webp",
   "rank": 286,
   "bytes": 54435366
  },
@@ -1331,7 +1331,7 @@
   "slug": "thumbfighter",
   "title": "Thumb Fighter",
   "genre": "reaction",
-  "thumbnail": "thumbfighter.jpg",
+  "thumbnail": "thumbfighter.webp",
   "rank": 287,
   "bytes": 6926542
  },
@@ -1347,7 +1347,7 @@
   "slug": "lazyjump3d",
   "title": "Lazy Jump 3d",
   "genre": "reaction",
-  "thumbnail": "lazyjump3d.jpg",
+  "thumbnail": "lazyjump3d.webp",
   "rank": 289,
   "bytes": 15163185
  },
@@ -1355,7 +1355,7 @@
   "slug": "goball",
   "title": "Go Ball",
   "genre": "reaction",
-  "thumbnail": "goball.jpg",
+  "thumbnail": "goball.webp",
   "rank": 290,
   "bytes": 1447028
  },
@@ -1363,7 +1363,7 @@
   "slug": "flippyfish",
   "title": "Flippy Fish",
   "genre": "reaction",
-  "thumbnail": "flippyfish.jpg",
+  "thumbnail": "flippyfish.webp",
   "rank": 291,
   "bytes": 22716365
  },
@@ -1379,7 +1379,7 @@
   "slug": "monsterbrawl",
   "title": "Monster Brawl",
   "genre": "reaction",
-  "thumbnail": "monsterbrawl.jpg",
+  "thumbnail": "monsterbrawl.webp",
   "rank": 293,
   "bytes": 5071309
  },
@@ -1387,7 +1387,7 @@
   "slug": "multitask",
   "title": "Multitask",
   "genre": "reaction",
-  "thumbnail": "multitask.jpg",
+  "thumbnail": "multitask.webp",
   "rank": 294,
   "bytes": 3121601
  },
@@ -1395,7 +1395,7 @@
   "slug": "shift",
   "title": "Shift",
   "genre": "coordination",
-  "thumbnail": "shift.jpg",
+  "thumbnail": "shift.webp",
   "rank": 295,
   "bytes": 245971
  },
@@ -1403,7 +1403,7 @@
   "slug": "shift2",
   "title": "Shift 2",
   "genre": "coordination",
-  "thumbnail": "shift2.jpg",
+  "thumbnail": "shift2.webp",
   "rank": 296,
   "bytes": 1905728
  },
@@ -1427,7 +1427,7 @@
   "slug": "pizzatower",
   "title": "Pizza Tower",
   "genre": "coordination",
-  "thumbnail": "pizzatower.jpg",
+  "thumbnail": "pizzatower.webp",
   "rank": 302,
   "bytes": 45263596
  },
@@ -1443,7 +1443,7 @@
   "slug": "1v1lol",
   "title": "1v1lol",
   "genre": "reaction",
-  "thumbnail": "1v1lol.jpg",
+  "thumbnail": "1v1lol.webp",
   "rank": 304,
   "bytes": 1356622
  },
@@ -1451,7 +1451,7 @@
   "slug": "ballisticchickens",
   "title": "Ballistic Chickens",
   "genre": "reaction",
-  "thumbnail": "ballisticchickens.jpg",
+  "thumbnail": "ballisticchickens.webp",
   "rank": 305,
   "bytes": 3257621
  },
@@ -1475,7 +1475,7 @@
   "slug": "deathrun3d",
   "title": "Death Run 3d",
   "genre": "reaction",
-  "thumbnail": "deathrun3d.jpg",
+  "thumbnail": "deathrun3d.webp",
   "rank": 308,
   "bytes": 6357465
  },
@@ -1483,7 +1483,7 @@
   "slug": "soccerrandom",
   "title": "Soccer Random",
   "genre": "reaction",
-  "thumbnail": "soccerrandom.jpg",
+  "thumbnail": "soccerrandom.webp",
   "rank": 309,
   "bytes": 2358160
  },
@@ -1499,7 +1499,7 @@
   "slug": "tron",
   "title": "Tron",
   "genre": "reaction",
-  "thumbnail": "tron.jpg",
+  "thumbnail": "tron.webp",
   "rank": 311,
   "bytes": 304799
  },
@@ -1507,7 +1507,7 @@
   "slug": "1on1soccer",
   "title": "1 on 1 Soccer",
   "genre": "reaction",
-  "thumbnail": "1on1soccer.jpg",
+  "thumbnail": "1on1soccer.webp",
   "rank": 312,
   "bytes": 301348
  },
@@ -1515,7 +1515,7 @@
   "slug": "badtimesimulator",
   "title": "Bad Time Simulator",
   "genre": "systems",
-  "thumbnail": "badtimesimulator.jpg",
+  "thumbnail": "badtimesimulator.webp",
   "rank": 313,
   "bytes": 2685848
  },
@@ -1523,7 +1523,7 @@
   "slug": "amazingropepolice",
   "title": "Amazing Rope Police",
   "genre": "exploration",
-  "thumbnail": "amazingropepolice.jpg",
+  "thumbnail": "amazingropepolice.webp",
   "rank": 314,
   "bytes": 75785443
  },
@@ -1531,7 +1531,7 @@
   "slug": "celeste",
   "title": "Celeste",
   "genre": "coordination",
-  "thumbnail": "celeste.jpg",
+  "thumbnail": "celeste.webp",
   "rank": 315,
   "bytes": 1543315
  },
@@ -1547,7 +1547,7 @@
   "slug": "ngon",
   "title": "Ngon",
   "genre": "reaction",
-  "thumbnail": "ngon.jpg",
+  "thumbnail": "ngon.webp",
   "rank": 317,
   "bytes": 18939637
  },
@@ -1555,7 +1555,7 @@
   "slug": "rocketsoccer",
   "title": "Rocket Soccer",
   "genre": "reaction",
-  "thumbnail": "rocketsoccer.jpg",
+  "thumbnail": "rocketsoccer.webp",
   "rank": 318,
   "bytes": 60213161
  },
@@ -1579,7 +1579,7 @@
   "slug": "helixjump",
   "title": "Helix Jump",
   "genre": "touch",
-  "thumbnail": "helixjump.jpg",
+  "thumbnail": "helixjump.webp",
   "rank": 321,
   "bytes": 2109931
  },
@@ -1587,7 +1587,7 @@
   "slug": "dadish",
   "title": "Dadish",
   "genre": "coordination",
-  "thumbnail": "dadish.jpg",
+  "thumbnail": "dadish.webp",
   "rank": 322,
   "bytes": 7446823
  },
@@ -1595,7 +1595,7 @@
   "slug": "dadish2",
   "title": "Dadish 2",
   "genre": "coordination",
-  "thumbnail": "dadish2.jpg",
+  "thumbnail": "dadish2.webp",
   "rank": 323,
   "bytes": 7609782
  },
@@ -1603,7 +1603,7 @@
   "slug": "dadish3",
   "title": "Dadish 3",
   "genre": "coordination",
-  "thumbnail": "dadish3.jpg",
+  "thumbnail": "dadish3.webp",
   "rank": 324,
   "bytes": 23204318
  },
@@ -1619,7 +1619,7 @@
   "slug": "tubejumpers",
   "title": "Tube Jumpers",
   "genre": "reaction",
-  "thumbnail": "tubejumpers.jpg",
+  "thumbnail": "tubejumpers.webp",
   "rank": 326,
   "bytes": 6373228
  },
@@ -1635,7 +1635,7 @@
   "slug": "10minutestilldawn",
   "title": "10 Minutes Till Dawn",
   "genre": "reaction",
-  "thumbnail": "10minutestilldawn.jpg",
+  "thumbnail": "10minutestilldawn.webp",
   "rank": 328,
   "bytes": 50529379
  },
@@ -1651,7 +1651,7 @@
   "slug": "waterworks",
   "title": "Waterworks",
   "genre": "systems",
-  "thumbnail": "waterworks.jpg",
+  "thumbnail": "waterworks.webp",
   "rank": 330,
   "bytes": 24039275
  },
@@ -1667,7 +1667,7 @@
   "slug": "holeio",
   "title": "Hole Io",
   "genre": "reaction",
-  "thumbnail": "holeio.jpg",
+  "thumbnail": "holeio.webp",
   "rank": 332,
   "bytes": 15516082
  },
@@ -1675,7 +1675,7 @@
   "slug": "sandtrix",
   "title": "Sandtrix",
   "genre": "reaction",
-  "thumbnail": "sandtrix.jpg",
+  "thumbnail": "sandtrix.webp",
   "rank": 333,
   "bytes": 18865717
  },
@@ -1691,7 +1691,7 @@
   "slug": "slopeball",
   "title": "Slope Ball",
   "genre": "reaction",
-  "thumbnail": "slopeball.jpg",
+  "thumbnail": "slopeball.webp",
   "rank": 335,
   "bytes": 3165506
  },
@@ -1707,7 +1707,7 @@
   "slug": "tabs",
   "title": "Totally Accurate Battle Sim",
   "genre": "systems",
-  "thumbnail": "totallyaccuratebattlesim.jpg",
+  "thumbnail": "tabs.webp",
   "rank": 337,
   "bytes": 10773706
  },
@@ -1715,7 +1715,7 @@
   "slug": "watermelongame",
   "title": "Watermelon Game",
   "genre": "reaction",
-  "thumbnail": "watermelongame.jpg",
+  "thumbnail": "watermelongame.webp",
   "rank": 338,
   "bytes": 1379573
  },
@@ -1739,7 +1739,7 @@
   "slug": "cuttherope",
   "title": "Cut the Rope",
   "genre": "touch",
-  "thumbnail": "cuttherope.jpg",
+  "thumbnail": "cuttherope.webp",
   "rank": 341,
   "bytes": 26084326
  },
@@ -1755,7 +1755,7 @@
   "slug": "gdlite",
   "title": "Geometry Dash Lite",
   "genre": "coordination",
-  "thumbnail": "geometrydashlite.jpg",
+  "thumbnail": "gdlite.webp",
   "rank": 343,
   "bytes": 54997500
  },
@@ -1771,7 +1771,7 @@
   "slug": "driftmania",
   "title": "Drift Mania",
   "genre": "reaction",
-  "thumbnail": "driftmania.jpg",
+  "thumbnail": "driftmania.webp",
   "rank": 345,
   "bytes": 1738438
  },
@@ -1787,7 +1787,7 @@
   "slug": "burritobison",
   "title": "Burrito Bison",
   "genre": "reaction",
-  "thumbnail": "burritobison.jpg",
+  "thumbnail": "burritobison.webp",
   "rank": 347,
   "bytes": 33697538
  },
@@ -1795,7 +1795,7 @@
   "slug": "pool",
   "title": "Pool",
   "genre": "reaction",
-  "thumbnail": "pool.jpg",
+  "thumbnail": "pool.webp",
   "rank": 348,
   "bytes": 100345
  },
@@ -1803,7 +1803,7 @@
   "slug": "redball1",
   "title": "Redball",
   "genre": "coordination",
-  "thumbnail": "redball.jpg",
+  "thumbnail": "redball1.webp",
   "rank": 349,
   "bytes": 890200
  },
@@ -1851,7 +1851,7 @@
   "slug": "timeshooter1",
   "title": "Time Shooter",
   "genre": "reaction",
-  "thumbnail": "timeshooter.jpg",
+  "thumbnail": "timeshooter1.webp",
   "rank": 355,
   "bytes": 20074774
  },
@@ -1891,7 +1891,7 @@
   "slug": "controlcraft2",
   "title": "Control Craft 2",
   "genre": "problem-solving",
-  "thumbnail": "controlcraft2.jpg",
+  "thumbnail": "controlcraft2.webp",
   "rank": 408,
   "bytes": 7235313
  },
@@ -1899,7 +1899,7 @@
   "slug": "ageofwar",
   "title": "Age of War",
   "genre": "reaction",
-  "thumbnail": "ageofwar.jpg",
+  "thumbnail": "ageofwar.webp",
   "rank": 409,
   "bytes": 3630240
  },
@@ -1907,7 +1907,7 @@
   "slug": "ageofwar2",
   "title": "Age of War 2",
   "genre": "reaction",
-  "thumbnail": "ageofwar2.jpg",
+  "thumbnail": "ageofwar2.webp",
   "rank": 410,
   "bytes": 11415442
  },
@@ -1915,7 +1915,7 @@
   "slug": "amorphous",
   "title": "Amorphous",
   "genre": "reaction",
-  "thumbnail": "amorphous.jpg",
+  "thumbnail": "amorphous.webp",
   "rank": 411,
   "bytes": 5782597
  },
@@ -1931,7 +1931,7 @@
   "slug": "crushthecastle",
   "title": "Crush the Castle",
   "genre": "problem-solving",
-  "thumbnail": "crushthecastle.jpg",
+  "thumbnail": "crushthecastle.webp",
   "rank": 413,
   "bytes": 2353312
  },
@@ -1947,7 +1947,7 @@
   "slug": "epicbattlefantasy",
   "title": "Epic Battle Fantasy",
   "genre": "exploration",
-  "thumbnail": "epicbattlefantasy.jpg",
+  "thumbnail": "epicbattlefantasy.webp",
   "rank": 415,
   "bytes": 8391640
  },
@@ -1963,7 +1963,7 @@
   "slug": "epicbattlefantasy3",
   "title": "Epic Battle Fantasy 3",
   "genre": "exploration",
-  "thumbnail": "epicbattlefantasy3.jpg",
+  "thumbnail": "epicbattlefantasy3.webp",
   "rank": 417,
   "bytes": 25312201
  },
@@ -2003,7 +2003,7 @@
   "slug": "neonrider",
   "title": "Neon Rider",
   "genre": "reaction",
-  "thumbnail": "neonrider.jpg",
+  "thumbnail": "neonrider.webp",
   "rank": 422,
   "bytes": 1411513
  },
@@ -2011,7 +2011,7 @@
   "slug": "pandemic2",
   "title": "Pandemic 2",
   "genre": "systems",
-  "thumbnail": "pandemic2.jpg",
+  "thumbnail": "pandemic2.webp",
   "rank": 423,
   "bytes": 4378837
  },
@@ -2019,7 +2019,7 @@
   "slug": "stickwar",
   "title": "Stick War",
   "genre": "reaction",
-  "thumbnail": "stickwar.jpg",
+  "thumbnail": "stickwar.webp",
   "rank": 424,
   "bytes": 7005245
  },
@@ -2043,7 +2043,7 @@
   "slug": "zombocalypse",
   "title": "Zombocalypse",
   "genre": "reaction",
-  "thumbnail": "zombocalpyse.jpg",
+  "thumbnail": "zombocalypse.webp",
   "rank": 427,
   "bytes": 5901680
  },
@@ -2051,7 +2051,7 @@
   "slug": "zombotron",
   "title": "Zombotron",
   "genre": "exploration",
-  "thumbnail": "zombotron.jpg",
+  "thumbnail": "zombotron.webp",
   "rank": 428,
   "bytes": 8428288
  },
@@ -2067,7 +2067,7 @@
   "slug": "backrooms2d",
   "title": "Backrooms 2d",
   "genre": "exploration",
-  "thumbnail": "backrooms2d.jpg",
+  "thumbnail": "backrooms2d.webp",
   "rank": 430,
   "bytes": 106817431
  },
@@ -2091,7 +2091,7 @@
   "slug": "doom",
   "title": "Doom",
   "genre": "reaction",
-  "thumbnail": "doom.jpg",
+  "thumbnail": "doom.webp",
   "rank": 433,
   "bytes": 6862983
  },
@@ -2107,7 +2107,7 @@
   "slug": "gunfest",
   "title": "Gun Fest",
   "genre": "problem-solving",
-  "thumbnail": "gunfest.jpg",
+  "thumbnail": "gunfest.webp",
   "rank": 435,
   "bytes": 31662328
  },
@@ -2115,7 +2115,7 @@
   "slug": "infinitecraft",
   "title": "Infinite Craft",
   "genre": "systems",
-  "thumbnail": "infinitecraft.jpg",
+  "thumbnail": "infinitecraft.webp",
   "rank": 436,
   "bytes": 77341
  },
@@ -2131,7 +2131,7 @@
   "slug": "pakohighway",
   "title": "Pako Highway",
   "genre": "reaction",
-  "thumbnail": "pakohighway.jpg",
+  "thumbnail": "pakohighway.webp",
   "rank": 438,
   "bytes": 98170549
  },
@@ -2139,7 +2139,7 @@
   "slug": "recoil",
   "title": "Recoil",
   "genre": "problem-solving",
-  "thumbnail": "recoil.jpg",
+  "thumbnail": "recoil.webp",
   "rank": 439,
   "bytes": 2992057
  },
@@ -2155,7 +2155,7 @@
   "slug": "slopecity",
   "title": "Slope City",
   "genre": "reaction",
-  "thumbnail": "slopecity.jpg",
+  "thumbnail": "slopecity.webp",
   "rank": 441,
   "bytes": 29825300
  },
@@ -2187,7 +2187,7 @@
   "slug": "balloonrun",
   "title": "Balloon Run",
   "genre": "reaction",
-  "thumbnail": "balloonrun.jpg",
+  "thumbnail": "balloonrun.webp",
   "rank": 445,
   "bytes": 36099761
  },
@@ -2211,7 +2211,7 @@
   "slug": "geometrydashsky",
   "title": "Geometry Dash Sky",
   "genre": "coordination",
-  "thumbnail": "geometrydashsky.jpg",
+  "thumbnail": "geometrydashsky.webp",
   "rank": 448,
   "bytes": 38061862
  },
@@ -2235,7 +2235,7 @@
   "slug": "hexgl",
   "title": "Hexgl",
   "genre": "reaction",
-  "thumbnail": "hexgl.jpg",
+  "thumbnail": "hexgl.webp",
   "rank": 451,
   "bytes": 20420206
  },
@@ -2267,7 +2267,7 @@
   "slug": "subwayrunner",
   "title": "Subway Runner",
   "genre": "reaction",
-  "thumbnail": "subwayrunner.jpg",
+  "thumbnail": "subwayrunner.webp",
   "rank": 455,
   "bytes": 43216911
  },
@@ -2275,7 +2275,7 @@
   "slug": "xx142-b2.exe",
   "title": "Xx142-b2.exe",
   "genre": "reaction",
-  "thumbnail": "xx142b2.exe.jpg",
+  "thumbnail": "xx142-b2.exe.webp",
   "rank": 456,
   "bytes": 36508
  },
@@ -2283,7 +2283,7 @@
   "slug": "canopy",
   "title": "Canopy",
   "genre": "coordination",
-  "thumbnail": "canopy.jpg",
+  "thumbnail": "canopy.webp",
   "rank": 457,
   "bytes": 1982184
  },
@@ -2331,7 +2331,7 @@
   "slug": "ditto",
   "title": "Ditto",
   "genre": "coordination",
-  "thumbnail": "ditto.jpg",
+  "thumbnail": "ditto.webp",
   "rank": 463,
   "bytes": 2362180
  },
@@ -2339,7 +2339,7 @@
   "slug": "feedme",
   "title": "Feed Me",
   "genre": "coordination",
-  "thumbnail": "feedme.jpg",
+  "thumbnail": "feedme.webp",
   "rank": 464,
   "bytes": 1128493
  },
@@ -2355,7 +2355,7 @@
   "slug": "frostbite",
   "title": "Frost Bite",
   "genre": "coordination",
-  "thumbnail": "frostbite.jpg",
+  "thumbnail": "frostbite.webp",
   "rank": 466,
   "bytes": 718396
  },
@@ -2371,7 +2371,7 @@
   "slug": "icebreaker",
   "title": "Icebreaker",
   "genre": "problem-solving",
-  "thumbnail": "icebreaker.jpg",
+  "thumbnail": "icebreaker.webp",
   "rank": 468,
   "bytes": 1555153
  },
@@ -2379,7 +2379,7 @@
   "slug": "mutiny",
   "title": "Mutiny",
   "genre": "coordination",
-  "thumbnail": "mutiny.jpg",
+  "thumbnail": "mutiny.webp",
   "rank": 469,
   "bytes": 1090079
  },
@@ -2411,7 +2411,7 @@
   "slug": "swindler",
   "title": "Swindler",
   "genre": "coordination",
-  "thumbnail": "swindler.jpg",
+  "thumbnail": "swindler.webp",
   "rank": 473,
   "bytes": 2006092
  },
@@ -2475,7 +2475,7 @@
   "slug": "corporationinc",
   "title": "Corporation Inc",
   "genre": "reaction",
-  "thumbnail": "corporationinc.jpg",
+  "thumbnail": "corporationinc.webp",
   "rank": 481,
   "bytes": 3991829
  },
@@ -2491,7 +2491,7 @@
   "slug": "cactusmccoy",
   "title": "Cactus Mccoy",
   "genre": "coordination",
-  "thumbnail": "cactusmccoy.jpg",
+  "thumbnail": "cactusmccoy.webp",
   "rank": 483,
   "bytes": 6915172
  },
@@ -2507,7 +2507,7 @@
   "slug": "papalouie",
   "title": "Papa Louie",
   "genre": "coordination",
-  "thumbnail": "papalouie.jpg",
+  "thumbnail": "papalouie.webp",
   "rank": 485,
   "bytes": 2567678
  },

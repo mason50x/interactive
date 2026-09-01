@@ -46,7 +46,12 @@ export type Activity = {
    * preserves that. `POPULAR_COUNT` slices the head of it.
    */
   rank: number;
-  /** Filename under `public/thumbnails`. All of them are 480x100. */
+  /**
+   * Filename under `public/thumbnails`, in one of two shapes. A `.webp` is
+   * ours: 960x540, 16:9, the frame the tile actually wants. A `.jpg` is
+   * upstream's: a 480x100 strip the tile has to crop. 179 of the 318 are the
+   * former — see `localArt` in `scripts/build-catalogue.mjs`.
+   */
   thumbnail: string;
   /** Directory size upstream, for the migration script's accounting. */
   bytes: number;
@@ -57,9 +62,10 @@ export type Activity = {
  *
  * The bundles are in R2 because they are 4.85 GB and would blow both the
  * deployment file limit and the bandwidth allowance. The thumbnails are the
- * opposite case on every axis: 318 files and under 2 MB in total, six
- * kilobytes each. Against a 15,000-file deployment limit and a 100 GB monthly
- * transfer allowance, that is not a cost worth engineering around.
+ * opposite case on every axis: 318 files and under 8 MB in total, the 16:9
+ * ones averaging about forty kilobytes and upstream's remaining strips about
+ * six. Against a 15,000-file deployment limit and a 100 GB monthly transfer
+ * allowance, that is not a cost worth engineering around.
  *
  * What it buys is a failure mode. The grid is the app's own chrome, not activity
  * content — so when the bucket is unreachable or misconfigured, the catalogue

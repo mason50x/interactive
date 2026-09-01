@@ -12,17 +12,17 @@ import { cn } from "@/lib/utils";
 /**
  * One activity, as a 16:9 tile with its text over the art.
  *
- * The art fills the frame and is cropped to do it. Every thumbnail upstream
- * ships is a 480x100 strip — a 4.8:1 letterbox against a 1.78:1 frame — so
- * `object-cover` scales it to the frame's height and takes the middle of it.
- * The alternative, showing the strip whole inside the tile, leaves two thirds
- * of the card to be filled with something that is not the activity.
+ * The art fills the frame, and for most of the catalogue it now fits it. 179
+ * of the 318 carry a 960x540 thumbnail cut to this exact ratio, so
+ * `object-cover` scales and nothing is cropped away.
  *
- * The crop is centred because there is nothing better to go on: these are
- * arbitrary screen grabs rather than logos, with no focal point recorded
- * anywhere. Regenerating `public/thumbnails` at 16:9 is what actually fixes
- * it; until then this shows a smaller part of the art at a useful size rather
- * than all of it at a useless one.
+ * The rest still carry upstream's 480x100 strip — a 4.8:1 letterbox against a
+ * 1.78:1 frame — and for those `object-cover` scales to the frame's height and
+ * takes the middle. The crop is centred because there is nothing better to go
+ * on: those are arbitrary screen grabs rather than logos, with no focal point
+ * recorded anywhere. It shows a smaller part of the art at a useful size
+ * rather than all of it at a useless one, which is the same trade as before —
+ * it just applies to 139 tiles now instead of all of them.
  *
  * Nothing here carries `will-change` or `transform-gpu`, and that is the
  * point. Both are promotion hints: they hand the element a compositor layer
@@ -90,10 +90,10 @@ export function ActivityCard({
   const face = (
     <>
       {art ? (
-        /* Deliberately not `next/image`. At six kilobytes there is nothing for
-           an optimiser to save, and routing 318 tiles through it would bill a
-           transformation each against a quota of 5,000 a month to make them no
-           smaller. */
+        /* Deliberately not `next/image`. The art is already WebP at the size
+           the tile draws it, so routing 318 tiles through the optimiser would
+           bill a transformation each against a quota of 5,000 a month to make
+           them no smaller. */
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={art}

@@ -22,7 +22,7 @@
  *   node scripts/build-catalogue.mjs
  */
 
-import { writeFile } from "node:fs/promises";
+import { readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -31,7 +31,9 @@ const REF = "main";
 
 /** Upstream's directory holding one subdirectory per game. */
 const GAMES_PREFIX = "games";
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "lib", "activities.catalogue.json");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = join(ROOT, "src", "lib", "activities.catalogue.json");
+const THUMBNAILS = join(ROOT, "public", "thumbnails");
 
 /**
  * Console ROM containers. A directory holding one of these is dropped from the
@@ -265,13 +267,42 @@ function parseCatalogue(html) {
   return entries;
 }
 
+/**
+ * Replaces upstream's tile art with ours, where ours exists.
+ *
+ * Upstream ships one 480x100 strip per game — a 4.8:1 letterbox that the tile
+ * has to crop to two thirds of nothing to fill a 16:9 frame. For 179 of the
+ * games we have real 16:9 art in `public/thumbnails/<slug>.webp` instead, and
+ * this is what keeps it: without it, the next `node scripts/build-catalogue.mjs`
+ * would quietly write upstream's filenames back over all 179 and point the
+ * catalogue at strips that are no longer on disk.
+ *
+ * The test is the file, not a list. A committed slug-to-filename map would be a
+ * second thing to update every time art is added or dropped, and the failure
+ * mode of forgetting is a broken tile; asking the directory cannot go stale.
+ * So: add a `<slug>.webp` and the next build picks it up, delete one and the
+ * build falls back to upstream's strip on its own.
+ */
+async function localArt() {
+  const names = await readdir(THUMBNAILS).catch(() => []);
+  return new Map(
+    names
+      .filter((name) => name.endsWith(".webp"))
+      .map((name) => [name.slice(0, -".webp".length), name]),
+  );
+}
+
 async function main() {
-  const [html, tree] = await Promise.all([
+  const [html, tree, art] = await Promise.all([
     fetchText("games/index.html"),
     fetchTree(),
+    localArt(),
   ]);
 
-  const entries = parseCatalogue(html);
+  const entries = parseCatalogue(html).map((entry) => ({
+    ...entry,
+    thumbnail: art.get(entry.slug) ?? entry.thumbnail,
+  }));
   if (entries.length < 400) {
     throw new Error(
       `Parsed only ${entries.length} tiles from upstream — the markup likely changed.`,
@@ -318,6 +349,7 @@ async function main() {
   console.log(`upstream tiles      : ${entries.length}`);
   console.log(`excluded, ROM file  : ${excludedByFile.length}`);
   console.log(`excluded, emulator  : ${excludedByEmulator.length}`);
+  console.log(`local 16:9 art      : ${games.filter((g) => g.thumbnail.endsWith(".webp")).length}`);
   console.log(`written             : ${games.length} games, ${(total / 1e9).toFixed(2)} GB`);
   console.log(`                    -> ${OUT}`);
   if (excludedByEmulator.length > 0) {
