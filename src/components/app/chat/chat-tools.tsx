@@ -228,13 +228,41 @@ export function ChatTools({
         {shown === "people" ? (
           <PeoplePanel open={open === "people"} />
         ) : shown === "settings" ? (
-          <SettingsPanel />
+          <SettingsPanel open={open === "settings"} />
         ) : (
           <NewGroupPanel open={open === "group"} onCreated={go} />
         )}
       </div>
     </div>
   );
+}
+
+/**
+ * The last answer a query gave, kept while it is not being asked.
+ *
+ * The settings panel is mounted for the rest of the session once it has been
+ * opened — hidden rather than thrown away, so that what was typed into it
+ * survives — and two of its queries were subscribed for that whole time. One of
+ * them counts every conversation the account is in, and a membership row is
+ * written every time its owner reads a message, so a panel nobody was looking at
+ * was re-counting itself on every message anybody sent them.
+ *
+ * They are asked only while the panel is open now. This is the part that makes
+ * that invisible: dropping a subscription drops its value, so without it the
+ * second opening would draw an empty panel for the length of a round trip
+ * before filling in with the same numbers it showed the first time. The held
+ * copy is what is on screen while the fresh one arrives, and the fresh one
+ * replaces it the moment it does.
+ */
+function useHeld<T>(value: T | undefined): T | undefined {
+  const [held, setHeld] = useState<T | undefined>(undefined);
+  // Adjusted while rendering rather than in an effect, the same way `shown`
+  // above is: this is state that is a value plus a memory of it, and an effect
+  // would paint one frame of the gap first — which is the frame this exists to
+  // prevent. Convex hands back the same object for an unchanged result, so the
+  // comparison settles on the first render rather than chasing itself.
+  if (value !== undefined && value !== held) setHeld(value);
+  return value ?? held;
 }
 
 /**
@@ -640,9 +668,11 @@ function PeoplePanel({ open }: { open: boolean }) {
  * under them rather than over them because it is the floor of the section: the
  * thing you come back down to.
  */
-function SettingsPanel() {
+function SettingsPanel({ open }: { open: boolean }) {
   const { profile } = useChat();
-  const blocked = useQuery(api.chat.blocks.list, {});
+  const blocked = useHeld(
+    useQuery(api.chat.blocks.list, open ? {} : "skip"),
+  );
   const setDmPolicy = useMutation(api.chat.profiles.setDmPolicy);
   const setDiscoverable = useMutation(api.chat.profiles.setDiscoverable);
   const unblock = useMutation(api.chat.blocks.unblock);
@@ -724,7 +754,7 @@ function SettingsPanel() {
         </div>
       ) : null}
 
-      <EraseChat />
+      <EraseChat open={open} />
     </div>
   );
 }
@@ -756,9 +786,11 @@ function SettingsPanel() {
  * for the handle screen, which is exactly where somebody who has just erased
  * themselves should be. See `handle-gate.tsx`.
  */
-function EraseChat() {
+function EraseChat({ open }: { open: boolean }) {
   const { profile } = useChat();
-  const preview = useQuery(api.chat.erase.preview, {});
+  const preview = useHeld(
+    useQuery(api.chat.erase.preview, open ? {} : "skip"),
+  );
   const erase = useMutation(api.chat.erase.eraseMine);
 
   const field = useRef<HTMLInputElement>(null);

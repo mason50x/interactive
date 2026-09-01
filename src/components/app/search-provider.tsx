@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { Genre } from "@/lib/activity";
 
 /**
@@ -21,8 +15,6 @@ import type { Genre } from "@/lib/activity";
 export type ActivityEntry = { slug: string; title: string; genre: Genre };
 
 type Search = {
-  query: string;
-  setQuery: (query: string) => void;
   /**
    * The catalogue, as the rail's search sees it.
    *
@@ -39,20 +31,17 @@ type Search = {
 const SearchContext = createContext<Search | null>(null);
 
 /**
- * The rail's search box and the grid it filters, joined by state instead of by
- * a URL.
+ * The catalogue, carried to the rail's search box.
  *
- * The obvious wiring — push `?q=` on every keystroke — would put a server
- * round trip behind each letter, because the activities page is a Server
- * Component and its search params are server input. There is nothing to fetch:
- * that page already handed the browser the whole catalogue as a prop (see
- * `ActivitiesBrowser`), so the filtering is local and the only thing that has
- * to travel is a string between two components in the same tree.
+ * That is all it carries. It used to hold the query as well, shared between
+ * the rail and the activities grid so that typing in one filtered the other —
+ * which meant typing on the catalogue page filled the rail's box with the same
+ * word and bloomed it open across the shell. The two boxes answer different
+ * questions (one finds anything, the other narrows a grid) and each now keeps
+ * its own string; what they still share is the list, for the reason above.
  *
- * It lives on the dashboard layout, which is the nearest thing that contains
- * both the rail and the page beside it. The query deliberately does not
- * survive a reload: a search box that comes back full of yesterday's word is a
- * page that looks broken until you find the box.
+ * It lives on the dashboard layout because the rail is rendered there, on
+ * every page, and the list has to be in the tree wherever the box is.
  */
 export function SearchProvider({
   children,
@@ -61,14 +50,10 @@ export function SearchProvider({
   children: ReactNode;
   activities: readonly ActivityEntry[];
 }) {
-  const [query, setQuery] = useState("");
-  const value = useMemo(
-    () => ({ query, setQuery, activities }),
-    [query, activities],
-  );
-
   return (
-    <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
+    <SearchContext.Provider value={{ activities }}>
+      {children}
+    </SearchContext.Provider>
   );
 }
 

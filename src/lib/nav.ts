@@ -25,10 +25,7 @@ export type NavItem = {
   unread?: boolean;
 };
 
-/**
- * The catalogue, and the one page that reads the rail's search query as a
- * filter rather than as a lookup. See `SearchProvider`.
- */
+/** The catalogue. Has a search box of its own, separate from the rail's. */
 export const ACTIVITIES_HREF = "/dashboard/activities";
 
 export const CHAT_HREF = "/dashboard/chat";

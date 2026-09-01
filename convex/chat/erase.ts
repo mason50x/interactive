@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
-import { callerProfile, membership } from "./shared";
+import { callerProfile, clearSender, membership } from "./shared";
 
 /**
  * Leaving chat, without leaving the site.
@@ -169,6 +169,12 @@ export const eraseMine = mutation({
       before: now,
     });
 
+    // The counter and the ring, which are a row of their own now — see
+    // `chatSenders` in `convex/schema.ts`. Taken on both branches below:
+    // whether the profile is emptied or deleted, how much this account has
+    // said and what it last said go with it.
+    await clearSender(ctx, profile.clerkId);
+
     // A closed account keeps its name and nothing else. See the note at the top
     // for why this is the one profile that is emptied rather than deleted; the
     // fields cleared here are every field on it that anybody but the system
@@ -180,8 +186,6 @@ export const eraseMine = mutation({
         avatarInitials: undefined,
         dmPolicy: "nobody",
         discoverable: false,
-        messagesSent: 0,
-        recent: [],
       });
       return { ok: true };
     }

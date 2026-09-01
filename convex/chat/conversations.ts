@@ -101,12 +101,33 @@ export const list = query({
       if (conversation === null) continue;
 
       const exact = member.kind !== "global";
-      const unread = await unreadFor(
-        ctx,
-        member.conversationId,
-        member.lastReadAt,
-        exact,
-      );
+
+      // Nothing has been said since it was last read, so there is nothing to
+      // count and no reason to go and look. `lastMessageAt` is written by the
+      // same mutation that inserts the message, so for a direct message or a
+      // group the two numbers together are a complete answer, and this is the
+      // state nearly every row in the list is in nearly all of the time — the
+      // list is re-read on every message anybody sends into any of these
+      // conversations, and without this each of those re-reads walked the
+      // message index of all fifty.
+      //
+      // The global room has no `lastMessageAt` on purpose, so it always looks.
+      // That is one document: it wants a dot, not a number.
+      //
+      // Strictly earlier, not "no later than", and the difference is real.
+      // `lastMessageAt` is the `Date.now()` of the mutation that inserted the
+      // message, but the message's own `_creationTime` is that instant plus a
+      // fraction of a millisecond — so a row whose two numbers are equal is the
+      // one case where a message exists that this comparison cannot see. It
+      // happens on every send: the sender's own `lastReadAt` is written from the
+      // same `now`. Equal means look.
+      const read =
+        conversation.lastMessageAt !== undefined &&
+        conversation.lastMessageAt < member.lastReadAt;
+
+      const unread = read
+        ? 0
+        : await unreadFor(ctx, member.conversationId, member.lastReadAt, exact);
 
       let peerHandle: string | undefined;
       if (member.dmPeer !== undefined) {
@@ -256,27 +277,37 @@ export type ConversationDetail = {
   role: "owner" | "admin" | "member";
   peerClerkId?: string;
   peerHandle?: string;
-  members: {
-    clerkId: string;
-    handle: string;
-    role: "owner" | "admin" | "member";
-    status: "active" | "invited" | "requested";
-  }[];
   /** Groups only, and only once somebody has set one. See `conversations`. */
   emoji?: string;
   initials?: string;
   hue?: number;
 };
 
+export type ConversationMember = {
+  clerkId: string;
+  handle: string;
+  role: "owner" | "admin" | "member";
+  status: "active" | "invited" | "requested";
+};
+
 /** How many members a panel will draw, and the ceiling on a group. */
 const MAX_MEMBERS = 100;
 
 /**
- * One conversation, with its people.
+ * One conversation, as its own header describes it.
  *
- * The member list is skipped entirely for the global room. Everybody is in it,
- * so the list is both unbounded and uninformative, and reading it would be the
- * one query in this file whose cost grows with the size of the site.
+ * Everything here is read from documents that belong to the caller or to the
+ * conversation itself: their membership row by its exact key, the conversation,
+ * and — for a direct message — the other person's profile. It touches nobody
+ * else's row, which is the point of it being separate from `members` below.
+ *
+ * It used to return the member list too, and that made the thread header a
+ * subscription to every membership row in the group. Those rows carry
+ * `lastReadAt`, so every person reading the conversation wrote one on every
+ * message — and each of those writes recomputed this query for every member
+ * with the thread open, at a hundred rows and a hundred profiles a time. A
+ * group of twenty people reading the same conversation was paying that four
+ * hundred times per message for a list on a panel nobody had open.
  */
 export const get = query({
   args: { conversationId: v.id("conversations") },
@@ -296,26 +327,6 @@ export const get = query({
       peerHandle = peer?.handle;
     }
 
-    const members: ConversationDetail["members"] = [];
-    if (conversation.kind === "group") {
-      const rows = await ctx.db
-        .query("conversationMembers")
-        .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
-        .take(MAX_MEMBERS);
-
-      for (const row of rows) {
-        if (row.status === "left" || row.status === "banned") continue;
-        const theirs = await profileFor(ctx, row.clerkId);
-        if (theirs === null) continue;
-        members.push({
-          clerkId: row.clerkId,
-          handle: theirs.handle,
-          role: row.role,
-          status: row.status,
-        });
-      }
-    }
-
     return {
       _id: conversation._id,
       kind: conversation.kind,
@@ -324,11 +335,54 @@ export const get = query({
       role: member.role,
       peerClerkId: member.dmPeer,
       peerHandle,
-      members,
       emoji: conversation.emoji,
       initials: conversation.initials,
       hue: conversation.hue,
     };
+  },
+});
+
+/**
+ * Who is in a group.
+ *
+ * Split off `get` because of what it costs to watch rather than what it costs
+ * to run: it reads every membership row in the conversation, and those rows are
+ * written by every reader on every message. Only the group panel draws this, so
+ * only the group panel subscribes to it, and it is open for the seconds
+ * somebody is looking at it rather than for as long as the thread is.
+ *
+ * Empty for the global room, and not because of a permission: everybody is in
+ * it, so the list is both unbounded and uninformative, and reading it would be
+ * the one query in this file whose cost grows with the size of the site.
+ */
+export const members = query({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, { conversationId }): Promise<ConversationMember[]> => {
+    const profile = await callerProfile(ctx);
+    if (profile === null) return [];
+
+    const member = await membership(ctx, conversationId, profile.clerkId);
+    if (member === null || member.status !== "active") return [];
+    if (member.kind !== "group") return [];
+
+    const rows = await ctx.db
+      .query("conversationMembers")
+      .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+      .take(MAX_MEMBERS);
+
+    const people: ConversationMember[] = [];
+    for (const row of rows) {
+      if (row.status === "left" || row.status === "banned") continue;
+      const theirs = await profileFor(ctx, row.clerkId);
+      if (theirs === null) continue;
+      people.push({
+        clerkId: row.clerkId,
+        handle: theirs.handle,
+        role: row.role,
+        status: row.status,
+      });
+    }
+    return people;
   },
 });
 

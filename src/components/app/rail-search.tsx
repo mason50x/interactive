@@ -112,17 +112,20 @@ const ACTIVITY_LIMIT = 5;
  *
  * It used to push you to the activities grid on the first keystroke, because
  * the grid was the only place results could appear. The panel is that place
- * now, so typing no longer moves you. What survives is the shared query: the
- * grid and this box still read one string through `SearchProvider`, so while
- * you are *on* the catalogue, typing here still filters it underneath.
+ * now, so typing no longer moves you. It also used to share its query with
+ * that grid's own box, so a word typed on the catalogue page appeared here
+ * and bloomed this box open at the same time. The query is this component's
+ * alone now; the grid has its own. See `SearchProvider`.
  *
  * Collapsed, below `lg`, none of this fits in 3.75rem, so it becomes the icon
  * alone: a button that opens the grid, where the page's width makes a real
  * field possible again.
  */
 export function RailSearch() {
-  const { query, setQuery, activities } = useSearch();
+  const { activities } = useSearch();
   const router = useRouter();
+
+  const [query, setQuery] = useState("");
   const { setPreference } = useTheme();
   const { openUserProfile } = useClerk();
   const { isAuthenticated } = useConvexAuth();
@@ -304,9 +307,7 @@ export function RailSearch() {
   const choose = useCallback(
     (hit: Hit) => {
       // The query is spent either way. Leaving it in the box would leave the
-      // panel open over the page it just took you to, and — because the
-      // catalogue reads the same string — leave that grid filtered by a word
-      // you have stopped searching for.
+      // panel open over the page it just took you to.
       setQuery("");
       inputRef.current?.blur();
 
@@ -427,10 +428,17 @@ export function RailSearch() {
             focused ? "border-ring" : expanded && "border-border",
           )}
         >
-          <div
+          {/* A label rather than a div, so the whole row is the target. The
+              field inside it is transparent and borderless and gives no hint
+              of where its edges are, and at rest the row reads as one nav row
+              — icon, word, key cap — so a click on the icon, on the key cap,
+              or on the gap between them should open it exactly as a click on
+              the word does. A label delivers that for free, and does it with
+              a real focus event rather than a handler pretending to be one. */}
+          <label
             className={cn(
               "flex items-center gap-3 px-3 transition-[height] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-              expanded ? "h-14" : "h-11",
+              expanded ? "h-14" : "h-11 cursor-pointer",
             )}
           >
             {/* A flex child rather than absolutely placed, so it stays centred
@@ -473,7 +481,8 @@ export function RailSearch() {
             />
             {/* The shortcut, shown only on the row nobody has clicked into —
                 once you are typing it is the one thing on screen that is no
-                longer news. */}
+                longer news. Inside the label, so it is clickable too: a key
+                cap that names the way in should be one. */}
             {expanded ? null : (
               <kbd
                 aria-hidden
@@ -482,7 +491,7 @@ export function RailSearch() {
                 {chord}
               </kbd>
             )}
-          </div>
+          </label>
 
           {/* The panel's height is written rather than left to `auto`, which
               is not interpolable. The measured element carries its own

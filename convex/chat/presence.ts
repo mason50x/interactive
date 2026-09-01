@@ -21,14 +21,19 @@ import { callerProfile, membership } from "./shared";
  *
  * ## What it costs
  *
- * One write per open conversation per `HEARTBEAT_MS`, and each of those re-runs
- * the `count` subscription of everybody else in that conversation. That is the
- * quadratic anybody would notice first, and it is accepted here on purpose: the
- * work per re-run is one indexed range read bounded by `MAX_PRESENT`, and the
- * heartbeat is slow enough that a room of a hundred people is a hundred reads a
- * quarter-minute. It is also why the heartbeat stops the moment a tab is
- * hidden — a background tab is not in the room, and it should not be paying
- * everybody else's subscription to say so.
+ * A write per open conversation per `REFRESH_AFTER_MS`, and each of those
+ * re-runs the `count` subscription of everybody else in that conversation. That
+ * is the quadratic anybody would notice first, and it is accepted here on
+ * purpose: the work per re-run is one indexed range read bounded by
+ * `MAX_PRESENT`, and rooms are refreshed slowly enough that a hundred people is
+ * a hundred reads twice a minute.
+ *
+ * The beat and the write are two different intervals, which is the cheap half
+ * of this. The client beats every `HEARTBEAT_MS` because that is how quickly it
+ * can notice it has stopped being able to; the row is only rewritten once it is
+ * old enough for the refresh to mean something. It is also why the heartbeat
+ * stops the moment a tab is hidden — a background tab is not in the room, and
+ * it should not be paying everybody else's subscription to say so.
  *
  * If the room ever gets big enough for that to hurt, the fix is to count into
  * coarse buckets rather than to make the heartbeat slower; a slower heartbeat
@@ -46,6 +51,25 @@ import { callerProfile, membership } from "./shared";
  * step by this sentence.
  */
 export const PRESENCE_WINDOW_MS = 50_000;
+
+/**
+ * How stale a row has to be before a beat bothers to refresh it.
+ *
+ * The heartbeat is what the client can be relied on to send; this is what the
+ * database is asked to write, and they do not have to be the same number. A
+ * beat that lands on a row refreshed ten seconds ago is asking to change a
+ * timestamp that already says "here" and will still say it well past the next
+ * beat — and the write is not free: it recomputes the `count` subscription of
+ * everybody else in the conversation, which is the quadratic the note above is
+ * about. So most beats now read a row and leave it alone.
+ *
+ * Thirty seconds, against a fifty-second window and a fifteen-second beat, so a
+ * row is written every other beat and its worst age is thirty seconds — twenty
+ * short of going stale, which is a whole beat of slack for one that never
+ * arrives. Any larger and a dropped beat could blink somebody out of a room
+ * they are sitting in, which is the one thing the window exists to prevent.
+ */
+const REFRESH_AFTER_MS = 30_000;
 
 /**
  * The most rows one count will read.
@@ -92,16 +116,23 @@ export const here = mutation({
       )
       .unique();
 
+    const now = Date.now();
+
     if (existing === null) {
       await ctx.db.insert("presence", {
         conversationId,
         clerkId: profile.clerkId,
-        lastSeenAt: Date.now(),
+        lastSeenAt: now,
       });
       return;
     }
 
-    await ctx.db.patch(existing._id, { lastSeenAt: Date.now() });
+    // Still comfortably fresh, so this beat is a read and nothing more. See
+    // `REFRESH_AFTER_MS` — the row is what everybody else's count is drawn
+    // from, and rewriting it is what makes them all recount.
+    if (now - existing.lastSeenAt < REFRESH_AFTER_MS) return;
+
+    await ctx.db.patch(existing._id, { lastSeenAt: now });
   },
 });
 

@@ -43,6 +43,58 @@ export async function callerProfile(
 }
 
 /**
+ * The sender state for an account, and the seed for the row that holds it.
+ *
+ * `messagesSent` and `recent` used to live on the profile, and moved off it
+ * because they are written on every send while everything else on a profile is
+ * written almost never — see `chatSenders` in `convex/schema.ts` for what that
+ * was costing every query that joins a profile to get a handle.
+ *
+ * `senderState` is the read half, and it is what makes the move need no
+ * backfill: an account with no row yet falls back to the two fields still
+ * sitting on its profile, which is exactly where its totals were left. The
+ * first send writes the row and the profile's copies are never read again.
+ */
+export type SenderState = { messagesSent: number; recent: RecentSend[] };
+
+export async function senderRow(
+  ctx: QueryCtx,
+  clerkId: string,
+): Promise<Doc<"chatSenders"> | null> {
+  return await ctx.db
+    .query("chatSenders")
+    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+    .unique();
+}
+
+export function senderState(
+  row: Doc<"chatSenders"> | null,
+  profile: Doc<"chatProfiles">,
+): SenderState {
+  if (row !== null) return { messagesSent: row.messagesSent, recent: row.recent };
+  return {
+    messagesSent: profile.messagesSent ?? 0,
+    recent: profile.recent ?? [],
+  };
+}
+
+/**
+ * Drop the sender row, if there is one.
+ *
+ * Called wherever a profile is deleted or emptied. The two are one identity and
+ * they end together: a ring left behind is a rate limit applied to whoever
+ * claims the handle next, and a surviving `messagesSent` is the trust tier of an
+ * account that no longer exists.
+ */
+export async function clearSender(
+  ctx: MutationCtx,
+  clerkId: string,
+): Promise<void> {
+  const row = await senderRow(ctx, clerkId);
+  if (row !== null) await ctx.db.delete(row._id);
+}
+
+/**
  * Unexpired strike weight.
  *
  * The `> now` bound is applied here rather than trusted to the nightly sweep,

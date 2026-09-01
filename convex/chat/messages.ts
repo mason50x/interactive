@@ -19,6 +19,8 @@ import {
   membership,
   profileFor,
   pushRecent,
+  senderRow,
+  senderState,
   standingFor,
 } from "./shared";
 
@@ -100,16 +102,24 @@ export const send = mutation({
     }
 
     const now = Date.now();
+
+    // The counter and the ring, which are the sender's own row rather than
+    // their profile — see `chatSenders` in `convex/schema.ts`. `null` is an
+    // account that has not sent anything since the two fields moved, and
+    // `senderState` reads them off the profile one last time to seed it.
+    const sender = await senderRow(ctx, profile.clerkId);
+    const state = senderState(sender, profile);
+
     const context: SendContext = {
       surface: member.kind,
       conversationId,
       now,
       createdAt: profile.createdAt,
-      messagesSent: profile.messagesSent,
+      messagesSent: state.messagesSent,
       standing: await standingFor(ctx, profile.clerkId, now),
       mutedUntil: profile.mutedUntil,
       bannedAt: profile.bannedAt,
-      recent: profile.recent,
+      recent: state.recent,
     };
 
     const verdict = screen(body, context);
@@ -146,16 +156,26 @@ export const send = mutation({
       flags: [],
     });
 
-    await ctx.db.patch(profile._id, {
-      messagesSent: profile.messagesSent + 1,
-      recent: pushRecent(profile.recent, {
+    const moved = {
+      messagesSent: state.messagesSent + 1,
+      recent: pushRecent(state.recent, {
         at: now,
         conversationId,
         hash: verdict.hash,
         // Likewise: nothing that reaches this line carries a tier-three word.
         flagged: false,
       }),
-    });
+    };
+
+    // The one document a send writes that anybody else's query could have
+    // read is now not written at all: this is the sender's own row, and the
+    // profile beside it — which every conversation list, friends list and
+    // invitation joins for a handle — is left alone.
+    if (sender === null) {
+      await ctx.db.insert("chatSenders", { clerkId: profile.clerkId, ...moved });
+    } else {
+      await ctx.db.patch(sender._id, moved);
+    }
 
     // Your own message is read. Written on your own row, so it conflicts with
     // nothing.

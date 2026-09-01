@@ -9,7 +9,6 @@ import {
 } from "@heroicons/react/24/solid";
 import { useDeferredValue, useMemo, useState } from "react";
 import { ActivityCard } from "@/components/app/activity-card";
-import { useSearch } from "@/components/app/search-provider";
 import { type Activity, filterActivities, type Genre } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
@@ -53,8 +52,9 @@ export function ActivitiesBrowser({
 }: {
   activities: readonly Activity[];
 }) {
-  const { query, setQuery } = useSearch();
-
+  // This page's own string, not the rail's. The two used to be one, and typing
+  // here filled the rail's box and opened it too. See `SearchProvider`.
+  const [query, setQuery] = useState("");
   const [genre, setGenre] = useState<Genre | "all">("all");
   const [sort, setSort] = useState<Sort>("popular");
 

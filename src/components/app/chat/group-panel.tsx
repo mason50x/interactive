@@ -29,7 +29,10 @@ import { MAX_TITLE, requestGroupPanel, type GroupPanelMode } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import type { ConversationDetail } from "../../../../convex/chat/conversations";
+import type {
+  ConversationDetail,
+  ConversationMember,
+} from "../../../../convex/chat/conversations";
 
 /**
  * Running a group, in two panels rather than one.
@@ -184,6 +187,23 @@ function useDetail(
 }
 
 /**
+ * The group's people, which are a second subscription rather than a field on
+ * the first.
+ *
+ * They came off `conversations.get` because that query is also the thread
+ * header's, and the header is open for as long as the conversation is. Every
+ * membership row carries a reading position, so every person reading wrote one
+ * on every message — and a header watching the whole member list was recomputed
+ * by all of it. Here it is watched only while somebody is looking at the panel
+ * that draws it. See `members` in `convex/chat/conversations.ts`.
+ */
+function useMembers(
+  conversationId: Id<"conversations">,
+): ConversationMember[] | null {
+  return useQuery(api.chat.conversations.members, { conversationId }) ?? null;
+}
+
+/**
  * The column, while a group panel has it: a heading, the way back, and the
  * panel under both.
  *
@@ -251,6 +271,7 @@ function AddView({
   onBack: () => void;
 }) {
   const detail = useDetail(conversationId);
+  const people = useMembers(conversationId);
   const requests = useQuery(api.chat.groups.requests, { conversationId });
 
   // What is being searched for, which is not what is in the field — the same
@@ -290,7 +311,10 @@ function AddView({
   const [refused, setRefused] = useState<Record<string, string>>({});
 
   const field = useRef<HTMLInputElement>(null);
-  const ready = detail !== null;
+  // Both, because the panel's answers depend on both: who may be invited is
+  // the group's people, and they are a second subscription now rather than a
+  // field on the first. See `useMembers`.
+  const ready = detail !== null && people !== null;
 
   // The button that opened this came here to type a handle, so the caret is
   // already in the field — but not until the detail lands, because until then
@@ -299,12 +323,8 @@ function AddView({
     if (ready) field.current?.focus();
   }, [ready]);
 
-  const alreadyIn = new Set(
-    (detail?.members ?? []).map((member) => member.clerkId),
-  );
-  const asked = (detail?.members ?? []).filter(
-    (member) => member.status === "invited",
-  );
+  const alreadyIn = new Set((people ?? []).map((member) => member.clerkId));
+  const asked = (people ?? []).filter((member) => member.status === "invited");
 
   async function send(peerClerkId: string) {
     const result = await invite({ conversationId, peerClerkId });
@@ -323,7 +343,7 @@ function AddView({
   }
 
   return (
-    <Frame title="Add to this group" onBack={onBack} loading={detail === null}>
+    <Frame title="Add to this group" onBack={onBack} loading={!ready}>
       {(requests ?? []).length > 0 ? (
         <section>
           <SectionLabel>Asking to join</SectionLabel>
@@ -449,6 +469,7 @@ function SettingsView({
 }) {
   const router = useRouter();
   const detail = useDetail(conversationId);
+  const people = useMembers(conversationId);
 
   const kick = useMutation(api.chat.groups.kick);
   const setRole = useMutation(api.chat.groups.setRole);
@@ -483,14 +504,14 @@ function SettingsView({
     detail !== null && (detail.role === "owner" || detail.role === "admin");
   const owner = detail !== null && detail.role === "owner";
 
-  const members = detail?.members ?? [];
+  const members = people ?? [];
   const inside = members.filter((member) => member.status === "active");
 
   return (
     <Frame
       title={detail?.title ?? "Group"}
       onBack={onBack}
-      loading={detail === null}
+      loading={detail === null || people === null}
     >
       {detail === null ? null : admin ? (
         <Customization

@@ -90,8 +90,8 @@ export default async function DashboardLayout({
               `/dashboard/chat` so the dot is right while you are looking at an
               activity, which is the only time it is worth having. */}
           <ChatProvider>
-            {/* Wraps both the rail and the shell, which is what lets the rail's
-                search box filter a grid it does not render. See `SearchProvider`. */}
+            {/* Carries the catalogue to the rail's search box without a
+                client import of the index. See `SearchProvider`. */}
             <SearchProvider activities={activities}>
               <div className="flex h-svh overflow-hidden bg-sidebar">
                 <AppSidebar />

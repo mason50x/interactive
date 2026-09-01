@@ -16,8 +16,11 @@ import {
   callerId,
   callerProfile,
   carriedConsequence,
+  clearSender,
   ensureGlobalMembership,
   profileFor,
+  senderRow,
+  senderState,
   standingFor,
 } from "./shared";
 
@@ -253,7 +256,10 @@ export const claimHandle = mutation({
     // `createdAt` and `messagesSent` start over on purpose. Both only ever feed
     // the trust tier, and a new identity starting at `fresh` — the slowest rate
     // limit and no shortcut past the global room's cooldown — is the strict
-    // reading, not the lenient one.
+    // reading, not the lenient one. `messagesSent` lives on the sender row now,
+    // so starting over is that row not existing; `eraseMine` is what takes it,
+    // and this clears it again because "already gone" is a claim about the one
+    // path that reaches here rather than about this one.
     // A colour off the wheel, at random.
     //
     // The disc has always had one — `handleHue` in `src/lib/chat.ts` hashes the
@@ -270,6 +276,8 @@ export const claimHandle = mutation({
     // chosen themselves is one they could never get back after changing it.
     const hue = AVATAR_HUES[Math.floor(Math.random() * AVATAR_HUES.length)];
 
+    await clearSender(ctx, clerkId);
+
     await ctx.db.insert("chatProfiles", {
       clerkId,
       handle: vetted.handle,
@@ -278,8 +286,6 @@ export const claimHandle = mutation({
       avatarHue: hue,
       dmPolicy: "friends",
       discoverable: true,
-      messagesSent: 0,
-      recent: [],
       ...(await carriedConsequence(ctx, clerkId, now)),
     });
 
@@ -342,7 +348,13 @@ export const mine = query({
       avatarHue: profile.avatarHue,
       avatarEmoji: profile.avatarEmoji,
       avatarInitials: profile.avatarInitials,
-      messagesSent: profile.messagesSent,
+      // The sender's own row, not the profile — see `chatSenders` in
+      // `convex/schema.ts`. `senderState` falls back to the profile for an
+      // account that has not sent anything since the two moved apart.
+      messagesSent: senderState(
+        await senderRow(ctx, profile.clerkId),
+        profile,
+      ).messagesSent,
       standing: await standingFor(ctx, profile.clerkId, now),
       // A mute that has run out is not a mute. Filtered here rather than left
       // to the sweep so the composer unlocks on the minute it should.

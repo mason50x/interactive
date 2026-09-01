@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { GLOBAL_RETENTION_MS } from "../moderation/limits";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
+import { clearSender } from "./shared";
 
 /**
  * The housekeeping, done in pieces small enough to finish.
@@ -403,6 +404,10 @@ export const purgeAuthor = internalMutation({
         .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
         .unique();
       if (profile !== null) await ctx.db.delete(profile._id);
+
+      // The sender row goes with the profile wherever the profile goes. See
+      // `chatSenders` in `convex/schema.ts`.
+      await clearSender(ctx, clerkId);
     }
 
     return { stage: "done" as const, deleted: messages.length };

@@ -291,16 +291,17 @@ export default defineSchema({
    * `a_d_m_i_n` all collapse onto `admin` and cannot be claimed to shadow it.
    * `handle` is what gets displayed. They are written together and only here.
    *
-   * ## The ring
+   * ## What is not here any more
    *
-   * `recent` is the last twenty sends — when, where, a hash of what, and a
-   * `flagged` that is now always false for the reason `flags` above is empty. It is the entire cross-message memory of the moderation
-   * system: rate windows, duplicate detection, broadcast detection and
-   * repeat-targeting all read this one bounded array on the sender's own
-   * document, which means none of them costs a second table, a second index, or
-   * a read of anybody else's row. It is a hash rather than the text because
-   * twenty copies of everything everyone said, kept on their profile, is a
-   * different product than this one.
+   * The send counter and the ring of recent sends, which are `chatSenders`
+   * below. They were the only two fields on this row that a message rewrote,
+   * and a row that a message rewrites is a row no other query can afford to
+   * join — which this one is joined by nearly all of them, for a handle.
+   *
+   * What is left is written when somebody renames themselves, picks a disc,
+   * changes who may reach them, or earns a mute. So a profile read is a read of
+   * something that mostly does not change, and the subscriptions that join one
+   * stop being recomputed by other people talking.
    */
   chatProfiles: defineTable({
     clerkId: v.string(),
@@ -348,8 +349,15 @@ export default defineSchema({
     ),
     /** Whether handle search returns you. */
     discoverable: v.boolean(),
-    /** Feeds the trust tier, and nothing else reads it. */
-    messagesSent: v.number(),
+    /**
+     * Where the send counter and the ring used to live. Both moved to
+     * `chatSenders`; see the note there. They stay declared, and optional,
+     * because every profile written before the move still carries the totals
+     * this table was keeping — `senderState` in `convex/chat/shared.ts` reads
+     * them once, as the seed for that account's first sender row, and nothing
+     * writes either field again.
+     */
+    messagesSent: v.optional(v.number()),
     /**
      * The mute, and the rule that caused it. Both, because a mute somebody
      * cannot see the reason for is indistinguishable from the app being broken,
@@ -360,13 +368,15 @@ export default defineSchema({
     /** The one thing here that does not lift on its own. */
     bannedAt: v.optional(v.number()),
     banRule: v.optional(v.string()),
-    recent: v.array(
-      v.object({
-        at: v.number(),
-        conversationId: v.string(),
-        hash: v.string(),
-        flagged: v.boolean(),
-      }),
+    recent: v.optional(
+      v.array(
+        v.object({
+          at: v.number(),
+          conversationId: v.string(),
+          hash: v.string(),
+          flagged: v.boolean(),
+        }),
+      ),
     ),
   })
     .index("byClerkId", ["clerkId"])
@@ -375,6 +385,60 @@ export default defineSchema({
     // identity is a handle and nothing else: there is no display name to search
     // as well, so one index is all this ever needed.
     .searchIndex("searchHandle", { searchField: "handle" }),
+
+  /**
+   * The two things about a sender that change every time they say something.
+   *
+   * They were fields on `chatProfiles` and they were the most expensive two
+   * fields in the schema, for the same reason `lastMessageAt` is deliberately
+   * not written for the global room: a document that is rewritten on every
+   * message recomputes every subscription that has read it. And a profile is
+   * read by almost every query in `convex/chat/` — the conversation list joins
+   * one per direct message to get a handle, the friends list joins one per
+   * friend, invitations join the inviter's. So one person talking in the global
+   * room invalidated the left-hand column of everybody who had ever befriended
+   * them, and each of those re-runs re-read every profile it joined.
+   *
+   * Splitting them out leaves `chatProfiles` a cold table: a handle, a disc, a
+   * policy and a standing, written when somebody changes one of them. The
+   * documents got smaller too — `recent` is twenty objects, and it was being
+   * read by every join that only ever wanted `handle`.
+   *
+   * One row per account, made on that account's first send. There is no
+   * backfill: a profile written before this existed still carries the two
+   * fields, and `senderState` in `convex/chat/shared.ts` reads them as the seed
+   * for the row it is about to write. After that the profile's copies are dead
+   * and nothing looks at them again.
+   *
+   * `messagesSent` feeds the trust tier, and is shown back to the account
+   * itself in the settings panel. `recent` is the last twenty sends — when,
+   * where, a hash of what, and a `flagged` that is now always false for the
+   * reason `flags` on `messages` is empty. It is the entire cross-message
+   * memory of the moderation system: rate windows, duplicate detection,
+   * broadcast detection and repeat-targeting all read this one bounded array on
+   * the sender's own row, which means none of them costs a second index or a
+   * read of anybody else's. It is a hash rather than the text because twenty
+   * copies of everything everyone said, kept forever, is a different product
+   * than this one.
+   *
+   * It is deleted with the profile, never separately — see `eraseMine` in
+   * `convex/chat/erase.ts`. A ring that outlived the identity it belongs to
+   * would be a rate limit on a stranger, and a `messagesSent` that outlived one
+   * would hand a new handle the trust tier the old one earned.
+   */
+  chatSenders: defineTable({
+    clerkId: v.string(),
+    /** Feeds the trust tier, and the one number the settings panel shows. */
+    messagesSent: v.number(),
+    recent: v.array(
+      v.object({
+        at: v.number(),
+        conversationId: v.string(),
+        hash: v.string(),
+        flagged: v.boolean(),
+      }),
+    ),
+  }).index("byClerkId", ["clerkId"]),
 
   /**
    * A room, a group, or a pair.

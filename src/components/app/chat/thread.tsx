@@ -86,7 +86,7 @@ export function Thread({
   conversationId: Id<"conversations">;
 }) {
   const { userId } = useAuth();
-  const { profile } = useChat();
+  const { profile, conversations } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
 
   const { results, status, loadMore } = usePaginatedQuery(
@@ -172,9 +172,28 @@ export function Thread({
     return result.ok ? null : refusalMessage(result.refusal);
   }
 
+  /**
+   * Whether there is a reading position to move.
+   *
+   * The list already knows — it is the same subscription the unread badge is
+   * drawn from, and Convex hands both it and the page of messages below over at
+   * one consistent instant, so a message that has arrived here has arrived
+   * there. Without this the effect fired on every message including the ones
+   * this account sent, and `markRead` writes the membership row: a write that
+   * recomputes the conversation list of whoever made it, to set a number that
+   * was already zero.
+   *
+   * `undefined` is a conversation the list has not answered about — the first
+   * paint of a thread opened by its URL, or one past the fifty the list draws.
+   * Both mean ask, which is what this did unconditionally before.
+   */
+  const summary = conversations.find((row) => row._id === conversationId);
+  const unread = summary === undefined || summary.unread > 0;
+
   useEffect(() => {
+    if (!unread) return;
     void markRead({ conversationId });
-  }, [conversationId, newest, markRead]);
+  }, [conversationId, newest, unread, markRead]);
 
   // Opening a conversation always lands at its live end, whatever the last one
   // was left at.
