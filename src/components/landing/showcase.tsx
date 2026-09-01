@@ -6,18 +6,23 @@ import { ConceptMap } from "@/components/visuals/concept-map";
 
 export function Showcase() {
   return (
-    <section id="platform" className="pt-20 pb-20 sm:pt-28 sm:pb-28">
+    <section id="platform" className="pt-14 pb-14 sm:pt-28 sm:pb-28">
       <Container>
-        <div className="overflow-hidden rounded-[2rem] bg-panel px-6 pt-16 pb-8 sm:px-10 sm:pt-24 lg:px-16">
-          <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
-            <h2 className="text-serif-display text-[2.5rem] text-panel-foreground sm:text-[3.5rem] lg:text-[4rem]">
+        {/* The panel's inset is trimmed on a phone: every pixel taken here is
+            a pixel the concept map inside does not get, and it is the one
+            thing on this page that needs the width. The container's own
+            padding is left alone so the panel edge still lines up with the
+            hero above it. */}
+        <div className="overflow-hidden rounded-[1.5rem] bg-panel px-4 pt-12 pb-6 sm:rounded-[2rem] sm:px-10 sm:pt-24 sm:pb-8 lg:px-16">
+          <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center sm:gap-6">
+            <h2 className="text-serif-display text-[2.125rem] text-panel-foreground min-[400px]:text-[2.5rem] sm:text-[3.5rem] lg:text-[4rem]">
               {showcase.heading.split("\n").map((line) => (
                 <span key={line} className="block">
                   {line}
                 </span>
               ))}
             </h2>
-            <p className="max-w-xl text-[1.0625rem] leading-relaxed text-panel-muted">
+            <p className="max-w-xl text-[1rem] leading-relaxed text-panel-muted sm:text-[1.0625rem]">
               {showcase.body}
             </p>
             <ButtonLink href="#how-it-works" variant="inverted" size="md" className="mt-2">
@@ -26,9 +31,9 @@ export function Showcase() {
             </ButtonLink>
           </div>
 
-          <div className="mt-14 sm:mt-20">
+          <div className="mt-10 sm:mt-20">
             <AppFrame title="BIO 201 — Chapter 9: Cellular Respiration.pdf">
-              <div className="p-4 sm:p-6">
+              <div className="p-3 sm:p-6">
                 <ConceptMap />
               </div>
             </AppFrame>

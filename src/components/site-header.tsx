@@ -2,7 +2,10 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Bars3Icon } from "@heroicons/react/24/outline";
-import { XMarkIcon as XMarkIconSolid } from "@heroicons/react/24/solid";
+import {
+  ChevronDownIcon,
+  XMarkIcon as XMarkIconSolid,
+} from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { headerMenus, site, type HeaderMenu } from "@/lib/content";
@@ -131,7 +134,10 @@ function MenuPanel({ menu }: { menu: HeaderMenu }) {
             {menu.details.map((detail) => (
               <div key={detail.label}>
                 <p className="label-small text-faint">{detail.label}</p>
-                <p className="mt-1.5 text-[0.8125rem] text-foreground">
+                {/* The addresses are long enough to outrun a 320px column, and
+                    an email is one unbreakable token — so say where it may
+                    break rather than let it push the page sideways. */}
+                <p className="mt-1.5 text-[0.8125rem] break-words text-foreground">
                   {detail.value}
                 </p>
                 <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
@@ -148,15 +154,34 @@ function MenuPanel({ menu }: { menu: HeaderMenu }) {
   }
 }
 
+/**
+ * The one breakpoint the desktop navigation menu appears at, as `matchMedia`
+ * wants it. `xl` in Tailwind's default scale, and not `lg`, for two reasons.
+ *
+ * It does not fit at `lg`. Five triggers, the wordmark, a text link and a pill
+ * want 1101px between them, and `lg` starts at 1024 — the bar overflowed its
+ * own row and gave the whole page a sideways scroll at exactly the width an
+ * iPad in landscape reports.
+ *
+ * And it should not be there anyway. The panels open on hover, which is not a
+ * gesture a tablet has; the sheet's accordion is the same content behind a
+ * gesture that exists. So the two facts point the same way.
+ */
+const DESKTOP = "(min-width: 80rem)";
+
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  /** Which sheet section is expanded, by label. One at a time, which is the
+   *  same thing the desktop popup does — it just does it on hover. */
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
-  // One per trigger: the mobile sheet's "Sign in" is a separate button from the
-  // bar's, and only the one actually clicked should spin.
+  // One per trigger: the mobile sheet's buttons are separate from the bar's,
+  // and only the one actually clicked should spin.
   const signIn = useAuthPending();
   const signUp = useAuthPending();
   const mobileSignIn = useAuthPending();
+  const mobileSignUp = useAuthPending();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -181,6 +206,20 @@ export function SiteHeader() {
     };
   }, [mobileOpen]);
 
+  // The sheet is `xl:hidden`, so widening past that point hides it without
+  // closing it — and the scroll lock above would outlive the thing that set
+  // it. A phone rotated into landscape is the ordinary way to hit this.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const desktop = window.matchMedia(DESKTOP);
+    const close = () => {
+      if (desktop.matches) setMobileOpen(false);
+    };
+    close();
+    desktop.addEventListener("change", close);
+    return () => desktop.removeEventListener("change", close);
+  }, [mobileOpen]);
+
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -191,7 +230,7 @@ export function SiteHeader() {
     >
       <nav
         aria-label="Primary"
-        className="mx-auto flex h-[4.5rem] w-full max-w-[1400px] items-center gap-8 px-6 lg:px-10"
+        className="mx-auto flex h-[4.5rem] w-full max-w-[1400px] items-center gap-4 px-6 sm:gap-8 lg:px-10"
       >
         <Link
           href="/"
@@ -202,7 +241,7 @@ export function SiteHeader() {
           <Wordmark />
         </Link>
 
-        <NavigationMenu align="center" className="ml-auto hidden lg:flex">
+        <NavigationMenu align="center" className="ml-auto hidden xl:flex">
           <NavigationMenuList className="gap-0.5">
             {headerMenus.map((menu) => (
               <NavigationMenuItem key={menu.label}>
@@ -218,7 +257,7 @@ export function SiteHeader() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        <div className="ml-auto flex items-center gap-2 lg:ml-6">
+        <div className="ml-auto flex items-center gap-2 xl:ml-6">
           <Show when="signed-in">
             <Link
               href="/dashboard"
@@ -229,6 +268,12 @@ export function SiteHeader() {
             <UserButton />
           </Show>
 
+          {/* Both of these are `sm:` and up. Below that the wordmark, a pill
+              wide enough to hold "Start Learning" and a menu button do not fit
+              across 320px together — the pill was breaking its own label over
+              two lines and pushing the page into a sideways scroll. The sheet
+              carries the pair instead, and the hero's own call to action is a
+              hundred pixels down the page. */}
           <Show when="signed-out">
             <SignInButton>
               <button
@@ -244,7 +289,7 @@ export function SiteHeader() {
               <button
                 aria-busy={signUp.pending}
                 onClick={signUp.start}
-                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]"
+                className="hidden h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium whitespace-nowrap text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)] sm:inline-flex"
               >
                 {signUp.pending && <Spinner aria-hidden className="size-3.5" />}
                 Start Learning
@@ -256,8 +301,9 @@ export function SiteHeader() {
             type="button"
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
+            aria-controls="site-menu"
             onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06] lg:hidden"
+            className="-mr-2.5 inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/[0.06] xl:hidden"
           >
             {/* Open is the button's selected state, so it takes the solid
                 cut; closed stays outline. */}
@@ -270,38 +316,101 @@ export function SiteHeader() {
         </div>
       </nav>
 
-      {/* Mobile: the same panels, stacked open rather than in a popup. */}
+      {/* Mobile: the same panels, behind the same one-at-a-time reveal the
+          desktop popup gives them — an accordion is what hovering a trigger
+          turns into when there is no cursor. Stacking all five open made a
+          2,000px column of marketing copy with the labels buried inside it;
+          collapsed, the five topics are one screen and you open the one you
+          came for.
+
+          `pb-[max(4rem,env(safe-area-inset-bottom))]` keeps the last control
+          clear of a phone's home indicator. */}
       <div
-        className={`fixed inset-x-0 top-[4.5rem] bottom-0 z-40 overflow-y-auto overscroll-contain border-t border-border bg-background px-6 pt-2 pb-16 transition-all duration-300 lg:hidden ${
+        id="site-menu"
+        className={`fixed inset-x-0 top-[4.5rem] bottom-0 z-40 overflow-y-auto overscroll-contain border-t border-border bg-background px-6 pt-2 pb-[max(4rem,env(safe-area-inset-bottom))] transition-all duration-300 lg:px-10 xl:hidden ${
           mobileOpen
             ? "visible translate-y-0 opacity-100"
             : "invisible -translate-y-2 opacity-0"
         }`}
       >
         <ul className="flex flex-col divide-y divide-border">
-          {headerMenus.map((menu) => (
-            <li key={menu.label} className="py-4">
-              <p className="label-small px-1 text-faint">{menu.label}</p>
-              <div className="-mx-1 [&>div]:px-1">
-                <MenuPanel menu={menu} />
-              </div>
-            </li>
-          ))}
+          {headerMenus.map((menu) => {
+            const open = openSection === menu.label;
+            return (
+              <li key={menu.label}>
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  onClick={() =>
+                    setOpenSection((current) =>
+                      current === menu.label ? null : menu.label,
+                    )
+                  }
+                  className="flex w-full cursor-pointer items-center justify-between gap-4 py-4 text-left text-[1.0625rem] text-foreground"
+                >
+                  {menu.label}
+                  <ChevronDownIcon
+                    aria-hidden
+                    className={`size-4 shrink-0 text-faint transition-transform duration-200 ${
+                      open ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Mounted only while open, so the sheet's scroll height is
+                    the list you can see rather than every panel at once. The
+                    reset strips the popup's own padding: in here the sheet
+                    owns the margin. */}
+                {open ? (
+                  <div className="pb-6 [&>div]:p-0">
+                    <MenuPanel menu={menu} />
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
 
+        {/* Both blocks stop at `sm`, which is exactly where the bar above
+            starts carrying the same controls itself. */}
+        <Show when="signed-in">
+          <Link
+            href="/dashboard"
+            onClick={() => setMobileOpen(false)}
+            className="mt-8 flex h-12 items-center justify-center rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground sm:hidden"
+          >
+            Go to dashboard
+          </Link>
+        </Show>
+
         <Show when="signed-out">
-          <SignInButton>
-            <button
-              aria-busy={mobileSignIn.pending}
-              onClick={mobileSignIn.start}
-              className="mt-6 inline-flex cursor-pointer items-center gap-2 text-[0.9375rem] text-muted-foreground"
-            >
-              {mobileSignIn.pending && (
-                <Spinner aria-hidden className="size-3.5" />
-              )}
-              Sign in
-            </button>
-          </SignInButton>
+          <div className="mt-8 flex flex-col gap-3 sm:hidden">
+            <SignUpButton>
+              <button
+                aria-busy={mobileSignUp.pending}
+                onClick={mobileSignUp.start}
+                className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary text-[0.9375rem] font-medium text-primary-foreground"
+              >
+                {mobileSignUp.pending && (
+                  <Spinner aria-hidden className="size-3.5" />
+                )}
+                Start Learning
+              </button>
+            </SignUpButton>
+
+            <SignInButton>
+              <button
+                aria-busy={mobileSignIn.pending}
+                onClick={mobileSignIn.start}
+                className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full text-[0.9375rem] text-muted-foreground"
+              >
+                {mobileSignIn.pending && (
+                  <Spinner aria-hidden className="size-3.5" />
+                )}
+                Sign in
+              </button>
+            </SignInButton>
+          </div>
         </Show>
       </div>
     </header>

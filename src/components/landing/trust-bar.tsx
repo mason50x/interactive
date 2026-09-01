@@ -56,15 +56,21 @@ export function TrustBar() {
   );
 
   return (
-    <section className="py-14">
+    <section className="py-10 sm:py-14">
       <Container>
-        <p className="label-small mb-10 text-center text-faint">{trustBar.label}</p>
+        <p className="label-small mb-7 text-center text-faint sm:mb-10">
+          {trustBar.label}
+        </p>
       </Container>
+      {/* Both lengths scale with the viewport rather than sitting at the
+          figure that suits a 1400px row. At 140px a phone shows two marks and
+          a lot of nothing between them; the clamp keeps roughly the same
+          count of logos on screen at every width. */}
       <LogoLoop
         logos={logos}
         speed={44}
-        logoHeight={30}
-        gap={140}
+        logoHeight="clamp(24px, 6.5vw, 30px)"
+        gap="clamp(56px, 16vw, 140px)"
         fadeOut
         scaleOnHover
         ariaLabel={trustBar.label}

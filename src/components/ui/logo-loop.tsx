@@ -4,8 +4,11 @@
  * LogoLoop, from React Bits (https://reactbits.dev), TypeScript + Tailwind
  * variant. Kept close to upstream so it can be re-synced; the local edits are
  * the "use client" directive, the shared `cn` helper in place of the vendored
- * `cx`, and the fade colour defaulting to our own `--background` token so the
- * edges dissolve in both themes.
+ * `cx`, the fade colour defaulting to our own `--background` token so the
+ * edges dissolve in both themes, and `gap`/`logoHeight` accepting any CSS
+ * length rather than only a pixel count — upstream takes a number, which
+ * cannot be a `clamp()`, and a gap fixed in pixels that reads as generous at
+ * 1400px shows two logos at a time on a phone.
  *
  * The loop measures one copy of the list, clones it enough times to cover the
  * container, and translates the track by a per-frame offset — so the seam is
@@ -39,8 +42,8 @@ export interface LogoLoopProps {
   speed?: number;
   direction?: "left" | "right" | "up" | "down";
   width?: number | string;
-  logoHeight?: number;
-  gap?: number;
+  logoHeight?: number | string;
+  gap?: number | string;
   pauseOnHover?: boolean;
   hoverSpeed?: number;
   fadeOut?: boolean;
@@ -293,8 +296,8 @@ export const LogoLoop = React.memo<LogoLoopProps>(function LogoLoop({
   const cssVariables = useMemo(
     () =>
       ({
-        "--logoloop-gap": `${gap}px`,
-        "--logoloop-logoHeight": `${logoHeight}px`,
+        "--logoloop-gap": toCssLength(gap),
+        "--logoloop-logoHeight": toCssLength(logoHeight),
         ...(fadeOutColor && { "--logoloop-fadeColor": fadeOutColor }),
       }) as React.CSSProperties,
     [gap, logoHeight, fadeOutColor],

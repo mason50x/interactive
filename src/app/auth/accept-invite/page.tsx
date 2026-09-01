@@ -122,7 +122,12 @@ function Panel({
       <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
         {body}
       </p>
-      <div className="mt-8 flex flex-wrap gap-3">{children}</div>
+      {/* Stacked and full width on a phone rather than wrapped: two pills of
+          different lengths on their own rows read as a broken row, and a
+          thumb wants the whole measure anyway. */}
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap [&>*]:w-full sm:[&>*]:w-auto">
+        {children}
+      </div>
     </div>
   );
 }

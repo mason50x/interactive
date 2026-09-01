@@ -26,6 +26,11 @@ export const metadata: Metadata = {
  * floating layer, and that is load-bearing — it listens for `pointermove` on
  * its own parent, so only a node the whole page sits inside gets the cursor.
  *
+ * The height is `dvh` rather than `vh`. On a phone `100vh` is the viewport
+ * with the browser's address bar retracted, which is taller than what you can
+ * actually see when the page loads — so a form centred in it starts slightly
+ * low and the footer sits below the fold for no reason.
+ *
  * Nothing here constrains the form's width, and no `overflow` is set: Clerk's
  * card sizes itself, and its "last used" badge hangs outside its own bounds,
  * so a scroll container would clip it.
@@ -33,7 +38,7 @@ export const metadata: Metadata = {
 export default function AuthLayout({ children }: LayoutProps<"/auth">) {
   return (
     <AppProviders>
-      <div className="relative isolate flex min-h-screen flex-col overflow-hidden px-6 py-8 sm:px-10">
+      <div className="relative isolate flex min-h-dvh flex-col overflow-hidden px-4 py-6 sm:px-10 sm:py-8">
         {/* Thinner and quieter than the rail's. That field is read through
             seven backdrop blurs down a 15rem column; this one is the entire
             background of a page whose only job is a form, and at the rail's
@@ -44,7 +49,7 @@ export default function AuthLayout({ children }: LayoutProps<"/auth">) {
           className="[--web-fade:0.4] dark:[--web-fade:0.34]"
         />
 
-        <main className="flex flex-1 items-center justify-center py-12">
+        <main className="flex flex-1 items-center justify-center py-8 sm:py-12">
           {children}
         </main>
 
@@ -57,18 +62,20 @@ export default function AuthLayout({ children }: LayoutProps<"/auth">) {
             Back to site
           </Link>
 
-          <p className="text-center text-[0.8125rem] text-faint">
+          {/* `py-1.5` on the links, negated on the line, so each is a
+              thumb-sized target on a phone without opening the leading. */}
+          <p className="text-center text-[0.8125rem] leading-relaxed text-balance text-faint">
             By continuing you agree to our{" "}
             <Link
               href="/tos"
-              className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
+              className="-my-1.5 inline-block py-1.5 underline underline-offset-4 transition-colors hover:text-muted-foreground"
             >
               Terms
             </Link>{" "}
             and{" "}
             <Link
               href="/pp"
-              className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
+              className="-my-1.5 inline-block py-1.5 underline underline-offset-4 transition-colors hover:text-muted-foreground"
             >
               Privacy Policy
             </Link>

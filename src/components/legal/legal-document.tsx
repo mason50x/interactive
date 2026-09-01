@@ -25,14 +25,14 @@ import {
  */
 export function LegalDocument({ doc }: { doc: Doc }) {
   return (
-    <div className="min-h-screen py-8 sm:py-12">
+    <div className="min-h-dvh py-8 sm:py-12">
       <HashLanding />
       <Container width="prose">
         <BackLink />
 
         <article className="mt-10 sm:mt-14">
           <header className="flex flex-col gap-5">
-            <h1 className="text-serif-display text-[2.5rem] sm:text-[3rem] text-foreground">
+            <h1 className="text-serif-display text-[2.125rem] min-[400px]:text-[2.5rem] sm:text-[3rem] text-foreground">
               {doc.title}
             </h1>
             <p className="text-[0.8125rem] text-faint">
@@ -48,7 +48,7 @@ export function LegalDocument({ doc }: { doc: Doc }) {
               <section key={section.id} className="flex flex-col gap-4">
                 <h2
                   id={section.id}
-                  className="scroll-mt-8 text-[1.0625rem] font-semibold text-foreground"
+                  className="scroll-mt-8 text-[1.0625rem] font-semibold text-balance text-foreground"
                 >
                   {/* The number is part of the heading rather than a marker
                       beside it: a reader quoting a clause back to us should
@@ -57,11 +57,14 @@ export function LegalDocument({ doc }: { doc: Doc }) {
                   {section.heading}
                 </h2>
 
+                {/* `break-words` on both block kinds: the prose names
+                    contact addresses, and an email is a single unbreakable
+                    token long enough to push a 320px page sideways. */}
                 {section.blocks.map((block, j) =>
                   block.kind === "p" ? (
                     <p
                       key={j}
-                      className="text-[1rem] leading-[1.75] text-muted-foreground"
+                      className="text-[1rem] leading-[1.75] break-words text-muted-foreground"
                     >
                       {block.text}
                     </p>
@@ -73,7 +76,7 @@ export function LegalDocument({ doc }: { doc: Doc }) {
                       {block.items.map((item) => (
                         <li
                           key={item}
-                          className="pl-1 text-[1rem] leading-[1.75] text-muted-foreground"
+                          className="pl-1 text-[1rem] leading-[1.75] break-words text-muted-foreground"
                         >
                           {item}
                         </li>
