@@ -11,6 +11,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { ActivityCard } from "@/components/app/activity-card";
 import { type Activity, filterActivities, type Genre } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
+import { useFlip } from "@/lib/use-flip";
 import { cn } from "@/lib/utils";
 
 /**
@@ -94,6 +95,11 @@ export function ActivitiesBrowser({
 
   const filtered = searching || genre !== "all";
 
+  // Every one of the three controls above ends in the same place — a different
+  // set of cards in a different order — so the grid animates the difference
+  // rather than each control animating itself. See `useFlip`.
+  const { frame, ghosts } = useFlip(shown);
+
   return (
     <div className="flex flex-col gap-6">
       <div
@@ -151,30 +157,46 @@ export function ActivitiesBrowser({
           {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}.
         </p>
       ) : (
-        <>
-          {/* Only once something has been narrowed. Unfiltered, the count is
-              the number already sitting in the placeholder of the field above
-              it, and the grid itself is the answer. */}
-          {filtered && (
-            <p className="label-small -mb-2 text-faint">
-              {shown.length} of {catalogue.length}
-              {searching ? ` match “${needle}”` : ""}
-              {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}
-            </p>
-          )}
-
-          {/* Three across and no further. The tile is the art, and a fourth
-              column buys another card at the price of shrinking every one of
-              them past the point where the thumbnail reads. */}
-          <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((activity) => (
-              <li key={activity.slug}>
-                <ActivityCard activity={activity} />
-              </li>
-            ))}
-          </ul>
-        </>
+        /* Only once something has been narrowed. Unfiltered, the count is the
+           number already sitting in the placeholder of the field above it, and
+           the grid itself is the answer. */
+        filtered && (
+          <p className="label-small -mb-2 text-faint">
+            {shown.length} of {catalogue.length}
+            {searching ? ` match “${needle}”` : ""}
+            {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}
+          </p>
+        )
       )}
+
+      {/* The grid is rendered at every count, including none, because it is
+          also where cards leave from: `useFlip` fades a departing card out
+          over the space it used to occupy, and the last card to go is the one
+          the empty state would otherwise have unmounted the whole layer out
+          from under. */}
+      <div ref={frame} className="relative">
+        {/* Three across and no further. The tile is the art, and a fourth
+            column buys another card at the price of shrinking every one of
+            them past the point where the thumbnail reads. */}
+        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {shown.map((activity) => (
+            <li key={activity.slug} data-flip={activity.slug}>
+              <ActivityCard activity={activity} />
+            </li>
+          ))}
+        </ul>
+
+        {/* Where cards that no longer match are held for the fifth of a second
+            it takes them to fade. Out of the layout, out of the tab order and
+            out of the accessibility tree — by the time anything is in here it
+            is a picture of something that has already gone. */}
+        <div
+          ref={ghosts}
+          inert
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+        />
+      </div>
     </div>
   );
 }

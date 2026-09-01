@@ -153,6 +153,7 @@ export function ConversationList() {
                     handle={name}
                     emoji={conversation.emoji}
                     hue={conversation.hue}
+                    brand={conversation.kind === "global"}
                   />
 
                   <span className="min-w-0 flex-1">

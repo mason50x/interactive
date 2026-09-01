@@ -4,10 +4,16 @@ import {
   dayKey,
   dayWindow,
   foldUserDay,
+  weekWindow,
   userDaysBetween,
   DAY_MS,
 } from "./days";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import {
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 
 /**
  * The daily streak: how many days in a row this account has turned up.
@@ -23,10 +29,13 @@ import { mutation, query, type QueryCtx } from "./_generated/server";
  * streak — the streak is still the three fields on the user, and still needs
  * no history to be correct — it is the record of *which* days, which is what
  * the strip of seven dots on the home page draws and what the counters beside
- * it sum over.
+ * it sum over. It only reaches back as far as its own first write, though — it
+ * was added mid-streak for everybody who was already here — so the strip reads
+ * the count as well (`runDays`) and the claim writes the difference back
+ * (`healRun`).
  */
 
-/** How many days the strip on the home page shows. */
+/** Days in a week: the length of the strip, and how far back anything reads. */
 const WEEK = 7;
 
 async function callerRow(ctx: QueryCtx) {
@@ -100,14 +109,113 @@ export const mine = query({
 export type StreakDay = {
   /** `YYYY-MM-DD` in the caller's local day. */
   day: string;
-  /** Whether the day was claimed. The last entry is today. */
+  /** Whether the account turned up — a claimed day, or a day the streak
+   *  count vouches for. */
   visited: boolean;
+  /**
+   * Whether this is the caller's today, and so where the drawn week stops
+   * being history and starts being days that have not happened.
+   *
+   * Sent rather than worked out in the component. The window was built from
+   * the caller's offset on this side, and having the client re-derive its own
+   * date to find itself in the row would be two answers to one question — the
+   * one that renders and the one that was counted — differing by a midnight
+   * for anybody with the page open across one.
+   */
+  today: boolean;
   /** Seconds spent that day, which is what makes a lit dot vary in weight. */
   seconds: number;
 };
 
 /**
- * The last seven days, oldest first, always exactly seven long.
+ * The days the stored streak already asserts, oldest first.
+ *
+ * The count on the user row and the rows in `userDays` are two records of the
+ * same fact, and they did not have to agree: `userDays` only started being
+ * written when the table was added, and the claim writes one row — the day it
+ * runs on — and never the days behind it. Every day of a run that predates the
+ * table was therefore a day the streak counted and the table had never heard
+ * of, which is a card reading "3 days" over a chain with one link in it.
+ *
+ * So the count speaks for its own days. `streakCount` days ending at
+ * `streakLastDay` were, by the definition of the number, days this account
+ * turned up. Clipping to `WEEK` is only because that is the whole window
+ * anything reads — the strip draws seven days and the stats card sums seven,
+ * so a run longer than that has no reader to be wrong in front of.
+ *
+ * Both sides use this. `week` unions it over the rows so the card is
+ * self-consistent on the first frame whatever the table holds, and `healRun`
+ * writes the rows it names so the table stops needing to be corrected. The
+ * read is the invariant; the write is what makes the read stop mattering.
+ *
+ * A lapsed streak is included on purpose. Its last days are still days that
+ * happened, and the chain's job is the shape of the week — including a run
+ * that ended in the middle of it.
+ */
+function runDays(row: {
+  streakCount?: number;
+  streakLastDay?: string;
+}): string[] {
+  const last = row.streakLastDay;
+  const count = row.streakCount ?? 0;
+  if (last === undefined || count < 1) return [];
+  return dayWindow(last, Math.min(count, WEEK));
+}
+
+/**
+ * Writes the `userDays` rows the streak count implies and the table is missing.
+ *
+ * Called from the claim, on the one call a day that moves the number, so the
+ * cost is a single range read per account per day and — after the first pass —
+ * no writes at all. That is the whole reason this is here rather than in a
+ * migration somebody has to remember to run against each deployment: the gap
+ * closes itself for anybody who turns up, and stays closed.
+ *
+ * `visited` latches in `foldUserDay`, so this cannot overwrite a day's views or
+ * seconds, and re-running it is a no-op. Today's row has already been written
+ * by the time this is called and reads back inside the same transaction, which
+ * is why it needs no special case.
+ *
+ * It reaches back `WEEK` days at most. A run longer than that keeps its older
+ * rows missing, which is correct in the only sense that matters: nothing reads
+ * past seven days, and inventing rows for a window with no reader would be
+ * writing history to nobody.
+ */
+async function healRun(
+  ctx: MutationCtx,
+  clerkId: string,
+  today: string,
+  count: number,
+): Promise<void> {
+  const days = runDays({ streakCount: count, streakLastDay: today });
+  // One day is today, and the claim has already written it.
+  if (days.length < 2) return;
+
+  const rows = await userDaysBetween(
+    ctx,
+    clerkId,
+    days[0],
+    days[days.length - 1],
+  );
+  const claimed = new Set(
+    rows.filter((row) => row.visited).map((row) => row.day),
+  );
+
+  for (const day of days) {
+    if (claimed.has(day)) continue;
+    await foldUserDay(ctx, clerkId, day, { visited: true });
+  }
+}
+
+/**
+ * This Monday-to-Sunday week, oldest first, always exactly seven long.
+ *
+ * A calendar week and not the seven days behind you — see `weekWindow` in
+ * `convex/days.ts` for why the columns are worth holding still. What it means
+ * here is that the row runs past today: on a Tuesday, Wednesday through Sunday
+ * are days that have not happened, and they come back `visited: false` like a
+ * missed day does. `today` is what tells the two apart, and drawing them apart
+ * is the component's job.
  *
  * The missing days are filled in here rather than left for the client to
  * notice, because "did nothing on Tuesday" and "there is no Tuesday in this
@@ -122,26 +230,31 @@ export const week = query({
   args: { tzOffsetMinutes: v.number() },
   handler: async (ctx, { tzOffsetMinutes }): Promise<StreakDay[]> => {
     const offset = clampOffset(tzOffsetMinutes);
-    const days = dayWindow(dayKey(Date.now(), offset), WEEK);
+    const today = dayKey(Date.now(), offset);
+    const days = weekWindow(today);
 
-    const identity = await ctx.auth.getUserIdentity();
-    if (identity === null) {
-      return days.map((day) => ({ day, visited: false, seconds: 0 }));
+    const user = await callerRow(ctx);
+    if (user === null) {
+      return days.map((day) => ({
+        day,
+        visited: false,
+        today: day === today,
+        seconds: 0,
+      }));
     }
 
-    const rows = await userDaysBetween(
-      ctx,
-      identity.subject,
-      days[0],
-      days[days.length - 1],
-    );
+    // Only as far as today. The rest of the week has no rows in it by
+    // definition, and asking the index for them is a wider range for nothing.
+    const rows = await userDaysBetween(ctx, user.clerkId, days[0], today);
     const byDay = new Map(rows.map((row) => [row.day, row]));
+    const run = new Set(runDays(user));
 
     return days.map((day) => {
       const row = byDay.get(day);
       return {
         day,
-        visited: row?.visited ?? false,
+        visited: (row?.visited ?? false) || run.has(day),
+        today: day === today,
         seconds: row?.seconds ?? 0,
       };
     });
@@ -209,6 +322,11 @@ export const claimToday = mutation({
     // rather than one per page load: every later call today returns at the
     // `streakLastDay === today` check and never reaches here.
     await foldUserDay(ctx, row.clerkId, today, { visited: true });
+
+    // And the days behind it that the table never recorded — see `healRun`.
+    // Same branch, same reason: once a day, and nothing to write once the run
+    // is whole.
+    await healRun(ctx, row.clerkId, today, current);
 
     return {
       current,

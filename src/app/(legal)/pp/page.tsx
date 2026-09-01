@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   title: privacy.title,
   description:
     "What Interactive Learning collects, why, who else handles it, and what you can do about it.",
-  alternates: { canonical: "/pp" },
 };
 
 export default function PrivacyPage() {

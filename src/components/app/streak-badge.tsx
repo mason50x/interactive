@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Flame } from "@/components/app/flame";
-import { useStreak } from "@/components/streak-provider";
+import { useStreak, useStreakDisplay } from "@/components/streak-provider";
 import { streakLabel } from "@/lib/streak";
 import { cn } from "@/lib/utils";
 
@@ -28,34 +28,42 @@ const POP_MS = 800;
  */
 export function StreakBadge() {
   const streak = useStreak();
-  const current = streak?.current ?? 0;
+
+  // The provider takes the number over for the length of a claim's ceremony —
+  // it holds the old one while the app zooms in on this chip, then turns it
+  // over once it has arrived. See `StreakProvider`.
+  const { display, glowing } = useStreakDisplay();
+  const current = display ?? streak?.current ?? 0;
 
   // A pop on the frame the number changes, which is the small acknowledgement
   // the chip owes a claim that happened while the rail was already on screen —
   // a day rolling over in a tab left open overnight, or another tab claiming
-  // it. The big celebration is elsewhere and only fires on the claim itself;
-  // this one fires on any change, including the arrival of the first value,
+  // it. It fires on any change, including the arrival of the first value,
   // which is deliberate: a chip that appears out of nothing should move.
+  //
+  // Not during a ceremony, though. That has the whole app pointed at this
+  // chip and ends on a flare of its own, and a pop underneath it is the same
+  // gesture twice.
   const [popping, setPopping] = useState(false);
   const previous = useRef<number | null>(null);
 
   useEffect(() => {
-    if (streak === null) return;
+    if (streak === null && display === null) return;
     if (previous.current === current) return;
 
     const first = previous.current === null;
     previous.current = current;
-    if (first && current === 0) return;
+    if (glowing || (first && current === 0)) return;
 
     setPopping(true);
     const timer = setTimeout(() => setPopping(false), POP_MS);
     return () => clearTimeout(timer);
-  }, [streak, current]);
+  }, [streak, display, current, glowing]);
 
   // Holds the chip's exact height while the subscription resolves, so the name
   // above it does not shift when the number lands. The row itself is a fixed
   // `h-14`, so this is about the two lines inside it, not the rail.
-  if (streak === null) {
+  if (streak === null && display === null) {
     return <span aria-hidden className="mt-1 block h-[1.1875rem]" />;
   }
 
@@ -63,6 +71,10 @@ export function StreakBadge() {
 
   return (
     <span
+      // What the ceremony zooms into. Read off the document by the provider
+      // rather than handed up through a ref, so the chip owes the celebration
+      // nothing but an attribute. See `zoomOrigin` in `StreakProvider`.
+      data-streak-badge=""
       className={cn(
         // Raised, not tinted: a card-coloured chip with a hairline and a soft
         // drop under it. The hairline flips with the theme because a shadow
@@ -73,6 +85,9 @@ export function StreakBadge() {
         // The transform has to be its own element's, and this span is the one
         // that has a shape worth scaling.
         popping && "animate-streak-pop",
+        // The end of the ceremony: the number has just turned over and this
+        // is the chip catching light for it.
+        glowing && "streak-flare",
       )}
     >
       <Flame className="size-3.5 shrink-0" lit={lit} />

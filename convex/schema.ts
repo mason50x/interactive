@@ -165,6 +165,15 @@ export default defineSchema({
     panicEnabled: v.optional(v.boolean()),
     panicKey: v.optional(v.string()),
     panicUrl: v.optional(v.string()),
+    /**
+     * An id from `tabMasks` in `src/lib/tab-mask.ts` — the site whose title and
+     * favicon this account's tabs wear instead of ours. A name and not the
+     * title-and-icon pair itself, for the same reason `accent` is a name: the
+     * disguise can be retuned when a site redesigns without rewriting anyone's
+     * row, and an id nobody recognises falls back to no mask rather than to an
+     * arbitrary string in the tab strip.
+     */
+    tabMask: v.optional(v.string()),
   }).index("byClerkId", ["clerkId"]),
 
   /**
@@ -246,8 +255,15 @@ export default defineSchema({
    *
    * Two things read it. The stats card sums `seconds` over a window — today,
    * and the last seven days — which is a range over this index and nothing
-   * else. And the streak strip asks which of the last seven days exist at all,
-   * because a row existing is the record that the day was claimed.
+   * else. And the streak strip asks which of the last seven days are marked
+   * `visited`.
+   *
+   * The strip does not trust this table alone, though, and it should not: the
+   * table began mid-streak for every account that existed when it was added,
+   * so the count on the user row knows about days no row here has ever
+   * described. `runDays` in `convex/streaks.ts` reconciles the two on read, and
+   * `healRun` writes the difference back on the next claim — which is why this
+   * is a table that converges rather than one that was ever backfilled.
    *
    * `visited` is written by the streak claim and `views`/`seconds` by the
    * viewer, so a row can exist with zero of either: turning up and opening

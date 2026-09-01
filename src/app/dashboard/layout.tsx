@@ -11,8 +11,10 @@ import { serverAgreement } from "@/lib/agreement-gate";
 
 export const metadata: Metadata = {
   title: { default: "Dashboard", template: "%s — Dashboard" },
-  // Nothing behind a session is indexable; robots.ts disallows /dashboard to
-  // match, so a crawler never even asks.
+  // Nothing behind a session is indexable. This is now the same answer the
+  // root layout gives, but it stays written out: a nested `robots` overrides
+  // rather than merges, so deleting it would not inherit the root's — it
+  // would leave these pages with the root's and nothing of their own to say.
   robots: { index: false, follow: false },
 };
 

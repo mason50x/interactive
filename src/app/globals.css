@@ -837,63 +837,6 @@
   }
 }
 
-/* The heat around the flame, on the celebration only. */
-@keyframes flame-halo {
-  0%,
-  100% {
-    opacity: 0.42;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.72;
-    transform: scale(1.14);
-  }
-}
-
-/* One ring leaving the flame when the day is claimed. `--burst-delay` staggers
-   the copies so it reads as a pulse rather than a single hoop. */
-@keyframes flame-burst {
-  0% {
-    opacity: 0.7;
-    transform: scale(0.35);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(2.6);
-  }
-}
-
-/* Sparks off the flame. Every ember carries its own `--ember-x`,
-   `--ember-drift`, `--ember-lift` and duration, which is the whole difference
-   between embers and a row of dots going straight up in step.
-
-   The travel is in pixels and not a percentage. A percentage in `translate`
-   resolves against the *element's own* box, and an ember is three pixels
-   across — `-100%` would lift it three pixels and look like a dot vibrating
-   at the foot of the flame. */
-@keyframes ember-rise {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.4);
-  }
-  12% {
-    opacity: 1;
-  }
-  68% {
-    opacity: 0.8;
-    transform: translate3d(
-        var(--ember-drift),
-        calc(var(--ember-lift) * 0.62),
-        0
-      )
-      scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--ember-x), var(--ember-lift), 0) scale(0.2);
-  }
-}
-
 /* The chip acknowledging the number it just changed to. */
 @keyframes streak-pop {
   0% {
@@ -910,37 +853,6 @@
   }
 }
 
-@keyframes streak-enter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes streak-leave {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.04);
-  }
-}
-
-@keyframes scrim-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .flame-body {
   transform-box: fill-box;
   transform-origin: 50% 100%;
@@ -953,34 +865,102 @@
   animation: flame-core 1.13s ease-in-out infinite;
 }
 
-.flame-halo {
-  animation: flame-halo 2.3s ease-in-out infinite;
-}
-
-.flame-burst {
-  animation: flame-burst 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-  animation-delay: var(--burst-delay, 0ms);
-}
-
-.ember {
-  animation: ember-rise var(--ember-duration, 2.4s) ease-out infinite;
-  animation-delay: var(--ember-delay, 0ms);
-}
-
 .animate-streak-pop {
   animation: streak-pop 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.animate-streak-enter {
-  animation: streak-enter 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ---------------------------------------------------------------------------
+ * The claim, celebrated on the chip that changed rather than on an overlay in
+ * front of it. The app itself moves: it scales about the chip in the rail and
+ * carries it into the middle of the screen, the number turns over, and then it
+ * goes back. See `StreakProvider`, which measures the move onto the shell as
+ * `--streak-dx`, `--streak-dy` and a `transform-origin`, and swaps these two
+ * classes at the turn.
+ *
+ * The translate is written first, which is what makes it apply *after* the
+ * scale — so the two offsets stay the pixel distances they were measured as
+ * rather than being multiplied by the zoom on their way through.
+ *
+ * Animations and not a transition on purpose: a transition started in the same
+ * commit that first gives the element a duration is at the mercy of which
+ * style the browser reads the duration from, and this one has to run the first
+ * time, every time.
+ *
+ * Durations are mirrored in that file as `ZOOM_IN_MS` and `ZOOM_OUT_MS` — the
+ * number has to turn over on the frame the zoom lands, and nothing but those
+ * two constants can know when that is.
+ * ------------------------------------------------------------------------ */
+
+@keyframes streak-zoom-in {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(var(--streak-dx), var(--streak-dy))
+      scale(var(--streak-zoom));
+  }
 }
 
-.animate-streak-leave {
-  animation: streak-leave 0.3s ease-in both;
+@keyframes streak-zoom-out {
+  from {
+    transform: translate(var(--streak-dx), var(--streak-dy))
+      scale(var(--streak-zoom));
+  }
+  to {
+    transform: translate(0, 0) scale(1);
+  }
 }
 
-.animate-scrim-in {
-  animation: scrim-in 0.3s ease-out both;
+/* `both` on both halves, so the shell holds the far end of the zoom through
+   the hold in the middle instead of snapping back between the two. */
+.streak-zoom-in {
+  --streak-zoom: 3;
+  animation: streak-zoom-in 620ms cubic-bezier(0.5, 0, 0.2, 1) both;
+  will-change: transform;
+}
+
+.streak-zoom-out {
+  --streak-zoom: 3;
+  animation: streak-zoom-out 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  will-change: transform;
+}
+
+/* The chip catching light as the number turns over.
+
+   A `drop-shadow` and not a `box-shadow`: the chip's hairline and its drop are
+   both box-shadows already, and a keyframe on that property would take them
+   off for the length of the flare and put them back at the end. This composes
+   with them instead, and follows the pill's shape rather than its box.
+
+   A filter is the expense this file otherwise refuses — see the note on the
+   flame — and it is affordable here for the reason it is in the handle
+   ceremony: it runs for under a second, on one element of about ninety pixels,
+   on a screen where nothing else is moving. */
+@keyframes streak-flare {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  26% {
+    transform: scale(1.24);
+    filter: drop-shadow(
+      0 0 12px color-mix(in srgb, var(--fire) 75%, transparent)
+    );
+  }
+  58% {
+    transform: scale(0.97);
+    filter: drop-shadow(
+      0 0 7px color-mix(in srgb, var(--fire) 45%, transparent)
+    );
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+.streak-flare {
+  animation: streak-flare 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1035,19 +1015,6 @@
 
 .animate-handle-resolve {
   animation: handle-resolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* The one part of the fire that has to be removed rather than stilled.
-   The blanket rule at the foot of this file collapses every animation to a
-   single instant, which for the sparks and the rings means they never travel
-   and never fade — eighteen dots and three hoops parked around the flame,
-   which is not a quieter version of the effect but a different and worse one.
-   The flame, the glow and the number carry the moment without them. */
-@media (prefers-reduced-motion: reduce) {
-  .ember,
-  .flame-burst {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

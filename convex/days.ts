@@ -68,6 +68,35 @@ export function dayWindow(endDay: string, count: number): string[] {
   );
 }
 
+/**
+ * The Monday-to-Sunday week that `day` falls in, oldest first.
+ *
+ * A calendar week rather than the seven days behind you. The two draw the same
+ * number of dots and mean different things: a rolling window relabels every
+ * node every morning, so the same Thursday is fourth from the left today and
+ * third tomorrow, and "the week" is whatever the last seven days happen to be.
+ * A calendar week is the one people already have — the columns stay put, the
+ * labels always read M T W T F S S, and Sunday is where the week ends rather
+ * than wherever you are standing.
+ *
+ * The cost is that part of the row is in the future, which is a thing the
+ * reader has to be shown rather than told: see `Chain` in
+ * `src/components/app/home/streak-card.tsx` for how a day that has not arrived
+ * is drawn differently from one that was missed.
+ *
+ * ISO ordering, so the week starts on Monday. `getUTCDay` is Sunday-first, and
+ * `(dow + 6) % 7` is the rotation that fixes it — Monday to `0`, Sunday to `6`.
+ * Reading in UTC is right here for the same reason it is in `dayWindow`: the
+ * key was built at a fictional UTC midnight and never leaves it.
+ */
+export function weekWindow(day: string): string[] {
+  const at = Date.parse(`${day}T00:00:00.000Z`);
+  const monday = at - ((new Date(at).getUTCDay() + 6) % 7) * DAY_MS;
+  return Array.from({ length: 7 }, (_, index) =>
+    utcDayKey(monday + index * DAY_MS),
+  );
+}
+
 /** This account's row for a day, or `null`. */
 export async function userDay(
   ctx: QueryCtx,

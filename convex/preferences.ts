@@ -49,6 +49,7 @@ export const mine = query({
       panicEnabled: row.panicEnabled,
       panicKey: row.panicKey,
       panicUrl: row.panicUrl,
+      tabMask: row.tabMask,
     };
   },
 });
@@ -60,8 +61,9 @@ export const mine = query({
  * and sending the full set on every toggle would let a client that is behind —
  * a second tab, say — undo a change it never saw.
  *
- * The values are checked for shape, not for meaning. `accent` is an id the
- * client resolves against its own palette and falls back on if it is unknown,
+ * The values are checked for shape, not for meaning. `accent` and `tabMask`
+ * are ids the client resolves against its own tables and falls back on if they
+ * are unknown,
  * and `panicUrl` is required to be `about:blank` or an ordinary http(s) URL:
  * this is the only value in the table that later becomes a navigation, so it
  * is the only one where a bad string would do something rather than be
@@ -74,6 +76,7 @@ export const save = mutation({
     panicEnabled: v.optional(v.boolean()),
     panicKey: v.optional(v.string()),
     panicUrl: v.optional(v.string()),
+    tabMask: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const clerkId = await callerId(ctx);
@@ -81,13 +84,18 @@ export const save = mutation({
 
     const patch = {
       ...args,
-      ...(args.accent === undefined ? {} : { accent: args.accent.slice(0, 32) }),
+      ...(args.accent === undefined
+        ? {}
+        : { accent: args.accent.slice(0, 32) }),
       ...(args.panicKey === undefined
         ? {}
         : { panicKey: args.panicKey.slice(0, 64) }),
       ...(args.panicUrl === undefined
         ? {}
         : { panicUrl: safeUrl(args.panicUrl) }),
+      ...(args.tabMask === undefined
+        ? {}
+        : { tabMask: args.tabMask.slice(0, 32) }),
     };
 
     const existing = await ctx.db

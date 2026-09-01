@@ -22,6 +22,7 @@ import {
   subscribeToCachedPreferences,
   type Preferences,
 } from "@/lib/preferences";
+import { tabMaskAssets, watchTabMask } from "@/lib/tab-mask";
 import { api } from "../../convex/_generated/api";
 
 type PreferencesContextValue = {
@@ -36,8 +37,8 @@ const PreferencesContext = createContext<PreferencesContextValue>({
 });
 
 /**
- * The account's settings, live, plus the two things that have to happen to the
- * whole document when they change.
+ * The account's settings, live, plus the three things that have to happen to
+ * the whole document when they change.
  *
  * `api.preferences.mine` is the source of truth and it is a subscription, so a
  * change made on a phone is on this page a moment later, and a change made in
@@ -55,7 +56,7 @@ const PreferencesContext = createContext<PreferencesContextValue>({
  * want it. So the last row this browser saw is kept in `localStorage` and used
  * as the answer for exactly that window: written only from a row that came
  * back from the server, read only until the next one does, and thrown away the
- * moment we know nobody is signed in. `accentScript` reads the same cache
+ * moment we know nobody is signed in. `preferencesScript` reads the same cache
  * before React is on the page at all.
  */
 export function PreferencesProvider({ children }: { children: ReactNode }) {
@@ -76,6 +77,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           panicEnabled: args.panicEnabled ?? current?.panicEnabled,
           panicKey: args.panicKey ?? current?.panicKey,
           panicUrl: args.panicUrl ?? current?.panicUrl,
+          tabMask: args.tabMask ?? current?.tabMask,
         },
       );
     },
@@ -117,15 +119,24 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [preferences, save],
   );
 
-  // The document is already wearing `accentScript`'s answer, which came from
-  // the same cache. Until storage has actually been read on this side — it has
-  // not during the hydration render, where the snapshot is deliberately the
+  // The document is already wearing `preferencesScript`'s answer, which came
+  // from the same cache. Until storage has actually been read on this side — it
+  // has not during the hydration render, where the snapshot is deliberately the
   // server's — applying anything would mean stripping that for a frame and
   // putting it straight back, which is the flash in miniature.
   useEffect(() => {
     if (!cacheRead) return;
     applyAccent(preferences.accent);
   }, [cacheRead, preferences.accent]);
+
+  // The mask is the same story with one addition: it has to be *held*. React
+  // owns the `<title>` and the icon links, and every route under `/dashboard`
+  // declares a title of its own, so a mask written once on mount lasts until
+  // the first click. `watchTabMask` writes it back — see `src/lib/tab-mask.ts`.
+  useEffect(() => {
+    if (!cacheRead) return;
+    return watchTabMask(tabMaskAssets(preferences.tabMask));
+  }, [cacheRead, preferences.tabMask]);
 
   usePanicKey(preferences);
 

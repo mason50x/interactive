@@ -27,9 +27,10 @@ export function StatsCard() {
   const week = splitDuration(summary?.weekSeconds ?? 0);
 
   return (
-    <Card className="flex flex-col justify-between gap-5 p-5">
-      <p className="label-small text-faint">Your activity</p>
-
+    // No eyebrow. Every tile already carries its own caption, so a title over
+    // the grid was a fifth label saying what the other four say between them —
+    // and with it gone the four numbers are the whole card and centre in it.
+    <Card className="flex flex-col justify-center p-5">
       {/* Two by two rather than a strip of four: at this card's width four
           columns give each number about six characters, and "activities" then
           has to be abbreviated into something nobody says. */}

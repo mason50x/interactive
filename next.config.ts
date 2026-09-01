@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 /**
- * Framing policy for one origin.
+ * Response headers: who may crawl this site (nobody) and who may frame it.
+ *
+ * Framing policy for one origin:
  *
  * A activity is framed twice over: a dashboard page frames `/learn/<slug>`, and
  * that page in turn frames the bundle on the asset origin. The first of those
@@ -41,6 +43,30 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
+      {
+        /**
+         * The site's opt-out, on every response it serves.
+         *
+         * `src/app/robots.ts` is a request a crawler may decline to read, and
+         * the `robots` meta tag in `src/app/layout.tsx` only reaches responses
+         * that have a `<head>` — which leaves the OG images, the icons, the
+         * manifest, and every static asset covered by nothing. This header
+         * rides on all of them, and a crawler that has already fetched the URL
+         * cannot claim not to have seen it.
+         *
+         * `noai` and `noimageai` are a convention rather than a standard;
+         * nothing is obliged to honour them. They cost a few bytes and they
+         * make the intent unambiguous to anything that does look.
+         */
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value:
+              "noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai",
+          },
+        ],
+      },
       {
         // The one route framed by this app. `sandbox` on the iframe governs
         // what the framed activity may do; this governs who may embed it, and

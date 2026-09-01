@@ -1,6 +1,10 @@
 "use client";
 
-import { ChevronDownIcon, TicketIcon } from "@heroicons/react/24/solid";
+import {
+  ChevronDownIcon,
+  ExclamationTriangleIcon,
+  TicketIcon,
+} from "@heroicons/react/24/solid";
 import { useConvexAuth, useQuery } from "convex/react";
 import {
   useCallback,
@@ -60,6 +64,13 @@ function Pips({ remaining, limit }: { remaining: number; limit: number }) {
     </div>
   );
 }
+
+/**
+ * How long the receipt holds the panel after a send. Long enough to read two
+ * short lines without being asked to, short enough that nobody starts
+ * wondering whether the card has got stuck.
+ */
+const RECEIPT_MS = 4000;
 
 /**
  * Invites, as a card in the rail rather than a row in the account menu.
@@ -124,9 +135,22 @@ export function InviteCard() {
   // not restore focus: the card is at the foot of the rail, and pulling focus
   // back to a control down there after someone has moved on is worse than
   // leaving it where they put it.
+  //
+  // The receipt takes the field away with it, which drops focus to the body;
+  // running again when it clears puts the caret back where the next address
+  // would go.
   useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
+    if (open && !sent) inputRef.current?.focus();
+  }, [open, sent]);
+
+  // The receipt is a beat, not a state to be dismissed. It has nothing to act
+  // on and the card behind it is still the answer, so it hands the panel back
+  // on its own rather than leaving a notice for someone to clear.
+  useEffect(() => {
+    if (!sent) return;
+    const timer = setTimeout(() => setSent(false), RECEIPT_MS);
+    return () => clearTimeout(timer);
+  }, [sent]);
 
   // Observed rather than measured once: the panel's height changes under it
   // when an invite is sent, revoked, or an error appears, and each of those
@@ -179,8 +203,8 @@ export function InviteCard() {
       // That it sent is not the news — the address drops off the field and
       // turns up in the list below with a pip spent beside it, which says so
       // already. The spam folder is: the mail comes from Clerk rather than
-      // from anyone the recipient knows, so the one thing worth a line here
-      // is the place they will have to go looking for it.
+      // from anyone the recipient knows, so the one thing worth the panel is
+      // the place they will have to go looking for it.
       if (result.ok) {
         setEmail("");
         setSent(true);
@@ -312,103 +336,111 @@ export function InviteCard() {
               open ? "opacity-100 delay-150" : "opacity-0",
             )}
           >
-            <form onSubmit={submit} className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="email"
-                name="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                // Native validation catches a malformed address before the
-                // round trip; the server checks it again, because this one
-                // is advisory.
-                required
-                autoComplete="off"
-                disabled={exhausted || pending}
-                placeholder={
-                  exhausted ? "No invites left" : "friend@example.com"
-                }
-                aria-label="Email address to invite"
-                className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-              />
-              <Button
-                type="submit"
-                size="lg"
-                disabled={exhausted || pending || email.trim() === ""}
-                // The primary variant carries a brand-coloured glow on
-                // hover. That is a marketing-page gesture; in a card this
-                // size, sitting in the chrome, it reads as a light leak.
-                className="shadow-none hover:shadow-none"
-              >
-                {pending ? "Sending…" : "Send"}
-              </Button>
-            </form>
-
-            {/* One slot, one message. An error replaces the receipt rather
-                than stacking under it: the send that produced the receipt is
-                over, and two lines of status in a card this size push the
-                list of who you have invited off the bottom of the rail. */}
-            {error ? (
-              <p
-                // Assertive would talk over the person mid-correction; this
-                // is a result they arrive at after submitting, not an
-                // interruption.
-                role="status"
-                className="mt-2.5 text-[0.8125rem] leading-relaxed text-destructive"
-              >
-                {error}
-              </p>
+            {sent ? (
+              /* The receipt takes the whole panel rather than sitting under
+                 the field as a line. The delivery problem is the one thing a
+                 sender can do anything about, and a caution the width of the
+                 card is read; the same words in a status line under a form
+                 that is ready for the next address are not. */
+              <div role="status" className="flex items-start gap-3">
+                <ExclamationTriangleIcon className="mt-px size-5 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="text-[0.875rem] leading-snug font-medium text-foreground">
+                    Remind them to check the spam or junk
+                  </p>
+                  <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted-foreground">
+                    We&rsquo;re working on it.
+                  </p>
+                </div>
+              </div>
             ) : (
-              sent && (
-                <p
-                  role="status"
-                  className="mt-2.5 text-[0.8125rem] leading-relaxed text-muted-foreground"
-                >
-                  Sent. Tell them to check spam or junk if it does not turn up.
-                </p>
-              )
-            )}
-
-            {invites !== null && invites.invites.length > 0 && (
-              <ul className="mt-2 flex flex-col">
-                {invites.invites.map((invite) => (
-                  <li
-                    key={invite.id}
-                    className="group/invite flex h-9 items-center gap-3"
+              <>
+                <form onSubmit={submit} className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    type="email"
+                    name="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    // Native validation catches a malformed address before the
+                    // round trip; the server checks it again, because this one
+                    // is advisory.
+                    required
+                    autoComplete="off"
+                    disabled={exhausted || pending}
+                    placeholder={
+                      exhausted ? "No invites left" : "friend@example.com"
+                    }
+                    aria-label="Email address to invite"
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                  />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={exhausted || pending || email.trim() === ""}
+                    // The primary variant carries a brand-coloured glow on
+                    // hover. That is a marketing-page gesture; in a card this
+                    // size, sitting in the chrome, it reads as a light leak.
+                    className="shadow-none hover:shadow-none"
                   >
-                    <span
-                      title={invite.email}
-                      className="min-w-0 flex-1 truncate text-[0.875rem] text-muted-foreground"
-                    >
-                      {invite.email}
-                    </span>
+                    {pending ? "Sending…" : "Send"}
+                  </Button>
+                </form>
 
-                    {invite.status === "accepted" ? (
-                      <span className="label-small shrink-0 text-muted-foreground">
-                        Joined
-                      </span>
-                    ) : (
-                      <>
-                        {/* Swapped rather than shown side by side: the label
+                {error && (
+                  <p
+                    // Assertive would talk over the person mid-correction; this
+                    // is a result they arrive at after submitting, not an
+                    // interruption.
+                    role="status"
+                    className="mt-2.5 text-[0.8125rem] leading-relaxed text-destructive"
+                  >
+                    {error}
+                  </p>
+                )}
+
+                {invites !== null && invites.invites.length > 0 && (
+                  <ul className="mt-2 flex flex-col">
+                    {invites.invites.map((invite) => (
+                      <li
+                        key={invite.id}
+                        className="group/invite flex h-9 items-center gap-3"
+                      >
+                        <span
+                          title={invite.email}
+                          className="min-w-0 flex-1 truncate text-[0.875rem] text-muted-foreground"
+                        >
+                          {invite.email}
+                        </span>
+
+                        {invite.status === "accepted" ? (
+                          <span className="label-small shrink-0 text-muted-foreground">
+                            Joined
+                          </span>
+                        ) : (
+                          <>
+                            {/* Swapped rather than shown side by side: the label
                               is the resting state and the action replaces it,
                               so the row never changes width on hover. */}
-                        <span className="label-small shrink-0 text-faint group-hover/invite:hidden">
-                          Pending
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          disabled={pending}
-                          onClick={() => revoke(invite.id)}
-                          className="hidden shrink-0 text-muted-foreground group-hover/invite:inline-flex hover:text-destructive"
-                        >
-                          Revoke
-                        </Button>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                            <span className="label-small shrink-0 text-faint group-hover/invite:hidden">
+                              Pending
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              disabled={pending}
+                              onClick={() => revoke(invite.id)}
+                              className="hidden shrink-0 text-muted-foreground group-hover/invite:inline-flex hover:text-destructive"
+                            >
+                              Revoke
+                            </Button>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </div>
         </div>

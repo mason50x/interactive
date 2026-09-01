@@ -1,8 +1,8 @@
 /**
  * The single source of truth for the brand: name, voice, canonical URL, and
  * the geometry of the IL monogram. Everything else — the favicon, the app
- * icons, the OG image, the header lockup, the JSON-LD — is derived from here,
- * so the brand can only ever be changed in one place.
+ * icons, the OG image, the header lockup — is derived from here, so the brand
+ * can only ever be changed in one place.
  *
  * The domain is not spelled out here. `url` resolves from
  * `NEXT_PUBLIC_SITE_URL` and falls back to `config/domains.json`, which is the
@@ -82,16 +82,6 @@ export const brand = {
   domain: resolveDomain(url),
   url,
   locale: "en_US",
-  keywords: [
-    "interactive learning",
-    "visual learning platform",
-    "concept maps",
-    "study tools",
-    "adaptive practice",
-    "spaced repetition",
-    "online learning",
-    "study groups",
-  ],
   colors: {
     /** The monogram is always pure black on pure white — never tinted. */
     ink: "#0f0f0f",

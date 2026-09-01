@@ -2,11 +2,11 @@ import { v } from "convex/values";
 import {
   clampOffset,
   dayKey,
-  dayWindow,
   foldActivityDay,
   foldUserDay,
   userDaysBetween,
   utcDayKey,
+  weekWindow,
 } from "./days";
 import {
   mutation,
@@ -348,7 +348,12 @@ export const summary = query({
 
     const offset = clampOffset(tzOffsetMinutes);
     const today = dayKey(Date.now(), offset);
-    const days = dayWindow(today, 7);
+    // The same Monday-to-Sunday week the streak strip draws, and for the same
+    // reason it is not a rolling seven days: the card beside this one is
+    // labelled M T W T F S S, and two cards on one page saying "this week"
+    // about two different weeks is the kind of thing nobody reports and
+    // everybody half-notices.
+    const days = weekWindow(today);
 
     const rows = await userDaysBetween(ctx, clerkId, days[0], today);
     const todayRow = rows.find((row) => row.day === today);

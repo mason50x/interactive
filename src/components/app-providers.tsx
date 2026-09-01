@@ -25,7 +25,7 @@ import { ThemeProvider } from "@/components/theme-provider";
  * is only ever used by app chrome.
  *
  * The accent's pre-paint script is the one thing that could not follow that
- * rule. It belongs beside the theme's in the root layout — see `accentScript`,
+ * rule. It belongs beside the theme's in the root layout — see `preferencesScript`,
  * which skips `/learn` itself — because a `<script>` mounted here is created by
  * React on the client the moment a navigation re-renders this tree, and a
  * script element React creates is never executed.

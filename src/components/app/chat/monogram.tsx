@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { LogoMark } from "@/components/wordmark";
 import { handleHue } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 
@@ -39,21 +40,50 @@ import { cn } from "@/lib/utils";
  *
  * The emoji is left exactly as it came. Uppercasing it is a no-op, and doing it
  * anyway would be an invitation to wonder why.
+ *
+ * `brand` is the one exception to all of it. The room everybody is in is not a
+ * person and not a group somebody made — it is the app itself, so it is drawn
+ * as the app's mark rather than as an `E` on a colour the string "Everyone"
+ * happened to hash to. No disc under it: every other face here is ink inside a
+ * tinted circle, and a mark with nothing behind it is the one thing in the
+ * column that cannot be mistaken for somebody. It takes `currentColor`, so it
+ * is the row's own ink in both themes and it dims with the row.
  */
 export function Monogram({
   handle,
   emoji,
   initials,
   hue: given,
+  brand,
   className,
 }: {
   handle: string;
   emoji?: string;
   initials?: string;
   hue?: number;
+  brand?: boolean;
   className?: string;
 }) {
   const hue = given ?? handleHue(handle);
+
+  if (brand) {
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center select-none",
+          className,
+        )}
+      >
+        {/* Sized as a share of the slot rather than in fixed units, so the one
+            component serves the list, the header and anywhere else the disc is
+            resized by `className`. Wider than a disc's letter would be: with no
+            circle around it, the mark needs the extra width to carry the same
+            weight as the faces beside it. */}
+        <LogoMark className="h-[65%] w-[72%]" />
+      </span>
+    );
+  }
 
   return (
     <span
