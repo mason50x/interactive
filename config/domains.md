@@ -28,6 +28,15 @@ The cheaper of the two, by design.
    Custom Domains). The bucket keeps its contents.
 2. Set `ASSET_ORIGIN` on Vercel (Production) to the new origin.
 3. Redeploy.
+4. Re-create the Redirect Rule that sends `/` on the asset hostname to the
+   site. It is zone configuration, not bucket contents, so it does not travel
+   with the bucket — see "The asset origin" in the README for why it exists.
+
+A move is for changing where the bucket answers, not for escaping a content
+filter's categorisation. A filter that has labelled the old hostname will
+label the new one the same way once it scans the same pages, and the hop
+counts against the next appeal. Fix the categorisation instead; the README
+says how.
 
 Nothing is re-uploaded and nothing is rewritten. Bundle HTML references its
 own files relatively — `scripts/migrate-to-r2.mjs` rewrites the one absolute

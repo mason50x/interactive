@@ -466,10 +466,14 @@ removes the least defensible class, not the question.
 — `patchGameHtml` in `scripts/migrate-to-r2.mjs`. Upstream templates the same
 header into all 366 of them, carrying its own Google Analytics measurement id;
 uploaded as-is, every play by a signed-in user would beacon to a third party we
-do not control. The same pass drops a tab-cloaking helper we do not serve and
-repoints the Ruffle loader at our own bucket instead of unpkg. A grep over the
-result fails the run if any of the three survives, so a template change
-upstream stops the migration rather than quietly reintroducing the leak.
+do not control. The same pass drops a tab-cloaking helper we do not serve,
+repoints the Ruffle loader at our own bucket instead of unpkg, and strips
+upstream's branding: the `| Seraph` suffix on every title, the one loading
+splash that names the archive, and a favicon link into a directory we never
+upload. A grep over the result fails the run if any of them survives, so a
+template change upstream stops the migration rather than quietly reintroducing
+the leak — or the name. Why the name matters is under
+[The asset origin](#the-asset-origin).
 
 **Where a bundle lands.** Not under its slug. Each catalogue entry carries a
 `path` — the slug reversed, so Crossy Road (`crossy`) is served from
@@ -513,6 +517,28 @@ Cloudflare edge *and* in the browser — for four hours after the bucket became
 correct. The game stays broken long after the migration succeeded, which reads
 as a failed migration and is not one. If it happens: purge the asset zone's
 cache (Caching → Configuration → Purge Everything) and hard-reload.
+
+**Content filters see the bucket as a site of its own.** School filters
+categorise per hostname, and the asset host is a hostname with no front page
+— an R2 custom domain answers `/` with a 404 — so a scanner that visits it
+finds nothing but the game pages. Securly's PageScan did exactly that and
+filed the host under adult content while leaving the site alone. Two things
+fed it: every page was titled `<Game> | Seraph`, an unblocked-games archive
+its database already had on file, and the scanner is tuned for violence,
+which the popular shelf has plenty of. The migration now strips the branding
+and uploads a `robots.txt`, and two more things live outside the repo:
+
+- Add a Redirect Rule in the asset zone (Rules → Redirect Rules) sending `/`
+  on the asset hostname to the site, so a rescan or a human reviewer lands on
+  something that explains what the host is.
+- Recategorisation can only be requested by a district's Securly admin, from
+  Policy Editor → Category Lookup. The honest category is Games, which most
+  districts block by default, so the outcome that actually works is the admin
+  adding the asset host to the Allow list beside the site.
+
+Do not rotate the hostname to get out from under a block. The same content
+earns the same label within days, and the hop reads as evasion to whoever
+reviews the next appeal. `config/domains.md` covers what a move is for.
 
 Three origins now, and only two of them are boundaries:
 

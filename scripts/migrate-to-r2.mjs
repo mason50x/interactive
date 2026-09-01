@@ -131,6 +131,10 @@ const BUCKET_PREFIX = "activities";
  */
 const RUFFLE_SOURCE = "storage/ruffle";
 
+/** What the asset host tells crawlers: nothing here is for indexing. Matches
+ *  the app's own wildcard rule in `src/app/robots.ts`. */
+const ROBOTS_TXT = "User-agent: *\nDisallow: /\n";
+
 const DRY_RUN = process.argv.includes("--dry-run");
 const FRESH = process.argv.includes("--fresh");
 
@@ -188,9 +192,27 @@ function bytes(value) {
  * And one thing is rewritten rather than removed: the Ruffle loader, pointed
  * at our own copy instead of unpkg. See `RUFFLE_SOURCE`.
  *
+ * A second group is about what the bucket *looks like* rather than what it
+ * does. Upstream's template titles every page `<Game> | Seraph`, and Seraph is
+ * a well-known unblocked-games archive that school content filters already
+ * have on file. The asset host has no landing page of its own — an R2 custom
+ * domain answers `/` with a 404 — so a filter that scans it finds nothing but
+ * hundreds of pages announcing themselves as Seraph's, and categorises the
+ * host accordingly. Securly did exactly that, and the whole host went dark
+ * for the schools it serves. So, on the way through:
+ *
+ * - **The title suffix goes.** `Snake | Seraph` becomes `Snake`. The game's
+ *   own name is kept; only the archive's is dropped.
+ * - **The one body-text mention goes.** `mc` thanks the player for playing
+ *   "on seraph" in a loading splash. It is the only page that names the
+ *   archive outside the title, and the rewrite is scoped to that heading.
+ * - **The dead favicon link goes.** Every page points at `../../images/ico.ico`,
+ *   upstream's own icon under a directory this migration does not upload. It
+ *   404s on every load, and it is one more upstream fingerprint for nothing.
+ *
  * Deliberately string surgery rather than a DOM parse. The input is 318 copies
- * of one template, the three targets are unambiguous, and the verification is
- * a grep over the result — `assertPatched` fails the run if any survives, so a
+ * of one template, the targets are unambiguous, and the verification is a
+ * grep over the result — `assertPatched` fails the run if any survives, so a
  * template change upstream stops the migration instead of quietly leaking.
  */
 const GTAG_SHIM = "<script>window.dataLayer=[];window.gtag=function(){};</script>";
@@ -230,7 +252,15 @@ export function patchGameHtml(html) {
     .replace(
       /(['"])https:\/\/unpkg\.com\/@ruffle-rs\/ruffle\1/g,
       `'../../${RUFFLE_SOURCE}/ruffle.js'`,
-    );
+    )
+    // `<title>Snake | Seraph</title>` → `<title>Snake</title>`. Anchored to the
+    // title element so a game that legitimately contains the word — Wordle's
+    // dictionary does — is left alone.
+    .replace(/(<title>[^<]*?)\s*\|\s*seraph\s*(<\/title>)/gi, "$1$2")
+    // The `mc` splash. Scoped to the heading, not a global word replace.
+    .replace(/(<h2>[^<]*?)\s+on seraph\s*(<\/h2>)/gi, "$1$2")
+    // Upstream's favicon, under a directory we never upload.
+    .replace(/<link[^>]*images\/ico\.ico[^>]*>/gi, "");
 
   // Removing the definitions can strand a call. `basketbrosio` carries two
   // analytics blocks — Seraph's and the game author's original — and its own
@@ -255,6 +285,14 @@ export function patchGameHtml(html) {
  * — and those are left alone. They are upstream's dependencies, they are a
  * handful of games, and vendoring them is a separate decision from getting the
  * analytics out.
+ *
+ * The Seraph entries are specific for the same reason. A bare `seraph` would
+ * fail the run on Wordle, whose word list contains "seraph" and "seraphic" as
+ * ordinary English, so the tokens name the two forms the archive's branding
+ * actually takes: the title suffix and the `mc` splash line.
+ *
+ * Matched case-insensitively — upstream is not consistent about capitalising
+ * its own name, and none of these tokens has a legitimate lowercase twin.
  */
 const FORBIDDEN = [
   // The only one that is actually a beacon. A surviving `gtag(` call is not,
@@ -263,10 +301,14 @@ const FORBIDDEN = [
   "googletagmanager",
   "cloak.js",
   "unpkg.com/@ruffle-rs",
+  "| seraph",
+  "on seraph",
+  "images/ico.ico",
 ];
 
 function assertPatched(path, html) {
-  const found = FORBIDDEN.filter((token) => html.includes(token));
+  const lowered = html.toLowerCase();
+  const found = FORBIDDEN.filter((token) => lowered.includes(token));
   if (found.length > 0) {
     throw new Error(
       `${path} still contains ${found.join(", ")} after patching.\n` +
@@ -391,7 +433,9 @@ async function main() {
         }
       }
     }
-    console.log(`  ${patched} pages rewritten (analytics and cloaking removed)`);
+    console.log(
+      `  ${patched} pages rewritten (analytics, cloaking, and upstream branding removed)`,
+    );
 
     // The catalogue generator refuses to write two games onto one path, so a
     // collision here means the JSON was edited by hand. Stop before the
@@ -476,6 +520,21 @@ async function main() {
         `R2:${bucket}/${RUFFLE_SOURCE}`,
         ...flags,
       ],
+      { env: rcloneEnv },
+    );
+
+    // The bucket's own robots.txt. The app opts out of every crawler it can
+    // name (`src/app/robots.ts`), and the bundles are the same content one
+    // hostname over; with no object at this key an R2 custom domain answers
+    // 404, which reads as "no opinion". Written fresh each run and copied on
+    // its own — it sits at the bucket root, outside both prefixes above.
+    // Content filters do not read it; see README, "The asset origin".
+    console.log("\n→ uploading robots.txt");
+    const robots = join(ROOT, ".cache", "r2-robots.txt");
+    await writeFile(robots, ROBOTS_TXT);
+    await run(
+      "rclone",
+      ["copyto", robots, `R2:${bucket}/robots.txt`, ...flags],
       { env: rcloneEnv },
     );
 
