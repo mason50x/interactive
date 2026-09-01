@@ -37,6 +37,15 @@ export type Genre =
 
 export type Activity = {
   slug: string;
+  /**
+   * Directory the bundle lives under in the asset bucket, beneath
+   * `ACTIVITIES_PREFIX`. It is the slug reversed — `crossy` is stored at
+   * `activities/yssorc/` — so the bucket key is never the route, and the two
+   * are free to drift. Derived by `bucketPath` in
+   * `scripts/build-catalogue.mjs`; the migration script and `activityBundleUrl`
+   * both read this field rather than re-deriving it.
+   */
+  path: string;
   /** Shown in the rail, on the tile, and as the page heading. */
   title: string;
   genre: Genre;

@@ -101,6 +101,51 @@ function titleCase(value) {
 }
 
 /**
+ * Shooters, dropped. Games whose core mechanic is shooting a gun at things —
+ * nothing broader than that: no gore, crime, or theme test, just the guns.
+ *
+ * Keyed by slug because the slug is the one stable handle. Upstream's title
+ * is noted beside each so the list can be reviewed without opening the game. A slug listed
+ * here is never uploaded, and `migrate-to-r2.mjs` deletes it from the bucket
+ * on its next sync because it is no longer in the catalogue.
+ *
+ * This is a judgement list, not a rule: there is no rating data upstream, so
+ * each entry is a call made on the game itself. Err on the side of dropping.
+ */
+const EXCLUDED_SLUGS = new Set([
+  "superhot",              // Super Hot
+  "rooftop",               // Rooftop Snipers
+  "rooftop2",              // Rooftop Snipers 2
+  "gunmayhem",             // Gun Mayhem
+  "gunmayhem2",            // Gun Mayhem 2
+  "gunmayhemredux",        // Gun Mayhem Redux
+  "getawayshootout",       // Getaway Shootout
+  "1v1lol",                // 1v1.LOL
+  "10minutestilldawn",     // 10 Minutes Till Dawn
+  "timeshooter1",          // Time Shooter
+  "timeshooter2",          // Time Shooter 2
+  "timeshooter3",          // Time Shooter 3
+  "doom",                  // Doom
+  "funnyshooter2",         // Funny Shooter 2
+  "gunfest",               // Gun Fest
+  "recoil",                // Recoil
+  "zombocalypse",          // Zombocalypse
+  "zombotron",             // Zombotron
+  "zombotron2",            // Zombotron 2
+  "amazingropepolice",     // Amazing Rope Police
+  "grandtheftgrotto",      // Grand Theft Grotto
+  "defendthetank",         // Defend the Tank
+  "raftwars",              // Raft Wars
+  "raftwars2",             // Raft Wars 2
+  "chooseyourweapon",      // Choose Your Weapon
+  "chooseyourweapon2",     // Choose Your Weapon 2
+  "chooseyourweapon3",     // Choose Your Weapon 3
+  "nitromemustdie",        // Nitrome Must Die
+  "skibiditoiletattack",   // Skibidi Toilet Attack
+  "thebindingofisaac",     // The Binding of Isaac — twin-stick shooter, tears for bullets
+]);
+
+/**
  * Upstream's `data-genre` value to ours.
  *
  * Two jobs in one table now. It has always folded upstream's typos and
@@ -133,6 +178,25 @@ const GENRE_ALIASES = {
   tetris: "problem-solving",
   "": "reaction",
 };
+
+/**
+ * Where a game's bundle lives in the asset bucket, under `activities/`.
+ *
+ * The slug reversed: `crossy` is uploaded to `activities/yssorc/`. The title
+ * is untouched — the tile still reads Crossy Road. There is no deeper reason
+ * than wanting the bucket key to differ from the route; what matters is that
+ * the rule lives in exactly one place. Every consumer — the
+ * migration script that lays the bucket out and `activityBundleUrl` that
+ * reads it back — takes the `path` field from the catalogue rather than
+ * reversing the slug itself, so changing the rule here changes it everywhere.
+ *
+ * Two slugs are palindromes (`fnf`, `ovo`) and come out unchanged. No two
+ * slugs reverse onto the same key, or onto another slug, and `main` checks
+ * that rather than trusting it to stay true.
+ */
+function bucketPath(slug) {
+  return [...slug].reverse().join("");
+}
 
 async function fetchText(path) {
   const url = `https://raw.githubusercontent.com/${REPO}/${REF}/${path}`;
@@ -249,6 +313,7 @@ function parseCatalogue(html) {
 
     entries.push({
       slug,
+      path: bucketPath(slug),
       title: titleCase(title.split(/\s+/).join(" ").trim()),
       genre: mapped,
       thumbnail: thumbnail.split("/").pop(),
@@ -331,6 +396,7 @@ async function main() {
   const games = [];
   const excludedByFile = [];
   const excludedByEmulator = [];
+  const excludedByContent = [];
   for (const [index, entry] of entries.entries()) {
     if (romDirectories.has(entry.slug)) {
       excludedByFile.push(entry.title);
@@ -340,7 +406,29 @@ async function main() {
       excludedByEmulator.push(entry.title);
       continue;
     }
+    if (EXCLUDED_SLUGS.has(entry.slug)) {
+      excludedByContent.push(entry.title);
+      continue;
+    }
     games.push({ ...entry, rank: index, bytes: bytesByDirectory.get(entry.slug) ?? 0 });
+  }
+
+  // A listed slug that upstream no longer ships is stale, and the list should
+  // say so rather than carry it forever.
+  const stale = [...EXCLUDED_SLUGS].filter((slug) => !entries.some((e) => e.slug === slug));
+  if (stale.length > 0) {
+    console.log(`excluded slugs not upstream (drop from EXCLUDED_SLUGS): ${stale.join(", ")}`);
+  }
+
+  // A bucket key that two games share would have the second upload clobber
+  // the first, silently. None do today; this is what keeps it that way.
+  const paths = new Map();
+  for (const game of games) {
+    const other = paths.get(game.path);
+    if (other) {
+      throw new Error(`${game.slug} and ${other} both map to bucket path ${game.path}.`);
+    }
+    paths.set(game.path, game.slug);
   }
 
   await writeFile(OUT, `${JSON.stringify(games, null, 1)}\n`);
@@ -349,6 +437,7 @@ async function main() {
   console.log(`upstream tiles      : ${entries.length}`);
   console.log(`excluded, ROM file  : ${excludedByFile.length}`);
   console.log(`excluded, emulator  : ${excludedByEmulator.length}`);
+  console.log(`excluded, content   : ${excludedByContent.length}`);
   console.log(`local 16:9 art      : ${games.filter((g) => g.thumbnail.endsWith(".webp")).length}`);
   console.log(`written             : ${games.length} games, ${(total / 1e9).toFixed(2)} GB`);
   console.log(`                    -> ${OUT}`);

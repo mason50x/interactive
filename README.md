@@ -448,7 +448,9 @@ most-played first — so it becomes `rank`, and the dashboard's popular shelf is
 the head of it. Everything past `POPULAR_COUNT` is reachable only by search,
 which runs client-side over the whole catalogue.
 
-**What the generator drops.** Any game directory containing a console ROM. The
+**What the generator drops.** Shooters — games whose core mechanic is
+shooting a gun — via `EXCLUDED_SLUGS` in `scripts/build-catalogue.mjs`, a
+judgement list keyed by slug with upstream's title noted beside each entry. And any game directory containing a console ROM. The
 upstream archive ships ~124 of them — Nintendo, Konami, Sega — as raw `.nds`
 and scene-named `.zip` files. Permission from the archive's maintainer covers
 the archive's own work and cannot extend to those, so the test is on the file
@@ -468,6 +470,14 @@ do not control. The same pass drops a tab-cloaking helper we do not serve and
 repoints the Ruffle loader at our own bucket instead of unpkg. A grep over the
 result fails the run if any of the three survives, so a template change
 upstream stops the migration rather than quietly reintroducing the leak.
+
+**Where a bundle lands.** Not under its slug. Each catalogue entry carries a
+`path` — the slug reversed, so Crossy Road (`crossy`) is served from
+`activities/yssorc/index.html` — and that field, never the slug, is the bucket
+key. Titles are untouched. `bucketPath` in `scripts/build-catalogue.mjs` is the one place the rule is
+written; the migration lays the bucket out from the field and
+`activityBundleUrl` reads it back from the same field. Routes, thumbnails, and
+scores all still key on the slug.
 
 **Flash.** 159 of the 366 are `.swf`, including Papa's Pizzaria and Papa's
 Burgeria at fourth and fifth on the popular shelf, and no browser has run Flash

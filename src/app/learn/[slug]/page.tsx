@@ -43,7 +43,7 @@ export default async function LearnPage({ params }: PageProps<"/learn/[slug]">) 
   // `null` means no asset origin is configured, so there is nowhere to load
   // this from. A 404 is the honest answer and matches every other way this
   // route declines.
-  const src = activityBundleUrl(activity.slug);
+  const src = activityBundleUrl(activity.path);
   if (!src) notFound();
 
   return <HostedActivity title={activity.title} src={src} />;

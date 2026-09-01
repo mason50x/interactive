@@ -1,6 +1,7 @@
 [
  {
   "slug": "slope",
+  "path": "epols",
   "title": "Slope",
   "genre": "coordination",
   "thumbnail": "slope.jpg",
@@ -9,6 +10,7 @@
  },
  {
   "slug": "subwaysurfers",
+  "path": "srefrusyawbus",
   "title": "Subway Surfers",
   "genre": "coordination",
   "thumbnail": "subwaysurfers.webp",
@@ -17,6 +19,7 @@
  },
  {
   "slug": "flappy",
+  "path": "yppalf",
   "title": "Flappy Bird",
   "genre": "touch",
   "thumbnail": "flappybird.jpg",
@@ -25,6 +28,7 @@
  },
  {
   "slug": "papaspizzaria",
+  "path": "airazzipsapap",
   "title": "Papa's Pizzaria",
   "genre": "systems",
   "thumbnail": "papaspizzaria.webp",
@@ -33,6 +37,7 @@
  },
  {
   "slug": "papasburgeria",
+  "path": "airegrubsapap",
   "title": "Papa's Burgeria",
   "genre": "systems",
   "thumbnail": "papasburgeria.webp",
@@ -41,6 +46,7 @@
  },
  {
   "slug": "sm64",
+  "path": "46ms",
   "title": "Super Mario 64",
   "genre": "coordination",
   "thumbnail": "sm64.webp",
@@ -49,6 +55,7 @@
  },
  {
   "slug": "run3",
+  "path": "3nur",
   "title": "Run 3",
   "genre": "coordination",
   "thumbnail": "run3.jpg",
@@ -57,6 +64,7 @@
  },
  {
   "slug": "bitlife",
+  "path": "efiltib",
   "title": "Bitlife",
   "genre": "systems",
   "thumbnail": "bitlife.jpg",
@@ -65,6 +73,7 @@
  },
  {
   "slug": "crossy",
+  "path": "yssorc",
   "title": "Crossy Road",
   "genre": "touch",
   "thumbnail": "crossy.webp",
@@ -73,6 +82,7 @@
  },
  {
   "slug": "mc",
+  "path": "cm",
   "title": "Minecraft [v1.5.2]",
   "genre": "exploration",
   "thumbnail": "mc.webp",
@@ -81,6 +91,7 @@
  },
  {
   "slug": "cookieclicker",
+  "path": "rekcilceikooc",
   "title": "Cookie Clicker",
   "genre": "reaction",
   "thumbnail": "cookieclicker.webp",
@@ -89,6 +100,7 @@
  },
  {
   "slug": "templerun2",
+  "path": "2nurelpmet",
   "title": "Temple Run 2",
   "genre": "coordination",
   "thumbnail": "templerun2.webp",
@@ -97,6 +109,7 @@
  },
  {
   "slug": "ducklife4",
+  "path": "4efilkcud",
   "title": "Duck Life 4",
   "genre": "systems",
   "thumbnail": "ducklife4.webp",
@@ -105,6 +118,7 @@
  },
  {
   "slug": "dinogame",
+  "path": "emagonid",
   "title": "Chrome Dino Game",
   "genre": "reaction",
   "thumbnail": "dinogame.webp",
@@ -113,6 +127,7 @@
  },
  {
   "slug": "jetpackjoyride",
+  "path": "ediryojkcaptej",
   "title": "Jetpack Joyride",
   "genre": "reaction",
   "thumbnail": "jetpackjoyride.webp",
@@ -121,6 +136,7 @@
  },
  {
   "slug": "retrobowl",
+  "path": "lwoborter",
   "title": "Retro Bowl",
   "genre": "reaction",
   "thumbnail": "retrobowl.webp",
@@ -129,6 +145,7 @@
  },
  {
   "slug": "fruitninja",
+  "path": "ajnintiurf",
   "title": "Fruit Ninja",
   "genre": "reaction",
   "thumbnail": "fruitninja.jpg",
@@ -137,6 +154,7 @@
  },
  {
   "slug": "doodlejump",
+  "path": "pmujeldood",
   "title": "Doodle Jump",
   "genre": "coordination",
   "thumbnail": "doodlejump.webp",
@@ -145,6 +163,7 @@
  },
  {
   "slug": "2048",
+  "path": "8402",
   "title": "2048",
   "genre": "problem-solving",
   "thumbnail": "2048.webp",
@@ -153,6 +172,7 @@
  },
  {
   "slug": "tetris",
+  "path": "sirtet",
   "title": "Tetris",
   "genre": "problem-solving",
   "thumbnail": "tetris.webp",
@@ -161,6 +181,7 @@
  },
  {
   "slug": "fancypantsadventure",
+  "path": "erutnevdastnapycnaf",
   "title": "Fancy Pants Adventure",
   "genre": "coordination",
   "thumbnail": "fancypantsadventure.webp",
@@ -169,6 +190,7 @@
  },
  {
   "slug": "happywheels",
+  "path": "sleehwyppah",
   "title": "Happy Wheels",
   "genre": "reaction",
   "thumbnail": "happywheels.webp",
@@ -177,6 +199,7 @@
  },
  {
   "slug": "papashotdoggeria",
+  "path": "aireggodtohsapap",
   "title": "Papa's Hotdoggeria",
   "genre": "systems",
   "thumbnail": "papashotdoggeria.jpg",
@@ -185,6 +208,7 @@
  },
  {
   "slug": "paperio2",
+  "path": "2oirepap",
   "title": "Paperio2",
   "genre": "reaction",
   "thumbnail": "paperio2.webp",
@@ -192,23 +216,8 @@
   "bytes": 1377811
  },
  {
-  "slug": "superhot",
-  "title": "Super Hot",
-  "genre": "exploration",
-  "thumbnail": "superhot.webp",
-  "rank": 24,
-  "bytes": 46031880
- },
- {
-  "slug": "thebindingofisaac",
-  "title": "The Binding of Isaac",
-  "genre": "exploration",
-  "thumbnail": "thebindingofisaac.webp",
-  "rank": 25,
-  "bytes": 9254861
- },
- {
   "slug": "townscaper",
+  "path": "repacsnwot",
   "title": "Townscaper",
   "genre": "systems",
   "thumbnail": "townscaper.webp",
@@ -217,6 +226,7 @@
  },
  {
   "slug": "tunnelrush",
+  "path": "hsurlennut",
   "title": "Tunnel Rush",
   "genre": "reaction",
   "thumbnail": "tunnelrush.webp",
@@ -225,6 +235,7 @@
  },
  {
   "slug": "themehotel",
+  "path": "letohemeht",
   "title": "Theme Hotel",
   "genre": "systems",
   "thumbnail": "themehotel.jpg",
@@ -233,6 +244,7 @@
  },
  {
   "slug": "escapingtheprison",
+  "path": "nosirpehtgnipacse",
   "title": "Escaping the Prison",
   "genre": "exploration",
   "thumbnail": "escapingtheprison.webp",
@@ -241,6 +253,7 @@
  },
  {
   "slug": "stealingthediamond",
+  "path": "dnomaidehtgnilaets",
   "title": "Stealing the Diamond",
   "genre": "exploration",
   "thumbnail": "stealingthediamond.webp",
@@ -249,6 +262,7 @@
  },
  {
   "slug": "infiltratingtheairship",
+  "path": "pihsriaehtgnitartlifni",
   "title": "Infiltrating the Airship",
   "genre": "exploration",
   "thumbnail": "infiltratingtheairship.webp",
@@ -257,6 +271,7 @@
  },
  {
   "slug": "fleeingthecomplex",
+  "path": "xelpmocehtgnieelf",
   "title": "Fleeing the Complex",
   "genre": "exploration",
   "thumbnail": "fleeingthecomplex.webp",
@@ -265,6 +280,7 @@
  },
  {
   "slug": "theimpossiblequiz",
+  "path": "ziuqelbissopmieht",
   "title": "The Impossible Quiz",
   "genre": "reaction",
   "thumbnail": "theimpossiblequiz.webp",
@@ -273,6 +289,7 @@
  },
  {
   "slug": "solitaire",
+  "path": "eriatilos",
   "title": "Solitaire",
   "genre": "problem-solving",
   "thumbnail": "solitaire.webp",
@@ -281,6 +298,7 @@
  },
  {
   "slug": "drifthunters",
+  "path": "sretnuhtfird",
   "title": "Drift Hunters",
   "genre": "exploration",
   "thumbnail": "drifthunters.webp",
@@ -289,6 +307,7 @@
  },
  {
   "slug": "vex6",
+  "path": "6xev",
   "title": "Vex 6",
   "genre": "coordination",
   "thumbnail": "vex6.jpg",
@@ -297,6 +316,7 @@
  },
  {
   "slug": "amongus",
+  "path": "sugnoma",
   "title": "Among Us Fangame",
   "genre": "reaction",
   "thumbnail": "amongus.webp",
@@ -305,6 +325,7 @@
  },
  {
   "slug": "surf",
+  "path": "frus",
   "title": "Edge Surf",
   "genre": "reaction",
   "thumbnail": "surf.jpg",
@@ -313,6 +334,7 @@
  },
  {
   "slug": "motox3m",
+  "path": "m3xotom",
   "title": "Motox3m",
   "genre": "coordination",
   "thumbnail": "motox3m.webp",
@@ -321,6 +343,7 @@
  },
  {
   "slug": "fnaf",
+  "path": "fanf",
   "title": "Fnaf 1",
   "genre": "exploration",
   "thumbnail": "fnaf.webp",
@@ -329,6 +352,7 @@
  },
  {
   "slug": "fnaf-2",
+  "path": "2-fanf",
   "title": "Fnaf 2",
   "genre": "exploration",
   "thumbnail": "fnaf-2.webp",
@@ -337,6 +361,7 @@
  },
  {
   "slug": "fnaf-3",
+  "path": "3-fanf",
   "title": "Fnaf 3",
   "genre": "exploration",
   "thumbnail": "fnaf-3.webp",
@@ -345,6 +370,7 @@
  },
  {
   "slug": "fnaf-4",
+  "path": "4-fanf",
   "title": "Fnaf 4",
   "genre": "exploration",
   "thumbnail": "fnaf-4.webp",
@@ -353,6 +379,7 @@
  },
  {
   "slug": "driftboss",
+  "path": "ssobtfird",
   "title": "Drift Boss",
   "genre": "touch",
   "thumbnail": "driftboss.jpg",
@@ -361,6 +388,7 @@
  },
  {
   "slug": "fnf",
+  "path": "fnf",
   "title": "Friday Night Funkin",
   "genre": "reaction",
   "thumbnail": "fnf.webp",
@@ -369,6 +397,7 @@
  },
  {
   "slug": "pacman",
+  "path": "namcap",
   "title": "Pacman",
   "genre": "reaction",
   "thumbnail": "pacman.webp",
@@ -377,6 +406,7 @@
  },
  {
   "slug": "papaspancakeria",
+  "path": "airekacnapsapap",
   "title": "Papa's Pancakeria",
   "genre": "systems",
   "thumbnail": "papaspancakeria.webp",
@@ -384,15 +414,8 @@
   "bytes": 6498020
  },
  {
-  "slug": "rooftop",
-  "title": "Rooftop Snipers",
-  "genre": "reaction",
-  "thumbnail": "rooftop.webp",
-  "rank": 48,
-  "bytes": 8511480
- },
- {
   "slug": "baldisbasics",
+  "path": "scisabsidlab",
   "title": "Baldi's Basics",
   "genre": "exploration",
   "thumbnail": "baldisbasics.webp",
@@ -401,6 +424,7 @@
  },
  {
   "slug": "bobtherobber2",
+  "path": "2rebborehtbob",
   "title": "Bob the Robber 2",
   "genre": "exploration",
   "thumbnail": "bobtherobber2.jpg",
@@ -409,6 +433,7 @@
  },
  {
   "slug": "minesweeper",
+  "path": "repeewsenim",
   "title": "Minesweeper",
   "genre": "problem-solving",
   "thumbnail": "minesweeper.webp",
@@ -417,6 +442,7 @@
  },
  {
   "slug": "thereisnogame",
+  "path": "emagonsiereht",
   "title": "There Is No Game",
   "genre": "touch",
   "thumbnail": "thereisnogame.webp",
@@ -425,6 +451,7 @@
  },
  {
   "slug": "worldshardestgame",
+  "path": "emagtsedrahsdlrow",
   "title": "World's Hardest Game",
   "genre": "problem-solving",
   "thumbnail": "worldshardestgame.webp",
@@ -433,6 +460,7 @@
  },
  {
   "slug": "dogeminer",
+  "path": "renimegod",
   "title": "Doge Miner",
   "genre": "systems",
   "thumbnail": "dogeminer.webp",
@@ -441,6 +469,7 @@
  },
  {
   "slug": "tanukisunset",
+  "path": "tesnusikunat",
   "title": "Tanuki Sunset",
   "genre": "reaction",
   "thumbnail": "tanukisunset.webp",
@@ -449,6 +478,7 @@
  },
  {
   "slug": "aquaparkslides",
+  "path": "sedilskrapauqa",
   "title": "Aquapark Slides",
   "genre": "reaction",
   "thumbnail": "aquaparkslides.jpg",
@@ -457,6 +487,7 @@
  },
  {
   "slug": "colorswitch",
+  "path": "hctiwsroloc",
   "title": "Color Switch",
   "genre": "reaction",
   "thumbnail": "colorswitch.webp",
@@ -465,6 +496,7 @@
  },
  {
   "slug": "papasfreezeria",
+  "path": "airezeerfsapap",
   "title": "Papa's Freezeria",
   "genre": "systems",
   "thumbnail": "papasfreezeria.webp",
@@ -473,6 +505,7 @@
  },
  {
   "slug": "adofai",
+  "path": "iafoda",
   "title": "Adofai",
   "genre": "reaction",
   "thumbnail": "adofai.webp",
@@ -481,6 +514,7 @@
  },
  {
   "slug": "supersmashflash",
+  "path": "hsalfhsamsrepus",
   "title": "Super Smash Flash",
   "genre": "reaction",
   "thumbnail": "supersmashflash.webp",
@@ -489,6 +523,7 @@
  },
  {
   "slug": "supermeatboy",
+  "path": "yobtaemrepus",
   "title": "Super Meat Boy",
   "genre": "coordination",
   "thumbnail": "supermeatboy.webp",
@@ -497,6 +532,7 @@
  },
  {
   "slug": "stickmanhook",
+  "path": "koohnamkcits",
   "title": "Stickman Hook",
   "genre": "touch",
   "thumbnail": "stickmanhook.webp",
@@ -504,15 +540,8 @@
   "bytes": 3987156
  },
  {
-  "slug": "defendthetank",
-  "title": "Defend the Tank",
-  "genre": "reaction",
-  "thumbnail": "defendthetank.jpg",
-  "rank": 88,
-  "bytes": 5064485
- },
- {
   "slug": "sortthecourt",
+  "path": "truocehttros",
   "title": "Sort the Court",
   "genre": "systems",
   "thumbnail": "sortthecourt.webp",
@@ -521,6 +550,7 @@
  },
  {
   "slug": "thisistheonlylevel",
+  "path": "levelylnoehtsisiht",
   "title": "This Is the Only Level",
   "genre": "coordination",
   "thumbnail": "thisistheonlylevel.webp",
@@ -529,6 +559,7 @@
  },
  {
   "slug": "run",
+  "path": "nur",
   "title": "Run",
   "genre": "coordination",
   "thumbnail": "run.jpg",
@@ -537,6 +568,7 @@
  },
  {
   "slug": "run2",
+  "path": "2nur",
   "title": "Run 2",
   "genre": "coordination",
   "thumbnail": "run2.jpg",
@@ -545,6 +577,7 @@
  },
  {
   "slug": "battleships",
+  "path": "spihselttab",
   "title": "Battleships",
   "genre": "reaction",
   "thumbnail": "battleships.jpg",
@@ -553,6 +586,7 @@
  },
  {
   "slug": "breakingthebank",
+  "path": "knabehtgnikaerb",
   "title": "Breaking the Bank",
   "genre": "exploration",
   "thumbnail": "breakingthebank.jpg",
@@ -561,6 +595,7 @@
  },
  {
   "slug": "ducklife",
+  "path": "efilkcud",
   "title": "Duck Life",
   "genre": "systems",
   "thumbnail": "ducklife.webp",
@@ -569,6 +604,7 @@
  },
  {
   "slug": "ducklife2",
+  "path": "2efilkcud",
   "title": "Duck Life 2",
   "genre": "systems",
   "thumbnail": "ducklife2.jpg",
@@ -577,6 +613,7 @@
  },
  {
   "slug": "ducklife3",
+  "path": "3efilkcud",
   "title": "Duck Life 3",
   "genre": "systems",
   "thumbnail": "ducklife3.jpg",
@@ -585,6 +622,7 @@
  },
  {
   "slug": "linerider",
+  "path": "redirenil",
   "title": "Line Rider",
   "genre": "coordination",
   "thumbnail": "linerider.webp",
@@ -593,6 +631,7 @@
  },
  {
   "slug": "mariocombat",
+  "path": "tabmocoiram",
   "title": "Mario Combat",
   "genre": "coordination",
   "thumbnail": "mariocombat.jpg",
@@ -600,15 +639,8 @@
   "bytes": 3935969
  },
  {
-  "slug": "raftwars2",
-  "title": "Raft Wars 2",
-  "genre": "reaction",
-  "thumbnail": "raftwars2.jpg",
-  "rank": 100,
-  "bytes": 4026729
- },
- {
   "slug": "spaceinvaders",
+  "path": "sredavniecaps",
   "title": "Space Invaders",
   "genre": "reaction",
   "thumbnail": "spaceinvaders.webp",
@@ -616,15 +648,8 @@
   "bytes": 26254
  },
  {
-  "slug": "gunmayhem",
-  "title": "Gun Mayhem",
-  "genre": "reaction",
-  "thumbnail": "gunmayhem.webp",
-  "rank": 107,
-  "bytes": 5968505
- },
- {
   "slug": "learntofly",
+  "path": "ylfotnrael",
   "title": "Learn to Fly",
   "genre": "reaction",
   "thumbnail": "learntofly.webp",
@@ -632,15 +657,8 @@
   "bytes": 962008
  },
  {
-  "slug": "rooftop2",
-  "title": "Rooftop Snipers 2",
-  "genre": "reaction",
-  "thumbnail": "rooftopsnipers2.jpg",
-  "rank": 109,
-  "bytes": 27679019
- },
- {
   "slug": "fireboywatergirl",
+  "path": "lrigretawyoberif",
   "title": "Fireboy and Watergirl",
   "genre": "coordination",
   "thumbnail": "fireboywatergirl.webp",
@@ -649,6 +667,7 @@
  },
  {
   "slug": "chibiknight",
+  "path": "thginkibihc",
   "title": "Chibi Knight",
   "genre": "exploration",
   "thumbnail": "chibiknight.webp",
@@ -657,6 +676,7 @@
  },
  {
   "slug": "clusterrush",
+  "path": "hsurretsulc",
   "title": "Cluster Rush",
   "genre": "coordination",
   "thumbnail": "clusterrush.jpg",
@@ -665,6 +685,7 @@
  },
  {
   "slug": "doodledefender",
+  "path": "rednefedeldood",
   "title": "Doodle Defender",
   "genre": "reaction",
   "thumbnail": "doodledefender.webp",
@@ -673,6 +694,7 @@
  },
  {
   "slug": "learntofly2",
+  "path": "2ylfotnrael",
   "title": "Learn to Fly 2",
   "genre": "exploration",
   "thumbnail": "learntofly2.webp",
@@ -681,6 +703,7 @@
  },
  {
   "slug": "papasscooperia",
+  "path": "airepoocssapap",
   "title": "Papa's Scooperia",
   "genre": "systems",
   "thumbnail": "papasscooperia.webp",
@@ -689,6 +712,7 @@
  },
  {
   "slug": "papassushiria",
+  "path": "airihsussapap",
   "title": "Papa's Sushiria",
   "genre": "systems",
   "thumbnail": "papassushiria.webp",
@@ -697,6 +721,7 @@
  },
  {
   "slug": "papaswingeria",
+  "path": "airegniwsapap",
   "title": "Papa's Wingeria",
   "genre": "systems",
   "thumbnail": "papaswingeria.webp",
@@ -704,15 +729,8 @@
   "bytes": 7688849
  },
  {
-  "slug": "raftwars",
-  "title": "Raft Wars",
-  "genre": "reaction",
-  "thumbnail": "raftwars.webp",
-  "rank": 118,
-  "bytes": 1915585
- },
- {
   "slug": "unfairmario",
+  "path": "oiramriafnu",
   "title": "Unfair Mario",
   "genre": "coordination",
   "thumbnail": "unfairmario.webp",
@@ -721,6 +739,7 @@
  },
  {
   "slug": "boxingphysics2",
+  "path": "2scisyhpgnixob",
   "title": "Boxing Physics 2",
   "genre": "reaction",
   "thumbnail": "boxingphysics2.jpg",
@@ -729,6 +748,7 @@
  },
  {
   "slug": "theimpossiblequiz2",
+  "path": "2ziuqelbissopmieht",
   "title": "The Impossible Quiz 2",
   "genre": "problem-solving",
   "thumbnail": "theimpossiblequiz2.jpg",
@@ -737,6 +757,7 @@
  },
  {
   "slug": "papasdonuteria",
+  "path": "airetunodsapap",
   "title": "Papa's Donuteria",
   "genre": "systems",
   "thumbnail": "papasdonuteria.webp",
@@ -745,6 +766,7 @@
  },
  {
   "slug": "fancypantsadventure2",
+  "path": "2erutnevdastnapycnaf",
   "title": "Fancy Pants Adventure 2",
   "genre": "exploration",
   "thumbnail": "fancypantsadventure2.jpg",
@@ -753,6 +775,7 @@
  },
  {
   "slug": "tinyfishing",
+  "path": "gnihsifynit",
   "title": "Tiny Fishing",
   "genre": "reaction",
   "thumbnail": "tinyfishing.webp",
@@ -761,6 +784,7 @@
  },
  {
   "slug": "bigredbutton",
+  "path": "nottubdergib",
   "title": "Big Red Button",
   "genre": "problem-solving",
   "thumbnail": "bigredbutton.jpg",
@@ -769,6 +793,7 @@
  },
  {
   "slug": "achievementunlocked",
+  "path": "dekcolnutnemeveihca",
   "title": "Achievement Unlocked",
   "genre": "problem-solving",
   "thumbnail": "achievementunlocked.webp",
@@ -777,6 +802,7 @@
  },
  {
   "slug": "badicecream",
+  "path": "maercecidab",
   "title": "Bad Ice Cream",
   "genre": "reaction",
   "thumbnail": "badicecream.webp",
@@ -785,6 +811,7 @@
  },
  {
   "slug": "badicecream2",
+  "path": "2maercecidab",
   "title": "Bad Ice Cream 2",
   "genre": "reaction",
   "thumbnail": "badicecream2.jpg",
@@ -793,6 +820,7 @@
  },
  {
   "slug": "badicecream3",
+  "path": "3maercecidab",
   "title": "Bad Ice Cream 3",
   "genre": "reaction",
   "thumbnail": "badicecream3.webp",
@@ -801,6 +829,7 @@
  },
  {
   "slug": "adventurecapitalist",
+  "path": "tsilatipacerutnevda",
   "title": "Adventure Captialist",
   "genre": "systems",
   "thumbnail": "adventurecapitalist.webp",
@@ -809,6 +838,7 @@
  },
  {
   "slug": "monkeymart",
+  "path": "tramyeknom",
   "title": "Monkey Mart",
   "genre": "systems",
   "thumbnail": "monkeymart.jpg",
@@ -816,15 +846,8 @@
   "bytes": 14709915
  },
  {
-  "slug": "getawayshootout",
-  "title": "Getaway Shootout",
-  "genre": "reaction",
-  "thumbnail": "getawayshootout.webp",
-  "rank": 156,
-  "bytes": 13711982
- },
- {
   "slug": "rabbitsamurai",
+  "path": "iarumastibbar",
   "title": "Rabbit Samurai",
   "genre": "coordination",
   "thumbnail": "rabbitsamurai.jpg",
@@ -833,6 +856,7 @@
  },
  {
   "slug": "papascheeseria",
+  "path": "aireseehcsapap",
   "title": "Papa's Cheeseria",
   "genre": "systems",
   "thumbnail": "papascheeseria.webp",
@@ -841,6 +865,7 @@
  },
  {
   "slug": "papascupcakeria",
+  "path": "airekacpucsapap",
   "title": "Papa's Cupcakeria",
   "genre": "systems",
   "thumbnail": "papascupcakeria.webp",
@@ -849,6 +874,7 @@
  },
  {
   "slug": "papasbakeria",
+  "path": "airekabsapap",
   "title": "Papa's Bakeria",
   "genre": "systems",
   "thumbnail": "papasbakeria.webp",
@@ -857,6 +883,7 @@
  },
  {
   "slug": "papaspastaria",
+  "path": "airatsapsapap",
   "title": "Papa's Pastaria",
   "genre": "systems",
   "thumbnail": "papaspastaria.webp",
@@ -864,23 +891,8 @@
   "bytes": 10580601
  },
  {
-  "slug": "gunmayhem2",
-  "title": "Gun Mayhem 2",
-  "genre": "reaction",
-  "thumbnail": "gunmayhem2.webp",
-  "rank": 171,
-  "bytes": 8884294
- },
- {
-  "slug": "gunmayhemredux",
-  "title": "Gun Mayhem Redux",
-  "genre": "reaction",
-  "thumbnail": "gunmayhemredux.jpg",
-  "rank": 172,
-  "bytes": 7270042
- },
- {
   "slug": "achievementunlocked2",
+  "path": "2dekcolnutnemeveihca",
   "title": "Achievement Unlocked 2",
   "genre": "problem-solving",
   "thumbnail": "achievementunlocked2.webp",
@@ -889,6 +901,7 @@
  },
  {
   "slug": "achievementunlocked3",
+  "path": "3dekcolnutnemeveihca",
   "title": "Achievement Unlocked 3",
   "genre": "problem-solving",
   "thumbnail": "achievementunlocked3.webp",
@@ -897,6 +910,7 @@
  },
  {
   "slug": "factoryballs",
+  "path": "sllabyrotcaf",
   "title": "Factory Balls",
   "genre": "reaction",
   "thumbnail": "factoryballs.webp",
@@ -905,6 +919,7 @@
  },
  {
   "slug": "skywire",
+  "path": "eriwyks",
   "title": "Skywire",
   "genre": "reaction",
   "thumbnail": "skywire.jpg",
@@ -913,6 +928,7 @@
  },
  {
   "slug": "supermarioflash",
+  "path": "hsalfoiramrepus",
   "title": "Super Mario Flash",
   "genre": "coordination",
   "thumbnail": "supermarioflash.jpg",
@@ -921,6 +937,7 @@
  },
  {
   "slug": "ducklife5",
+  "path": "5efilkcud",
   "title": "Duck Life 5",
   "genre": "systems",
   "thumbnail": "ducklife5.jpg",
@@ -929,6 +946,7 @@
  },
  {
   "slug": "learntofly3",
+  "path": "3ylfotnrael",
   "title": "Learn to Fly 3",
   "genre": "reaction",
   "thumbnail": "learntofly3.webp",
@@ -937,6 +955,7 @@
  },
  {
   "slug": "bloxors",
+  "path": "sroxolb",
   "title": "Bloxors",
   "genre": "problem-solving",
   "thumbnail": "bloxors.webp",
@@ -945,6 +964,7 @@
  },
  {
   "slug": "electricman2",
+  "path": "2namcirtcele",
   "title": "Electric Man 2",
   "genre": "reaction",
   "thumbnail": "electricman2.jpg",
@@ -953,6 +973,7 @@
  },
  {
   "slug": "portal",
+  "path": "latrop",
   "title": "Portal",
   "genre": "problem-solving",
   "thumbnail": "portal.webp",
@@ -961,6 +982,7 @@
  },
  {
   "slug": "portal2",
+  "path": "2latrop",
   "title": "Portal 2",
   "genre": "problem-solving",
   "thumbnail": "portal2.webp",
@@ -969,6 +991,7 @@
  },
  {
   "slug": "skywire2",
+  "path": "2eriwyks",
   "title": "Skywire 2",
   "genre": "reaction",
   "thumbnail": "skywire2.jpg",
@@ -977,6 +1000,7 @@
  },
  {
   "slug": "ducklife6",
+  "path": "6efilkcud",
   "title": "Duck Life 6",
   "genre": "systems",
   "thumbnail": "ducklife6.jpg",
@@ -985,6 +1009,7 @@
  },
  {
   "slug": "boxingrandom",
+  "path": "modnargnixob",
   "title": "Boxing Random",
   "genre": "reaction",
   "thumbnail": "boxingrandom.jpg",
@@ -993,6 +1018,7 @@
  },
  {
   "slug": "cellmachine",
+  "path": "enihcamllec",
   "title": "Cell Machine",
   "genre": "problem-solving",
   "thumbnail": "cellmachine.webp",
@@ -1001,6 +1027,7 @@
  },
  {
   "slug": "stickmanboost",
+  "path": "tsoobnamkcits",
   "title": "Stickman Boost",
   "genre": "coordination",
   "thumbnail": "stickmanboost.jpg",
@@ -1009,6 +1036,7 @@
  },
  {
   "slug": "vex3",
+  "path": "3xev",
   "title": "Vex 3",
   "genre": "coordination",
   "thumbnail": "vex3.jpg",
@@ -1017,6 +1045,7 @@
  },
  {
   "slug": "vex4",
+  "path": "4xev",
   "title": "Vex 4",
   "genre": "coordination",
   "thumbnail": "vex4.jpg",
@@ -1025,6 +1054,7 @@
  },
  {
   "slug": "skibidi1v100",
+  "path": "001v1idibiks",
   "title": "Skibidi Toilet 1v100",
   "genre": "coordination",
   "thumbnail": "skibiditoilet1v100.jpg",
@@ -1033,6 +1063,7 @@
  },
  {
   "slug": "badpiggies",
+  "path": "seiggipdab",
   "title": "Bad Piggies",
   "genre": "reaction",
   "thumbnail": "badpiggies.webp",
@@ -1041,6 +1072,7 @@
  },
  {
   "slug": "supermarioflash2",
+  "path": "2hsalfoiramrepus",
   "title": "Super Mario Flash 2",
   "genre": "coordination",
   "thumbnail": "supermarioflash2.jpg",
@@ -1049,6 +1081,7 @@
  },
  {
   "slug": "swordsandsandals",
+  "path": "sladnasdnasdrows",
   "title": "Swords and Sandals",
   "genre": "reaction",
   "thumbnail": "swordsandsandals.webp",
@@ -1057,6 +1090,7 @@
  },
  {
   "slug": "swordsandsandals2",
+  "path": "2sladnasdnasdrows",
   "title": "Swords and Sandals 2",
   "genre": "reaction",
   "thumbnail": "swordsandsandals2.webp",
@@ -1065,6 +1099,7 @@
  },
  {
   "slug": "wordle",
+  "path": "eldrow",
   "title": "Wordle",
   "genre": "reaction",
   "thumbnail": "wordle.webp",
@@ -1073,6 +1108,7 @@
  },
  {
   "slug": "vex",
+  "path": "xev",
   "title": "Vex",
   "genre": "coordination",
   "thumbnail": "vex.jpg",
@@ -1081,6 +1117,7 @@
  },
  {
   "slug": "vex2",
+  "path": "2xev",
   "title": "Vex 2",
   "genre": "coordination",
   "thumbnail": "vex2.jpg",
@@ -1089,6 +1126,7 @@
  },
  {
   "slug": "vex5",
+  "path": "5xev",
   "title": "Vex 5",
   "genre": "coordination",
   "thumbnail": "vex5.jpg",
@@ -1097,6 +1135,7 @@
  },
  {
   "slug": "vex7",
+  "path": "7xev",
   "title": "Vex 7",
   "genre": "coordination",
   "thumbnail": "vex7.webp",
@@ -1105,6 +1144,7 @@
  },
  {
   "slug": "stack",
+  "path": "kcats",
   "title": "Stack",
   "genre": "reaction",
   "thumbnail": "stack.webp",
@@ -1112,15 +1152,8 @@
   "bytes": 623519
  },
  {
-  "slug": "skibiditoiletattack",
-  "title": "Skibidi Toilet Attack",
-  "genre": "reaction",
-  "thumbnail": "skibiditoiletattack.jpg",
-  "rank": 238,
-  "bytes": 18521314
- },
- {
   "slug": "motox3mpool",
+  "path": "loopm3xotom",
   "title": "Motox3m Pool",
   "genre": "coordination",
   "thumbnail": "motox3mpool.jpg",
@@ -1129,6 +1162,7 @@
  },
  {
   "slug": "offlineparadise",
+  "path": "esidarapenilffo",
   "title": "Offline Paradise",
   "genre": "coordination",
   "thumbnail": "offlineparadise.webp",
@@ -1137,6 +1171,7 @@
  },
  {
   "slug": "worldshardestgame2",
+  "path": "2emagtsedrahsdlrow",
   "title": "Worlds Hardest Game 2",
   "genre": "coordination",
   "thumbnail": "worldshardestgame2.jpg",
@@ -1145,6 +1180,7 @@
  },
  {
   "slug": "bubbletanks2",
+  "path": "2sknatelbbub",
   "title": "Bubble Tanks 2",
   "genre": "reaction",
   "thumbnail": "bubbletanks2.webp",
@@ -1152,31 +1188,8 @@
   "bytes": 1544152
  },
  {
-  "slug": "chooseyourweapon",
-  "title": "Choose Your Weapon",
-  "genre": "coordination",
-  "thumbnail": "chooseyourweapon.webp",
-  "rank": 252,
-  "bytes": 3133759
- },
- {
-  "slug": "chooseyourweapon2",
-  "title": "Choose Your Weapon 2",
-  "genre": "coordination",
-  "thumbnail": "chooseyourweapon2.jpg",
-  "rank": 253,
-  "bytes": 2727104
- },
- {
-  "slug": "chooseyourweapon3",
-  "title": "Choose Your Weapon 3",
-  "genre": "coordination",
-  "thumbnail": "chooseyourweapon3.jpg",
-  "rank": 254,
-  "bytes": 2903311
- },
- {
   "slug": "connect4",
+  "path": "4tcennoc",
   "title": "Connect 4",
   "genre": "reaction",
   "thumbnail": "connect4.webp",
@@ -1185,6 +1198,7 @@
  },
  {
   "slug": "electricbox",
+  "path": "xobcirtcele",
   "title": "Electric Box",
   "genre": "problem-solving",
   "thumbnail": "electricbox.jpg",
@@ -1193,6 +1207,7 @@
  },
  {
   "slug": "mctowerdefence2",
+  "path": "2ecnefedrewotcm",
   "title": "Mc Tower Defence 2",
   "genre": "reaction",
   "thumbnail": "mctowerdefence2.jpg",
@@ -1201,6 +1216,7 @@
  },
  {
   "slug": "championisland",
+  "path": "dnalsinoipmahc",
   "title": "Champion Island",
   "genre": "exploration",
   "thumbnail": "championisland.webp",
@@ -1209,6 +1225,7 @@
  },
  {
   "slug": "supermarioconstruct",
+  "path": "tcurtsnocoiramrepus",
   "title": "Super Mario Construct",
   "genre": "reaction",
   "thumbnail": "supermarioconstruct.jpg",
@@ -1217,6 +1234,7 @@
  },
  {
   "slug": "clickerheroes",
+  "path": "seorehrekcilc",
   "title": "Clicker Heroes",
   "genre": "reaction",
   "thumbnail": "clickerheroes.webp",
@@ -1225,6 +1243,7 @@
  },
  {
   "slug": "stairrace3d",
+  "path": "d3ecarriats",
   "title": "Stair Race 3d",
   "genre": "reaction",
   "thumbnail": "stairrace3d.jpg",
@@ -1233,6 +1252,7 @@
  },
  {
   "slug": "slope2",
+  "path": "2epols",
   "title": "Slope 2",
   "genre": "reaction",
   "thumbnail": "slope2.jpg",
@@ -1241,6 +1261,7 @@
  },
  {
   "slug": "paperio3d",
+  "path": "d3oirepap",
   "title": "Paper Io 3d",
   "genre": "reaction",
   "thumbnail": "paperio3d.jpg",
@@ -1249,6 +1270,7 @@
  },
  {
   "slug": "motox3mspooky",
+  "path": "ykoopsm3xotom",
   "title": "Motox3m Spooky",
   "genre": "coordination",
   "thumbnail": "motox3mspooky.jpg",
@@ -1257,6 +1279,7 @@
  },
  {
   "slug": "motox3mwinter",
+  "path": "retniwm3xotom",
   "title": "Motox3m Winter",
   "genre": "coordination",
   "thumbnail": "motox3mwinter.jpg",
@@ -1265,6 +1288,7 @@
  },
  {
   "slug": "snake",
+  "path": "ekans",
   "title": "Snake",
   "genre": "reaction",
   "thumbnail": "snake.webp",
@@ -1273,6 +1297,7 @@
  },
  {
   "slug": "papastacomia",
+  "path": "aimocatsapap",
   "title": "Papa's Tacomia",
   "genre": "systems",
   "thumbnail": "papastacomia.jpg",
@@ -1281,6 +1306,7 @@
  },
  {
   "slug": "ovo",
+  "path": "ovo",
   "title": "Ovo",
   "genre": "coordination",
   "thumbnail": "ovo.webp",
@@ -1289,6 +1315,7 @@
  },
  {
   "slug": "knifehit",
+  "path": "tihefink",
   "title": "Knife Hit",
   "genre": "reaction",
   "thumbnail": "knifehit.webp",
@@ -1297,6 +1324,7 @@
  },
  {
   "slug": "cubefield",
+  "path": "dleifebuc",
   "title": "Cubefield",
   "genre": "reaction",
   "thumbnail": "cubefield.webp",
@@ -1305,6 +1333,7 @@
  },
  {
   "slug": "burgerandfrights",
+  "path": "sthgirfdnaregrub",
   "title": "Burger and Frights",
   "genre": "exploration",
   "thumbnail": "burgerandfrights.webp",
@@ -1313,6 +1342,7 @@
  },
  {
   "slug": "chess",
+  "path": "ssehc",
   "title": "Chess",
   "genre": "reaction",
   "thumbnail": "chess.webp",
@@ -1321,6 +1351,7 @@
  },
  {
   "slug": "fnfmidfight",
+  "path": "thgifdimfnf",
   "title": "Fnf Mid Fight Masses",
   "genre": "reaction",
   "thumbnail": "fnfmidfight.webp",
@@ -1329,6 +1360,7 @@
  },
  {
   "slug": "thumbfighter",
+  "path": "rethgifbmuht",
   "title": "Thumb Fighter",
   "genre": "reaction",
   "thumbnail": "thumbfighter.webp",
@@ -1337,6 +1369,7 @@
  },
  {
   "slug": "snowbattleio",
+  "path": "oielttabwons",
   "title": "Snow Battle Io",
   "genre": "reaction",
   "thumbnail": "snowbattleio.jpg",
@@ -1345,6 +1378,7 @@
  },
  {
   "slug": "lazyjump3d",
+  "path": "d3pmujyzal",
   "title": "Lazy Jump 3d",
   "genre": "reaction",
   "thumbnail": "lazyjump3d.webp",
@@ -1353,6 +1387,7 @@
  },
  {
   "slug": "goball",
+  "path": "llabog",
   "title": "Go Ball",
   "genre": "reaction",
   "thumbnail": "goball.webp",
@@ -1361,6 +1396,7 @@
  },
  {
   "slug": "flippyfish",
+  "path": "hsifyppilf",
   "title": "Flippy Fish",
   "genre": "reaction",
   "thumbnail": "flippyfish.webp",
@@ -1369,6 +1405,7 @@
  },
  {
   "slug": "shopempire",
+  "path": "eripmepohs",
   "title": "Shop Empire",
   "genre": "systems",
   "thumbnail": "shopempire.jpg",
@@ -1377,6 +1414,7 @@
  },
  {
   "slug": "monsterbrawl",
+  "path": "lwarbretsnom",
   "title": "Monster Brawl",
   "genre": "reaction",
   "thumbnail": "monsterbrawl.webp",
@@ -1385,6 +1423,7 @@
  },
  {
   "slug": "multitask",
+  "path": "ksatitlum",
   "title": "Multitask",
   "genre": "reaction",
   "thumbnail": "multitask.webp",
@@ -1393,6 +1432,7 @@
  },
  {
   "slug": "shift",
+  "path": "tfihs",
   "title": "Shift",
   "genre": "coordination",
   "thumbnail": "shift.webp",
@@ -1401,6 +1441,7 @@
  },
  {
   "slug": "shift2",
+  "path": "2tfihs",
   "title": "Shift 2",
   "genre": "coordination",
   "thumbnail": "shift2.webp",
@@ -1409,6 +1450,7 @@
  },
  {
   "slug": "shift3",
+  "path": "3tfihs",
   "title": "Shift 3",
   "genre": "coordination",
   "thumbnail": "shift3.jpg",
@@ -1417,6 +1459,7 @@
  },
  {
   "slug": "shift4",
+  "path": "4tfihs",
   "title": "Shift 4",
   "genre": "coordination",
   "thumbnail": "shift4.jpg",
@@ -1425,6 +1468,7 @@
  },
  {
   "slug": "pizzatower",
+  "path": "rewotazzip",
   "title": "Pizza Tower",
   "genre": "coordination",
   "thumbnail": "pizzatower.webp",
@@ -1433,6 +1477,7 @@
  },
  {
   "slug": "territorialio",
+  "path": "oilairotirret",
   "title": "Territorial Io",
   "genre": "reaction",
   "thumbnail": "territorialio.jpg",
@@ -1440,15 +1485,8 @@
   "bytes": 1423573
  },
  {
-  "slug": "1v1lol",
-  "title": "1v1lol",
-  "genre": "reaction",
-  "thumbnail": "1v1lol.webp",
-  "rank": 304,
-  "bytes": 1356622
- },
- {
   "slug": "ballisticchickens",
+  "path": "snekcihccitsillab",
   "title": "Ballistic Chickens",
   "genre": "reaction",
   "thumbnail": "ballisticchickens.webp",
@@ -1457,6 +1495,7 @@
  },
  {
   "slug": "basketbrosio",
+  "path": "oisorbteksab",
   "title": "Basketbros Io",
   "genre": "touch",
   "thumbnail": "basketbrosio.jpg",
@@ -1465,6 +1504,7 @@
  },
  {
   "slug": "mcclassic",
+  "path": "cissalccm",
   "title": "Minecraft Classic",
   "genre": "exploration",
   "thumbnail": "mcclassic.jpg",
@@ -1473,6 +1513,7 @@
  },
  {
   "slug": "deathrun3d",
+  "path": "d3nurhtaed",
   "title": "Death Run 3d",
   "genre": "reaction",
   "thumbnail": "deathrun3d.webp",
@@ -1481,6 +1522,7 @@
  },
  {
   "slug": "soccerrandom",
+  "path": "modnarreccos",
   "title": "Soccer Random",
   "genre": "reaction",
   "thumbnail": "soccerrandom.webp",
@@ -1489,6 +1531,7 @@
  },
  {
   "slug": "sprinter",
+  "path": "retnirps",
   "title": "Sprinter",
   "genre": "reaction",
   "thumbnail": "sprinter.jpg",
@@ -1497,6 +1540,7 @@
  },
  {
   "slug": "tron",
+  "path": "nort",
   "title": "Tron",
   "genre": "reaction",
   "thumbnail": "tron.webp",
@@ -1505,6 +1549,7 @@
  },
  {
   "slug": "1on1soccer",
+  "path": "reccos1no1",
   "title": "1 on 1 Soccer",
   "genre": "reaction",
   "thumbnail": "1on1soccer.webp",
@@ -1513,6 +1558,7 @@
  },
  {
   "slug": "badtimesimulator",
+  "path": "rotalumisemitdab",
   "title": "Bad Time Simulator",
   "genre": "systems",
   "thumbnail": "badtimesimulator.webp",
@@ -1520,15 +1566,8 @@
   "bytes": 2685848
  },
  {
-  "slug": "amazingropepolice",
-  "title": "Amazing Rope Police",
-  "genre": "exploration",
-  "thumbnail": "amazingropepolice.webp",
-  "rank": 314,
-  "bytes": 75785443
- },
- {
   "slug": "celeste",
+  "path": "etselec",
   "title": "Celeste",
   "genre": "coordination",
   "thumbnail": "celeste.webp",
@@ -1537,6 +1576,7 @@
  },
  {
   "slug": "justfalllol",
+  "path": "lolllaftsuj",
   "title": "Just Fall Lol",
   "genre": "reaction",
   "thumbnail": "justfalllol.jpg",
@@ -1545,6 +1585,7 @@
  },
  {
   "slug": "ngon",
+  "path": "nogn",
   "title": "Ngon",
   "genre": "reaction",
   "thumbnail": "ngon.webp",
@@ -1553,6 +1594,7 @@
  },
  {
   "slug": "rocketsoccer",
+  "path": "reccostekcor",
   "title": "Rocket Soccer",
   "genre": "reaction",
   "thumbnail": "rocketsoccer.webp",
@@ -1561,6 +1603,7 @@
  },
  {
   "slug": "stickmanclimb",
+  "path": "bmilcnamkcits",
   "title": "Stickman Climb",
   "genre": "reaction",
   "thumbnail": "stickmanclimb.jpg",
@@ -1569,6 +1612,7 @@
  },
  {
   "slug": "osumania",
+  "path": "ainamuso",
   "title": "Osu!mania",
   "genre": "reaction",
   "thumbnail": "osumania.jpg",
@@ -1577,6 +1621,7 @@
  },
  {
   "slug": "helixjump",
+  "path": "pmujxileh",
   "title": "Helix Jump",
   "genre": "touch",
   "thumbnail": "helixjump.webp",
@@ -1585,6 +1630,7 @@
  },
  {
   "slug": "dadish",
+  "path": "hsidad",
   "title": "Dadish",
   "genre": "coordination",
   "thumbnail": "dadish.webp",
@@ -1593,6 +1639,7 @@
  },
  {
   "slug": "dadish2",
+  "path": "2hsidad",
   "title": "Dadish 2",
   "genre": "coordination",
   "thumbnail": "dadish2.webp",
@@ -1601,6 +1648,7 @@
  },
  {
   "slug": "dadish3",
+  "path": "3hsidad",
   "title": "Dadish 3",
   "genre": "coordination",
   "thumbnail": "dadish3.webp",
@@ -1609,6 +1657,7 @@
  },
  {
   "slug": "snowrider3d",
+  "path": "d3redirwons",
   "title": "Snow Rider 3d",
   "genre": "reaction",
   "thumbnail": "snowrider3d.jpg",
@@ -1617,6 +1666,7 @@
  },
  {
   "slug": "tubejumpers",
+  "path": "srepmujebut",
   "title": "Tube Jumpers",
   "genre": "reaction",
   "thumbnail": "tubejumpers.webp",
@@ -1625,6 +1675,7 @@
  },
  {
   "slug": "yohoho",
+  "path": "ohohoy",
   "title": "Yohoho Io",
   "genre": "touch",
   "thumbnail": "yohoho.jpg",
@@ -1632,15 +1683,8 @@
   "bytes": 6881250
  },
  {
-  "slug": "10minutestilldawn",
-  "title": "10 Minutes Till Dawn",
-  "genre": "reaction",
-  "thumbnail": "10minutestilldawn.webp",
-  "rank": 328,
-  "bytes": 50529379
- },
- {
   "slug": "volleyrandom",
+  "path": "modnaryellov",
   "title": "Volley Random",
   "genre": "reaction",
   "thumbnail": "volleyrandom.jpg",
@@ -1649,6 +1693,7 @@
  },
  {
   "slug": "waterworks",
+  "path": "skrowretaw",
   "title": "Waterworks",
   "genre": "systems",
   "thumbnail": "waterworks.webp",
@@ -1657,6 +1702,7 @@
  },
  {
   "slug": "geometryrash",
+  "path": "hsaryrtemoeg",
   "title": "Geometry Rash",
   "genre": "coordination",
   "thumbnail": "geometryrash.jpg",
@@ -1665,6 +1711,7 @@
  },
  {
   "slug": "holeio",
+  "path": "oieloh",
   "title": "Hole Io",
   "genre": "reaction",
   "thumbnail": "holeio.webp",
@@ -1673,6 +1720,7 @@
  },
  {
   "slug": "sandtrix",
+  "path": "xirtdnas",
   "title": "Sandtrix",
   "genre": "reaction",
   "thumbnail": "sandtrix.webp",
@@ -1681,6 +1729,7 @@
  },
  {
   "slug": "shapeshipper",
+  "path": "reppihsepahs",
   "title": "Shapeshipper",
   "genre": "reaction",
   "thumbnail": "shapeshipper.jpg",
@@ -1689,6 +1738,7 @@
  },
  {
   "slug": "slopeball",
+  "path": "llabepols",
   "title": "Slope Ball",
   "genre": "reaction",
   "thumbnail": "slopeball.webp",
@@ -1697,6 +1747,7 @@
  },
  {
   "slug": "stickmangolf",
+  "path": "flognamkcits",
   "title": "Stickman Golf",
   "genre": "reaction",
   "thumbnail": "stickmangolf.jpg",
@@ -1705,6 +1756,7 @@
  },
  {
   "slug": "tabs",
+  "path": "sbat",
   "title": "Totally Accurate Battle Sim",
   "genre": "systems",
   "thumbnail": "tabs.webp",
@@ -1713,6 +1765,7 @@
  },
  {
   "slug": "watermelongame",
+  "path": "emagnolemretaw",
   "title": "Watermelon Game",
   "genre": "reaction",
   "thumbnail": "watermelongame.webp",
@@ -1721,6 +1774,7 @@
  },
  {
   "slug": "wallsmash",
+  "path": "hsamsllaw",
   "title": "Wall Smash",
   "genre": "reaction",
   "thumbnail": "wallsmash.jpg",
@@ -1729,6 +1783,7 @@
  },
  {
   "slug": "crimsonfantasia",
+  "path": "aisatnafnosmirc",
   "title": "Crimson Fantasia",
   "genre": "reaction",
   "thumbnail": "crimsonfantasia.jpg",
@@ -1737,6 +1792,7 @@
  },
  {
   "slug": "cuttherope",
+  "path": "eporehttuc",
   "title": "Cut the Rope",
   "genre": "touch",
   "thumbnail": "cuttherope.webp",
@@ -1745,6 +1801,7 @@
  },
  {
   "slug": "funnymadracing",
+  "path": "gnicardamynnuf",
   "title": "Funny Mad Racing",
   "genre": "reaction",
   "thumbnail": "funnymadracing.jpg",
@@ -1753,6 +1810,7 @@
  },
  {
   "slug": "gdlite",
+  "path": "etildg",
   "title": "Geometry Dash Lite",
   "genre": "coordination",
   "thumbnail": "gdlite.webp",
@@ -1760,15 +1818,8 @@
   "bytes": 54997500
  },
  {
-  "slug": "grandtheftgrotto",
-  "title": "Grand Theft Grotto",
-  "genre": "reaction",
-  "thumbnail": "grandtheftgrotto.jpg",
-  "rank": 344,
-  "bytes": 1279736
- },
- {
   "slug": "driftmania",
+  "path": "ainamtfird",
   "title": "Drift Mania",
   "genre": "reaction",
   "thumbnail": "driftmania.webp",
@@ -1777,6 +1828,7 @@
  },
  {
   "slug": "risehigher",
+  "path": "rehgihesir",
   "title": "Rise Higher",
   "genre": "reaction",
   "thumbnail": "risehigher.jpg",
@@ -1785,6 +1837,7 @@
  },
  {
   "slug": "burritobison",
+  "path": "nosibotirrub",
   "title": "Burrito Bison",
   "genre": "reaction",
   "thumbnail": "burritobison.webp",
@@ -1793,6 +1846,7 @@
  },
  {
   "slug": "pool",
+  "path": "loop",
   "title": "Pool",
   "genre": "reaction",
   "thumbnail": "pool.webp",
@@ -1801,6 +1855,7 @@
  },
  {
   "slug": "redball1",
+  "path": "1llabder",
   "title": "Redball",
   "genre": "coordination",
   "thumbnail": "redball1.webp",
@@ -1809,6 +1864,7 @@
  },
  {
   "slug": "redball3",
+  "path": "3llabder",
   "title": "Redball 3",
   "genre": "coordination",
   "thumbnail": "redball3.jpg",
@@ -1817,6 +1873,7 @@
  },
  {
   "slug": "redball4",
+  "path": "4llabder",
   "title": "Redball 4",
   "genre": "coordination",
   "thumbnail": "redball4.jpg",
@@ -1825,6 +1882,7 @@
  },
  {
   "slug": "redballv2",
+  "path": "2vllabder",
   "title": "Redball 4 Vol 2",
   "genre": "coordination",
   "thumbnail": "redball4vol2.jpg",
@@ -1833,6 +1891,7 @@
  },
  {
   "slug": "redballv3",
+  "path": "3vllabder",
   "title": "Redball 4 Vol 3",
   "genre": "coordination",
   "thumbnail": "redball4vol3.jpg",
@@ -1841,6 +1900,7 @@
  },
  {
   "slug": "roughdino",
+  "path": "onidhguor",
   "title": "Rough Dino",
   "genre": "reaction",
   "thumbnail": "roughdino.jpg",
@@ -1848,31 +1908,8 @@
   "bytes": 41115739
  },
  {
-  "slug": "timeshooter1",
-  "title": "Time Shooter",
-  "genre": "reaction",
-  "thumbnail": "timeshooter1.webp",
-  "rank": 355,
-  "bytes": 20074774
- },
- {
-  "slug": "timeshooter2",
-  "title": "Time Shooter 2",
-  "genre": "reaction",
-  "thumbnail": "timeshooter2.jpg",
-  "rank": 356,
-  "bytes": 9455523
- },
- {
-  "slug": "timeshooter3",
-  "title": "Time Shooter 3",
-  "genre": "reaction",
-  "thumbnail": "timeshooter3.jpg",
-  "rank": 357,
-  "bytes": 8802090
- },
- {
   "slug": "abudathealien",
+  "path": "neilaehtaduba",
   "title": "Abuda the Alien",
   "genre": "exploration",
   "thumbnail": "abudathealien.jpg",
@@ -1881,6 +1918,7 @@
  },
  {
   "slug": "battlebeavers",
+  "path": "srevaebelttab",
   "title": "Battle Beavers",
   "genre": "reaction",
   "thumbnail": "battlebeavers.jpg",
@@ -1889,6 +1927,7 @@
  },
  {
   "slug": "controlcraft2",
+  "path": "2tfarclortnoc",
   "title": "Control Craft 2",
   "genre": "problem-solving",
   "thumbnail": "controlcraft2.webp",
@@ -1897,6 +1936,7 @@
  },
  {
   "slug": "ageofwar",
+  "path": "rawfoega",
   "title": "Age of War",
   "genre": "reaction",
   "thumbnail": "ageofwar.webp",
@@ -1905,6 +1945,7 @@
  },
  {
   "slug": "ageofwar2",
+  "path": "2rawfoega",
   "title": "Age of War 2",
   "genre": "reaction",
   "thumbnail": "ageofwar2.webp",
@@ -1913,6 +1954,7 @@
  },
  {
   "slug": "amorphous",
+  "path": "suohproma",
   "title": "Amorphous",
   "genre": "reaction",
   "thumbnail": "amorphous.webp",
@@ -1921,6 +1963,7 @@
  },
  {
   "slug": "bubblespinner",
+  "path": "rennipselbbub",
   "title": "Bubble Spinner",
   "genre": "reaction",
   "thumbnail": "bubblespinner.jpg",
@@ -1929,6 +1972,7 @@
  },
  {
   "slug": "crushthecastle",
+  "path": "eltsacehthsurc",
   "title": "Crush the Castle",
   "genre": "problem-solving",
   "thumbnail": "crushthecastle.webp",
@@ -1937,6 +1981,7 @@
  },
  {
   "slug": "crushthecastle2",
+  "path": "2eltsacehthsurc",
   "title": "Crush the Castle 2",
   "genre": "problem-solving",
   "thumbnail": "crushthecastle2.jpg",
@@ -1945,6 +1990,7 @@
  },
  {
   "slug": "epicbattlefantasy",
+  "path": "ysatnafelttabcipe",
   "title": "Epic Battle Fantasy",
   "genre": "exploration",
   "thumbnail": "epicbattlefantasy.webp",
@@ -1953,6 +1999,7 @@
  },
  {
   "slug": "epicbattlefantasy2",
+  "path": "2ysatnafelttabcipe",
   "title": "Epic Battle Fantasy 2",
   "genre": "exploration",
   "thumbnail": "epicbattlefantasy2.jpg",
@@ -1961,6 +2008,7 @@
  },
  {
   "slug": "epicbattlefantasy3",
+  "path": "3ysatnafelttabcipe",
   "title": "Epic Battle Fantasy 3",
   "genre": "exploration",
   "thumbnail": "epicbattlefantasy3.webp",
@@ -1969,6 +2017,7 @@
  },
  {
   "slug": "fancypantsadventure3",
+  "path": "3erutnevdastnapycnaf",
   "title": "Fancy Pants Adventure 3",
   "genre": "coordination",
   "thumbnail": "fancypantsadventure3.jpg",
@@ -1977,6 +2026,7 @@
  },
  {
   "slug": "floodrunner2",
+  "path": "2rennurdoolf",
   "title": "Flood Runner 2",
   "genre": "coordination",
   "thumbnail": "floodrunner2.jpg",
@@ -1985,6 +2035,7 @@
  },
  {
   "slug": "floodrunner3",
+  "path": "3rennurdoolf",
   "title": "Flood Runner 3",
   "genre": "coordination",
   "thumbnail": "floodrunner3.jpg",
@@ -1993,6 +2044,7 @@
  },
  {
   "slug": "dragonboy2",
+  "path": "2yobnogard",
   "title": "Dragon Boy 2",
   "genre": "exploration",
   "thumbnail": "dragonboy2.jpg",
@@ -2001,6 +2053,7 @@
  },
  {
   "slug": "neonrider",
+  "path": "redirnoen",
   "title": "Neon Rider",
   "genre": "reaction",
   "thumbnail": "neonrider.webp",
@@ -2009,6 +2062,7 @@
  },
  {
   "slug": "pandemic2",
+  "path": "2cimednap",
   "title": "Pandemic 2",
   "genre": "systems",
   "thumbnail": "pandemic2.webp",
@@ -2017,6 +2071,7 @@
  },
  {
   "slug": "stickwar",
+  "path": "rawkcits",
   "title": "Stick War",
   "genre": "reaction",
   "thumbnail": "stickwar.webp",
@@ -2025,6 +2080,7 @@
  },
  {
   "slug": "stickwar2",
+  "path": "2rawkcits",
   "title": "Stick War 2",
   "genre": "reaction",
   "thumbnail": "stickwar2.jpg",
@@ -2033,6 +2089,7 @@
  },
  {
   "slug": "ultimateflashsonic",
+  "path": "cinoshsalfetamitlu",
   "title": "Ultimate Flash Sonic",
   "genre": "coordination",
   "thumbnail": "ultimateflashsonic.jpg",
@@ -2040,31 +2097,8 @@
   "bytes": 1508219
  },
  {
-  "slug": "zombocalypse",
-  "title": "Zombocalypse",
-  "genre": "reaction",
-  "thumbnail": "zombocalypse.webp",
-  "rank": 427,
-  "bytes": 5901680
- },
- {
-  "slug": "zombotron",
-  "title": "Zombotron",
-  "genre": "exploration",
-  "thumbnail": "zombotron.webp",
-  "rank": 428,
-  "bytes": 8428288
- },
- {
-  "slug": "zombotron2",
-  "title": "Zombotron 2",
-  "genre": "exploration",
-  "thumbnail": "zombotron2.jpg",
-  "rank": 429,
-  "bytes": 12100905
- },
- {
   "slug": "backrooms2d",
+  "path": "d2smoorkcab",
   "title": "Backrooms 2d",
   "genre": "exploration",
   "thumbnail": "backrooms2d.webp",
@@ -2073,6 +2107,7 @@
  },
  {
   "slug": "basketrandom",
+  "path": "modnarteksab",
   "title": "Basket Random",
   "genre": "reaction",
   "thumbnail": "basketrandom.jpg",
@@ -2081,6 +2116,7 @@
  },
  {
   "slug": "csgoclicker",
+  "path": "rekcilcogsc",
   "title": "Csgo Clicker",
   "genre": "reaction",
   "thumbnail": "csgoclicker.jpg",
@@ -2088,31 +2124,8 @@
   "bytes": 521360
  },
  {
-  "slug": "doom",
-  "title": "Doom",
-  "genre": "reaction",
-  "thumbnail": "doom.webp",
-  "rank": 433,
-  "bytes": 6862983
- },
- {
-  "slug": "funnyshooter2",
-  "title": "Funny Shooter 2",
-  "genre": "reaction",
-  "thumbnail": "funnyshooter2.jpg",
-  "rank": 434,
-  "bytes": 66637288
- },
- {
-  "slug": "gunfest",
-  "title": "Gun Fest",
-  "genre": "problem-solving",
-  "thumbnail": "gunfest.webp",
-  "rank": 435,
-  "bytes": 31662328
- },
- {
   "slug": "infinitecraft",
+  "path": "tfarcetinifni",
   "title": "Infinite Craft",
   "genre": "systems",
   "thumbnail": "infinitecraft.webp",
@@ -2121,6 +2134,7 @@
  },
  {
   "slug": "lowsadventures2",
+  "path": "2serutnevdaswol",
   "title": "Lows Adventures 2",
   "genre": "exploration",
   "thumbnail": "lowsadventures2.jpg",
@@ -2129,6 +2143,7 @@
  },
  {
   "slug": "pakohighway",
+  "path": "yawhgihokap",
   "title": "Pako Highway",
   "genre": "reaction",
   "thumbnail": "pakohighway.webp",
@@ -2136,15 +2151,8 @@
   "bytes": 98170549
  },
  {
-  "slug": "recoil",
-  "title": "Recoil",
-  "genre": "problem-solving",
-  "thumbnail": "recoil.webp",
-  "rank": 439,
-  "bytes": 2992057
- },
- {
   "slug": "run3plus",
+  "path": "sulp3nur",
   "title": "Run 3 Plus",
   "genre": "reaction",
   "thumbnail": "run3plus.jpg",
@@ -2153,6 +2161,7 @@
  },
  {
   "slug": "slopecity",
+  "path": "yticepols",
   "title": "Slope City",
   "genre": "reaction",
   "thumbnail": "slopecity.webp",
@@ -2161,6 +2170,7 @@
  },
  {
   "slug": "stateio",
+  "path": "oietats",
   "title": "State Io",
   "genre": "systems",
   "thumbnail": "stateio.jpg",
@@ -2169,6 +2179,7 @@
  },
  {
   "slug": "sudoku",
+  "path": "ukodus",
   "title": "Sudoku",
   "genre": "problem-solving",
   "thumbnail": "sudoku.jpg",
@@ -2177,6 +2188,7 @@
  },
  {
   "slug": "superherodrop",
+  "path": "pordorehrepus",
   "title": "Superhero Drop",
   "genre": "problem-solving",
   "thumbnail": "superherodrop.jpg",
@@ -2185,6 +2197,7 @@
  },
  {
   "slug": "balloonrun",
+  "path": "nurnoollab",
   "title": "Balloon Run",
   "genre": "reaction",
   "thumbnail": "balloonrun.webp",
@@ -2193,6 +2206,7 @@
  },
  {
   "slug": "crazytunnel3d",
+  "path": "d3lennutyzarc",
   "title": "Crazy Tunnel 3d",
   "genre": "reaction",
   "thumbnail": "crazytunnel3d.jpg",
@@ -2201,6 +2215,7 @@
  },
  {
   "slug": "eagler1.8",
+  "path": "8.1relgae",
   "title": "Minecraft [v1.8]",
   "genre": "exploration",
   "thumbnail": "mc1.8.jpg",
@@ -2209,6 +2224,7 @@
  },
  {
   "slug": "geometrydashsky",
+  "path": "ykshsadyrtemoeg",
   "title": "Geometry Dash Sky",
   "genre": "coordination",
   "thumbnail": "geometrydashsky.webp",
@@ -2217,6 +2233,7 @@
  },
  {
   "slug": "wubzzysamazingadventure",
+  "path": "erutnevdagnizamasyzzbuw",
   "title": "Wubzzys Adventure",
   "genre": "coordination",
   "thumbnail": "wubzzysamazingadventure.jpg",
@@ -2225,6 +2242,7 @@
  },
  {
   "slug": "golddiggerfrvr",
+  "path": "rvrfreggiddlog",
   "title": "Gold Digger Frvr",
   "genre": "systems",
   "thumbnail": "golddiggerfrvr.jpg",
@@ -2233,6 +2251,7 @@
  },
  {
   "slug": "hexgl",
+  "path": "lgxeh",
   "title": "Hexgl",
   "genre": "reaction",
   "thumbnail": "hexgl.webp",
@@ -2241,6 +2260,7 @@
  },
  {
   "slug": "houseofhazards",
+  "path": "sdrazahfoesuoh",
   "title": "House of Hazards",
   "genre": "coordination",
   "thumbnail": "houseofhazards.jpg",
@@ -2249,6 +2269,7 @@
  },
  {
   "slug": "pickcrafter",
+  "path": "retfarckcip",
   "title": "Pick Crafter",
   "genre": "reaction",
   "thumbnail": "pickcrafter.jpg",
@@ -2257,6 +2278,7 @@
  },
  {
   "slug": "precisionclient",
+  "path": "tneilcnoisicerp",
   "title": "Precision Client",
   "genre": "exploration",
   "thumbnail": "precisionclient.jpg",
@@ -2265,6 +2287,7 @@
  },
  {
   "slug": "subwayrunner",
+  "path": "rennuryawbus",
   "title": "Subway Runner",
   "genre": "reaction",
   "thumbnail": "subwayrunner.webp",
@@ -2273,6 +2296,7 @@
  },
  {
   "slug": "xx142-b2.exe",
+  "path": "exe.2b-241xx",
   "title": "Xx142-b2.exe",
   "genre": "reaction",
   "thumbnail": "xx142-b2.exe.webp",
@@ -2281,6 +2305,7 @@
  },
  {
   "slug": "canopy",
+  "path": "yponac",
   "title": "Canopy",
   "genre": "coordination",
   "thumbnail": "canopy.webp",
@@ -2289,6 +2314,7 @@
  },
  {
   "slug": "cavechaos",
+  "path": "soahcevac",
   "title": "Cave Chaos",
   "genre": "coordination",
   "thumbnail": "cavechaos.jpg",
@@ -2297,6 +2323,7 @@
  },
  {
   "slug": "changetype",
+  "path": "epytegnahc",
   "title": "Change Type",
   "genre": "coordination",
   "thumbnail": "changetype.jpg",
@@ -2305,6 +2332,7 @@
  },
  {
   "slug": "cheesedreams",
+  "path": "smaerdeseehc",
   "title": "Cheese Dreams",
   "genre": "coordination",
   "thumbnail": "cheesedreams.jpg",
@@ -2313,6 +2341,7 @@
  },
  {
   "slug": "chisel",
+  "path": "lesihc",
   "title": "Chisel",
   "genre": "problem-solving",
   "thumbnail": "chisel.jpg",
@@ -2321,6 +2350,7 @@
  },
  {
   "slug": "chisel2",
+  "path": "2lesihc",
   "title": "Chisel 2",
   "genre": "problem-solving",
   "thumbnail": "chisel2.jpg",
@@ -2329,6 +2359,7 @@
  },
  {
   "slug": "ditto",
+  "path": "ottid",
   "title": "Ditto",
   "genre": "coordination",
   "thumbnail": "ditto.webp",
@@ -2337,6 +2368,7 @@
  },
  {
   "slug": "feedme",
+  "path": "emdeef",
   "title": "Feed Me",
   "genre": "coordination",
   "thumbnail": "feedme.webp",
@@ -2345,6 +2377,7 @@
  },
  {
   "slug": "finalninja",
+  "path": "ajninlanif",
   "title": "Final Ninja",
   "genre": "coordination",
   "thumbnail": "finalninja.jpg",
@@ -2353,6 +2386,7 @@
  },
  {
   "slug": "frostbite",
+  "path": "etibtsorf",
   "title": "Frost Bite",
   "genre": "coordination",
   "thumbnail": "frostbite.webp",
@@ -2361,6 +2395,7 @@
  },
  {
   "slug": "frostbite2",
+  "path": "2etibtsorf",
   "title": "Frost Bite 2",
   "genre": "coordination",
   "thumbnail": "frostbite2.jpg",
@@ -2369,6 +2404,7 @@
  },
  {
   "slug": "icebreaker",
+  "path": "rekaerbeci",
   "title": "Icebreaker",
   "genre": "problem-solving",
   "thumbnail": "icebreaker.webp",
@@ -2377,6 +2413,7 @@
  },
  {
   "slug": "mutiny",
+  "path": "ynitum",
   "title": "Mutiny",
   "genre": "coordination",
   "thumbnail": "mutiny.webp",
@@ -2384,15 +2421,8 @@
   "bytes": 1090079
  },
  {
-  "slug": "nitromemustdie",
-  "title": "Nitrome Must Die",
-  "genre": "reaction",
-  "thumbnail": "nitromemustdie.jpg",
-  "rank": 470,
-  "bytes": 5513551
- },
- {
   "slug": "oodlegobs",
+  "path": "sbogeldoo",
   "title": "Oodlegobs",
   "genre": "coordination",
   "thumbnail": "oodlegobs.jpg",
@@ -2401,6 +2431,7 @@
  },
  {
   "slug": "supertreadmill",
+  "path": "llimdaertrepus",
   "title": "Super Treadmill",
   "genre": "reaction",
   "thumbnail": "supertreadmill.jpg",
@@ -2409,6 +2440,7 @@
  },
  {
   "slug": "swindler",
+  "path": "reldniws",
   "title": "Swindler",
   "genre": "coordination",
   "thumbnail": "swindler.webp",
@@ -2417,6 +2449,7 @@
  },
  {
   "slug": "testsubjectarena",
+  "path": "aneratcejbustset",
   "title": "Test Subject Arena",
   "genre": "coordination",
   "thumbnail": "testsubjectarena.jpg",
@@ -2425,6 +2458,7 @@
  },
  {
   "slug": "testsubjectcomplete",
+  "path": "etelpmoctcejbustset",
   "title": "Test Subject Complete",
   "genre": "coordination",
   "thumbnail": "testsubjectcomplete.jpg",
@@ -2433,6 +2467,7 @@
  },
  {
   "slug": "twinshot",
+  "path": "tohsniwt",
   "title": "Twin Shot",
   "genre": "exploration",
   "thumbnail": "twinshot.jpg",
@@ -2441,6 +2476,7 @@
  },
  {
   "slug": "twinshot2",
+  "path": "2tohsniwt",
   "title": "Twin Shot 2",
   "genre": "exploration",
   "thumbnail": "twinshot2.jpg",
@@ -2449,6 +2485,7 @@
  },
  {
   "slug": "3line",
+  "path": "enil3",
   "title": "Three Line",
   "genre": "problem-solving",
   "thumbnail": "threeline.jpg",
@@ -2457,6 +2494,7 @@
  },
  {
   "slug": "bikechamp",
+  "path": "pmahcekib",
   "title": "Bike Champ",
   "genre": "reaction",
   "thumbnail": "bikechamp.jpg",
@@ -2465,6 +2503,7 @@
  },
  {
   "slug": "bikechamp2",
+  "path": "2pmahcekib",
   "title": "Bike Champ 2",
   "genre": "reaction",
   "thumbnail": "bikechamp2.jpg",
@@ -2473,6 +2512,7 @@
  },
  {
   "slug": "corporationinc",
+  "path": "cninoitaroproc",
   "title": "Corporation Inc",
   "genre": "reaction",
   "thumbnail": "corporationinc.webp",
@@ -2481,6 +2521,7 @@
  },
  {
   "slug": "shopempirefable",
+  "path": "elbaferipmepohs",
   "title": "Shop Empire Fable",
   "genre": "systems",
   "thumbnail": "shopempirefable.jpg",
@@ -2489,6 +2530,7 @@
  },
  {
   "slug": "cactusmccoy",
+  "path": "yoccmsutcac",
   "title": "Cactus Mccoy",
   "genre": "coordination",
   "thumbnail": "cactusmccoy.webp",
@@ -2497,6 +2539,7 @@
  },
  {
   "slug": "cactusmccoy2",
+  "path": "2yoccmsutcac",
   "title": "Cactus Mccoy 2",
   "genre": "coordination",
   "thumbnail": "cactusmccoy2.jpg",
@@ -2505,6 +2548,7 @@
  },
  {
   "slug": "papalouie",
+  "path": "eiuolapap",
   "title": "Papa Louie",
   "genre": "coordination",
   "thumbnail": "papalouie.webp",
@@ -2513,6 +2557,7 @@
  },
  {
   "slug": "papalouie2",
+  "path": "2eiuolapap",
   "title": "Papa Louie 2",
   "genre": "coordination",
   "thumbnail": "papalouie2.jpg",
@@ -2521,6 +2566,7 @@
  },
  {
   "slug": "papalouie3",
+  "path": "3eiuolapap",
   "title": "Papa Louie 3",
   "genre": "coordination",
   "thumbnail": "papalouie3.jpg",
@@ -2529,6 +2575,7 @@
  },
  {
   "slug": "steakandjake",
+  "path": "ekajdnakaets",
   "title": "Steak and Jake",
   "genre": "coordination",
   "thumbnail": "steakandjake.jpg",
@@ -2537,6 +2584,7 @@
  },
  {
   "slug": "steakandjakemidnightmarch",
+  "path": "hcramthgindimekajdnakaets",
   "title": "Steak and Jake Midnight",
   "genre": "coordination",
   "thumbnail": "steakandjakemidnightmarch.jpg",

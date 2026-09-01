@@ -39,6 +39,14 @@
  * Every game's HTML, on the way through — see `patchGameHtml`. Upstream's
  * pages carry its own Google Analytics tag, and shipping them unmodified would
  * report our users' game activity to a third party.
+ *
+ * ## Where it lands
+ *
+ * Not under the slug. Each catalogue entry carries a `path` — the slug
+ * reversed, so `crossy` is served from `activities/yssorc/` — and that is the
+ * directory the bundle is uploaded to. The checkout keeps upstream's layout;
+ * a second tree of symlinks (`BUCKET_LAYOUT`) renames the directories, and
+ * that tree is what rclone syncs. See `bucketPath` in `build-catalogue.mjs`.
  */
 
 import { spawn } from "node:child_process";
@@ -49,6 +57,8 @@ import {
   readFile,
   rm,
   stat,
+  symlink,
+  writeFile,
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -70,6 +80,22 @@ const CATALOGUE = join(ROOT, "src", "lib", "activities.catalogue.json");
  */
 const STAGING = join(ROOT, ".cache", "seraph-staging");
 
+/**
+ * The bucket's view of the checkout: one symlink per game, named by the
+ * catalogue's `path` and pointing at `<staging>/games/<slug>`.
+ *
+ * Symlinks rather than a copy because a copy is another 4.85 GB on disk for
+ * the sake of 318 directory names, and rather than renaming the checkout in
+ * place because git owns that tree and the reuse check above expects
+ * upstream's names in it. rclone follows the links with `--copy-links`, so
+ * the bucket sees `yssorc/index.html` and never learns it was `crossy/`.
+ *
+ * Rebuilt from scratch on every run. It is cheap, and a stale link — a game
+ * whose path changed, or one dropped from the catalogue — is exactly the kind
+ * of thing `rclone sync` would otherwise faithfully upload.
+ */
+const BUCKET_LAYOUT = join(ROOT, ".cache", "r2-layout");
+
 const UPSTREAM = "https://github.com/a456pur/seraph.git";
 const UPSTREAM_REF = "main";
 
@@ -86,8 +112,8 @@ const UPSTREAM_PREFIX = "games";
 /** Prefix the bundles land under in the bucket. Must match `ACTIVITIES_PREFIX`
  *  in `src/lib/assets.ts`, which is what builds the URLs to read them back.
  *  Deliberately not `games/`: the client carries no such path — see the note
- *  in `src/lib/assets.ts`. rclone copies local `<staging>/games` into this
- *  destination prefix, so the two names differ on purpose. */
+ *  in `src/lib/assets.ts`. Beneath it, each game sits at its catalogue `path`,
+ *  not its slug — see `BUCKET_LAYOUT`. */
 const BUCKET_PREFIX = "activities";
 
 /**
@@ -367,6 +393,30 @@ async function main() {
     }
     console.log(`  ${patched} pages rewritten (analytics and cloaking removed)`);
 
+    // The catalogue generator refuses to write two games onto one path, so a
+    // collision here means the JSON was edited by hand. Stop before the
+    // second link silently replaces the first.
+    console.log("\n→ laying out the bucket view");
+    const paths = new Map();
+    for (const game of games) {
+      if (!game.path) throw new Error(`${game.slug} has no bucket path.`);
+      const other = paths.get(game.path);
+      if (other) {
+        throw new Error(`${game.slug} and ${other} both map to bucket path ${game.path}.`);
+      }
+      paths.set(game.path, game.slug);
+    }
+    await rm(BUCKET_LAYOUT, { recursive: true, force: true });
+    await mkdir(BUCKET_LAYOUT, { recursive: true });
+    for (const game of games) {
+      await symlink(
+        join(staging, UPSTREAM_PREFIX, game.slug),
+        join(BUCKET_LAYOUT, game.path),
+        "dir",
+      );
+    }
+    console.log(`  ${games.length} directories linked under ${BUCKET_LAYOUT}`);
+
     // rclone reads its whole config from the environment when given these,
     // so nothing is written to ~/.config/rclone and no secret outlives the
     // process.
@@ -404,13 +454,14 @@ async function main() {
       "rclone",
       [
         "sync",
-        join(staging, UPSTREAM_PREFIX),
+        // The symlink tree, not the checkout: the bucket is keyed by `path`.
+        // Syncing from the layout also leaves behind upstream's own catalogue
+        // page, which cone-mode sparse checkout drops beside the game
+        // directories; it links to titles this migration excluded, so it
+        // must never be served.
+        BUCKET_LAYOUT,
         `R2:${bucket}/${BUCKET_PREFIX}`,
-        // Cone-mode sparse checkout brings down files sitting beside the
-        // directories we asked for, which includes upstream's own catalogue
-        // page. Serving it would publish a game list linking to the titles
-        // this migration deliberately excluded, every one of them a 404.
-        "--exclude", "/index.html",
+        "--copy-links",
         ...flags,
       ],
       { env: rcloneEnv },
@@ -448,15 +499,19 @@ async function main() {
         }
       }
 
+      // Only upstream's strips are copied. A `.webp` is our own 16:9 art —
+      // see `localArt` in `build-catalogue.mjs` — and exists nowhere upstream
+      // to copy from; it is already in the repo, which is the point of it.
       let copied = 0;
       for (const game of games) {
+        if (game.thumbnail.endsWith(".webp")) continue;
         await copyFile(
           join(staging, THUMBNAILS_SOURCE, game.thumbnail),
           join(PUBLIC_THUMBNAILS, game.thumbnail),
         );
         copied += 1;
       }
-      console.log(`  ${copied} files, committed with the code`);
+      console.log(`  ${copied} upstream strips refreshed; our .webp art is left as committed`);
     }
 
     console.log(

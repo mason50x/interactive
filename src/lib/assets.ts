@@ -98,8 +98,15 @@ export function assetOrigin(): string | null {
   return null;
 }
 
-/** The entry document for a hosted activity, or `null` with no asset origin. */
-export function activityBundleUrl(slug: string): string | null {
+/**
+ * The entry document for a hosted activity, or `null` with no asset origin.
+ *
+ * Takes the activity's `path`, not its slug. The bucket directory is the slug
+ * reversed — `crossy` lives at `activities/yssorc/` — and the catalogue carries
+ * that as its own field so nothing here has to know the rule. See `path` on
+ * `Activity` in `src/lib/activity.ts`.
+ */
+export function activityBundleUrl(path: string): string | null {
   const origin = assetOrigin();
-  return origin ? `${origin}/${ACTIVITIES_PREFIX}/${slug}/index.html` : null;
+  return origin ? `${origin}/${ACTIVITIES_PREFIX}/${path}/index.html` : null;
 }
