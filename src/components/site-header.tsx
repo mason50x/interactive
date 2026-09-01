@@ -351,21 +351,43 @@ export function SiteHeader() {
                   {menu.label}
                   <ChevronDownIcon
                     aria-hidden
-                    className={`size-4 shrink-0 text-faint transition-transform duration-200 ${
+                    className={`size-4 shrink-0 text-faint transition-transform duration-300 ease-out motion-reduce:transition-none ${
                       open ? "rotate-180" : ""
                     }`}
                   />
                 </button>
 
-                {/* Mounted only while open, so the sheet's scroll height is
-                    the list you can see rather than every panel at once. The
-                    reset strips the popup's own padding: in here the sheet
-                    owns the margin. */}
-                {open ? (
-                  <div className="pb-6 [&>div]:p-0">
-                    <MenuPanel menu={menu} />
+                {/* The open/close is a `grid-template-rows` transition from
+                    `0fr` to `1fr` — the one way to animate to a height
+                    nobody has measured. A row track sized in `fr` resolves
+                    against the content, so the panel plays out to its own
+                    height without a `max-height` guess that is either too
+                    small to finish or too large to look like it eased.
+
+                    Which is why every panel is mounted rather than only the
+                    open one: there is nothing to animate from if the content
+                    arrives at the same moment the height does. Collapsed, the
+                    track is zero and the wrapper clips, so a closed panel adds
+                    nothing to the sheet's scroll height — and `inert` keeps it
+                    out of the tab order and off the screen reader with it. */}
+                <div
+                  inert={!open}
+                  className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+                    open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    {/* The reset strips the popup's own padding: in here the
+                        sheet owns the margin. */}
+                    <div
+                      className={`pb-6 transition-opacity duration-200 [&>div]:p-0 motion-reduce:transition-none ${
+                        open ? "opacity-100 delay-100" : "opacity-0"
+                      }`}
+                    >
+                      <MenuPanel menu={menu} />
+                    </div>
                   </div>
-                ) : null}
+                </div>
               </li>
             );
           })}

@@ -56,7 +56,7 @@ export default function AuthLayout({ children }: LayoutProps<"/auth">) {
         <footer className="relative flex flex-col items-center gap-4">
           <Link
             href="/"
-            className="group flex items-center gap-1.5 rounded-full px-3 py-2 text-[0.875rem] text-muted-foreground transition-colors hover:text-foreground"
+            className="group flex items-center gap-1.5 rounded-full px-3 py-2.5 text-[0.875rem] text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeftIcon className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
             Back to site

@@ -27,7 +27,7 @@ export function BackLink() {
         if (window.history.length > 1) router.back();
         else router.push("/");
       }}
-      className="group -ml-2 flex items-center gap-1.5 rounded-full px-2 py-1.5 text-[0.875rem] text-muted-foreground transition-colors hover:text-foreground"
+      className="group -my-1 -ml-2 flex items-center gap-1.5 rounded-full px-2 py-2.5 text-[0.875rem] text-muted-foreground transition-colors hover:text-foreground"
     >
       <ArrowLeftIcon className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
       Back

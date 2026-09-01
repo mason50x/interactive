@@ -13,7 +13,7 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-surface">
       <Container className="py-12 sm:py-20">
         <div className="flex flex-col gap-5">
-          <Link href="/" aria-label={`${brand.name} home`} className="-my-1.5 w-fit py-1.5">
+          <Link href="/" aria-label={`${brand.name} home`} className="-my-2.5 w-fit py-2.5">
             <Wordmark className="text-[1.25rem]" />
           </Link>
           <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -26,14 +26,14 @@ export function SiteFooter() {
           <p className="text-xs text-faint">
             © {new Date().getFullYear()} {brand.name}. All rights reserved.
           </p>
-          {/* `-my-2 py-2` gives each link a thumb-sized target without
+          {/* `-my-3 py-3` gives each link a thumb-sized target without
               moving it: bare 12px text is a 16px-tall thing to hit. */}
-          <div className="-my-2 flex gap-6">
+          <div className="-my-3 flex gap-6">
             {legal.map((l) => (
               <Link
                 key={l.label}
                 href={l.href}
-                className="py-2 text-xs text-faint transition-colors hover:text-foreground"
+                className="py-3 text-xs text-faint transition-colors hover:text-foreground"
               >
                 {l.label}
               </Link>
