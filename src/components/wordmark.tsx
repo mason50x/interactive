@@ -1,4 +1,5 @@
 import { brand, monogram } from "@/lib/brand";
+import { cn } from "@/lib/utils";
 
 /**
  * The IL monogram on its own, drawn in `currentColor`.
@@ -57,6 +58,7 @@ export function Wordmark({
   showName = true,
   short = false,
   className = "",
+  nameClassName,
 }: {
   tone?: "default" | "inverted";
   showName?: boolean;
@@ -67,17 +69,23 @@ export function Wordmark({
    */
   short?: boolean;
   className?: string;
+  /** Classes for the name alone. The app rail fades it out of the lockup. */
+  nameClassName?: string;
 }) {
   const color =
     tone === "inverted" ? "text-panel-foreground" : "text-foreground";
 
   return (
     <span
-      className={`inline-flex items-baseline gap-[0.42em] text-[1.0625rem] leading-none ${color} ${className}`}
+      className={cn(
+        "inline-flex items-baseline gap-[0.42em] text-[1.0625rem] leading-none",
+        color,
+        className,
+      )}
     >
       <LogoMark className="h-[0.727em] w-[0.802em] shrink-0" />
       {showName && (
-        <span className="font-semibold whitespace-nowrap">
+        <span className={cn("font-semibold whitespace-nowrap", nameClassName)}>
           {short ? brand.shortName : brand.name}
         </span>
       )}

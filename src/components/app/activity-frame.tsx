@@ -41,13 +41,33 @@ import { cn } from "@/lib/utils";
  * the app checks `event.origin` against the asset origin exactly, and the
  * value is treated as a *claim* — display only. Anything durable, a ranking or
  * a streak, has to be written by code the framed document cannot reach.
+ *
+ * ## The ring
+ *
+ * The shell is a rounded card and the bundle is a square document, so there
+ * has to be a margin between them or the activity's corners get clipped. That
+ * margin used to be a flat dark band, which read as a frame around a picture.
+ * It is now painted with the activity's own colours: the tile art, blurred hard
+ * and laid under the whole stage, so the 12px that shows around the edge of
+ * the frame is a smear of whatever the art has at that edge. The activity
+ * looks like it runs out to the rounded corner rather than stopping short of it.
+ *
+ * The art rather than the activity itself, because the activity is the one
+ * thing that cannot be sampled — the bundle is cross-origin two frames down,
+ * and a canvas that has drawn it is tainted before the first pixel is read.
+ * The tile is the closest thing to the activity's palette we are allowed to
+ * look at. Where the art is missing (a handful of upstream tiles 404) the layer
+ * paints nothing and the stage's own dark ground shows, which is the old look.
  */
 export function ActivityFrame({
   title,
   src,
+  art,
 }: {
   title: string;
   src: string;
+  /** The activity's tile art, the source of the ring's colours. */
+  art: string;
 }) {
   // The element that goes fullscreen. The stage rather than the iframe, so the
   // controls come with it — fullscreening the iframe alone would hand the
@@ -125,31 +145,57 @@ export function ActivityFrame({
   }, []);
 
   return (
-    <div ref={stage} className="relative size-full bg-[#111418]">
-      <iframe
-        key={run}
-        src={src}
-        title={title}
-        // This frame is a capability pass-through, not the security boundary.
-        // Its direct child is `/learn`, our own page on this same origin, so
-        // the sandbox does nothing to *it* — a same-origin frame with
-        // `allow-scripts` is unconstrained either way. What the sandbox governs
-        // is the *bundle* two levels down, which `/learn` frames on the asset
-        // origin: a nested frame can only narrow the flags it inherits, never
-        // widen them, so every capability the bundle needs must be granted here
-        // or it is stripped before it arrives.
-        //
-        // `allow-same-origin` therefore stays: without it the bundle is forced
-        // to an opaque origin and loses the per-activity storage its save
-        // states live in. It costs nothing here — the bundle is cross-origin to
-        // the app regardless of this flag, so being granted its own origin
-        // never brings it any closer to the session. `allow-pointer-lock` is
-        // what the driving and 3D titles need to capture the mouse.
-        sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-        allow="gamepad; fullscreen; autoplay"
-        referrerPolicy="no-referrer"
-        className="block size-full border-0"
+    <div
+      ref={stage}
+      className="relative size-full overflow-hidden bg-[#111418]"
+    >
+      {/* The ambient layer. Overscanned past the stage on every side so the
+          blur's soft edge — which fades to transparent — falls outside the
+          clip rather than darkening the ring it exists to colour. `bg-cover`
+          on the overscanned box means the smear at the ring is drawn from a
+          little inside the art's edge rather than its outermost pixels, which
+          is fine: it is a wash, not a measurement. Static, so the compositor
+          rasterises it once and it costs the activity nothing per frame. */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute -inset-16 bg-cover bg-center blur-xl saturate-150",
+          // Nothing to see in fullscreen — the frame covers the stage — so
+          // it is dropped rather than left to be painted under the activity.
+          full && "hidden",
+        )}
+        style={{ backgroundImage: `url("${art}")` }}
       />
+
+      {/* The ring. Gone in fullscreen: on a screen with no rounded corners
+          there is nothing for a margin to protect, and every pixel of it is
+          one the activity could have. */}
+      <div className={cn("absolute inset-0", full ? "p-0" : "p-3")}>
+        <iframe
+          key={run}
+          src={src}
+          title={title}
+          // This frame is a capability pass-through, not the security boundary.
+          // Its direct child is `/learn`, our own page on this same origin, so
+          // the sandbox does nothing to *it* — a same-origin frame with
+          // `allow-scripts` is unconstrained either way. What the sandbox governs
+          // is the *bundle* two levels down, which `/learn` frames on the asset
+          // origin: a nested frame can only narrow the flags it inherits, never
+          // widen them, so every capability the bundle needs must be granted here
+          // or it is stripped before it arrives.
+          //
+          // `allow-same-origin` therefore stays: without it the bundle is forced
+          // to an opaque origin and loses the per-activity storage its save
+          // states live in. It costs nothing here — the bundle is cross-origin to
+          // the app regardless of this flag, so being granted its own origin
+          // never brings it any closer to the session. `allow-pointer-lock` is
+          // what the driving and 3D titles need to capture the mouse.
+          sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+          allow="gamepad; fullscreen; autoplay"
+          referrerPolicy="no-referrer"
+          className="block size-full border-0"
+        />
+      </div>
 
       {/* Keyed on the same value as the frame, which is the whole of its
           scheduling: a restart tears both down together, so the cover is
@@ -336,7 +382,12 @@ function ControlLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} aria-label={label} title={label} className={CONTROL_CLASS}>
+    <Link
+      href={href}
+      aria-label={label}
+      title={label}
+      className={CONTROL_CLASS}
+    >
       {children}
     </Link>
   );

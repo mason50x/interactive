@@ -10,6 +10,12 @@ export const metadata: Metadata = {
 /**
  * The activity shell: a board on a dark ground and nothing else.
  *
+ * No padding, on purpose. The 12px ring around a framed activity is drawn by
+ * `ActivityFrame` on the app side, where it can be painted with the activity's
+ * own colours (see the ambient layer there); a second ring in here would be a
+ * dark band between that one and the bundle, which is exactly what the app's
+ * ring exists to get rid of.
+ *
  * What is absent is the point. No `AppProviders`, so this page loads no Clerk
  * script and no Convex client of its own — nothing the framed bundle could
  * borrow. The bundle itself is a cross-origin document on the asset origin
@@ -21,7 +27,7 @@ export const metadata: Metadata = {
  */
 export default function LearnLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-[#111418] p-3">
+    <div className="flex min-h-svh flex-col items-center justify-center bg-[#111418]">
       {children}
     </div>
   );

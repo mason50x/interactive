@@ -91,6 +91,26 @@ const MAX_DPR = 1.5;
 const FRAME_MS = 1000 / 30;
 
 /**
+ * The quiet setting, for when an activity is running beside the rail.
+ *
+ * An activity is the most expensive thing this app puts on a screen, and the
+ * web is decoration; it used to come off entirely while one ran. Now it stays
+ * and steps back instead: the drift at under a third of its speed, the ink at
+ * a third of its strength, and the loop at half its cadence. The cadence is
+ * the part that pays — every per-frame cost above, the rail's backdrop
+ * filters included, is charged per frame drawn, and at this speed 15fps
+ * aliases nothing.
+ *
+ * Both are eased in and out (see `calm`) rather than switched, so leaving an
+ * activity is the web waking up, not a cut.
+ */
+const QUIET_SPEED = 0.3;
+const QUIET_FADE = 0.35;
+const QUIET_FRAME_MS = 1000 / 15;
+/** Per-frame easing of `calm` towards its target, at the running cadence. */
+const CALM_CHASE = 0.08;
+
+/**
  * Per-frame drift and pointer easing, both stated for the 30fps cadence.
  *
  * These are doubled from their 60fps values so the motion is the same speed on
@@ -151,12 +171,28 @@ export function RailConstellation({
   className,
   areaPerPoint = AREA_PER_POINT,
   maxPoints = MAX_POINTS,
+  quiet = false,
 }: {
   className?: string;
   areaPerPoint?: number;
   maxPoints?: number;
+  /** Dim and slow the web while something beside it needs the machine. */
+  quiet?: boolean;
 } = {}) {
   const canvas = useRef<HTMLCanvasElement>(null);
+
+  // `quiet` reaches the loop through a ref rather than as a dependency of the
+  // effect below: re-running that effect re-seeds the field, and a web that
+  // scatters and re-forms every time an activity opens is a flicker, not a
+  // change of mood. The second ref is how a change of `quiet` wakes a loop
+  // that had settled and stopped — under reduced motion, or with nothing left
+  // to move — so the easing towards the new setting actually gets drawn.
+  const quietRef = useRef(quiet);
+  const wake = useRef<() => void>(null);
+  useEffect(() => {
+    quietRef.current = quiet;
+    wake.current?.();
+  }, [quiet]);
 
   useEffect(() => {
     const element = canvas.current;
@@ -174,6 +210,9 @@ export function RailConstellation({
     let pointer: { x: number; y: number } | null = null;
     let frame = 0;
     let last = 0;
+    // How far into the quiet setting the web has eased: 0 is the full web, 1
+    // is fully dimmed and slowed. Chases `quietRef` a step per frame.
+    let calm = quietRef.current ? 1 : 0;
     // The two halves of "is anyone actually looking at this", and their
     // conjunction. Only `onscreen` gates the loop; see `settle`.
     let visible = !document.hidden;
@@ -193,7 +232,7 @@ export function RailConstellation({
     // property it still has a light value and a dark one, and it arrives here
     // as a multiplier on the alphas instead.
     let ink = "0, 0, 0";
-    let fade = 0.8;
+    let themeFade = 0.8;
     const readInk = () => {
       const style = getComputedStyle(element);
 
@@ -201,7 +240,7 @@ export function RailConstellation({
       if (parts && parts.length >= 3) ink = parts.slice(0, 3).join(", ");
 
       const declared = Number.parseFloat(style.getPropertyValue("--web-fade"));
-      if (Number.isFinite(declared)) fade = declared;
+      if (Number.isFinite(declared)) themeFade = declared;
     };
 
     const random = (min: number, max: number) =>
@@ -262,10 +301,21 @@ export function RailConstellation({
       const drifting = !still.matches;
       let moving = drifting;
 
+      const wanted = quietRef.current ? 1 : 0;
+      calm += (wanted - calm) * CALM_CHASE;
+      if (Math.abs(wanted - calm) < 0.005) calm = wanted;
+      else moving = true;
+
+      // The drift is stated per frame at 30fps. The quiet cadence is half
+      // that, so the per-frame step is scaled up by the same factor to keep
+      // the wall-clock speed at exactly `QUIET_SPEED` of normal rather than
+      // half of it again.
+      const speed = (1 - calm * (1 - QUIET_SPEED)) * (cadence() / FRAME_MS);
+
       for (const point of points) {
         if (drifting) {
-          point.x += point.vx;
-          point.y += point.vy;
+          point.x += point.vx * speed;
+          point.y += point.vy * speed;
 
           // Wrapped, not bounced. A bounce puts every point on a fixed path
           // and the field visibly paces its box; wrapping keeps it wandering.
@@ -311,6 +361,9 @@ export function RailConstellation({
     const draw = () => {
       context.clearRect(0, 0, width, height);
       context.lineWidth = 0.9;
+
+      // The theme's strength, stepped down by however quiet the web is now.
+      const fade = themeFade * (1 - calm * (1 - QUIET_FADE));
 
       for (const bucket of buckets) bucket.length = 0;
 
@@ -416,11 +469,15 @@ export function RailConstellation({
       draw();
     };
 
+    // The frame gate in force: the quiet one only once the web has fully
+    // settled into it, so the easing in and out is drawn at full cadence.
+    const cadence = () => (calm >= 1 ? QUIET_FRAME_MS : FRAME_MS);
+
     const step = (now: number) => {
       // rAF is tied to the display, so 30fps is a gate rather than a timer.
       // The slack keeps a frame that lands a hair early from being dropped
       // outright, which is what turns a steady 30 into a stuttering 20.
-      if (now - last < FRAME_MS - 2) {
+      if (now - last < cadence() - 2) {
         frame = requestAnimationFrame(step);
         return;
       }
@@ -547,7 +604,10 @@ export function RailConstellation({
     rail.addEventListener("pointerleave", onLeave);
     document.addEventListener("visibilitychange", onVisibility);
 
+    wake.current = start;
+
     return () => {
+      wake.current = null;
       stop();
       resize.disconnect();
       seen.disconnect();

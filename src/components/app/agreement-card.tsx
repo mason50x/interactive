@@ -285,7 +285,7 @@ export function AgreementCard() {
         aria-label={
           accepted ? "Agreement, accepted" : "Agreement, not accepted"
         }
-        className="relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset lg:hidden"
+        className="rail-narrow relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:hidden"
       >
         {accepted ? (
           <CheckCircleIcon className="size-5 text-primary" />
@@ -305,10 +305,14 @@ export function AgreementCard() {
           // to the same edge and read as one column rather than two cards that
           // happen to be stacked.
           open
-            ? "z-30 shadow-lg shadow-black/[0.08] lg:relative lg:w-[21rem]"
-            : "lg:w-[14.25rem]",
-          "max-lg:absolute max-lg:bottom-full max-lg:left-3 max-lg:mb-1 max-lg:w-72 max-lg:shadow-lg",
-          !open && "max-lg:invisible max-lg:opacity-0",
+            ? "z-30 shadow-lg shadow-black/[0.08] wide:relative wide:w-[21rem]"
+            : "wide:w-[14.25rem]",
+          "narrow:absolute narrow:bottom-full narrow:left-3 narrow:mb-1 narrow:w-72 narrow:shadow-lg",
+          !open && "narrow:invisible narrow:opacity-0",
+          // And the same timing across the rail's own collapse and expand;
+          // the invite card explains it.
+          "wide:delay-[0s,0s,150ms,150ms]",
+          !open && "collapsed:duration-0",
         )}
       >
         <button

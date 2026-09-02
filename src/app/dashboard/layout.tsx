@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AgreementProvider } from "@/components/app/agreement-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
@@ -8,6 +9,7 @@ import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
 import { ACTIVITIES } from "@/lib/activities";
 import { serverAgreement } from "@/lib/agreement-gate";
+import { RAIL_COOKIE, railState } from "@/lib/rail";
 
 export const metadata: Metadata = {
   title: { default: "Dashboard", template: "%s — Dashboard" },
@@ -60,6 +62,11 @@ export default async function DashboardLayout({
   // answer. See `AgreementProvider`.
   const agreement = await serverAgreement();
 
+  // The rail's width, for the same reason: drawn at the remembered width in
+  // the first frame rather than sliding there once React is up. See
+  // `src/lib/rail.ts`.
+  const rail = railState((await cookies()).get(RAIL_COOKIE)?.value);
+
   // The catalogue, narrowed to what a result row needs, so the rail's search
   // can find an activity from any page of the app rather than only from the one
   // that already has the shelves. This is the *only* way the index reaches a
@@ -96,7 +103,7 @@ export default async function DashboardLayout({
                 client import of the index. See `SearchProvider`. */}
             <SearchProvider activities={activities}>
               <div className="flex h-svh overflow-hidden bg-sidebar">
-                <AppSidebar />
+                <AppSidebar initialRail={rail} />
                 <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
                   {children}
                 </main>

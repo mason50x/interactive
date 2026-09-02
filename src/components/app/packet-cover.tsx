@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,10 +15,10 @@ import { cn } from "@/lib/utils";
  * seconds, the same every time, with something to watch.
  *
  * So it is a joke rather than a progress bar. A man runs from the rack to the
- * laptop with an armful of paper, and the caption says he is finding the
- * packets. Nobody believes that is what the network is doing, which is the
- * point — a fake bar creeping to 90% is a lie about progress, and this is not
- * pretending to be one.
+ * laptop with an armful of paper, and the caption underneath names some errand
+ * he is plainly not on. Nobody believes the network is percolating, which is
+ * the point — a fake bar creeping to 90% is a lie about progress, and this is
+ * not pretending to be one.
  *
  * ## The mount is the trigger
  *
@@ -29,6 +29,23 @@ import { cn } from "@/lib/utils";
  */
 export function PacketCover() {
   const [phase, setPhase] = useState<Phase>("held");
+
+  // Which word is printed this time. The draw disagrees across the two renders
+  // of it — the server's and the client's — so the word it picks is only shown
+  // once the client has taken over, and the markup being hydrated against says
+  // the first of them. Nobody has read a caption in the frame that takes.
+  //
+  // Held in state rather than drawn each render because the cover re-renders
+  // when it starts lifting, and the word must not change on its way out. The
+  // caller keys this on the run, so a restart is a remount and a fresh draw:
+  // waiting twice in a row should at least not be the same wait twice.
+  const [roll] = useState(Math.random);
+  const shown = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+  const caption = CAPTIONS[shown ? Math.floor(roll * CAPTIONS.length) : 0];
 
   useEffect(() => {
     const lift = window.setTimeout(() => setPhase("lifting"), HOLD);
@@ -65,14 +82,54 @@ export function PacketCover() {
           colours — see `.packet-caption`. It is doing the job it always does:
           saying the wait is still alive without claiming to know how far in
           it is. */}
-      <p role="status" className="packet-caption text-shimmer text-[1.75rem] font-semibold">
-        Finding the Packets
+      <p
+        role="status"
+        className="packet-caption text-shimmer text-[1.75rem] font-semibold"
+      >
+        {caption}
       </p>
     </div>
   );
 }
 
 type Phase = "held" | "lifting" | "gone";
+
+/** There is nothing to subscribe to: the only transition this store has is
+ *  the server snapshot giving way to the client one at hydration. */
+const subscribeNever = () => () => {};
+
+/**
+ * One word each, and none of them true.
+ *
+ * A caption that described the load would be a claim about it, and there is
+ * nothing here to measure — so these describe something else entirely and let
+ * the reader do the arithmetic. They are single words on purpose: the caption
+ * is 28px under a drawing, and anything longer wraps on a phone and stops
+ * being a punchline. Keep new ones to one word, present tense, and obviously
+ * not networking.
+ */
+const CAPTIONS = [
+  "Cooking",
+  "Computing",
+  "Percolating",
+  "Marinating",
+  "Rummaging",
+  "Simmering",
+  "Whittling",
+  "Untangling",
+  "Conjuring",
+  "Herding",
+  "Tinkering",
+  "Brewing",
+  "Noodling",
+  "Unpacking",
+  "Wrangling",
+  "Shuffling",
+  "Assembling",
+  "Summoning",
+  "Reticulating",
+  "Ruminating",
+];
 
 /** Black for this long, then 400ms of fade — five seconds end to end, which is
  *  the number the cover promises and so the number these two must add up to. */

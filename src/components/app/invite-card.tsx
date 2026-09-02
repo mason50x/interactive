@@ -240,7 +240,7 @@ export function InviteCard() {
         aria-label={
           invites === null ? "Invites" : `Invites, ${remaining} remaining`
         }
-        className="relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset lg:hidden"
+        className="rail-narrow relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:hidden"
       >
         <TicketIcon className="size-5" />
         {invites !== null && remaining > 0 && (
@@ -273,18 +273,30 @@ export function InviteCard() {
           // Both widths are absolute lengths so there is something to
           // interpolate; `w-full` would be a percentage, and the snap back to
           // it on close is the one part that cannot be eased. The closed width
-          // is the rail (`lg:w-60`) less this wrapper's `pl-3` — change either
-          // and they stop lining up.
+          // is the rail (`wide:w-60`) less this wrapper's `pl-3` — change
+          // either and they stop lining up.
           open
-            ? "z-30 shadow-lg shadow-black/[0.08] lg:relative lg:w-[21rem]"
-            : "lg:w-[14.25rem]",
-          // Below `lg` the rail is 4.5rem of icons and there is no closed card
-          // to grow, so it opens over the shell off the icon button instead.
-          // `invisible` rather than `hidden` for the closed state: it takes the
-          // card out of the tab order the same way, but it is a property that
-          // can be transitioned, so the card fades instead of blinking.
-          "max-lg:absolute max-lg:bottom-full max-lg:left-3 max-lg:mb-1 max-lg:w-72 max-lg:shadow-lg",
-          !open && "max-lg:invisible max-lg:opacity-0",
+            ? "z-30 shadow-lg shadow-black/[0.08] wide:relative wide:w-[21rem]"
+            : "wide:w-[14.25rem]",
+          // On the narrow rail — below `lg`, or collapsed — the rail is 4.5rem
+          // of icons and there is no closed card to grow, so it opens over the
+          // shell off the icon button instead. `invisible` rather than
+          // `hidden` for the closed state: it takes the card out of the tab
+          // order the same way, but it is a property that can be transitioned,
+          // so the card fades instead of blinking.
+          "narrow:absolute narrow:bottom-full narrow:left-3 narrow:mb-1 narrow:w-72 narrow:shadow-lg",
+          !open && "narrow:invisible narrow:opacity-0",
+          // The rail's own collapse and expand, which move this card between
+          // its two closed forms. It cannot follow the width transition (see
+          // `rail-wide` in `globals.css`), so on the way in it holds off for
+          // half the move before fading — the delay is on opacity and
+          // visibility only, so the widths above still ease from a click —
+          // and on the way out, closed, it goes at once. That last rule also
+          // catches the popover closing on a collapsed rail, which blinks
+          // shut where it fades below `lg`; the alternative was the closed
+          // card jumping to the popover's spot and fading there.
+          "wide:delay-[0s,0s,150ms,150ms]",
+          !open && "collapsed:duration-0",
         )}
       >
         <button

@@ -12,6 +12,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
+import { useRail } from "@/components/app/rail-context";
 import { useSearch } from "@/components/app/search-provider";
 import { useTheme } from "@/components/theme-provider";
 import { conversationName } from "@/lib/chat";
@@ -166,10 +168,7 @@ export function RailSearch() {
     [activities],
   );
 
-  const entryHits = useMemo(
-    () => searchEntries(needle, ENTRY_LIMIT),
-    [needle],
-  );
+  const entryHits = useMemo(() => searchEntries(needle, ENTRY_LIMIT), [needle]);
 
   const activityHits = useMemo<Hit[]>(() => {
     if (needle === "") return [];
@@ -299,7 +298,9 @@ export function RailSearch() {
         openUserProfile();
         return;
       }
-      setPreference(action.slice("theme:".length) as "system" | "light" | "dark");
+      setPreference(
+        action.slice("theme:".length) as "system" | "light" | "dark",
+      );
     },
     [openUserProfile, setPreference],
   );
@@ -357,17 +358,27 @@ export function RailSearch() {
   // The panic key is recorded separately and may be anything; if somebody
   // chose this one, its handler replaces the whole page and wins outright —
   // which is the right outcome for a key whose entire purpose is winning.
+  //
+  // A collapsed rail has no box to focus, so the shortcut opens it first. The
+  // box is in the layout on the same frame `data-rail` changes — `display`
+  // flips at once and only the opacity waits, see `rail-wide` in
+  // `globals.css` — so the only thing between this handler and a focusable
+  // field is React committing the state, and `flushSync` is what makes that
+  // happen here rather than after the handler returns. Below `lg` the box is
+  // hidden by the viewport and the focus goes nowhere, as it always has.
+  const { rail, setRail } = useRail();
   useEffect(() => {
     function onShortcut(event: KeyboardEvent) {
       if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return;
       event.preventDefault();
+      if (rail === "closed") flushSync(() => setRail("open"));
       inputRef.current?.focus();
       inputRef.current?.select();
     }
 
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
-  }, []);
+  }, [rail, setRail]);
 
   // Keeps an arrowed-to row inside the scroll area. `nearest` rather than
   // centring: the list is short and re-centring it on every step makes the
@@ -385,7 +396,7 @@ export function RailSearch() {
         type="button"
         aria-label="Search"
         onClick={() => router.push(ACTIVITIES_HREF)}
-        className="flex h-11 w-full items-center justify-center rounded-lg text-muted-foreground backdrop-blur-[3px] transition-colors hover:bg-foreground/[0.05] hover:text-foreground lg:hidden"
+        className="rail-narrow flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground backdrop-blur-[3px] hover:bg-foreground/[0.05] hover:text-foreground wide:hidden"
       >
         <MagnifyingGlassIcon className="size-5" />
       </button>
@@ -395,7 +406,7 @@ export function RailSearch() {
           push the destinations down the rail: this wrapper keeps the 2.75rem
           the collapsed row occupies, and every extra pixel of the open one is
           borrowed from the shell to the right and from the list below. */}
-      <search className="relative hidden h-11 lg:block">
+      <search className="rail-wide relative hidden h-11 wide:block">
         <div
           className={cn(
             // Anchored top-left, which is this end of the rail's answer to the
@@ -412,7 +423,7 @@ export function RailSearch() {
             "transition-[width,background-color,border-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
             expanded
               ? // Both widths are absolute lengths so there is something to
-                // interpolate. The resting one is the rail (`lg:w-60`) less
+                // interpolate. The resting one is the rail (`wide:w-60`) less
                 // this wrapper's `pl-3`; the open one is wider than the invite
                 // and agreement cards because it is the only one of the three
                 // that has to hold two lines of somebody else's sentence. The
@@ -604,7 +615,7 @@ const ORB_LEVELS = [1, 0.85, 0.6, 0.38, 0.2, 0.38, 0.6, 0.85];
 const ORB_DOTS = ORB_RINGS.flatMap(({ lat, count }, ring) =>
   Array.from({ length: count }, (_, index) => {
     const lon = (360 / count) * (index + (ring % 2 === 1 ? 0.5 : 0));
-    const phase = ((-lon / 360) % 1 + 1) % 1;
+    const phase = (((-lon / 360) % 1) + 1) % 1;
     return {
       lat,
       lon,

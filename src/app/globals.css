@@ -10,6 +10,124 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /*
+ * The rail's two widths, as variants.
+ *
+ * `AppSidebar` is 15rem of labelled rows at `lg` and up, 4.5rem of icons below
+ * it, and — since it can be collapsed — 4.5rem of icons at `lg` too when
+ * somebody has asked for that. Everything in the rail with two shapes has to
+ * switch on the whole condition, and a bare `lg:` only knows half of it. So
+ * the rail writes its state to `data-rail` on its `<nav>` (see
+ * `src/lib/rail.ts`), and these are what its contents use in place of `lg:`
+ * and `max-lg:`:
+ *
+ *   wide:       `lg` and up, and not collapsed. The labelled rail.
+ *   narrow:     everything else — below `lg`, or collapsed. The complement of
+ *               `wide:`, so an element is always in exactly one of the two.
+ *   collapsed:  `lg` and up *and* collapsed. Only the control that opens the
+ *               rail back up needs to tell the two narrow cases apart, because
+ *               below `lg` there is no wide rail to open.
+ *
+ * `64rem` is Tailwind's `lg`, restated because a variant cannot name a
+ * breakpoint. Anything portalled out of the nav — the account popup — cannot
+ * see the attribute and takes the state from `RailContext` instead.
+ */
+@custom-variant wide {
+  @media (width >= 64rem) {
+    &:where([data-rail="open"], [data-rail="open"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant narrow {
+  @media (width < 64rem) {
+    @slot;
+  }
+  &:where([data-rail="closed"], [data-rail="closed"] *) {
+    @slot;
+  }
+}
+@custom-variant collapsed {
+  @media (width >= 64rem) {
+    &:where([data-rail="closed"], [data-rail="closed"] *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * The rail's swapped elements: the things that exist at one width only and
+ * have a counterpart at the other. The search box and its icon button, the
+ * invite and agreement cards and theirs, the account row's name, the two
+ * halves of the collapse control.
+ *
+ * The rail changes width over 300ms and these cannot follow it: a box that
+ * is 14.25rem wide is 14.25rem wide, and while the column shrinks past it
+ * there is nothing for it to be but overhanging the shell. So they do not
+ * follow it. Whichever set is leaving goes in the first frame; the column
+ * moves with only the rows and the mark on it, which *can* follow it; and the
+ * arriving set fades in over the second half, by which time the column is
+ * nearly where it is going. The eye reads one thing changing shape and its
+ * contents settling, which is a smaller lie than a box sliding over the page.
+ *
+ * Each is a `display` toggle — `hidden wide:block`, or the reverse — with the
+ * timing stated per property. `display` flips at once in both directions, so
+ * an arriving element is in the layout (and, for the search box, focusable)
+ * from the first frame, and a leaving one is gone regardless of the fade it
+ * never finishes. Opacity is what waits, then fades. Hover colours ride along
+ * because a utility that names `transition-property` cannot share an element
+ * with `transition-colors`; the buttons that take these drop it.
+ *
+ * One knob. An element whose parent clips it — the name in the header — has
+ * nothing to overhang, and can afford to fade *out* as well as in. Setting
+ * `--rail-leave` to the fade's length holds `display` for that long on the
+ * way out, so the fade gets to finish before the element is removed.
+ *
+ * `@starting-style` is what lets an element fade *in* from `display: none`,
+ * and it also applies to an element's very first render. Ungated, every one
+ * of these would fade in on every full page load, 150ms behind the rows
+ * beside them, which reads as the chrome arriving late. So it waits for
+ * `data-rail-moved`, which `AppSidebar` sets on the first toggle and never
+ * clears.
+ */
+@utility rail-wide {
+  opacity: 0;
+  transition-property: opacity, display, background-color, color;
+  transition-duration: 150ms, var(--rail-leave, 0s), 150ms, 150ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  transition-behavior: allow-discrete;
+  @media (width >= 64rem) {
+    [data-rail="open"] & {
+      opacity: 1;
+      transition-delay: 150ms, 0s, 0s, 0s;
+    }
+    [data-rail="open"][data-rail-moved] & {
+      @starting-style {
+        opacity: 0;
+      }
+    }
+  }
+}
+@utility rail-narrow {
+  opacity: 0;
+  transition-property: opacity, display, background-color, color;
+  transition-duration: 150ms, 0s, 150ms, 150ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  transition-behavior: allow-discrete;
+  @media (width < 64rem) {
+    opacity: 1;
+  }
+  [data-rail="closed"] & {
+    opacity: 1;
+    transition-delay: 150ms, 0s, 0s, 0s;
+  }
+  [data-rail="closed"][data-rail-moved] & {
+    @starting-style {
+      opacity: 0;
+    }
+  }
+}
+
+/*
  * shadcn's token vocabulary, mapped onto our palette rather than its neutral
  * defaults. Two mappings are worth knowing:
  *   --primary  is the brand blue. shadcn components use it for their main

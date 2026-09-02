@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { useRail } from "@/components/app/rail-context";
 import { SettingsSheet } from "@/components/app/settings-sheet";
 import { StreakBadge } from "@/components/app/streak-badge";
 import { useTheme } from "@/components/theme-provider";
@@ -151,6 +152,11 @@ export function UserMenu() {
     return () => document.removeEventListener("pointerdown", disarm, true);
   }, [confirmingSignOut]);
 
+  // Read for the popup alone. It is portalled to the body, where the `wide:`
+  // variant's attribute is out of sight, and it is the one thing here whose
+  // shape depends on the rail's width without being inside it.
+  const { rail } = useRail();
+
   if (!isLoaded || !user) {
     // Holds the row's exact height so the rail does not jump when the session
     // resolves. Not a spinner: this is usually a single frame.
@@ -172,10 +178,15 @@ export function UserMenu() {
       >
         <Menu.Trigger
           aria-label={`Account: ${name}`}
-          className="group flex h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl text-foreground backdrop-blur-[3px] transition-colors outline-none hover:bg-foreground/[0.05] data-popup-open:bg-foreground/[0.05] lg:justify-start lg:px-2"
+          className="group flex h-14 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-foreground backdrop-blur-[3px] transition-colors outline-none hover:bg-foreground/[0.05] data-popup-open:bg-foreground/[0.05]"
         >
-          <Avatar src={user.imageUrl} name={name} size={36} />
-          <span className="hidden min-w-0 flex-1 text-left lg:block">
+          {/* The margin centres the avatar in the icon rail's 60px row and
+              eases away as the name arrives, the same 8px slide the nav rows'
+              icons make; see `AppSidebar`. */}
+          <span className="ml-1 flex shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
+            <Avatar src={user.imageUrl} name={name} size={36} />
+          </span>
+          <span className="rail-wide hidden min-w-0 flex-1 text-left wide:block">
             <span className="block truncate text-[0.9375rem] leading-tight">
               {user.fullName ?? name}
             </span>
@@ -183,8 +194,11 @@ export function UserMenu() {
           </span>
           {/* Points at the popup: up while it is closed because that is where
               it will appear, and flipped once it is open because from there
-              the only thing left to do is put it away. */}
-          <ChevronUpIcon className="hidden size-4 shrink-0 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180 lg:block" />
+              the only thing left to do is put it away. Wrapped so the swap's
+              transition list and the turn's are on different elements. */}
+          <span className="rail-wide hidden shrink-0 wide:block">
+            <ChevronUpIcon className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180" />
+          </span>
         </Menu.Trigger>
 
         <Menu.Portal>
@@ -194,13 +208,18 @@ export function UserMenu() {
             sideOffset={8}
             className="z-50 outline-none"
           >
-            {/* Once the rail is open the popup takes the trigger's exact width,
+            {/* Once the rail is wide the popup takes the trigger's exact width,
               so the two share both edges instead of the menu hanging over
-              into the shell. Collapsed, the trigger is a 4.5rem icon and
-              there is nothing useful to match, so it falls back to a width
-              of its own. */}
+              into the shell. Narrow, the trigger is a 4.5rem icon and there
+              is nothing useful to match, so it falls back to a width of its
+              own. `lg:` and the rail state together are `wide:`, written out
+              because the portal cannot see the attribute. */}
             <Menu.Popup
-              className={cn(popupClass, "w-[15rem] lg:w-[var(--anchor-width)]")}
+              className={cn(
+                popupClass,
+                "w-[15rem]",
+                rail === "open" && "lg:w-[var(--anchor-width)]",
+              )}
             >
               {/* Clerk's own account UI — profile, email addresses, password,
                 connected accounts, devices — behind one row. None of it is
