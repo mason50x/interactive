@@ -395,6 +395,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
         {/* The allowance sits above the account button rather than inside its
           menu: it is the one thing in this chrome that moves on its own, and
           a number you have to open a popup to read is a number nobody reads.
+          It renders nothing while invites are switched off on the server.
           See `InviteCard`. */}
         <InviteCard />
 

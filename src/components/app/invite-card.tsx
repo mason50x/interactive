@@ -102,6 +102,13 @@ const RECEIPT_MS = 4000;
  * the same state drives a badge-carrying icon button, and the card opens above
  * it at a width of its own. It still grows out of the control that opened it;
  * it just has to borrow room from the shell to do it.
+ *
+ * A zero allowance is the server's off switch (see `INVITE_LIMIT` in
+ * `convex/invites.ts`), and while it is thrown the card is not drawn at all.
+ * There is nothing for it to report, and a card that reads "disabled" is a
+ * card that asks to be enabled. Nothing renders until the numbers arrive
+ * either, so the card does not paint a skeleton and then take it away.
+ * Restoring the limit brings it back without another change here.
  */
 export function InviteCard() {
   const invites = useInvites();
@@ -119,11 +126,7 @@ export function InviteCard() {
 
   const remaining = invites?.remaining ?? 0;
   const limit = invites?.limit ?? 0;
-  // A zero allowance is the server's off switch (see `INVITE_LIMIT` in
-  // `convex/invites.ts`), and it is a different thing from having spent one:
-  // the field goes away rather than reading "No invites left" at people who
-  // never had any.
-  const disabled = invites !== null && limit === 0;
+  const hidden = invites === null || limit === 0;
   const exhausted = invites !== null && remaining === 0;
 
   // A card reopened onto the last attempt's error — or onto the last one's
@@ -160,7 +163,10 @@ export function InviteCard() {
   // Observed rather than measured once: the panel's height changes under it
   // when an invite is sent, revoked, or an error appears, and each of those
   // should carry the card to its new size rather than snap it there.
+  // `hidden` is a dependency because the panel is not in the tree until the
+  // allowance has arrived; the observer has to be attached once it is.
   useEffect(() => {
+    if (hidden) return;
     const panel = panelRef.current;
     if (!panel) return;
 
@@ -169,7 +175,7 @@ export function InviteCard() {
     );
     observer.observe(panel);
     return () => observer.disconnect();
-  }, []);
+  }, [hidden]);
 
   useEffect(() => {
     if (!open) return;
@@ -233,6 +239,8 @@ export function InviteCard() {
     else setOpen(true);
   }
 
+  if (hidden) return null;
+
   return (
     <div ref={rootRef} className="relative shrink-0 pb-2 pl-3">
       {/* The collapsed rail's stand-in. The count rides on the icon because
@@ -242,17 +250,11 @@ export function InviteCard() {
         onClick={toggle}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={
-          invites === null
-            ? "Invites"
-            : disabled
-              ? "Invites, currently disabled"
-              : `Invites, ${remaining} remaining`
-        }
+        aria-label={`Invites, ${remaining} remaining`}
         className="rail-narrow relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:hidden"
       >
         <TicketIcon className="size-5" />
-        {invites !== null && remaining > 0 && (
+        {remaining > 0 && (
           <span className="absolute top-1.5 right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-none font-semibold text-primary-foreground tabular-nums">
             {remaining}
           </span>
@@ -321,11 +323,7 @@ export function InviteCard() {
               Invites
             </span>
             <span className="text-[0.8125rem] text-muted-foreground tabular-nums">
-              {invites === null
-                ? ""
-                : disabled
-                  ? "Currently disabled"
-                  : `${remaining} left`}
+              {remaining} left
             </span>
             <ChevronDownIcon
               className={cn(
@@ -336,15 +334,7 @@ export function InviteCard() {
           </div>
 
           <div className="mt-2.5">
-            {invites === null ? (
-              <div className="h-1.5 rounded-full bg-muted" />
-            ) : disabled ? (
-              /* No slots to draw when there is no allowance; a single spent
-                 rail keeps the card its shape and reads as "none". */
-              <div className="h-1.5 rounded-full bg-border-strong" />
-            ) : (
-              <Pips remaining={remaining} limit={limit} />
-            )}
+            <Pips remaining={remaining} limit={limit} />
           </div>
         </button>
 
@@ -384,51 +374,37 @@ export function InviteCard() {
               </div>
             ) : (
               <>
-                {disabled ? (
-                  /* The form is gone rather than greyed out. A disabled field
-                     with a placeholder asks to be read as "yours ran out";
-                     this is a pause on everyone's, and the invitations already
-                     listed underneath are still good. */
-                  <p
-                    role="status"
-                    className="text-[0.8125rem] leading-relaxed text-muted-foreground"
+                <form onSubmit={submit} className="flex gap-2">
+                  <input
+                    ref={inputRef}
+                    type="email"
+                    name="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    // Native validation catches a malformed address before the
+                    // round trip; the server checks it again, because this one
+                    // is advisory.
+                    required
+                    autoComplete="off"
+                    disabled={exhausted || pending}
+                    placeholder={
+                      exhausted ? "No invites left" : "friend@example.com"
+                    }
+                    aria-label="Email address to invite"
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                  />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={exhausted || pending || email.trim() === ""}
+                    // The primary variant carries a brand-coloured glow on
+                    // hover. That is a marketing-page gesture; in a card this
+                    // size, sitting in the chrome, it reads as a light leak.
+                    className="shadow-none hover:shadow-none"
                   >
-                    Invites are currently disabled. Anyone you have already
-                    invited can still join.
-                  </p>
-                ) : (
-                  <form onSubmit={submit} className="flex gap-2">
-                    <input
-                      ref={inputRef}
-                      type="email"
-                      name="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      // Native validation catches a malformed address before the
-                      // round trip; the server checks it again, because this one
-                      // is advisory.
-                      required
-                      autoComplete="off"
-                      disabled={exhausted || pending}
-                      placeholder={
-                        exhausted ? "No invites left" : "friend@example.com"
-                      }
-                      aria-label="Email address to invite"
-                      className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-                    />
-                    <Button
-                      type="submit"
-                      size="lg"
-                      disabled={exhausted || pending || email.trim() === ""}
-                      // The primary variant carries a brand-coloured glow on
-                      // hover. That is a marketing-page gesture; in a card this
-                      // size, sitting in the chrome, it reads as a light leak.
-                      className="shadow-none hover:shadow-none"
-                    >
-                      {pending ? "Sending…" : "Send"}
-                    </Button>
-                  </form>
-                )}
+                    {pending ? "Sending…" : "Send"}
+                  </Button>
+                </form>
 
                 {error && (
                   <p
@@ -442,7 +418,7 @@ export function InviteCard() {
                   </p>
                 )}
 
-                {invites !== null && invites.invites.length > 0 && (
+                {invites.invites.length > 0 && (
                   <ul className="mt-2 flex flex-col">
                     {invites.invites.map((invite) => (
                       <li
