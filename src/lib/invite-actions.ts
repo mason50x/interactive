@@ -56,6 +56,7 @@ const refusals: Record<string, string> = {
   invalid_email: "That does not look like an email address.",
   self: "That is your own address — you are already here.",
   exhausted: "You have used all of your invites.",
+  disabled: "Invites are currently disabled.",
   duplicate: "That address has already been invited.",
 };
 

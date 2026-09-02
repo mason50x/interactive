@@ -119,6 +119,11 @@ export function InviteCard() {
 
   const remaining = invites?.remaining ?? 0;
   const limit = invites?.limit ?? 0;
+  // A zero allowance is the server's off switch (see `INVITE_LIMIT` in
+  // `convex/invites.ts`), and it is a different thing from having spent one:
+  // the field goes away rather than reading "No invites left" at people who
+  // never had any.
+  const disabled = invites !== null && limit === 0;
   const exhausted = invites !== null && remaining === 0;
 
   // A card reopened onto the last attempt's error — or onto the last one's
@@ -238,7 +243,11 @@ export function InviteCard() {
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={
-          invites === null ? "Invites" : `Invites, ${remaining} remaining`
+          invites === null
+            ? "Invites"
+            : disabled
+              ? "Invites, currently disabled"
+              : `Invites, ${remaining} remaining`
         }
         className="rail-narrow relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:hidden"
       >
@@ -312,7 +321,11 @@ export function InviteCard() {
               Invites
             </span>
             <span className="text-[0.8125rem] text-muted-foreground tabular-nums">
-              {invites === null ? "" : `${remaining} left`}
+              {invites === null
+                ? ""
+                : disabled
+                  ? "Currently disabled"
+                  : `${remaining} left`}
             </span>
             <ChevronDownIcon
               className={cn(
@@ -325,6 +338,10 @@ export function InviteCard() {
           <div className="mt-2.5">
             {invites === null ? (
               <div className="h-1.5 rounded-full bg-muted" />
+            ) : disabled ? (
+              /* No slots to draw when there is no allowance; a single spent
+                 rail keeps the card its shape and reads as "none". */
+              <div className="h-1.5 rounded-full bg-border-strong" />
             ) : (
               <Pips remaining={remaining} limit={limit} />
             )}
@@ -367,37 +384,51 @@ export function InviteCard() {
               </div>
             ) : (
               <>
-                <form onSubmit={submit} className="flex gap-2">
-                  <input
-                    ref={inputRef}
-                    type="email"
-                    name="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    // Native validation catches a malformed address before the
-                    // round trip; the server checks it again, because this one
-                    // is advisory.
-                    required
-                    autoComplete="off"
-                    disabled={exhausted || pending}
-                    placeholder={
-                      exhausted ? "No invites left" : "friend@example.com"
-                    }
-                    aria-label="Email address to invite"
-                    className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-                  />
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={exhausted || pending || email.trim() === ""}
-                    // The primary variant carries a brand-coloured glow on
-                    // hover. That is a marketing-page gesture; in a card this
-                    // size, sitting in the chrome, it reads as a light leak.
-                    className="shadow-none hover:shadow-none"
+                {disabled ? (
+                  /* The form is gone rather than greyed out. A disabled field
+                     with a placeholder asks to be read as "yours ran out";
+                     this is a pause on everyone's, and the invitations already
+                     listed underneath are still good. */
+                  <p
+                    role="status"
+                    className="text-[0.8125rem] leading-relaxed text-muted-foreground"
                   >
-                    {pending ? "Sending…" : "Send"}
-                  </Button>
-                </form>
+                    Invites are currently disabled. Anyone you have already
+                    invited can still join.
+                  </p>
+                ) : (
+                  <form onSubmit={submit} className="flex gap-2">
+                    <input
+                      ref={inputRef}
+                      type="email"
+                      name="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      // Native validation catches a malformed address before the
+                      // round trip; the server checks it again, because this one
+                      // is advisory.
+                      required
+                      autoComplete="off"
+                      disabled={exhausted || pending}
+                      placeholder={
+                        exhausted ? "No invites left" : "friend@example.com"
+                      }
+                      aria-label="Email address to invite"
+                      className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                    />
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={exhausted || pending || email.trim() === ""}
+                      // The primary variant carries a brand-coloured glow on
+                      // hover. That is a marketing-page gesture; in a card this
+                      // size, sitting in the chrome, it reads as a light leak.
+                      className="shadow-none hover:shadow-none"
+                    >
+                      {pending ? "Sending…" : "Send"}
+                    </Button>
+                  </form>
+                )}
 
                 {error && (
                   <p
