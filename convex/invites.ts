@@ -24,8 +24,15 @@ import {
  *
  * Not exported: Convex modules are function modules, and the UI has no
  * business hardcoding this anyway. `mine` hands it out.
+ *
+ * Zero is the off switch. Invites are temporarily disabled: with no allowance
+ * to draw on, `reserve` refuses every address with `disabled` and the card
+ * says so instead of counting down to nothing. Invitations already sent are
+ * untouched, for the reason given above. To turn invites back on, put the
+ * allowance back (it was 2). Typed as `number` rather than left to narrow to
+ * the literal, so the `=== 0` check below still compiles once it is.
  */
-const INVITE_LIMIT = 2;
+const INVITE_LIMIT: number = 0;
 
 /**
  * Why the quota lives here and the sending lives in Next.js.
@@ -154,6 +161,13 @@ export const reserve = mutation({
     // an accusation when the address is your own.
     if (identity.email && normalizeEmail(identity.email) === address) {
       return { ok: false, reason: "self" } as const;
+    }
+
+    // Checked before the address is, so a disabled allowance reads as the
+    // switch it is rather than as a used-up one — "exhausted" would tell a
+    // brand new user they had spent invites they never had.
+    if (INVITE_LIMIT === 0) {
+      return { ok: false, reason: "disabled" } as const;
     }
 
     const live = (await invitesByInviter(ctx, identity.subject)).filter(isLive);
