@@ -282,10 +282,10 @@ const settings: readonly Entry[] = [
   {
     source: "setting",
     title: "Constellation",
-    detail: "The drifting web behind the sidebar",
+    detail: "The drifting web behind the header",
     icon: SparklesIcon,
     action: "settings",
-    keywords: ["background", "animation", "motion", "stars", "sidebar", "rail"],
+    keywords: ["background", "animation", "motion", "stars", "header", "mesh"],
   },
   {
     source: "setting",

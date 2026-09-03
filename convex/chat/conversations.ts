@@ -52,6 +52,8 @@ export type ConversationSummary = {
   unreadExact: boolean;
   peerClerkId?: string;
   peerHandle?: string;
+  /** The other person's display name, when they have one. */
+  peerName?: string;
   role: "owner" | "admin" | "member";
   /** Groups only, and only once somebody has set one. See `conversations`. */
   emoji?: string;
@@ -130,9 +132,11 @@ export const list = query({
         : await unreadFor(ctx, member.conversationId, member.lastReadAt, exact);
 
       let peerHandle: string | undefined;
+      let peerName: string | undefined;
       if (member.dmPeer !== undefined) {
         const peer = await profileFor(ctx, member.dmPeer);
         peerHandle = peer?.handle;
+        peerName = peer?.displayName;
       }
 
       summaries.push({
@@ -144,6 +148,7 @@ export const list = query({
         unreadExact: exact,
         peerClerkId: member.dmPeer,
         peerHandle,
+        peerName,
         role: member.role,
         emoji: conversation.emoji,
         initials: conversation.initials,
@@ -174,13 +179,12 @@ export type OpenResult =
  * stranger cannot open a thread with you at all, so the friend request is the
  * gate rather than a formality that a determined person can walk around.
  *
- * Nothing in the app calls it today. Accepting a request now builds the thread
- * — see `linkDm` in `convex/chat/friends.ts` — so the "Message" button this
- * was written for is gone, and every route the interface offers to a direct
- * message goes through a friendship. It is kept because it is a public
- * endpoint on a live deployment either way, and because it is where
- * `dmPolicy: "anyone"` is enforced: delete it and the setting is a promise
- * with nothing behind it.
+ * Called from the person card — the one that opens when a name is pressed in a
+ * thread, in search, or in the friends list — and it is where
+ * `dmPolicy: "anyone"` becomes real: somebody who has opened their door can be
+ * written to by a stranger, and somebody who has not gets a friend request
+ * instead. Accepting a request builds the same thread — see `linkDm` in
+ * `convex/chat/friends.ts` — so for friends this is nearly always a lookup.
  */
 export const openDm = mutation({
   args: { peerClerkId: v.string() },
@@ -277,6 +281,7 @@ export type ConversationDetail = {
   role: "owner" | "admin" | "member";
   peerClerkId?: string;
   peerHandle?: string;
+  peerName?: string;
   /** Groups only, and only once somebody has set one. See `conversations`. */
   emoji?: string;
   initials?: string;
@@ -286,6 +291,7 @@ export type ConversationDetail = {
 export type ConversationMember = {
   clerkId: string;
   handle: string;
+  displayName?: string;
   role: "owner" | "admin" | "member";
   status: "active" | "invited" | "requested";
 };
@@ -322,9 +328,11 @@ export const get = query({
     if (conversation === null) return null;
 
     let peerHandle: string | undefined;
+    let peerName: string | undefined;
     if (member.dmPeer !== undefined) {
       const peer = await profileFor(ctx, member.dmPeer);
       peerHandle = peer?.handle;
+      peerName = peer?.displayName;
     }
 
     return {
@@ -335,6 +343,7 @@ export const get = query({
       role: member.role,
       peerClerkId: member.dmPeer,
       peerHandle,
+      peerName,
       emoji: conversation.emoji,
       initials: conversation.initials,
       hue: conversation.hue,
@@ -378,6 +387,7 @@ export const members = query({
       people.push({
         clerkId: row.clerkId,
         handle: theirs.handle,
+        displayName: theirs.displayName,
         role: row.role,
         status: row.status,
       });

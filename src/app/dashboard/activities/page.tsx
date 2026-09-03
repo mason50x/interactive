@@ -20,7 +20,7 @@ export default async function ActivitiesPage() {
   await auth.protect();
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 pt-12 pb-16 sm:px-10">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-6 pt-8 pb-16 sm:px-8 lg:px-10">
       <h1 className="text-display text-display-title text-[2.25rem] sm:text-[2.75rem]">
         Activities
       </h1>

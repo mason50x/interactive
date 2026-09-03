@@ -1,15 +1,19 @@
 import { v } from "convex/values";
 import { hasAccepted } from "../agreement";
+import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { handleIsClean } from "../moderation/lexicon";
 import {
   AVATAR_EMOJI,
   AVATAR_HUES,
   GLOBAL_COOLDOWN_MS,
+  MAX_DISPLAY_NAME,
   MAX_HANDLE_CHANGES,
   MAX_INITIALS,
 } from "../moderation/limits";
 import { prepare } from "../moderation/normalize";
+import type { Refusal } from "../moderation/rules";
+import { screenStatic } from "../moderation/verdict";
 import { mutation, query } from "../_generated/server";
 import {
   blockedEitherWay,
@@ -17,7 +21,11 @@ import {
   callerProfile,
   carriedConsequence,
   clearSender,
+  dmKeyFor,
   ensureGlobalMembership,
+  friendship,
+  hasBlocked,
+  membership,
   profileFor,
   senderRow,
   senderState,
@@ -142,6 +150,7 @@ async function vet(
 /** Everything the signed-in account is told about itself. */
 export type MyProfile = {
   handle: string;
+  displayName?: string;
   createdAt: number;
   /**
    * The instant this account may first speak in the global room.
@@ -193,6 +202,7 @@ export type MyProfile = {
 export type PublicProfile = {
   clerkId: string;
   handle: string;
+  displayName?: string;
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
@@ -340,6 +350,7 @@ export const mine = query({
     const now = Date.now();
     return {
       handle: profile.handle,
+      displayName: profile.displayName,
       createdAt: profile.createdAt,
       globalUnlockAt: profile.createdAt + GLOBAL_COOLDOWN_MS,
       dmPolicy: profile.dmPolicy,
@@ -452,12 +463,104 @@ export const search = query({
       results.push({
         clerkId: hit.clerkId,
         handle: hit.handle,
+        displayName: hit.displayName,
         avatarHue: hit.avatarHue,
         avatarEmoji: hit.avatarEmoji,
         avatarInitials: hit.avatarInitials,
       });
     }
     return results;
+  },
+});
+
+/**
+ * Where the caller stands with one person, and what they may do about it.
+ *
+ * `none` is a stranger, `sent` is a request the caller is waiting on, `waiting`
+ * is one waiting on the caller, and `friends` is the rest. `conversationId` is
+ * the direct message the two already share, when the caller is still in it —
+ * so a press on "Message" is a navigation when the thread exists and a call to
+ * `conversations.openDm` when it does not.
+ *
+ * `canMessage` is the same answer `openDm` would give, worked out ahead of the
+ * press so the card can say "add them first" instead of a refusal after the
+ * fact. It discloses nothing `openDm` does not: a refused open already says
+ * whether it was the policy or a block.
+ */
+export type PersonCard = {
+  clerkId: string;
+  handle: string;
+  displayName?: string;
+  avatarHue?: number;
+  avatarEmoji?: string;
+  avatarInitials?: string;
+  standing: "none" | "sent" | "waiting" | "friends";
+  /** The caller has blocked them. */
+  blocked: boolean;
+  /** Whether "Message" would go through right now. */
+  canMessage: boolean;
+  conversationId: Id<"conversations"> | null;
+};
+
+/**
+ * One person, as the card that opens when their name is pressed.
+ *
+ * Asked only while a card is open — a thread of forty messages is not forty
+ * subscriptions — and `null` for the caller themself, for an account that is
+ * gone, and for anybody who has blocked the caller, all of which the card draws
+ * as nothing rather than as a distinction worth explaining.
+ */
+export const card = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }): Promise<PersonCard | null> => {
+    const profile = await callerProfile(ctx);
+    if (profile === null) return null;
+    if (clerkId === profile.clerkId) return null;
+
+    const theirs = await profileFor(ctx, clerkId);
+    if (theirs === null || theirs.bannedAt !== undefined) return null;
+    if (await hasBlocked(ctx, clerkId, profile.clerkId)) return null;
+
+    const blocked = await hasBlocked(ctx, profile.clerkId, clerkId);
+
+    const row = await friendship(ctx, profile.clerkId, clerkId);
+    const standing =
+      row === null
+        ? "none"
+        : row.status === "accepted"
+          ? "friends"
+          : row.requestedBy === profile.clerkId
+            ? "sent"
+            : "waiting";
+
+    let conversationId: Id<"conversations"> | null = null;
+    const thread = await ctx.db
+      .query("conversations")
+      .withIndex("byDmKey", (q) => q.eq("dmKey", dmKeyFor(profile.clerkId, clerkId)))
+      .unique();
+    if (thread !== null) {
+      const mine = await membership(ctx, thread._id, profile.clerkId);
+      if (mine !== null && mine.status === "active") conversationId = thread._id;
+    }
+
+    const canMessage =
+      !blocked &&
+      profile.bannedAt === undefined &&
+      theirs.dmPolicy !== "nobody" &&
+      (theirs.dmPolicy === "anyone" || standing === "friends");
+
+    return {
+      clerkId,
+      handle: theirs.handle,
+      displayName: theirs.displayName,
+      avatarHue: theirs.avatarHue,
+      avatarEmoji: theirs.avatarEmoji,
+      avatarInitials: theirs.avatarInitials,
+      standing,
+      blocked,
+      canMessage,
+      conversationId,
+    };
   },
 });
 
@@ -512,6 +615,45 @@ export const renameHandle = mutation({
     });
 
     return { ok: true, left: left - 1 };
+  },
+});
+
+export type NameResult =
+  | { ok: true }
+  | { ok: false; reason: Refusal | "no-profile" | "closed" };
+
+/**
+ * The name shown over the handle, or nothing.
+ *
+ * Free text, so it is the one thing about a profile that goes through the
+ * filter: `screenStatic`, the same pass a group's title gets, because a name
+ * is read by everybody and said once. Not rationed the way the handle is — the
+ * handle is what people search for and what a block or a report names, and
+ * this is only what is printed above it. Old messages keep the name they were
+ * sent under, exactly as they keep the handle.
+ *
+ * Sending nothing clears it, which puts the handle back on its own.
+ */
+export const setDisplayName = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, { name }): Promise<NameResult> => {
+    const profile = await callerProfile(ctx);
+    if (profile === null) return { ok: false, reason: "no-profile" };
+    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
+    if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now()) {
+      return { ok: false, reason: "muted" };
+    }
+
+    if (name.trim() === "") {
+      await ctx.db.patch(profile._id, { displayName: undefined });
+      return { ok: true };
+    }
+
+    const screened = screenStatic(name, MAX_DISPLAY_NAME);
+    if (!screened.ok) return { ok: false, reason: screened.refusal };
+
+    await ctx.db.patch(profile._id, { displayName: screened.text });
+    return { ok: true };
   },
 });
 

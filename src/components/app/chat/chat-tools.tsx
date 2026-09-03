@@ -1,41 +1,35 @@
 "use client";
 
-import { Menu } from "@base-ui/react/menu";
 import {
   ArrowLeftIcon,
   Cog6ToothIcon,
-  EllipsisHorizontalIcon,
   GlobeAltIcon,
   NoSymbolIcon,
   PlusIcon,
   UserGroupIcon,
-  UserPlusIcon,
 } from "@heroicons/react/24/solid";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { FaceEditor, type Face } from "@/components/app/chat/face-editor";
 import { NameEditor } from "@/components/app/chat/name-editor";
-import { menuItemClass, popupClass } from "@/components/app/chat/menu";
-import { Monogram } from "@/components/app/chat/monogram";
 import { OptionTiles } from "@/components/app/chat/option-tiles";
-import { FoundNobody, Searching } from "@/components/app/chat/searching";
+import {
+  Empty,
+  Group,
+  PersonRow,
+  RowMenu,
+} from "@/components/app/chat/people-rows";
 import { SectionLabel } from "@/components/app/chat/section-label";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
+  MAX_DISPLAY_NAME,
   MAX_HANDLE_CHANGES,
   changesLeftLabel,
   claimError,
+  displayNameError,
   groupNameError,
   handleShapeError,
 } from "@/lib/chat";
@@ -48,11 +42,19 @@ import { api } from "../../../../convex/_generated/api";
  * Everything that is not a conversation, folded into the top of the list.
  *
  * This was a page — `/dashboard/chat/people` — and being a page was the
- * problem. Adding somebody, changing who may reach you and starting a group are
- * all things you do *while* looking at your conversations, and each of them
- * took the list away to do it. So they open here instead, in the same gesture
- * the rail's invite and agreement cards use: the surface grows, the thing you
- * came for is inside it, and the conversation you were reading is still behind.
+ * problem. Changing who may reach you and starting a group are things you do
+ * *while* looking at your conversations, and each of them took the list away
+ * to do it. So they open here instead, in the same gesture the rail's invite
+ * and agreement cards use: the surface grows, the thing you came for is inside
+ * it, and the conversation you were reading is still behind.
+ *
+ * There were three of these and there are two. The third was People — a
+ * search, the requests waiting on you, and your friends — and none of that is
+ * a panel any more: the search is the field over the list, the requests sit
+ * above the conversations, and a person is reached by pressing their name
+ * wherever it appears. See `chat-search.tsx`, `waiting.tsx` and
+ * `person-card.tsx`. The friends list moved in here, under Settings, because
+ * once a name is the way to reach somebody, a roster is a thing to tidy.
  *
  * ## A mode, not a drawer
  *
@@ -78,16 +80,16 @@ import { api } from "../../../../convex/_generated/api";
  * a descendant of this element, so every press in it read as outside and closed
  * the panel underneath the popup that was still open.
  *
- * One panel and three buttons rather than three panels. Opening one closes the
- * others, because they are three answers to "what do you want to do" and having
- * two of them open at once is a list you have to scroll past to reach your
+ * One panel and two buttons rather than two panels. Opening one closes the
+ * other, because they are two answers to "what do you want to do" and having
+ * both open at once is a list you have to scroll past to reach your
  * conversations.
  */
 
-export type Panel = "people" | "settings" | "group";
+export type Panel = "settings" | "group";
 
 /**
- * The three, in the order they sit in the header.
+ * The two, in the order they sit in the header.
  *
  * `label` is what the button is called to a screen reader; `title` is what the
  * header calls the panel while it is open. They differ where the button names
@@ -95,8 +97,8 @@ export type Panel = "people" | "settings" | "group";
  * press and "Settings" once you are in it.
  *
  * Solid in every state, and so no `IconPair` — these do not use weight to say
- * which one is chosen, because while one is chosen the other two are not on
- * screen to be told apart from it.
+ * which one is chosen, because while one is chosen the other is not on screen
+ * to be told apart from it.
  */
 const TOOLS: readonly {
   panel: Panel;
@@ -104,12 +106,6 @@ const TOOLS: readonly {
   title: string;
   icon: Icon;
 }[] = [
-  {
-    panel: "people",
-    label: "Add someone",
-    title: "Friends",
-    icon: UserPlusIcon,
-  },
   {
     panel: "settings",
     label: "Chat settings",
@@ -127,21 +123,18 @@ export function ChatTools({
    * Which panel is open, or `null` while the column is a list.
    *
    * Held by the caller rather than here, because an open panel replaces the
-   * list and the list is the caller's — and because the list can ask for one:
-   * the row that stands in for the friends you do not have yet opens People.
-   * See `ConversationList`.
+   * list and the list is the caller's. See `ConversationList`.
    */
   open: Panel | null;
   onOpenChange: (panel: Panel | null) => void;
 }) {
   const router = useRouter();
-  const { waiting } = useChat();
 
   // What the panel is drawing. Held separately from `open` so that a panel
   // which has been closed is still the one that comes back when the same
   // button is pressed again — the contents are hidden, not thrown away, and a
-  // search somebody typed is still there when they return to it.
-  const [shown, setShown] = useState<Panel>("people");
+  // group name somebody typed is still there when they return to it.
+  const [shown, setShown] = useState<Panel>("settings");
 
   const panelId = useId();
 
@@ -184,7 +177,7 @@ export function ChatTools({
             : TOOLS.find((tool) => tool.panel === open)!.title}
         </h2>
 
-        {/* Three while none is open, one while one is. The one left is the
+        {/* Two while none is open, one while one is. The one left is the
             way out of it, so the row is never both a set of choices and a
             choice already made. */}
         {TOOLS.map((tool) => (
@@ -194,7 +187,6 @@ export function ChatTools({
             label={tool.label}
             active={open === tool.panel}
             collapsed={open !== null && open !== tool.panel}
-            badge={tool.panel === "people" ? waiting : undefined}
             controls={panelId}
             onClick={() => toggle(tool.panel)}
           />
@@ -225,9 +217,7 @@ export function ChatTools({
           open === null && "hidden",
         )}
       >
-        {shown === "people" ? (
-          <PeoplePanel open={open === "people"} />
-        ) : shown === "settings" ? (
+        {shown === "settings" ? (
           <SettingsPanel open={open === "settings"} />
         ) : (
           <NewGroupPanel open={open === "group"} onCreated={go} />
@@ -266,11 +256,11 @@ function useHeld<T>(value: T | undefined): T | undefined {
 }
 
 /**
- * One of the three, and — once one of them is open — the only one.
+ * One of the two, and — once one of them is open — the only one.
  *
  * Opening a panel does three things to this row at once, all on the same
- * curve: the two that were not chosen go to zero width and take their margins
- * with them, the chosen one widens, and what is drawn inside it crosses from
+ * curve: the one that was not chosen goes to zero width and takes its margin
+ * with it, the chosen one widens, and what is drawn inside it crosses from
  * its own glyph to an arrow and the word Back. Width is what animates, so the
  * numbers are literal (`size-8` closed, `w-[4.75rem]` open) rather than
  * `auto` — `auto` is not a value CSS can interpolate towards, and the whole
@@ -282,7 +272,7 @@ function useHeld<T>(value: T | undefined): T | undefined {
  * still while the box grows around it: laid out normally it would be centred,
  * and centring inside a box that is changing width means sliding.
  *
- * `inert` on the collapsed two rather than merely `opacity-0`: a zero-width
+ * `inert` on the collapsed one rather than merely `opacity-0`: a zero-width
  * button is still in the tab order, and tabbing into something you cannot see
  * is worse than not being able to reach it.
  */
@@ -291,7 +281,6 @@ function Tool({
   label,
   active,
   collapsed,
-  badge,
   controls,
   onClick,
 }: {
@@ -299,7 +288,6 @@ function Tool({
   label: string;
   active: boolean;
   collapsed: boolean;
-  badge?: number;
   controls: string;
   onClick: () => void;
 }) {
@@ -328,11 +316,6 @@ function Tool({
         )}
       >
         <Glyph className="size-5" />
-        {badge !== undefined && badge > 0 ? (
-          <span className="absolute top-1 right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[0.5625rem] leading-none font-semibold text-primary-foreground tabular-nums">
-            {badge}
-          </span>
-        ) : null}
       </span>
 
       <span
@@ -352,313 +335,14 @@ function Tool({
 }
 
 /**
- * Find somebody, answer the people who found you, and see who your friends are.
- *
- * In that order, because it is the order of how likely each one is to be why
- * the panel was opened, and because the requests move — a list that grows a row
- * above the thing you are typing into would push the field under your cursor.
- *
- * Nothing in here opens a conversation any more, and the third section is a
- * roster rather than a way in. Accepting somebody puts the thread in the list
- * on the left, so a "Message" button beside every name was offering a second
- * route to a place the person was already looking at — and its refusals
- * ("they only take messages from friends") were answers to a question this
- * panel no longer lets anybody ask.
- */
-function PeoplePanel({ open }: { open: boolean }) {
-  const field = useRef<HTMLInputElement>(null);
-  const [term, setTerm] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
-
-  // What is being searched for, which is not what is in the field. Every
-  // keystroke used to be its own query, and the half-typed ones mostly match
-  // nobody — so "Nobody by that handle" flashed up between the letters of a
-  // handle that does exist. It says something definite, and it has no business
-  // saying it while you are still talking.
-  const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(term.trim()), 250);
-    return () => clearTimeout(timer);
-  }, [term]);
-
-  const found = useQuery(
-    api.chat.profiles.search,
-    open && query.length >= 2 ? { term: query } : "skip",
-  );
-  const friends = useQuery(api.chat.friends.list, open ? {} : "skip");
-  const pending = useQuery(api.chat.friends.pending, open ? {} : "skip");
-  const invitations = useQuery(api.chat.groups.invitations, open ? {} : "skip");
-
-  const request = useMutation(api.chat.friends.request);
-  const accept = useMutation(api.chat.friends.accept);
-  const remove = useMutation(api.chat.friends.remove);
-  const block = useMutation(api.chat.blocks.block);
-  const respond = useMutation(api.chat.groups.respondToInvite);
-
-  // Opening this is the whole of the intent — nobody expands it to admire it.
-  useEffect(() => {
-    if (open) field.current?.focus();
-  }, [open]);
-
-  // What you already are to the person a search turned up.
-  //
-  // The Found row used to draw "Add" for everybody it listed — for the person
-  // you added a second ago, for the person waiting on *your* answer, and for
-  // somebody you have been friends with since March. The press worked every
-  // time and the row never said so, which reads as a button that does nothing,
-  // and the standing was on screen the whole time in another section.
-  const standing = useMemo(() => {
-    const byId = new Map<string, "sent" | "waiting" | "friends">();
-    for (const friend of friends ?? []) byId.set(friend.clerkId, "friends");
-    for (const row of pending ?? []) {
-      byId.set(row.clerkId, row.outgoing ? "sent" : "waiting");
-    }
-    return byId;
-  }, [friends, pending]);
-
-  // A request can be refused for reasons the row cannot see — they blocked
-  // you, they are gone — and a refusal that says nothing is the same silence
-  // this whole section was fixing.
-  async function add(peerClerkId: string) {
-    const result = await request({ peerClerkId });
-    if (result.ok) return;
-    setNotice(
-      result.reason === "blocked"
-        ? "You cannot add this person."
-        : result.reason === "unknown" || result.reason === "no-profile"
-          ? "That account is gone."
-          : result.reason === "already"
-            ? "You have already asked them."
-            : "That did not work.",
-    );
-  }
-
-  const incoming = (pending ?? []).filter((row) => !row.outgoing);
-  const outgoing = (pending ?? []).filter((row) => row.outgoing);
-
-  // Two questions, and only the second one may be answered out loud. The
-  // section is open from the second character; what is under it is a wait
-  // until the field has settled *and* the answer to that exact term is in —
-  // `useQuery` goes back to `undefined` when its argument changes, so this is
-  // also false for the round trip after the debounce.
-  const searching = term.trim().length >= 2;
-  const settled = query === term.trim() && found !== undefined;
-
-  return (
-    <div className="pt-3">
-      <input
-        ref={field}
-        value={term}
-        onChange={(event) => {
-          setTerm(event.target.value.toLowerCase());
-          setNotice(null);
-        }}
-        placeholder="Find someone by handle"
-        spellCheck={false}
-        autoComplete="off"
-        maxLength={20}
-        aria-label="Find someone by handle"
-        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-[0.875rem] transition-[border-color,box-shadow] outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring"
-      />
-
-      {notice === null ? null : (
-        <p role="status" className="mt-2 text-[0.8125rem] text-destructive">
-          {notice}
-        </p>
-      )}
-
-      <div className="max-h-72 overflow-y-auto">
-        {searching ? (
-          <section className="pt-3">
-            <SectionLabel>Found</SectionLabel>
-
-            {!settled ? (
-              <Searching />
-            ) : found.length === 0 ? (
-              <FoundNobody />
-            ) : (
-              <ul className="mt-1 flex flex-col">
-                {found.map((person) => {
-                  const already = standing.get(person.clerkId);
-                  return (
-                    <Row
-                      key={person.clerkId}
-                      handle={person.handle}
-                      hue={person.avatarHue}
-                      emoji={person.avatarEmoji}
-                      initials={person.avatarInitials}
-                    >
-                      {/* Adding is the only thing this row does now, so the
-                          two states with nothing left to do say where the row
-                          stands rather than offering a second button. Neither
-                          word is a disabled control: there is nothing to
-                          press, and saying so quietly is the whole of what the
-                          row has to report. */}
-                      {already === "friends" ? (
-                        <span className="px-2 text-xs text-faint">Friends</span>
-                      ) : already === "sent" ? (
-                        <span className="px-2 text-xs text-faint">Asked</span>
-                      ) : already === "waiting" ? (
-                        <Button
-                          size="xs"
-                          className="shadow-none hover:shadow-none"
-                          onClick={() =>
-                            void accept({ peerClerkId: person.clerkId })
-                          }
-                        >
-                          Accept
-                        </Button>
-                      ) : (
-                        <Button
-                          size="xs"
-                          className="shadow-none hover:shadow-none"
-                          onClick={() => void add(person.clerkId)}
-                        >
-                          Add
-                        </Button>
-                      )}
-                    </Row>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        ) : null}
-
-        {incoming.length > 0 ? (
-          <Group label="Waiting on you">
-            {incoming.map((row) => (
-              <Row
-                key={row.clerkId}
-                handle={row.handle}
-                hue={row.avatarHue}
-                emoji={row.avatarEmoji}
-                initials={row.avatarInitials}
-              >
-                {/* Turning a request down leaves them free to send another
-                    one, which is the right default and the wrong one for the
-                    person sending the fourth. */}
-                <RowMenu
-                  handle={row.handle}
-                  items={[
-                    {
-                      label: `Block ${row.handle}`,
-                      onClick: () => void block({ peerClerkId: row.clerkId }),
-                      danger: true,
-                    },
-                  ]}
-                />
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => void remove({ peerClerkId: row.clerkId })}
-                >
-                  No
-                </Button>
-                <Button
-                  size="xs"
-                  className="shadow-none hover:shadow-none"
-                  onClick={() => void accept({ peerClerkId: row.clerkId })}
-                >
-                  Accept
-                </Button>
-              </Row>
-            ))}
-          </Group>
-        ) : null}
-
-        {(invitations ?? []).length > 0 ? (
-          <Group label="Group invitations">
-            {(invitations ?? []).map((invitation) => (
-              <Row
-                key={invitation.conversationId}
-                handle={invitation.title}
-                detail={
-                  invitation.invitedBy === undefined
-                    ? undefined
-                    : `from ${invitation.invitedBy}`
-                }
-              >
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() =>
-                    void respond({
-                      conversationId: invitation.conversationId,
-                      accept: false,
-                    })
-                  }
-                >
-                  No
-                </Button>
-                <Button
-                  size="xs"
-                  className="shadow-none hover:shadow-none"
-                  onClick={() =>
-                    void respond({
-                      conversationId: invitation.conversationId,
-                      accept: true,
-                    })
-                  }
-                >
-                  Join
-                </Button>
-              </Row>
-            ))}
-          </Group>
-        ) : null}
-
-        {!searching ? (
-          <Group label="Friends">
-            {(friends ?? []).map((friend) => (
-              <Row
-                key={friend.clerkId}
-                handle={friend.handle}
-                hue={friend.avatarHue}
-                emoji={friend.avatarEmoji}
-                initials={friend.avatarInitials}
-              >
-                <RowMenu
-                  handle={friend.handle}
-                  items={[
-                    {
-                      label: "Remove friend",
-                      onClick: () =>
-                        void remove({ peerClerkId: friend.clerkId }),
-                    },
-                    {
-                      label: `Block ${friend.handle}`,
-                      onClick: () => void block({ peerClerkId: friend.clerkId }),
-                      danger: true,
-                    },
-                  ]}
-                />
-              </Row>
-            ))}
-            {friends !== undefined && friends.length === 0 ? (
-              <Empty>No friends… yet.</Empty>
-            ) : null}
-          </Group>
-        ) : null}
-
-        {outgoing.length > 0 && !searching ? (
-          <p className="pt-2 text-[0.8125rem] text-faint">
-            Waiting on {outgoing.map((row) => row.handle).join(", ")}.
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-/**
  * Who can see you, who can reach you, and who you have shut out.
  *
  * `friends` is the default and it is the load-bearing default of the whole
  * feature: a stranger who finds your handle cannot open a conversation with
- * you, only ask. It commits on click — there is no Save, the way there is none
- * on anything else in this app's chrome.
+ * you, only ask. `anyone` is the door open, and it is real now — see `openDm`
+ * in `convex/chat/conversations.ts`, which the person card calls. It commits
+ * on click — there is no Save, the way there is none on anything else in this
+ * app's chrome.
  *
  * The three are not a list of three equal things, so they are not drawn as
  * one. `friends` is where nearly everybody is and where nearly everybody
@@ -736,11 +420,13 @@ function SettingsPanel({ open }: { open: boolean }) {
         />
       </label>
 
+      <Friends open={open} />
+
       {(blocked ?? []).length > 0 ? (
         <div className="mt-4">
           <Group label="Blocked">
             {(blocked ?? []).map((person) => (
-              <Row key={person.clerkId} handle={person.handle}>
+              <PersonRow key={person.clerkId} person={person} card={false}>
                 <Button
                   variant="ghost"
                   size="xs"
@@ -748,13 +434,76 @@ function SettingsPanel({ open }: { open: boolean }) {
                 >
                   Unblock
                 </Button>
-              </Row>
+              </PersonRow>
             ))}
           </Group>
         </div>
       ) : null}
 
       <EraseChat open={open} />
+    </div>
+  );
+}
+
+/**
+ * Who your friends are, and the requests you have out.
+ *
+ * A roster rather than a way in: pressing a friend opens their card, which is
+ * where Message lives, and the menu on the row is for the two rare things.
+ * Held while the panel is shut, the same way the blocked list is — see
+ * `useHeld`.
+ */
+function Friends({ open }: { open: boolean }) {
+  const friends = useHeld(useQuery(api.chat.friends.list, open ? {} : "skip"));
+  const pending = useHeld(
+    useQuery(api.chat.friends.pending, open ? {} : "skip"),
+  );
+  const remove = useMutation(api.chat.friends.remove);
+  const block = useMutation(api.chat.blocks.block);
+
+  const outgoing = (pending ?? []).filter((row) => row.outgoing);
+
+  return (
+    <div className="mt-4">
+      <Group label="Friends">
+        {(friends ?? []).map((friend) => (
+          <PersonRow key={friend.clerkId} person={friend}>
+            <RowMenu
+              label={`More for ${friend.handle}`}
+              items={[
+                {
+                  label: "Remove friend",
+                  onClick: () => void remove({ peerClerkId: friend.clerkId }),
+                },
+                {
+                  label: `Block ${friend.handle}`,
+                  onClick: () => void block({ peerClerkId: friend.clerkId }),
+                  danger: true,
+                },
+              ]}
+            />
+          </PersonRow>
+        ))}
+        {friends !== undefined && friends.length === 0 ? (
+          <Empty>No friends yet. Press a name anywhere to add one.</Empty>
+        ) : null}
+      </Group>
+
+      {outgoing.length > 0 ? (
+        <Group label="Asked">
+          {outgoing.map((row) => (
+            <PersonRow key={row.clerkId} person={row}>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => void remove({ peerClerkId: row.clerkId })}
+              >
+                Cancel
+              </Button>
+            </PersonRow>
+          ))}
+        </Group>
+      ) : null}
     </div>
   );
 }
@@ -984,25 +733,24 @@ function sentLabel(sent: number): string {
 }
 
 /**
- * Your disc and your handle, which are the only two things about you that
- * anybody else can see.
+ * Your disc, your name and your handle, which are the three things about you
+ * that anybody else can see.
  *
- * One row, and everything about you is in it: the disc, the handle, and the one
- * number this app keeps about you. Nothing here is a form. The whole section is
- * what somebody else sees when they come across you, and both halves of it are
- * changed by pressing the thing itself — the disc opens `FaceEditor`, the
- * pencil beside the handle opens `NameEditor`, and each of those is a panel
- * over the column rather than a control that moves everything under it.
+ * One row, and everything about you is in it. Nothing here is a form. The
+ * whole section is what somebody else sees when they come across you, and
+ * every part of it is changed by pressing the thing itself — the disc opens
+ * `FaceEditor`, the pencil beside each name opens `NameEditor`, and each of
+ * those is a panel over the column rather than a control that moves
+ * everything under it.
  *
- * They are still set on very different terms. The disc — a picked face or two
- * letters, on a picked colour — commits the instant you touch it and has no
- * allowance on it, because a colour and a picture are not a name: nothing
- * points at them and nobody remembers you by them. The handle keeps a Save,
- * which is the only Save in this app's chrome, and it is there precisely
- * because this is the one control that spends something you cannot get back.
- * That difference is now said where it matters — inside the panel that spends
- * it, over the field that spends it — instead of by a permanent input sitting
- * under the name it duplicates.
+ * They are set on different terms. The disc — a picked face or two letters,
+ * on a picked colour — commits the instant you touch it and has no allowance
+ * on it, because a colour and a picture are not a name: nothing points at
+ * them and nobody remembers you by them. The display name keeps a Save
+ * because it goes through the filter — it is read by everybody — but it is
+ * not rationed: it is printed over the handle, never instead of it. The handle
+ * keeps a Save and an allowance, because it is the one control that spends
+ * something you cannot get back.
  *
  * The count is here and nowhere else. `messagesSent` has always been on the
  * profile, feeding the trust tier; it is on `MyProfile` and deliberately not on
@@ -1017,11 +765,13 @@ function sentLabel(sent: number): string {
 function Me() {
   const { profile } = useChat();
   const rename = useMutation(api.chat.profiles.renameHandle);
+  const setDisplayName = useMutation(api.chat.profiles.setDisplayName);
   const setAvatar = useMutation(api.chat.profiles.setAvatar);
 
   const spent = profile?.handleChanges ?? 0;
   const left = MAX_HANDLE_CHANGES - spent;
   const current = profile?.handle ?? "";
+  const name = profile?.displayName ?? "";
 
   // Held steady across renders: the editor debounces the letters against this
   // callback, and a new function on every render — this component re-renders
@@ -1046,11 +796,33 @@ function Me() {
       >
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1">
+            <p className="min-w-0 truncate text-[0.9375rem] font-semibold">
+              {name === "" ? (
+                <span className="text-muted-foreground">Add a name</span>
+              ) : (
+                name
+              )}
+            </p>
+
+            <NameEditor
+              value={name}
+              label="display name"
+              title="Name"
+              maxLength={MAX_DISPLAY_NAME}
+              caption="Shown over your handle. Old messages keep the old one."
+              onSave={async (wanted) => {
+                const result = await setDisplayName({ name: wanted });
+                return result.ok ? null : displayNameError(result.reason);
+              }}
+            />
+          </div>
+
+          <div className="flex min-w-0 items-center gap-1">
             {/* The `@` is faint and the handle is not, so the name reads as
                 the name rather than as an address. Both go together while the
                 profile is still in flight: a lone `@` with nothing after it is
                 not a shorter name, it is a broken one. */}
-            <p className="min-w-0 truncate text-[0.9375rem] font-semibold">
+            <p className="min-w-0 truncate text-[0.8125rem] text-muted-foreground">
               {current === "" ? null : <span className="text-faint">@</span>}
               {current}
             </p>
@@ -1073,7 +845,7 @@ function Me() {
             />
           </div>
 
-          <p className="mt-0.5 truncate text-[0.8125rem] text-muted-foreground">
+          <p className="mt-0.5 truncate text-[0.75rem] text-faint">
             {sentLabel(profile?.messagesSent ?? 0)}
           </p>
         </div>
@@ -1159,118 +931,3 @@ function NewGroupPanel({
   );
 }
 
-function Group({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <section className="pt-3">
-      <SectionLabel>{label}</SectionLabel>
-      <ul className="mt-1 flex flex-col">{children}</ul>
-    </section>
-  );
-}
-
-/**
- * The things you can do to a person that are not "message them".
- *
- * Removing a friend and blocking somebody are both rare, both irreversible in
- * the sense that matters — the friendship does not come back on its own either
- * way — and both wrong to put in front of a pointer that came to press
- * Message. So they go behind one glyph, and Message keeps the row.
- *
- * This exists because blocking had no door. The mutation has been there since
- * the moderation work landed and the Settings panel has always listed who you
- * have blocked and offered to undo it, but the only way *in* was the menu on a
- * message — which means the person you most want to block, the one who has
- * stopped talking to you or never started, was the one you could not.
- *
- * An ellipsis rather than a cog, and always drawn rather than revealed on
- * hover. The ellipsis is what the same menu on a message is already called, and
- * two names for one gesture is worse than a slightly duller glyph; drawing it
- * always is what makes it exist on a touch screen, where there is no hover to
- * reveal anything and the old hover-swapped Remove was simply unreachable.
- */
-function RowMenu({
-  handle,
-  items,
-}: {
-  handle: string;
-  items: readonly { label: string; onClick: () => void; danger?: boolean }[];
-}) {
-  return (
-    <Menu.Root>
-      <Menu.Trigger
-        aria-label={`More for ${handle}`}
-        className="flex size-7 items-center justify-center rounded-lg text-faint transition-colors outline-none hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring data-popup-open:bg-foreground/[0.06] data-popup-open:text-foreground"
-      >
-        <EllipsisHorizontalIcon className="size-4" />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={6}
-          className="z-50 outline-none"
-        >
-          <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
-            {items.map((item) => (
-              <Menu.Item
-                key={item.label}
-                onClick={item.onClick}
-                className={cn(menuItemClass, item.danger && "text-destructive")}
-              >
-                {item.label}
-              </Menu.Item>
-            ))}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
-  );
-}
-
-function Row({
-  handle,
-  detail,
-  hue,
-  emoji,
-  initials,
-  children,
-}: {
-  handle: string;
-  detail?: string;
-  /** The disc, when the row's source carries one. See `PublicProfile`. */
-  hue?: number;
-  emoji?: string;
-  initials?: string;
-  children: ReactNode;
-}) {
-  return (
-    <li className="flex h-11 items-center gap-2.5">
-      <Monogram
-        handle={handle}
-        hue={hue}
-        emoji={emoji}
-        initials={initials}
-        className="size-7 text-[0.75rem]"
-      />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.875rem] font-medium">
-          {handle}
-        </span>
-        {detail === undefined ? null : (
-          <span className="block truncate text-[0.75rem] text-faint">
-            {detail}
-          </span>
-        )}
-      </span>
-      <span className="flex shrink-0 items-center gap-1">{children}</span>
-    </li>
-  );
-}
-
-function Empty({ children }: { children: ReactNode }) {
-  return (
-    <li className="py-7 text-center text-[0.8125rem] leading-relaxed text-muted-foreground">
-      {children}
-    </li>
-  );
-}

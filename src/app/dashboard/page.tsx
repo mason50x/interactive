@@ -50,7 +50,7 @@ export default async function DashboardPage() {
   const name = user?.firstName ?? user?.username ?? null;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 pt-12 pb-16 sm:px-10">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-6 pt-8 pb-16 sm:px-8 lg:px-10">
       <HomeGreeting name={name} />
 
       {/* One column on a phone, three from `md`. Deliberately not two at any

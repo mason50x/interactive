@@ -97,8 +97,26 @@ export function ActivityRow({
           "flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2",
           // Bleeds to the container's edge and back, so the padding the page
           // sets is spent inside the scroller instead of clipping it.
-          "-mx-6 scroll-px-6 px-6 sm:-mx-10 sm:scroll-px-10 sm:px-10",
+          "-mx-6 scroll-px-6 px-6 sm:-mx-8 sm:scroll-px-8 sm:px-8 lg:-mx-10 lg:scroll-px-10 lg:px-10",
         )}
+        style={{
+          maskImage:
+            atStart && atEnd
+              ? undefined
+              : atStart
+                ? "linear-gradient(to right, black calc(100% - 4.5rem), transparent 100%)"
+                : atEnd
+                  ? "linear-gradient(to left, black calc(100% - 4.5rem), transparent 100%)"
+                  : "linear-gradient(to right, transparent 0%, black 4.5rem, black calc(100% - 4.5rem), transparent 100%)",
+          WebkitMaskImage:
+            atStart && atEnd
+              ? undefined
+              : atStart
+                ? "linear-gradient(to right, black calc(100% - 4.5rem), transparent 100%)"
+                : atEnd
+                  ? "linear-gradient(to left, black calc(100% - 4.5rem), transparent 100%)"
+                  : "linear-gradient(to right, transparent 0%, black 4.5rem, black calc(100% - 4.5rem), transparent 100%)",
+        }}
       >
         {activities.map((activity) => (
           <li
@@ -144,13 +162,10 @@ function RowArrow({
       className={cn(
         "absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center sm:flex",
         "rounded-full border border-border bg-surface/85 text-foreground shadow-md backdrop-blur",
-        "transition-[opacity,background-color] duration-200 hover:bg-surface",
-        // Pulled half off the row's edge so it sits on the seam between the
-        // last card and the page, not on top of the art.
-        side === "start" ? "-left-4" : "-right-4",
-        // Quiet until you are working in this row. `pointer-events-none`
-        // has to travel with the opacity or an invisible button still eats
-        // clicks meant for the card beneath it.
+        "transition-[opacity,background-color,transform] duration-200 hover:bg-surface hover:scale-105",
+        // Positioned over the fade zone at the edge
+        side === "start" ? "-left-2 sm:-left-3 lg:-left-4" : "-right-2 sm:-right-3 lg:-right-4",
+        // Quiet until working in this row
         hidden
           ? "pointer-events-none opacity-0"
           : "opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100",

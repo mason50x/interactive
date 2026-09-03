@@ -48,6 +48,10 @@ import { cn } from "@/lib/utils";
  * the wrapper rather than inside `ConversationList`, because the wrapper is the
  * flex item — putting `w-full` here and a fixed width inside it made the list
  * claim the whole row on desktop and squeezed the thread off the right edge.
+ *
+ * Full-bleed on purpose: the list is a side column, and a side column sits
+ * against the side. It does not share the header's centred gutter, so the
+ * wordmark and "My Feed" are not meant to line up.
  */
 export function ChatFrame({ children }: { children: ReactNode }) {
   const { profile, loading } = useChat();

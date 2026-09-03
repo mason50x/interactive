@@ -140,6 +140,43 @@ export const GROUP_HUES = [
 /** The longest a group may be called, the same as `MAX_TITLE` on the server. */
 export const MAX_TITLE = 40;
 
+/** The longest a display name may be, the same as `MAX_DISPLAY_NAME` there. */
+export const MAX_DISPLAY_NAME = 30;
+
+/**
+ * What a person is called where there is room for one line: their display
+ * name if they have set one, and their handle if not. Where there is room for
+ * two, the handle goes under it with an `@` — see `Handle` in `people-rows.tsx`.
+ */
+export function personName(person: {
+  handle: string;
+  displayName?: string;
+}): string {
+  return person.displayName ?? person.handle;
+}
+
+/**
+ * Why a display name did not take. The filter refusals stay vague on purpose,
+ * the same as the composer's — see `refusalMessage` above.
+ */
+export function displayNameError(
+  reason: Refusal | "no-profile" | "closed",
+): string {
+  switch (reason) {
+    case "muted":
+      return "You cannot change your name while you cannot send messages.";
+    case "banned":
+    case "closed":
+      return "This account can no longer use chat.";
+    case "no-profile":
+      return "Pick a handle first.";
+    case "too-long":
+      return "That name is too long.";
+    default:
+      return "That name will not work. Try another.";
+  }
+}
+
 /**
  * The wheel a person may draw their own disc on, the faces they may wear, and
  * how much they may write instead.
@@ -272,14 +309,47 @@ export function groupNameError(
   }
 }
 
-/** What a conversation is called, given that only groups carry a title. */
+/**
+ * Why a direct message did not open, in the words the card says it in.
+ *
+ * `not-friends` is the one worth getting right: it is the default policy, so
+ * it is the refusal nearly everybody meets first, and it is not a refusal at
+ * all so much as the next thing to press.
+ */
+export function openDmError(
+  reason: "no-profile" | "unknown" | "blocked" | "not-friends" | "closed",
+): string {
+  switch (reason) {
+    case "not-friends":
+      return "They only take messages from friends. Add them first.";
+    case "closed":
+      return "They are not taking messages right now.";
+    case "blocked":
+      return "You cannot message this person.";
+    case "unknown":
+      return "That account is gone.";
+    case "no-profile":
+      return "Pick a handle first.";
+  }
+}
+
+/**
+ * What a conversation is called, given that only groups carry a title.
+ *
+ * A direct message is called by the other person's display name when they
+ * have one, and their handle when they do not — the same rule `personName`
+ * applies everywhere else a person is named on one line.
+ */
 export function conversationName(conversation: {
   kind: "global" | "dm" | "group";
   title?: string;
   peerHandle?: string;
+  peerName?: string;
 }): string {
   if (conversation.kind === "global") return "Everyone";
-  if (conversation.kind === "dm") return conversation.peerHandle ?? "Direct message";
+  if (conversation.kind === "dm") {
+    return conversation.peerName ?? conversation.peerHandle ?? "Direct message";
+  }
   return conversation.title ?? "Group";
 }
 

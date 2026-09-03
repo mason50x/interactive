@@ -102,9 +102,15 @@ export function useRemaining(until: number | null): number | null {
 const serverSnapshot = () => null;
 
 /** Geometry. `r` leaves room for the stroke, which is centred on the path. */
-const R = 23;
+const R = 13;
 const CIRCUMFERENCE = 2 * Math.PI * R;
 
+/**
+ * One line over the composer, with a small ring beside it. It was a card with
+ * a big dial and two sentences, and at that size it read as a warning about
+ * something you had done. This says the one thing worth saying — when — in
+ * the space of a caption, and leaves the room readable above it.
+ */
 export function GlobalUnlock({
   remaining,
   total,
@@ -117,14 +123,8 @@ export function GlobalUnlock({
   const progress =
     total <= 0 ? 1 : Math.min(1, Math.max(0, 1 - remaining / total));
 
-  // Rounded up, so it reads "1 min" for the whole of the last minute and never
-  // shows a zero it is not yet acting on.
-  const seconds = Math.ceil(remaining / 1000);
-  const count = seconds >= 60 ? Math.ceil(seconds / 60) : seconds;
-  const unit = seconds >= 60 ? "min" : "sec";
-
   return (
-    <div className="mx-3 mb-2 flex shrink-0 items-center gap-3.5 rounded-3xl border border-border bg-surface/70 px-4 py-3 shadow-[0_6px_24px_rgba(15,15,15,0.10)] backdrop-blur-xl">
+    <div className="mx-3 mb-2 flex items-center gap-2.5 rounded-xl bg-surface-muted px-3 py-2 sm:mx-8 lg:mx-14 xl:mx-20">
       <div
         role="progressbar"
         aria-label="Until you can post to everyone"
@@ -132,30 +132,27 @@ export function GlobalUnlock({
         aria-valuemax={100}
         aria-valuenow={Math.round(progress * 100)}
         aria-valuetext={untilLabel(remaining, 0) + " left"}
-        className="relative size-[52px] shrink-0"
+        className="relative size-7 shrink-0"
       >
-        {/* Turned so the fill starts at twelve o'clock. The svg is rotated
-            rather than the wrapper, which would take the number with it. */}
-        <svg viewBox="0 0 52 52" className="size-full -rotate-90" aria-hidden>
+        {/* Turned so the fill starts at twelve o'clock. */}
+        <svg viewBox="0 0 30 30" className="size-full -rotate-90" aria-hidden>
           <circle
-            cx="26"
-            cy="26"
+            cx="15"
+            cy="15"
             r={R}
             fill="none"
-            strokeWidth="4"
+            strokeWidth="3"
             className="stroke-border"
           />
-
           {/* One second of linear travel per tick, which is exactly the gap
               between ticks — so the arc is still moving when the next one
-              lands and the whole thing reads as a sweep rather than a clock
-              hand. */}
+              lands and the whole thing reads as a sweep. */}
           <circle
-            cx="26"
-            cy="26"
+            cx="15"
+            cy="15"
             r={R}
             fill="none"
-            strokeWidth="4"
+            strokeWidth="3"
             strokeLinecap="round"
             stroke="var(--primary)"
             strokeDasharray={CIRCUMFERENCE}
@@ -163,26 +160,14 @@ export function GlobalUnlock({
             className="transition-[stroke-dashoffset] duration-1000 ease-linear motion-reduce:transition-none"
           />
         </svg>
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-          <span className="text-[0.9375rem] leading-none font-semibold tabular-nums">
-            {count}
-          </span>
-          <span className="text-[0.5625rem] leading-none text-faint">
-            {unit}
-          </span>
-        </div>
       </div>
 
-      <div className="min-w-0">
-        <p className="text-[0.9375rem] font-medium">
-          New accounts wait {untilLabel(total, 0)} before posting to everyone.
-        </p>
-        <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-muted-foreground">
-          The wait clears on its own. Direct messages and groups are open in the
-          meantime.
-        </p>
-      </div>
+      <p className="min-w-0 text-[0.8125rem] leading-snug text-muted-foreground">
+        <span className="font-medium text-foreground">
+          You can post to everyone in {untilLabel(remaining, 0)}.
+        </span>{" "}
+        Direct messages and groups are open now.
+      </p>
     </div>
   );
 }

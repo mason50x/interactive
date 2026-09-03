@@ -13,7 +13,6 @@ import {
   dmKeyFor,
   ensureDm,
   friendship,
-  membership,
   pairOf,
   profileFor,
 } from "./shared";
@@ -38,6 +37,7 @@ const MAX_LIST = 200;
 export type Friend = {
   clerkId: string;
   handle: string;
+  displayName?: string;
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
@@ -46,6 +46,7 @@ export type Friend = {
 export type FriendRequest = {
   clerkId: string;
   handle: string;
+  displayName?: string;
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
@@ -57,20 +58,18 @@ export type FriendRequest = {
 /**
  * Put a new friend in both people's lists.
  *
- * Being friends is the moment a thread between two people is allowed to exist,
- * so it is also the moment the thread is made. Waiting for somebody to press
- * "message" meant an acceptance left no mark anywhere either person looks: the
- * list on the left was unchanged, and the new friend was only findable by
- * remembering to reopen the people panel and go looking for them. Two of these
- * can run for the same pair — both halves of a mutual request, say — and
- * `ensureDm` is idempotent for exactly that reason.
+ * Accepting is the moment a thread between two people is allowed to exist, so
+ * it is also the moment the thread is made: an acceptance that left no mark in
+ * the list on the left was an acceptance the new friend had to go looking for.
+ * Two of these can run for the same pair — both halves of a mutual request, say
+ * — and `ensureDm` is idempotent for exactly that reason. It is the same thread
+ * a press on "Message" would open, so the two never disagree.
  *
  * `nobody` is the one policy this answers by doing nothing. Shutting the door
  * is a decision, and becoming friends is not a key to it: a thread neither
  * person may send in has no business sitting in either list. They still have
  * each other in Friends, and opening the door again is what `linkDms` below is
- * for — there is no "message" button to fall back on any more, so the policy
- * itself has to be what brings the threads back.
+ * for.
  */
 async function linkDm(
   ctx: MutationCtx,
@@ -79,51 +78,6 @@ async function linkDm(
 ): Promise<void> {
   if (mine.dmPolicy === "nobody" || theirs.dmPolicy === "nobody") return;
   await ensureDm(ctx, mine.clerkId, theirs.clerkId);
-}
-
-/**
- * Take the thread with them.
- *
- * A direct message now begins with a friendship and so it ends with one. The
- * alternative is a thread sitting in both lists that neither person may add to
- * and neither asked to keep — there is no "leave" on a direct message the way
- * there is on a group, so short of blocking somebody, which is a much bigger
- * thing to do than falling out with them, what unfriending left behind would
- * have stayed behind for good.
- *
- * All of it goes, including what the other person said. That is the part worth
- * being deliberate about: half a conversation, kept, is not what "remove" is
- * pressed for, and a thread with one side deleted is a monologue nobody
- * consented to keeping — the same argument `chat/erase.ts` makes about the
- * accounts it closes.
- *
- * The two membership rows are deleted here and synchronously, because they are
- * two documents and they are what the lists read: the thread leaves both feeds
- * in the same instant the friendship does, and `messages.send` stops accepting
- * anything into a conversation that is being taken apart underneath it. The
- * messages have no ceiling and are booked instead — `purgeConversation` in
- * `convex/chat/sweep.ts` is the one place a conversation is destroyed, and it
- * is written to be replayable against the state this leaves.
- */
-async function unlinkDm(
-  ctx: MutationCtx,
-  clerkId: string,
-  peerClerkId: string,
-): Promise<void> {
-  const conversation = await ctx.db
-    .query("conversations")
-    .withIndex("byDmKey", (q) => q.eq("dmKey", dmKeyFor(clerkId, peerClerkId)))
-    .unique();
-  if (conversation === null) return;
-
-  for (const who of [clerkId, peerClerkId]) {
-    const member = await membership(ctx, conversation._id, who);
-    if (member !== null) await ctx.db.delete(member._id);
-  }
-
-  await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
-    conversationId: conversation._id,
-  });
 }
 
 export type RequestResult =
@@ -217,11 +171,14 @@ export const accept = mutation({
  * somebody to go back and look at. Deleting also means the request can be sent
  * again later, which is the right answer for two people who fell out in March.
  *
- * Only the third takes a conversation with it, and only because only the third
- * ever had one. A request that was never accepted opened no thread, so a
- * declined one has nothing to clear up — and a pair whose thread predates the
- * friendship is exactly the case `dmPolicy: "anyone"` exists for, which is why
- * this asks what the row said rather than whether a thread happens to be there.
+ * None of them touches a conversation. Unfriending used to delete the direct
+ * message and everything in it, for both people, and that was the wrong size
+ * of consequence for the button it sat behind: "remove friend" is pressed to
+ * tidy a list, and what it took was two people's history. The thread stays,
+ * the way it does everywhere else people chat. What a friendship still decides
+ * is whether a *new* thread may be opened — see `openDm` in
+ * `convex/chat/conversations.ts` — and ending one is what blocking is for,
+ * which marks the thread rather than destroying it. See `convex/chat/blocks.ts`.
  */
 export const remove = mutation({
   args: { peerClerkId: v.string() },
@@ -232,9 +189,7 @@ export const remove = mutation({
     const existing = await friendship(ctx, profile.clerkId, peerClerkId);
     if (existing === null) return;
 
-    const friends = existing.status === "accepted";
     await ctx.db.delete(existing._id);
-    if (friends) await unlinkDm(ctx, profile.clerkId, peerClerkId);
   },
 });
 
@@ -274,6 +229,7 @@ export const list = query({
       friends.push({
         clerkId: partner.other,
         handle: theirs.handle,
+        displayName: theirs.displayName,
         avatarHue: theirs.avatarHue,
         avatarEmoji: theirs.avatarEmoji,
         avatarInitials: theirs.avatarInitials,
@@ -300,6 +256,7 @@ export const pending = query({
       requests.push({
         clerkId: partner.other,
         handle: theirs.handle,
+        displayName: theirs.displayName,
         avatarHue: theirs.avatarHue,
         avatarEmoji: theirs.avatarEmoji,
         avatarInitials: theirs.avatarInitials,

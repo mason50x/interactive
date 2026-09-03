@@ -207,6 +207,9 @@ export const MAX_REACTORS = 100;
 /** The longest a group may be called. */
 export const MAX_TITLE = 40;
 
+/** The longest a display name may be. Mirrored in `src/lib/chat.ts`. */
+export const MAX_DISPLAY_NAME = 30;
+
 /**
  * The faces a group may wear, fixed for the same reason the reactions are.
  *

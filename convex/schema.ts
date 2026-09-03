@@ -323,6 +323,15 @@ export default defineSchema({
     clerkId: v.string(),
     /** What everyone sees. Claimed once, and changeable twice after that. */
     handle: v.string(),
+    /**
+     * The name shown over the handle, when one has been set.
+     *
+     * Free text, which is the one thing the handle is not — so it goes through
+     * `screenStatic` on the way in, the same as a group's title, and it is
+     * denormalised onto messages as `authorName` for the same reason the handle
+     * is. It is not unique and not searchable: the handle stays the address.
+     */
+    displayName: v.optional(v.string()),
     /** Folded, and the thing uniqueness is on. See above. */
     handleKey: v.string(),
     /**
@@ -647,6 +656,8 @@ export default defineSchema({
     authorClerkId: v.string(),
     /** See above: denormalised so a page of messages needs no join. */
     authorHandle: v.string(),
+    /** The author's display name at the time, if they had one. Same rule. */
+    authorName: v.optional(v.string()),
     body: v.string(),
     status: v.union(v.literal("visible"), v.literal("hidden")),
     flags: v.array(v.string()),

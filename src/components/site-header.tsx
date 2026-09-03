@@ -289,7 +289,7 @@ export function SiteHeader() {
               <button
                 aria-busy={signUp.pending}
                 onClick={signUp.start}
-                className="hidden h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium whitespace-nowrap text-primary-foreground transition-all hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)] sm:inline-flex"
+                className="hidden h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-medium whitespace-nowrap text-primary-foreground transition-all hover:bg-primary-hover sm:inline-flex"
               >
                 {signUp.pending && <Spinner aria-hidden className="size-3.5" />}
                 Start Learning

@@ -104,15 +104,13 @@ export function ActivitiesBrowser({
     <div className="flex flex-col gap-6">
       <div
         className={cn(
-          "sticky top-0 z-20 flex items-center gap-3 py-4",
-          // Bleeds the frosted background out to the shell's edge so cards
-          // passing underneath are covered rather than showing in the gutter.
-          "-mx-6 px-6 sm:-mx-10 sm:px-10",
-          "border-b border-border bg-surface/80 backdrop-blur-md",
+          "sticky top-0 z-20 flex items-center gap-3 py-3",
+          "-mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10",
+          "bg-background/85 backdrop-blur-md",
         )}
       >
         <search className="relative min-w-0 flex-1">
-          <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+          <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={query}
@@ -120,12 +118,8 @@ export function ActivitiesBrowser({
             placeholder={`Search ${catalogue.length} activities by name`}
             aria-label="Search activities"
             className={cn(
-              "h-10 w-full rounded-lg border border-border bg-surface pr-9 pl-9 text-[0.9375rem] text-foreground transition-[border-color,box-shadow] outline-none",
-              "placeholder:text-faint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-              // Chrome draws its own clear button inside a `type="search"`
-              // field, which would sit beside ours. Ours stays because it is
-              // the one that matches the rest of the app and the one that
-              // exists in every browser.
+              "h-10 w-full rounded-lg border border-border bg-foreground/[0.03] pr-9 pl-9 text-[0.9375rem] text-foreground transition-colors outline-none",
+              "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-ring",
               "[&::-webkit-search-cancel-button]:appearance-none",
             )}
           />
@@ -134,7 +128,7 @@ export function ActivitiesBrowser({
               type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
-              className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-faint transition-colors hover:text-foreground"
+              className="absolute top-1/2 right-2.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
             >
               <XMarkIcon className="size-4" />
             </button>
@@ -249,10 +243,10 @@ function CategoryMenu({
         }
         className={cn(
           "flex h-10 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-[0.8125rem] transition-colors outline-none",
-          "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+          "focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring",
           chosen
-            ? "border-border bg-surface-muted text-foreground"
-            : "border-border bg-surface text-muted-foreground hover:text-foreground",
+            ? "border-border bg-foreground/[0.08] text-foreground font-medium"
+            : "border-border bg-foreground/[0.03] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
         )}
       >
         <FunnelIcon className="size-4 shrink-0" />
@@ -354,7 +348,7 @@ function SortToggle({
     <div
       role="group"
       aria-label="Sort activities"
-      className="flex h-10 shrink-0 items-center gap-0.5 rounded-lg border border-border bg-surface p-1"
+      className="flex h-10 shrink-0 items-center gap-0.5 rounded-lg border border-border bg-foreground/[0.03] p-1"
     >
       {options.map((option) => (
         <button
@@ -363,10 +357,10 @@ function SortToggle({
           onClick={() => onChange(option.value)}
           aria-pressed={sort === option.value}
           className={cn(
-            "h-full rounded-md px-2.5 text-[0.8125rem] transition-colors",
+            "h-full rounded-md px-2.5 text-[0.8125rem] font-medium transition-colors",
             sort === option.value
-              ? "bg-surface-muted text-foreground"
-              : "text-faint hover:text-foreground",
+              ? "bg-background text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {option.label}

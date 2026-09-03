@@ -25,7 +25,12 @@ import { NameEditor } from "@/components/app/chat/name-editor";
 import { OptionTiles } from "@/components/app/chat/option-tiles";
 import { FoundNobody, Searching } from "@/components/app/chat/searching";
 import { SectionLabel } from "@/components/app/chat/section-label";
-import { MAX_TITLE, requestGroupPanel, type GroupPanelMode } from "@/lib/chat";
+import {
+  MAX_TITLE,
+  personName,
+  requestGroupPanel,
+  type GroupPanelMode,
+} from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
@@ -422,6 +427,7 @@ function AddView({
                   <Line
                     key={person.clerkId}
                     handle={person.handle}
+                    name={person.displayName}
                     hue={person.avatarHue}
                     emoji={person.avatarEmoji}
                     initials={person.avatarInitials}
@@ -537,6 +543,7 @@ function SettingsView({
             <Line
               key={member.clerkId}
               handle={member.handle}
+              name={member.displayName}
               detail={member.role === "member" ? undefined : member.role}
             >
               {owner && member.role !== "owner" ? (
@@ -852,9 +859,15 @@ function InviteCell({
   );
 }
 
-/** One person in a list, with whatever may be done to them on the right. */
+/**
+ * One person in a list, with whatever may be done to them on the right.
+ *
+ * Their display name over their handle when they have one, and the handle
+ * alone when they do not; a role, where there is one, goes after the handle.
+ */
 function Line({
   handle,
+  name,
   detail,
   hue,
   emoji,
@@ -862,6 +875,7 @@ function Line({
   children,
 }: {
   handle: string;
+  name?: string;
   detail?: string;
   /** The disc, when the row's source carries one. See `PublicProfile`. */
   hue?: number;
@@ -869,6 +883,10 @@ function Line({
   initials?: string;
   children?: React.ReactNode;
 }) {
+  const under = [name === undefined ? null : `@${handle}`, detail]
+    .filter((part) => part !== null && part !== undefined)
+    .join(" · ");
+
   return (
     <li className="flex items-center gap-2.5 border-b border-border py-2 last:border-b-0">
       <Monogram
@@ -880,10 +898,12 @@ function Line({
       />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[0.875rem] font-medium">
-          {handle}
+          {personName({ handle, displayName: name })}
         </span>
-        {detail === undefined ? null : (
-          <span className="block text-[0.75rem] text-faint">{detail}</span>
+        {under === "" ? null : (
+          <span className="block truncate text-[0.75rem] text-faint">
+            {under}
+          </span>
         )}
       </span>
       <span className="flex shrink-0 gap-1">{children}</span>

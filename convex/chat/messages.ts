@@ -60,6 +60,8 @@ export type ChatMessage = {
   _creationTime: number;
   authorClerkId: string;
   authorHandle: string;
+  /** The author's display name when it was sent, if they had one. */
+  authorName?: string;
   body: string;
   status: "visible" | "hidden";
   reactions: { emoji: string; count: number; mine: boolean }[];
@@ -149,6 +151,7 @@ export const send = mutation({
       conversationId,
       authorClerkId: profile.clerkId,
       authorHandle: profile.handle,
+      authorName: profile.displayName,
       body: verdict.body,
       status: "visible",
       // Always empty now that tier three is refused rather than allowed — see
@@ -255,6 +258,7 @@ export const list = query({
         _creationTime: message._creationTime,
         authorClerkId: message.authorClerkId,
         authorHandle: message.authorHandle,
+        authorName: message.authorName,
         body: gone ? "" : message.body,
         status: message.status,
         reactions: gone ? [] : readReactions(message, profile.clerkId),

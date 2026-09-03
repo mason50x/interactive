@@ -11,10 +11,10 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]",
+          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover",
         /** Alias of `default`, kept so brand-led call sites read clearly. */
         primary:
-          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover hover:shadow-[0_4px_14px_color-mix(in_oklab,var(--primary)_35%,transparent)]",
+          "bg-primary text-primary-foreground shadow-[0_1px_2px_rgba(15,15,15,0.16)] hover:bg-primary-hover",
         /** For use on the inverted panel, which is dark in both themes. */
         inverted:
           "bg-panel-foreground text-panel shadow-[0_1px_2px_rgba(0,0,0,0.4)] hover:bg-panel-foreground/88",

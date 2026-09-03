@@ -16,7 +16,6 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
-  type RefObject,
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -27,6 +26,7 @@ import {
 import { GroupPanel } from "@/components/app/chat/group-panel";
 import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import { Monogram } from "@/components/app/chat/monogram";
+import { PersonCard } from "@/components/app/chat/person-card";
 import { Present } from "@/components/app/chat/presence";
 import { StandingBanner } from "@/components/app/chat/standing-banner";
 import { useChat } from "@/components/app/chat/chat-provider";
@@ -34,9 +34,9 @@ import {
   DELETE_WINDOW_MS,
   REACTIONS,
   conversationName,
+  personName,
   refusalMessage,
 } from "@/lib/chat";
-import { useStillness } from "@/lib/motion";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
@@ -66,11 +66,18 @@ import type { ChatMessage } from "../../../../convex/chat/messages";
  *
  * ## The message you just sent
  *
- * Drawn from local state, above the page, until the mutation resolves. Convex
- * does not resolve a mutation's promise until the client's own subscriptions
- * already reflect its writes, so clearing the local copy at that moment is an
- * exact handover rather than a race — the real row is on screen before the
- * placeholder leaves.
+ * Drawn from local state, at the bottom, until the mutation resolves — at
+ * half weight, because it may still be refused. Convex does not resolve a
+ * mutation's promise until the client's own subscriptions already reflect its
+ * writes, so clearing the local copy at that moment is an exact handover
+ * rather than a race: the real row is on screen before the placeholder leaves.
+ *
+ * It appears where it lands. It used to be flown from the composer to its
+ * place in the thread over three hundred milliseconds, and the flight was the
+ * one moment the app moved something you made — but a message sent quickly
+ * after another arrived mid-flight, and a confirmation that landed before the
+ * flight did cut it off, so what most sends actually showed was a stutter.
+ * Instant is what every other chat does and what a keystroke deserves.
  *
  * Convex ships `insertAtTop` for this, which splices the row into the paginated
  * query's own store, and it would work here: `messages.list` joins nothing, so
@@ -123,28 +130,6 @@ export function Thread({
 
   const scroller = useRef<HTMLDivElement>(null);
 
-  /** The composer's text box, which is where a message is before it is one. */
-  const field = useRef<HTMLTextAreaElement>(null);
-
-  /** The pending message's row, which is where it is after. */
-  const flyer = useRef<HTMLDivElement>(null);
-
-  /** That row's bubble, without its words — the part that is not sent. */
-  const flyerFace = useRef<HTMLSpanElement>(null);
-
-  /**
-   * Where the words were on screen at the moment Send was pressed.
-   *
-   * A ref and not state: it is read once, by the layout effect that runs on the
-   * very next commit, and nothing renders differently for it. Measured in the
-   * handler rather than in that effect because by then the textarea has been
-   * emptied and has collapsed back to one line — the top of the text somebody
-   * wrote is only knowable while it is still written.
-   */
-  const launch = useRef<{ x: number; y: number } | null>(null);
-
-  const still = useStillness();
-
   /** Whether the reader is at the live end. See the note above. */
   const pinned = useRef(true);
 
@@ -153,15 +138,12 @@ export function Thread({
     if (profile === null || userId === null || userId === undefined)
       return null;
 
-    const box = still ? undefined : field.current?.getBoundingClientRect();
-    launch.current =
-      box === undefined ? null : { x: box.left, y: box.top + FIELD_PAD_Y };
-
     setPending({
       _id: crypto.randomUUID() as Id<"messages">,
       _creationTime: Date.now(),
       authorClerkId: userId,
       authorHandle: profile.handle,
+      authorName: profile.displayName,
       body: text,
       status: "visible",
       reactions: [],
@@ -203,129 +185,12 @@ export function Thread({
 
   // Before the paint rather than after it. A thread opens at its live end, and
   // an effect that runs after the browser has drawn shows one frame of the top
-  // of the conversation before it jumps. It also has to be settled before the
-  // flight below measures anything: the message's destination is a position in
-  // a box that is about to be scrolled.
+  // of the conversation before it jumps.
   useLayoutEffect(() => {
     const element = scroller.current;
     if (element === null || !pinned.current) return;
     element.scrollTop = element.scrollHeight;
   }, [conversationId, newest, pending, results.length]);
-
-  /**
-   * The message travelling from the box it was typed in to the place it sits.
-   *
-   * Sending is the one moment in this app where a thing you made moves, and it
-   * moves rather than appears because those are two different claims: a bubble
-   * that fades in at the bottom of the thread is a message *arriving*, which is
-   * what everybody else's do, and this one did not arrive — it left.
-   *
-   * ## What travels is the words
-   *
-   * The thing that leaves the composer is the sentence, at the size and weight
-   * it was typed at, starting exactly where it was sitting a frame ago — not a
-   * bubble that appears near the Send button and slides. The bubble is drawn
-   * around the words on the way, from nothing at the start to a full face by
-   * the time they land, so the handoff from the field is the same text carrying
-   * on rather than one object being swapped for another. That is the whole
-   * reason the face is a layer of its own — see `MessageRow`.
-   *
-   * Nothing is scaled: the composer and the bubble set text at the same size,
-   * which is what lets this be a translation and not an effect. The launch
-   * point is the top-left of the *text* in the field, and the landing point the
-   * top-left of the text in the bubble, so the words never jump at either end.
-   *
-   * It is the real row that moves, not a copy of it flown over the top. The
-   * copy is the usual way to do this and it is worse in every way that matters:
-   * two elements holding the same sentence, one of which has to be hidden at
-   * exactly the frame the other stops. Here the row renders where it belongs,
-   * is pushed back to where the words already were, and released.
-   *
-   * ## Three things that make it a movement rather than a stutter
-   *
-   * It is lifted over the composer for the trip. The composer is an opaque bar
-   * on its own blur at `z-10`, and a message that starts underneath it spends
-   * the first half of the journey invisible and appears halfway up the pane out
-   * of nothing.
-   *
-   * It is composited. The bubble is a gradient, a border, two inset shadows and
-   * a drop shadow — see `.bubble-mine` in `globals.css` — and re-rasterising
-   * that on every frame is what turns a move into a sequence of positions.
-   * `will-change` hands both layers to the GPU for the length of the trip and
-   * takes them back after, so the hint never outlives the motion.
-   *
-   * Both animations are single animations rather than transitions between two
-   * inline styles. A transition has to be started by writing one value, forcing
-   * the browser to notice it, then writing another; the middle step is a
-   * synchronous layout read in the frame the message is sent, which is exactly
-   * the frame that can least afford one.
-   *
-   * The push has to be measured before the browser paints — hence a layout
-   * effect — or there is a frame of the message at its destination before it
-   * goes back to fetch itself.
-   */
-  useLayoutEffect(() => {
-    const element = flyer.current;
-    const face = flyerFace.current;
-    const from = launch.current;
-    launch.current = null;
-    if (element === null || face === null || from === null) return;
-
-    const box = face.getBoundingClientRect();
-    const dx = from.x - (box.left + BUBBLE_PAD_X);
-    const dy = from.y - (box.top + BUBBLE_PAD_Y);
-
-    element.style.position = "relative";
-    element.style.zIndex = "20";
-    element.style.willChange = "transform, opacity";
-    face.style.willChange = "opacity";
-
-    const timing: KeyframeAnimationOptions = {
-      duration: FLIGHT_MS,
-      // Most of the distance in the first third and a long settle after it. A
-      // message leaves quickly — the send was a keystroke — and an even glide
-      // across the pane reads as the app moving it rather than as it going.
-      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-    };
-
-    const flight = element.animate(
-      [
-        // Full weight at the start, because at the start it is still the thing
-        // in the composer, which was never dimmed. It lands at the half opacity
-        // the class on it carries, which is where the animation stops writing.
-        { transform: `translate(${dx}px, ${dy}px)`, opacity: 1 },
-        { transform: "translate(0px, 0px)", opacity: 0.5 },
-      ],
-      timing,
-    );
-
-    // Held off until the words are clear of the composer. A face that starts
-    // growing immediately is a bubble sliding out of the text box, which is the
-    // one reading this is trying not to have.
-    const forming = face.animate(
-      [{ opacity: 0 }, { opacity: 0, offset: 0.3 }, { opacity: 1 }],
-      timing,
-    );
-
-    const land = () => {
-      element.style.position = "";
-      element.style.zIndex = "";
-      element.style.willChange = "";
-      face.style.willChange = "";
-    };
-
-    // `finished` rejects when an animation is cancelled, which is what happens
-    // when the server confirms mid-flight and this row is replaced by the real
-    // one. There is nothing to clean up in that case — the elements are gone —
-    // but an unhandled rejection would be reported as if there were.
-    flight.finished.then(land, () => {});
-
-    return () => {
-      flight.cancel();
-      forming.cancel();
-      land();
-    };
-  }, [pending]);
 
   /**
    * Oldest first, for reading. A copy, because `results` is Convex's own array
@@ -363,16 +228,47 @@ export function Thread({
 
         {detail === undefined ? null : (
           <>
-            <Monogram
-              handle={name}
-              emoji={detail.emoji}
-              hue={detail.hue}
-              brand={detail.kind === "global"}
-              className="size-7 text-[0.75rem]"
-            />
-            <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">
-              {detail.kind === "dm" ? `@${name}` : name}
-            </h1>
+            {/* In a direct message the header is the other person, so it is
+                their card's trigger — the same door their name is everywhere
+                else. */}
+            {detail.kind === "dm" && detail.peerClerkId !== undefined ? (
+              <PersonCard
+                person={{
+                  clerkId: detail.peerClerkId,
+                  handle: detail.peerHandle ?? name,
+                  displayName: detail.peerName,
+                }}
+                className="-ml-1.5 flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg px-1.5 py-1 text-left outline-none hover:bg-foreground/[0.04] focus-visible:ring-2 focus-visible:ring-ring/60"
+              >
+                <Monogram
+                  handle={detail.peerHandle ?? name}
+                  className="size-7 text-[0.75rem]"
+                />
+                <span className="min-w-0 flex-1">
+                  <h1 className="truncate text-[0.9375rem] font-semibold">
+                    {name}
+                  </h1>
+                  {detail.peerName === undefined ? null : (
+                    <span className="block truncate text-[0.75rem] text-faint">
+                      @{detail.peerHandle}
+                    </span>
+                  )}
+                </span>
+              </PersonCard>
+            ) : (
+              <>
+                <Monogram
+                  handle={name}
+                  emoji={detail.emoji}
+                  hue={detail.hue}
+                  brand={detail.kind === "global"}
+                  className="size-7 text-[0.75rem]"
+                />
+                <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">
+                  {name}
+                </h1>
+              </>
+            )}
             {/* Who is in here now, not who belongs here — and asked for in the
                 room as well as in a group, which is where a live number is
                 worth the most and where a count of members was never going to
@@ -393,7 +289,7 @@ export function Thread({
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-20"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
       >
         {status === "LoadingFirstPage" ? (
           <div className="flex justify-center py-6">
@@ -422,31 +318,30 @@ export function Thread({
         ))}
 
         {/* Last in document order, so it sits under the newest confirmed
-            message. Held at reduced opacity so it reads as in flight rather
-            than as sent — and it may still be refused. */}
+            message. Held at reduced opacity so it reads as not yet sent —
+            it may still be refused. */}
         {pending === null ? null : (
-          <div ref={flyer} className="opacity-50">
+          <div className="opacity-50">
             <MessageRow
               message={pending}
               previous={ordered[ordered.length - 1]}
               mine
               canAct={false}
-              faceRef={flyerFace}
             />
           </div>
         )}
       </div>
 
-      {/* Over the thread rather than under it: the messages run to the bottom
-          of the pane and the composer floats above them on its own blur, so
-          nothing is cut off by a bar and no rule is drawn across the column. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 [&>*]:pointer-events-auto">
+      {/* Under the thread, in the flow. It floated over the messages on a
+          blur for a while, and what that bought — no rule across the column
+          — cost the last message of every conversation, which sat half
+          behind it until you scrolled. A footer is a footer. */}
+      <div className="shrink-0">
         {cooling === null ? null : (
           <GlobalUnlock remaining={cooling} total={cooldown} />
         )}
 
         <Composer
-          fieldRef={field}
           onSubmit={submit}
           lock={
             profile !== null &&
@@ -705,16 +600,11 @@ function MessageRow({
   previous,
   mine,
   canAct,
-  faceRef,
 }: {
   message: ChatMessage;
   previous: ChatMessage | undefined;
   mine: boolean;
   canAct: boolean;
-  // Only the message in flight passes one. See the flight in `Thread`: the
-  // words travel on their own and the bubble is drawn around them as they
-  // land, which needs the two to be separately reachable.
-  faceRef?: RefObject<HTMLSpanElement | null>;
 }) {
   const react = useMutation(api.chat.messages.react);
   const report = useMutation(api.chat.reports.report);
@@ -766,6 +656,13 @@ function MessageRow({
     minute: "2-digit",
   });
 
+  /** Who said it, as the card that opens when they are pressed. */
+  const author = {
+    clerkId: message.authorClerkId,
+    handle: message.authorHandle,
+    displayName: message.authorName,
+  };
+
   return (
     <div
       className={cn(
@@ -779,7 +676,12 @@ function MessageRow({
       {mine ? null : grouped ? (
         <span className="w-8 shrink-0" />
       ) : (
-        <Monogram handle={message.authorHandle} />
+        <PersonCard
+          person={author}
+          className="shrink-0 cursor-pointer self-start rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Monogram handle={message.authorHandle} />
+        </PersonCard>
       )}
 
       <div
@@ -801,15 +703,11 @@ function MessageRow({
                 : "text-foreground",
             )}
           >
-            {/* The bubble itself, behind the words rather than around them.
-                One element for the face and one for the text is what lets a
-                message be sent as the words alone and become a bubble on
-                arrival — and it costs nothing the rest of the time, because
+            {/* The bubble itself, behind the words rather than around them:
                 an inset layer is the same rectangle the padding already
-                described. The text is positioned too, and after it, so it
-                paints over the face rather than under it. */}
+                described, and it is what carries the gradient and the rim —
+                see `.bubble-mine` in `globals.css`. */}
             <span
-              ref={faceRef}
               aria-hidden
               className={cn(
                 "absolute inset-0 rounded-3xl border",
@@ -862,23 +760,28 @@ function MessageRow({
           )}
         >
           {mine || grouped ? null : (
-            <span className="text-[0.875rem] font-semibold">
-              {message.authorHandle}
-            </span>
+            <PersonCard
+              person={author}
+              className="cursor-pointer truncate rounded text-[0.875rem] font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+            >
+              {personName(author)}
+            </PersonCard>
           )}
 
           {/* Every message, not just the grouped ones. A column of times down
               the edge of the thread is a lot of ink for something nobody reads
-              until they want to know when — so it waits to be asked, and comes
-              up with the controls it shares the row with. It stays up while
-              either menu is open for the same reason they do: the pointer has
-              left the message to go to the popup. */}
+              until they want to know when — so on a screen with a pointer it
+              waits to be asked, and comes up with the controls it shares the
+              row with. On a touch screen there is no hover to ask with, so it
+              is simply there. It stays up while either menu is open for the
+              same reason they do: the pointer has left the message to go to
+              the popup. */}
           <span
             className={cn(
               "text-[0.6875rem] text-faint transition-opacity duration-150",
               menuOpen
                 ? "opacity-100"
-                : "opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100",
+                : "opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100 pointer-coarse:opacity-100",
             )}
           >
             {time}
@@ -893,7 +796,7 @@ function MessageRow({
                 "flex items-center gap-0.5 transition-opacity duration-150",
                 menuOpen
                   ? "opacity-100"
-                  : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100",
+                  : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
                 !menuOpen && "pointer-events-none",
               )}
             >
@@ -1046,34 +949,17 @@ const PLACEHOLDER: Record<"muted" | "new", string> = {
   new: "You can post here when the ring fills",
 };
 
-/** How long the message takes to travel. Long enough to be followed and short
- *  enough that the next one can be typed over the top of it. */
-const FLIGHT_MS = 300;
-
-/** The bubble's own padding, which is `px-3.5 py-2` in pixels, and the field's
- *  `py-1.5`. The flight lines up the two pieces of *text*, not the two boxes
- *  around them — a bubble is padded and a textarea is barely padded at all, so
- *  matching their corners would leave the words a few pixels adrift at both
- *  ends of the move, which is the part anybody would notice. */
-const BUBBLE_PAD_X = 14;
-const BUBBLE_PAD_Y = 8;
-const FIELD_PAD_Y = 6;
-
 function Composer({
   onSubmit,
   lock,
-  fieldRef,
 }: {
   onSubmit: (text: string) => Promise<string | null>;
   lock: Lock;
-  // Held by the thread, because the thread is what needs to know where a
-  // message was typed in order to move it out of here.
-  fieldRef: RefObject<HTMLTextAreaElement | null>;
 }) {
   const shut = lock !== null;
   const [body, setBody] = useState("");
   const [refused, setRefused] = useState<string | null>(null);
-  const field = fieldRef;
+  const field = useRef<HTMLTextAreaElement>(null);
 
   async function submit() {
     const text = body.trim();
@@ -1098,25 +984,25 @@ function Composer({
     void submit();
   }
   return (
-    <div className="px-3 pb-3">
+    <div className="px-3 pb-3 sm:px-8 lg:px-14 xl:px-20">
       {/* The category and never the rule. See `refusalMessage` in
           `src/lib/chat.ts` — telling somebody exactly which word tripped is
           telling them how to spell it next time.
 
-          Over the composer rather than under it, on the same blur, so it reads
-          as the message coming back rather than as a line of small print. */}
+          Over the composer rather than under it, so it reads as the message
+          coming back rather than as a line of small print. */}
       {refused === null ? null : (
         <div className="flex justify-center pb-2">
           <p
             role="alert"
-            className="animate-notice-in max-w-full rounded-full border border-destructive/30 bg-surface/70 px-3.5 py-1.5 text-center text-[0.8125rem] text-destructive shadow-[0_6px_24px_rgba(15,15,15,0.10)] backdrop-blur-xl"
+            className="animate-notice-in max-w-full rounded-full border border-destructive/30 bg-surface px-3.5 py-1.5 text-center text-[0.8125rem] text-destructive shadow-[0_2px_8px_rgba(15,15,15,0.06)]"
           >
             {refused}
           </p>
         </div>
       )}
 
-      <div className="flex items-end gap-2 rounded-full border border-border bg-surface/70 py-1.5 pr-1.5 pl-4 shadow-[0_6px_24px_rgba(15,15,15,0.10)] backdrop-blur-xl focus-within:border-primary">
+      <div className="flex items-end gap-2 rounded-full border border-border bg-surface py-1.5 pr-1.5 pl-4 shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
         <textarea
           ref={field}
           value={body}
@@ -1133,13 +1019,16 @@ function Composer({
           className="max-h-32 min-h-9 flex-1 resize-none bg-transparent py-1.5 text-[0.9375rem] leading-relaxed outline-none placeholder:text-faint disabled:cursor-not-allowed"
         />
         <Button
-          size="icon-lg"
-          className="rounded-full"
-          aria-label="Send"
+          size="lg"
+          className="rounded-full pr-3.5 pl-3"
           onClick={() => void submit()}
           disabled={shut || body.trim() === ""}
         >
-          <ArrowUpIcon className="size-[1.125rem]" />
+          <ArrowUpIcon
+            strokeWidth={2.5}
+            className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
+          />
+          Send
         </Button>
       </div>
     </div>
