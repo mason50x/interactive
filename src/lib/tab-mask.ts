@@ -21,13 +21,19 @@
  * tab sees the app. It is worth being plain about that: the failure mode of a
  * privacy feature is someone trusting it further than it goes.
  *
- * Two things make it stick. The title and the icon links are *managed by React*
- * — every route under `/dashboard` sets its own title, so a navigation
+ * Three things make it stick. The title and the icon links are *managed by
+ * React* — every route under `/dashboard` sets its own title, so a navigation
  * overwrites whatever we wrote — which is why `watchTabMask` puts a
  * `MutationObserver` on the head and writes it back rather than setting it once
- * on mount. And the first paint happens before Convex has said who is signed
- * in, which is why there is an inlined twin of `applyTabMask` in
- * `preferencesScript`, reading the same `localStorage` cache the accent does.
+ * on mount. The browser keeps its own list of the page's icons and rebuilds it
+ * only when an icon link is *processed*, never when one stops being an icon —
+ * which is why `applyTabMask` re-inserts our link after every pass that parked
+ * one of React's; see `reannounce`. And the first paint happens before Convex
+ * has said who is signed in, which is why there is an inlined twin of
+ * `applyTabMask` in `preferencesScript`, reading the same `localStorage` cache
+ * the accent does. That twin runs before Next has streamed the route's
+ * metadata into the document, so the icon links it looks for usually are not
+ * there yet; the observer is what parks them when they land.
  */
 
 /**
@@ -132,8 +138,9 @@ const REAL_ICON_SELECTOR = `link[rel~="icon"]:not([${MASK_LINK_ATTRIBUTE}]),link
 
 /**
  * The mask, on the document. Idempotent by construction: every write is behind
- * a check that the value is not already there, which is what keeps
- * `watchTabMask` from observing its own work and looping forever.
+ * a check that the value is not already there — and the one deliberate re-write,
+ * `reannounce`, behind a check that this pass changed something — which is
+ * what keeps `watchTabMask` from observing its own work and looping forever.
  */
 export function applyTabMask(mask: TabMaskAssets | null): void {
   const root = document.documentElement;
@@ -146,6 +153,12 @@ export function applyTabMask(mask: TabMaskAssets | null): void {
       document.title = parked;
     }
 
+    // Ours goes first, the real ones come back second — see `reannounce`.
+    // A browser rebuilds its idea of the page's icons only when a link that
+    // *is* an icon is processed, so each `rel` restored below is one such
+    // moment, and every one of them must already find ours gone.
+    head.querySelector(`link[${MASK_LINK_ATTRIBUTE}]`)?.remove();
+
     for (const link of head.querySelectorAll(`link[${REL_STASH_ATTRIBUTE}]`)) {
       link.setAttribute(
         "rel",
@@ -153,8 +166,6 @@ export function applyTabMask(mask: TabMaskAssets | null): void {
       );
       link.removeAttribute(REL_STASH_ATTRIBUTE);
     }
-
-    head.querySelector(`link[${MASK_LINK_ATTRIBUTE}]`)?.remove();
     return;
   }
 
@@ -172,9 +183,11 @@ export function applyTabMask(mask: TabMaskAssets | null): void {
     document.title = mask.title;
   }
 
+  let parkedAny = false;
   for (const link of head.querySelectorAll(REAL_ICON_SELECTOR)) {
     link.setAttribute(REL_STASH_ATTRIBUTE, link.getAttribute("rel") || "icon");
     link.setAttribute("rel", PARKED_REL);
+    parkedAny = true;
   }
 
   let link = head.querySelector<HTMLLinkElement>(
@@ -185,11 +198,49 @@ export function applyTabMask(mask: TabMaskAssets | null): void {
     link.setAttribute(MASK_LINK_ATTRIBUTE, "");
     link.setAttribute("rel", "icon");
     link.setAttribute("type", "image/png");
+    // `href` before the append, so the browser processes the link once, with
+    // an icon to fetch, rather than once empty and once more when it lands.
+    link.setAttribute("href", mask.icon);
     head.appendChild(link);
+    return;
   }
   if (link.getAttribute("href") !== mask.icon) {
     link.setAttribute("href", mask.icon);
+  } else if (parkedAny) {
+    reannounce(link, head);
   }
+}
+
+/**
+ * Why parking a link is not enough on its own, and what is.
+ *
+ * Parking works on the document — the parked links are no longer icons, and
+ * ours is the only one left — but the tab strip is not drawn from the
+ * document. The browser keeps its own list of the page's icons, and it
+ * rebuilds that list only when a link that *has* an icon `rel` is processed:
+ * one being inserted, or its `href` changing, or its `rel` changing *to* an
+ * icon. Changing a `rel` *away* from one is silent. So after a navigation the
+ * sequence was: React appends its `<link rel="icon">` for the route, the
+ * browser rebuilds its list with the app's own favicon in it and picks that,
+ * then we park the link — and nothing tells the browser its list is stale.
+ * The title never had this problem because a title has no list; the tab reads
+ * it straight off the document, which is why the name held and the icon
+ * did not.
+ *
+ * So whenever a pass has parked something, ours is taken out and put back.
+ * Moving a connected link is a removal and an insertion, and the insertion is
+ * the announcement: the browser rebuilds its list, finds the parked links are
+ * not icons any more, and is left with ours. It also lands ours last in the
+ * head, which is where the browsers that break ties by document order look.
+ *
+ * Only when a pass has parked something, and never on a pass that found the
+ * document already right: the move is itself a mutation, the observer sees
+ * it, and the pass that follows must find nothing to do or the two would
+ * chase each other forever.
+ */
+function reannounce(link: HTMLLinkElement, head: HTMLHeadElement): void {
+  link.remove();
+  head.appendChild(link);
 }
 
 /**
