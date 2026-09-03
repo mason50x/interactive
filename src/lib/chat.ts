@@ -56,10 +56,13 @@ const REFUSALS: Record<string, string> = {
   threat: "Threats are not allowed here.",
   "self-harm": "Telling someone to hurt themselves is not allowed here.",
   degrading: "Threatening to expose someone is not allowed here.",
-  harassment: "That reads as aimed at someone. Say it about the thing, not the person.",
-  profanity: "Swearing does not go through here. Say it another way and it will.",
+  harassment:
+    "That reads as aimed at someone. Say it about the thing, not the person.",
+  profanity:
+    "Swearing does not go through here. Say it another way and it will.",
 
-  contact: "Contact details cannot be shared here — no numbers, handles or usernames.",
+  contact:
+    "Contact details cannot be shared here — no numbers, handles or usernames.",
   link: "Links are not allowed here.",
   location: "Addresses cannot be shared here.",
 
@@ -71,6 +74,7 @@ const REFUSALS: Record<string, string> = {
   banned: "This account can no longer use chat.",
   "not-a-member": "You are not in this conversation.",
   blocked: "You cannot message this person.",
+  "reply-unavailable": "That message is no longer available to reply to.",
   // Nearly unreachable, and deliberately so: the wait is drawn as a ring above
   // the composer and the composer is shut until it closes, so the only way here
   // is a browser clock running ahead of the server's. Worded as the near miss
@@ -138,8 +142,22 @@ export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as c
  * them. Change one, change the other. The server is the one that decides.
  */
 export const GROUP_EMOJI = [
-  "🎮", "🎵", "⚽", "🎨", "📚", "🍕", "🌟", "🚀",
-  "🐙", "🌵", "🍀", "🧩", "🎲", "🛹", "🪐", "🦊",
+  "🎮",
+  "🎵",
+  "⚽",
+  "🎨",
+  "📚",
+  "🍕",
+  "🌟",
+  "🚀",
+  "🐙",
+  "🌵",
+  "🍀",
+  "🧩",
+  "🎲",
+  "🛹",
+  "🪐",
+  "🦊",
 ] as const;
 
 export const GROUP_HUES = [

@@ -54,8 +54,7 @@ import {
  */
 
 export type SendResult =
-  | { ok: true }
-  | { ok: false; refusal: Refusal; mutedUntil?: number };
+  { ok: true } | { ok: false; refusal: Refusal; mutedUntil?: number };
 
 /** One message, exactly as it goes to the client. */
 export type ChatMessage = {
@@ -66,8 +65,9 @@ export type ChatMessage = {
   /** The author's display name when it was sent, if they had one. */
   authorName?: string;
   body: string;
+  replyTo?: ChatReply;
   status: "visible" | "hidden";
-  reactions: { emoji: string; count: number; mine: boolean }[];
+  reactions: ChatReaction[];
   /**
    * The pictures, as URLs. Resolved from storage ids by `list`, so the
    * client never sees an id it could hand back — and the optimistic send
@@ -75,6 +75,30 @@ export type ChatMessage = {
    * nothing more structured.
    */
   images: ChatImage[];
+};
+
+/** The safe, current preview of the message a reply points to. */
+export type ChatReply = {
+  messageId: Id<"messages">;
+  unavailable: boolean;
+  authorClerkId?: string;
+  authorHandle?: string;
+  authorName?: string;
+  preview?: string;
+};
+
+/** One reaction pill in the thread. Identities are fetched only on hover. */
+export type ChatReaction = {
+  emoji: string;
+  count: number;
+  mine: boolean;
+};
+
+/** A person named inside a reaction tooltip. */
+export type ReactionPerson = {
+  clerkId: string;
+  handle: string;
+  displayName?: string;
 };
 
 /**
@@ -114,10 +138,11 @@ export const send = mutation({
     conversationId: v.id("conversations"),
     body: v.string(),
     attachmentIds: v.optional(v.array(v.id("attachments"))),
+    replyToId: v.optional(v.id("messages")),
   },
   handler: async (
     ctx,
-    { conversationId, body, attachmentIds },
+    { conversationId, body, attachmentIds, replyToId },
   ): Promise<SendResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, refusal: "not-a-member" };
@@ -141,6 +166,22 @@ export const send = mutation({
     if (member.dmPeer !== undefined) {
       if (await blockedEitherWay(ctx, profile.clerkId, member.dmPeer)) {
         return { ok: false, refusal: "blocked" };
+      }
+    }
+
+    // A reply is a relationship the server proves, not a client-authored
+    // quote. It must still be visible, in this conversation, and between
+    // people who may see each other. If it changes while the composer is open,
+    // the words are handed back with a specific, free refusal.
+    if (replyToId !== undefined) {
+      const target = await ctx.db.get(replyToId);
+      if (
+        target === null ||
+        target.conversationId !== conversationId ||
+        target.status !== "visible" ||
+        (await blockedEitherWay(ctx, profile.clerkId, target.authorClerkId))
+      ) {
+        return { ok: false, refusal: "reply-unavailable" };
       }
     }
 
@@ -212,7 +253,11 @@ export const send = mutation({
           mutedUntil: after?.mutedUntil,
         };
       }
-      return { ok: false, refusal: verdict.refusal, mutedUntil: profile.mutedUntil };
+      return {
+        ok: false,
+        refusal: verdict.refusal,
+        mutedUntil: profile.mutedUntil,
+      };
     }
 
     const messageId = await ctx.db.insert("messages", {
@@ -221,6 +266,7 @@ export const send = mutation({
       authorHandle: profile.handle,
       authorName: profile.displayName,
       body: verdict.body,
+      replyToId,
       status: "visible",
       // Always empty now that tier three is refused rather than allowed — see
       // `flags` in `convex/schema.ts` for why the column stays anyway.
@@ -259,7 +305,10 @@ export const send = mutation({
     // profile beside it — which every conversation list, friends list and
     // invitation joins for a handle — is left alone.
     if (sender === null) {
-      await ctx.db.insert("chatSenders", { clerkId: profile.clerkId, ...moved });
+      await ctx.db.insert("chatSenders", {
+        clerkId: profile.clerkId,
+        ...moved,
+      });
     } else {
       await ctx.db.patch(sender._id, moved);
     }
@@ -291,6 +340,52 @@ function readReactions(
       count: entry.by.length,
       mine: entry.by.includes(clerkId),
     }));
+}
+
+const REPLY_PREVIEW_CHARS = 160;
+
+/**
+ * Resolve a reply against the original's current state.
+ *
+ * Missing, hidden and blocked originals keep their place in the conversation
+ * without copying content the caller should no longer see.
+ */
+async function replyOf(
+  ctx: QueryCtx,
+  message: Doc<"messages">,
+  blocked: Set<string>,
+): Promise<ChatReply | undefined> {
+  if (message.replyToId === undefined) return undefined;
+
+  const target = await ctx.db.get(message.replyToId);
+  if (
+    target === null ||
+    target.status !== "visible" ||
+    target.conversationId !== message.conversationId ||
+    blocked.has(target.authorClerkId)
+  ) {
+    return { messageId: message.replyToId, unavailable: true };
+  }
+
+  const body = target.body.replace(/\s+/g, " ").trim();
+  const pictures = target.images?.length ?? 0;
+  const preview =
+    body !== ""
+      ? body.slice(0, REPLY_PREVIEW_CHARS)
+      : pictures === 1
+        ? "Photo"
+        : pictures > 1
+          ? `${pictures} photos`
+          : "Message";
+
+  return {
+    messageId: target._id,
+    unavailable: false,
+    authorClerkId: target.authorClerkId,
+    authorHandle: target.authorHandle,
+    authorName: target.authorName,
+    preview,
+  };
 }
 
 /**
@@ -329,7 +424,9 @@ export const list = query({
 
     const result = await ctx.db
       .query("messages")
-      .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
       .order("desc")
       .paginate(paginationOpts);
 
@@ -344,6 +441,7 @@ export const list = query({
         authorHandle: message.authorHandle,
         authorName: message.authorName,
         body: gone ? "" : message.body,
+        replyTo: gone ? undefined : await replyOf(ctx, message, blocked),
         status: message.status,
         reactions: gone ? [] : readReactions(message, profile.clerkId),
         images: gone ? [] : await imagesOf(ctx, message),
@@ -400,13 +498,18 @@ export const react = mutation({
     const profile = await callerProfile(ctx);
     if (profile === null) return;
     if (profile.bannedAt !== undefined) return;
-    if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now()) return;
+    if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now())
+      return;
     if (!(REACTIONS as readonly string[]).includes(emoji)) return;
 
     const message = await ctx.db.get(messageId);
     if (message === null || message.status !== "visible") return;
 
-    const member = await membership(ctx, message.conversationId, profile.clerkId);
+    const member = await membership(
+      ctx,
+      message.conversationId,
+      profile.clerkId,
+    );
     if (member === null || member.status !== "active") return;
 
     const reactions = message.reactions ?? [];
@@ -432,6 +535,56 @@ export const react = mutation({
         entry.emoji === emoji ? { emoji, by } : entry,
       ),
     });
+  },
+});
+
+/**
+ * Name the people behind one reaction when its tooltip is opened.
+ *
+ * Kept out of `list` so a page of messages remains one bounded range read.
+ * This query reads at most `MAX_REACTORS` indexed profiles, and repeats the
+ * conversation membership check before returning any identity.
+ */
+export const reactors = query({
+  args: { messageId: v.id("messages"), emoji: v.string() },
+  returns: v.array(
+    v.object({
+      clerkId: v.string(),
+      handle: v.string(),
+      displayName: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, { messageId, emoji }): Promise<ReactionPerson[]> => {
+    const profile = await callerProfile(ctx);
+    if (profile === null) return [];
+    if (!(REACTIONS as readonly string[]).includes(emoji)) return [];
+
+    const message = await ctx.db.get(messageId);
+    if (message === null || message.status !== "visible") return [];
+
+    const member = await membership(
+      ctx,
+      message.conversationId,
+      profile.clerkId,
+    );
+    if (member === null || member.status !== "active") return [];
+
+    const reaction = message.reactions?.find((entry) => entry.emoji === emoji);
+    if (reaction === undefined) return [];
+
+    const blocked = await blockedBy(ctx, profile.clerkId);
+    const people: ReactionPerson[] = [];
+    for (const clerkId of reaction.by.slice(0, MAX_REACTORS)) {
+      if (blocked.has(clerkId)) continue;
+      const reactor = await profileFor(ctx, clerkId);
+      if (reactor === null) continue;
+      people.push({
+        clerkId,
+        handle: reactor.handle,
+        displayName: reactor.displayName,
+      });
+    }
+    return people;
   },
 });
 
@@ -615,9 +768,7 @@ async function nameFor(
 
   if (member.kind === "dm") {
     const peer =
-      member.dmPeer === undefined
-        ? null
-        : await profileFor(ctx, member.dmPeer);
+      member.dmPeer === undefined ? null : await profileFor(ctx, member.dmPeer);
     return { kind: "dm", peerHandle: peer?.handle };
   }
 

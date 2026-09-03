@@ -2,8 +2,10 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { Menu } from "@base-ui/react/menu";
+import { Tooltip } from "@base-ui/react/tooltip";
 import {
   ArrowUpIcon,
+  ArrowUturnLeftIcon,
   ChevronLeftIcon,
   EllipsisHorizontalIcon,
   FaceSmileIcon,
@@ -67,7 +69,11 @@ import { useDictation } from "@/lib/use-dictation";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import type { ChatImage, ChatMessage } from "../../../../convex/chat/messages";
+import type {
+  ChatImage,
+  ChatMessage,
+  ChatReaction,
+} from "../../../../convex/chat/messages";
 
 /**
  * One conversation.
@@ -154,6 +160,9 @@ export function Thread({
   /** The message on screen that the server has not confirmed yet. */
   const [pending, setPending] = useState<ChatMessage | null>(null);
 
+  /** The message named above the composer and attached to the next send. */
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+
   const scroller = useRef<HTMLDivElement>(null);
 
   /** Whether the reader is at the live end. See the note above. */
@@ -192,6 +201,7 @@ export function Thread({
     text: string,
     attachmentIds: Id<"attachments">[],
     previews: ChatImage[],
+    replyTo: ChatMessage | null,
   ): Promise<Refusal | null> {
     if (profile === null || userId === null || userId === undefined)
       return null;
@@ -203,6 +213,7 @@ export function Thread({
       authorHandle: profile.handle,
       authorName: profile.displayName,
       body: text,
+      replyTo: replyTo === null ? undefined : replyFromMessage(replyTo),
       status: "visible",
       reactions: [],
       images: previews,
@@ -212,9 +223,28 @@ export function Thread({
       conversationId,
       body: text,
       attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
+      replyToId: replyTo?._id,
     });
     setPending(null);
-    return result.ok ? null : result.refusal;
+    if (result.ok) {
+      setReplyingTo((current) =>
+        current?._id === replyTo?._id ? null : current,
+      );
+      return null;
+    }
+    if (result.refusal === "reply-unavailable") {
+      setReplyingTo((current) =>
+        current?._id === replyTo?._id ? null : current,
+      );
+    }
+    return result.refusal;
+  }
+
+  function jumpToMessage(messageId: Id<"messages">) {
+    document.getElementById(`message-${messageId}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
   }
 
   const shut =
@@ -431,6 +461,11 @@ export function Thread({
             previous={ordered[index - 1]}
             mine={message.authorClerkId === userId}
             canAct={profile !== null && profile.bannedAt === undefined}
+            onReply={() => {
+              setReplyingTo(message);
+              composer.current?.focus();
+            }}
+            onJumpToMessage={jumpToMessage}
           />
         ))}
 
@@ -444,6 +479,8 @@ export function Thread({
               previous={ordered[ordered.length - 1]}
               mine
               canAct={false}
+              onReply={() => {}}
+              onJumpToMessage={jumpToMessage}
             />
           </div>
         )}
@@ -463,6 +500,8 @@ export function Thread({
           onSubmit={submit}
           pictures={pictures}
           lock={shut ? "muted" : cooling !== null ? "new" : null}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
         />
       </div>
     </div>
@@ -707,16 +746,43 @@ function Quiet() {
 /** Messages this close together from the same person are one block. */
 const GROUP_WINDOW_MS = 5 * 60_000;
 
+function replyFromMessage(
+  message: ChatMessage,
+): NonNullable<ChatMessage["replyTo"]> {
+  const body = message.body.replace(/\s+/g, " ").trim();
+  const preview =
+    body !== ""
+      ? body.slice(0, 160)
+      : message.images.length === 1
+        ? "Photo"
+        : message.images.length > 1
+          ? `${message.images.length} photos`
+          : "Message";
+
+  return {
+    messageId: message._id,
+    unavailable: false,
+    authorClerkId: message.authorClerkId,
+    authorHandle: message.authorHandle,
+    authorName: message.authorName,
+    preview,
+  };
+}
+
 function MessageRow({
   message,
   previous,
   mine,
   canAct,
+  onReply,
+  onJumpToMessage,
 }: {
   message: ChatMessage;
   previous: ChatMessage | undefined;
   mine: boolean;
   canAct: boolean;
+  onReply: () => void;
+  onJumpToMessage: (messageId: Id<"messages">) => void;
 }) {
   const react = useMutation(api.chat.messages.react);
   const report = useMutation(api.chat.reports.report);
@@ -758,11 +824,6 @@ function MessageRow({
     return () => clearTimeout(timer);
   }, [deletable, message._creationTime]);
 
-  // Your own message past the window has nothing in its menu: reporting and
-  // blocking are for other people, and deleting has run out. So there is no
-  // menu.
-  const choosable = mine ? deletable : true;
-
   const time = new Date(message._creationTime).toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
@@ -777,6 +838,8 @@ function MessageRow({
 
   return (
     <div
+      id={`message-${message._id}`}
+      data-message-id={message._id}
       className={cn(
         "group/message flex gap-2.5",
         // Yours on the right, everybody else's on the left — the side is the
@@ -802,6 +865,14 @@ function MessageRow({
           mine && "items-end",
         )}
       >
+        {gone || message.replyTo === undefined ? null : (
+          <ReplyPreview
+            reply={message.replyTo}
+            mine={mine}
+            onJumpToMessage={onJumpToMessage}
+          />
+        )}
+
         {gone ? (
           <p className="rounded-3xl border border-border px-3.5 py-2 text-[0.9375rem] text-faint italic">
             Message removed after reports
@@ -844,29 +915,26 @@ function MessageRow({
         )}
 
         {message.reactions.length > 0 ? (
-          <div
-            className={cn("mt-1 flex flex-wrap gap-1", mine && "justify-end")}
-          >
-            {message.reactions.map((reaction) => (
-              <button
-                key={reaction.emoji}
-                type="button"
-                disabled={!canAct}
-                onClick={() =>
-                  void react({ messageId: message._id, emoji: reaction.emoji })
-                }
-                className={cn(
-                  "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.75rem] transition-colors",
-                  reaction.mine
-                    ? "border-primary/50 bg-primary/10"
-                    : "border-border hover:bg-foreground/[0.05]",
-                )}
-              >
-                <span>{reaction.emoji}</span>
-                <span className="text-muted-foreground">{reaction.count}</span>
-              </button>
-            ))}
-          </div>
+          <Tooltip.Provider delay={250} closeDelay={100}>
+            <div
+              className={cn("mt-1 flex flex-wrap gap-1", mine && "justify-end")}
+            >
+              {message.reactions.map((reaction) => (
+                <ReactionPill
+                  key={reaction.emoji}
+                  messageId={message._id}
+                  reaction={reaction}
+                  canAct={canAct}
+                  onReact={() =>
+                    void react({
+                      messageId: message._id,
+                      emoji: reaction.emoji,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </Tooltip.Provider>
         ) : null}
 
         {/* Under the message, not over it — the bubble is the thing being
@@ -954,23 +1022,31 @@ function MessageRow({
                 </Menu.Portal>
               </Menu.Root>
 
-              {!choosable ? null : (
-                <Menu.Root open={choosing} onOpenChange={setChoosing}>
-                  <Menu.Trigger
-                    aria-label="More"
-                    className="flex size-5 items-center justify-center rounded-md text-faint hover:bg-foreground/[0.06] hover:text-foreground"
+              <Menu.Root open={choosing} onOpenChange={setChoosing}>
+                <Menu.Trigger
+                  aria-label="More"
+                  className="flex size-5 items-center justify-center rounded-md text-faint hover:bg-foreground/[0.06] hover:text-foreground"
+                >
+                  <EllipsisHorizontalIcon className="size-4" />
+                </Menu.Trigger>
+                <Menu.Portal>
+                  <Menu.Positioner
+                    side="bottom"
+                    align="end"
+                    sideOffset={6}
+                    className="z-50 outline-none"
                   >
-                    <EllipsisHorizontalIcon className="size-4" />
-                  </Menu.Trigger>
-                  <Menu.Portal>
-                    <Menu.Positioner
-                      side="bottom"
-                      align="end"
-                      sideOffset={6}
-                      className="z-50 outline-none"
-                    >
-                      <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
-                        {mine ? (
+                    <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
+                      <Menu.Item
+                        onClick={onReply}
+                        className={cn(menuItemClass, "flex items-center gap-2")}
+                      >
+                        <ArrowUturnLeftIcon className="size-4 text-faint" />
+                        Reply
+                      </Menu.Item>
+
+                      {mine ? (
+                        deletable ? (
                           <Menu.Item
                             onClick={() =>
                               void remove({ messageId: message._id })
@@ -979,71 +1055,208 @@ function MessageRow({
                           >
                             Delete
                           </Menu.Item>
-                        ) : (
-                          <>
-                            {/* Reporting is not a message to anybody. It is weighted
+                        ) : null
+                      ) : (
+                        <>
+                          {/* Reporting is not a message to anybody. It is weighted
                                 by the reporter's own record and counted against a
                                 threshold — see `convex/chat/reports.ts`. Saying so
                                 here would be a paragraph nobody reads; what the copy
                                 does instead is avoid promising a review that is never
                                 going to happen. */}
-                            <Menu.SubmenuRoot>
-                              <Menu.SubmenuTrigger className={menuItemClass}>
-                                Report this
-                              </Menu.SubmenuTrigger>
-                              <Menu.Portal>
-                                <Menu.Positioner
-                                  side="right"
-                                  align="start"
-                                  sideOffset={4}
-                                  className="z-50 outline-none"
+                          <Menu.SubmenuRoot>
+                            <Menu.SubmenuTrigger className={menuItemClass}>
+                              Report this
+                            </Menu.SubmenuTrigger>
+                            <Menu.Portal>
+                              <Menu.Positioner
+                                side="right"
+                                align="start"
+                                sideOffset={4}
+                                className="z-50 outline-none"
+                              >
+                                <Menu.Popup
+                                  className={cn(popupClass, "w-40 flex-col")}
                                 >
-                                  <Menu.Popup
-                                    className={cn(popupClass, "w-40 flex-col")}
-                                  >
-                                    {REPORT_REASONS.map(([reason, label]) => (
-                                      <Menu.Item
-                                        key={reason}
-                                        onClick={() =>
-                                          void report({
-                                            messageId: message._id,
-                                            targetClerkId:
-                                              message.authorClerkId,
-                                            reason,
-                                          })
-                                        }
-                                        className={menuItemClass}
-                                      >
-                                        {label}
-                                      </Menu.Item>
-                                    ))}
-                                  </Menu.Popup>
-                                </Menu.Positioner>
-                              </Menu.Portal>
-                            </Menu.SubmenuRoot>
+                                  {REPORT_REASONS.map(([reason, label]) => (
+                                    <Menu.Item
+                                      key={reason}
+                                      onClick={() =>
+                                        void report({
+                                          messageId: message._id,
+                                          targetClerkId: message.authorClerkId,
+                                          reason,
+                                        })
+                                      }
+                                      className={menuItemClass}
+                                    >
+                                      {label}
+                                    </Menu.Item>
+                                  ))}
+                                </Menu.Popup>
+                              </Menu.Positioner>
+                            </Menu.Portal>
+                          </Menu.SubmenuRoot>
 
-                            <Menu.Item
-                              onClick={() =>
-                                void block({
-                                  peerClerkId: message.authorClerkId,
-                                })
-                              }
-                              className={cn(menuItemClass, "text-destructive")}
-                            >
-                              Block {message.authorHandle}
-                            </Menu.Item>
-                          </>
-                        )}
-                      </Menu.Popup>
-                    </Menu.Positioner>
-                  </Menu.Portal>
-                </Menu.Root>
-              )}
+                          <Menu.Item
+                            onClick={() =>
+                              void block({
+                                peerClerkId: message.authorClerkId,
+                              })
+                            }
+                            className={cn(menuItemClass, "text-destructive")}
+                          >
+                            Block {message.authorHandle}
+                          </Menu.Item>
+                        </>
+                      )}
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function ReplyPreview({
+  reply,
+  mine,
+  onJumpToMessage,
+}: {
+  reply: NonNullable<ChatMessage["replyTo"]>;
+  mine: boolean;
+  onJumpToMessage: (messageId: Id<"messages">) => void;
+}) {
+  if (reply.unavailable) {
+    return (
+      <div
+        className={cn(
+          "mb-1 w-full rounded-xl border border-border bg-surface-muted/70 px-3 py-2 text-left",
+          mine && "text-right",
+        )}
+      >
+        <span className="block text-[0.75rem] font-semibold text-faint">
+          Original message unavailable
+        </span>
+      </div>
+    );
+  }
+
+  const handle = reply.authorHandle ?? "unknown";
+  const name = personName({ handle, displayName: reply.authorName });
+
+  return (
+    <button
+      type="button"
+      onClick={() => onJumpToMessage(reply.messageId)}
+      className={cn(
+        "mb-1 w-full rounded-xl border border-border bg-surface-muted/70 px-3 py-2 text-left outline-none transition-colors hover:bg-foreground/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60",
+        mine && "text-right",
+      )}
+      aria-label={`Go to message from ${name}`}
+    >
+      <span className="block truncate text-[0.75rem] font-semibold text-primary">
+        {name}
+      </span>
+      <span className="block truncate text-[0.8125rem] text-muted-foreground">
+        {reply.preview}
+      </span>
+    </button>
+  );
+}
+
+function ReactionPill({
+  messageId,
+  reaction,
+  canAct,
+  onReact,
+}: {
+  messageId: Id<"messages">;
+  reaction: ChatReaction;
+  canAct: boolean;
+  onReact: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const people = useQuery(
+    api.chat.messages.reactors,
+    open ? { messageId, emoji: reaction.emoji } : "skip",
+  );
+  const hidden =
+    people === undefined ? 0 : Math.max(0, reaction.count - people.length);
+
+  return (
+    <Tooltip.Root open={open} onOpenChange={setOpen}>
+      <Tooltip.Trigger
+        delay={250}
+        render={
+          <button
+            type="button"
+            aria-disabled={!canAct}
+            onClick={() => {
+              if (canAct) onReact();
+            }}
+            className={cn(
+              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.75rem] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60",
+              reaction.mine
+                ? "border-primary/50 bg-primary/10"
+                : "border-border hover:bg-foreground/[0.05]",
+            )}
+            aria-label={`${reaction.emoji} reaction from ${reaction.count} ${reaction.count === 1 ? "person" : "people"}. Hover to see who reacted.`}
+          />
+        }
+      >
+        <span>{reaction.emoji}</span>
+        <span className="text-muted-foreground">{reaction.count}</span>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Positioner
+          side="top"
+          align="center"
+          sideOffset={8}
+          className="z-50"
+        >
+          <Tooltip.Popup className="popup-slide max-h-64 w-max max-w-64 overflow-y-auto rounded-xl border border-border bg-popover p-2.5 text-popover-foreground shadow-lg shadow-black/[0.1] outline-none">
+            <p className="mb-1.5 text-[0.6875rem] font-semibold tracking-wide text-faint uppercase">
+              Reacted with {reaction.emoji}
+            </p>
+            {people === undefined ? (
+              <p className="text-[0.8125rem] text-muted-foreground">Loading…</p>
+            ) : people.length === 0 ? (
+              <p className="text-[0.8125rem] text-muted-foreground">
+                No names available
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {people.map((person) => (
+                  <div
+                    key={person.clerkId}
+                    className="min-w-0 text-[0.8125rem]"
+                  >
+                    <span className="block truncate font-semibold">
+                      {personName(person)}
+                    </span>
+                    {person.displayName === undefined ? null : (
+                      <span className="block truncate text-[0.75rem] text-faint">
+                        @{person.handle}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {hidden > 0 ? (
+              <p className="mt-1.5 text-[0.75rem] text-faint">
+                {hidden} hidden or unavailable
+              </p>
+            ) : null}
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }
 
@@ -1093,7 +1306,10 @@ function joinSpoken(prev: string, next: string) {
 }
 
 /** What the thread may ask of the composer. See `composer` in `Thread`. */
-export type ComposerHandle = { addFiles: (files: File[]) => void };
+export type ComposerHandle = {
+  addFiles: (files: File[]) => void;
+  focus: () => void;
+};
 
 /**
  * A picture in the tray, from the moment it is chosen until it is sent.
@@ -1124,12 +1340,15 @@ function Composer({
   onSubmit,
   pictures,
   lock,
+  replyingTo,
+  onCancelReply,
 }: {
   ref: Ref<ComposerHandle>;
   onSubmit: (
     text: string,
     attachmentIds: Id<"attachments">[],
     previews: ChatImage[],
+    replyTo: ChatMessage | null,
   ) => Promise<Refusal | null>;
   /**
    * Whether pictures are on for this deployment. Off, there is no plus, no
@@ -1138,11 +1357,17 @@ function Composer({
    */
   pictures: boolean;
   lock: Lock;
+  replyingTo: ChatMessage | null;
+  onCancelReply: () => void;
 }) {
   const shut = lock !== null;
   const [body, setBody] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (replyingTo !== null) field.current?.focus();
+  }, [replyingTo]);
 
   // Finals append to whatever is there, through an updater, so a keystroke
   // and a spoken segment both land in arrival order and neither overwrites
@@ -1393,7 +1618,10 @@ function Composer({
     }
   }
 
-  useImperativeHandle(ref, () => ({ addFiles }));
+  useImperativeHandle(ref, () => ({
+    addFiles,
+    focus: () => field.current?.focus(),
+  }));
 
   function remove(entry: Attached) {
     if (entry.attachmentId !== undefined) {
@@ -1454,6 +1682,7 @@ function Composer({
         width: entry.width,
         height: entry.height,
       })),
+      replyingTo,
     );
 
     if (refusal === null) {
@@ -1524,6 +1753,32 @@ function Composer({
           thousand pixels to twenty-five is a shape doing something strange
           on the way. */}
       <div className="flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
+        {replyingTo === null ? null : (
+          <div className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] px-3 py-2.5">
+            <ArrowUturnLeftIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[0.75rem] font-semibold text-primary">
+                Replying to{" "}
+                {personName({
+                  handle: replyingTo.authorHandle,
+                  displayName: replyingTo.authorName,
+                })}
+              </p>
+              <p className="truncate text-[0.8125rem] text-muted-foreground">
+                {replyFromMessage(replyingTo).preview}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCancelReply}
+              aria-label="Cancel reply"
+              className="flex size-6 shrink-0 items-center justify-center rounded-full text-faint outline-none hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+            >
+              <XMarkIcon className="size-4" />
+            </button>
+          </div>
+        )}
+
         {/* The tray opens and closes by height. A grid row can go from
             `0fr` to `1fr` and back, and unlike `height: auto` a browser can
             draw the frames in between; the inner box clips what does not fit

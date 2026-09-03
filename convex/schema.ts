@@ -659,6 +659,15 @@ export default defineSchema({
     /** The author's display name at the time, if they had one. Same rule. */
     authorName: v.optional(v.string()),
     body: v.string(),
+    /**
+     * The message this one answers, when it is a reply.
+     *
+     * Only the id is stored. The thread query resolves the current author and a
+     * short preview, which means a message hidden after it was replied to does
+     * not survive inside a copied quote. The field is optional for every row
+     * written before replies existed.
+     */
+    replyToId: v.optional(v.id("messages")),
     status: v.union(v.literal("visible"), v.literal("hidden")),
     flags: v.array(v.string()),
     /**

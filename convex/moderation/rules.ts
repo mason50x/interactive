@@ -39,6 +39,7 @@ export type Refusal =
   | "banned"
   | "not-a-member"
   | "blocked"
+  | "reply-unavailable"
   | "too-new"
   | "not-agreed"
   // Pictures. `sexual`, `self-harm` and `exploitation` above are shared with
@@ -94,6 +95,7 @@ const WEIGHTS: Record<Refusal, number> = {
   banned: 0,
   "not-a-member": 0,
   blocked: 0,
+  "reply-unavailable": 0,
   "too-new": 0,
   // Not a violation. They have not agreed to the rules being enforced
   // against them, which is a reason to refuse and not a reason to charge.
@@ -127,8 +129,18 @@ export function refusalForPattern(category: PatternCategory): Refusal {
  * spelling, not about case or accents.
  */
 const SECOND_PERSON = new Set([
-  "you", "u", "ur", "your", "youre", "ure", "yours", "yourself",
-  "urself", "yall", "yalls", "ya",
+  "you",
+  "u",
+  "ur",
+  "your",
+  "youre",
+  "ure",
+  "yours",
+  "yourself",
+  "urself",
+  "yall",
+  "yalls",
+  "ya",
 ]);
 
 /**
@@ -187,7 +199,11 @@ export function hashBody(squashed: string): string {
 }
 
 /** The same thing, again, within the window. */
-export function isDuplicate(recent: RecentSend[], hash: string, now: number): boolean {
+export function isDuplicate(
+  recent: RecentSend[],
+  hash: string,
+  now: number,
+): boolean {
   for (const send of recent) {
     if (send.hash === hash && now - send.at < DUPLICATE_WINDOW_MS) return true;
   }
@@ -225,5 +241,7 @@ export function isBroadcast(
  * an accusation they cannot check.
  */
 export function excerpt(body: string): string {
-  return body.length <= EXCERPT_CHARS ? body : `${body.slice(0, EXCERPT_CHARS)}…`;
+  return body.length <= EXCERPT_CHARS
+    ? body
+    : `${body.slice(0, EXCERPT_CHARS)}…`;
 }
