@@ -77,6 +77,14 @@ const REFUSALS: Record<string, string> = {
   // it is rather than as a rule somebody has run into.
   "too-new": "Not quite yet — the ring above has a moment left on it.",
   "not-agreed": "Accept the terms before you can send anything.",
+
+  // Pictures. `sexual` and `self-harm` above already read correctly for a
+  // picture, and are what one comes back with — see
+  // `convex/moderation/images.ts`. These are the ones only a picture can earn.
+  graphic: "That picture is too graphic to send here.",
+  image: "That picture could not be used. Try another.",
+  "image-check": "Pictures cannot be checked right now. Try again in a minute.",
+  "too-many-images": "That is too many pictures at once.",
 };
 
 export function refusalMessage(refusal: Refusal): string {
@@ -102,6 +110,7 @@ const RULES: Record<string, string> = {
   "too-fast": "Sent messages too quickly",
   reordering: "Used text-direction characters",
   "stacked-marks": "Used stacked accents",
+  graphic: "Sent a graphic picture",
 };
 
 export function ruleLabel(rule: string): string {

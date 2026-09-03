@@ -1,9 +1,11 @@
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
 import { hasAccepted } from "../agreement";
+import { imagesEnabled } from "../features";
 import type { Doc, Id } from "../_generated/dataModel";
 import {
   DELETE_WINDOW_MS,
+  MAX_IMAGES_PER_MESSAGE,
   MAX_REACTION_KINDS,
   MAX_REACTORS,
   REACTIONS,
@@ -16,6 +18,7 @@ import {
   blockedBy,
   blockedEitherWay,
   callerProfile,
+  deleteMessage,
   membership,
   profileFor,
   pushRecent,
@@ -65,19 +68,57 @@ export type ChatMessage = {
   body: string;
   status: "visible" | "hidden";
   reactions: { emoji: string; count: number; mine: boolean }[];
+  /**
+   * The pictures, as URLs. Resolved from storage ids by `list`, so the
+   * client never sees an id it could hand back — and the optimistic send
+   * fills these with its own object URLs, which is why they are URLs and
+   * nothing more structured.
+   */
+  images: ChatImage[];
+};
+
+/**
+ * `attachmentId` is here for the sender's own browser, which keeps the
+ * preview it uploaded under that id and draws it instead of fetching the
+ * same pixels back — see `previewFor` in `src/lib/images.ts`. It is of no
+ * use to anybody else: a `sent` row cannot be named by a send, so the id
+ * grants nothing.
+ */
+export type ChatImage = {
+  attachmentId: Id<"attachments">;
+  url: string;
+  width: number;
+  height: number;
 };
 
 /**
  * Send a message, if it survives.
  *
  * Everything it reads belongs to the sender: their profile, their membership
- * row, their strikes. Nothing shared is read at all, which is what keeps two
- * people talking at once from conflicting over a document neither of them is
- * writing — see the note on `dmPeer` in `convex/schema.ts`.
+ * row, their strikes, and now their pictures — an `attachments` row is the
+ * sender's own, written by nobody else. Nothing shared is read at all, which
+ * is what keeps two people talking at once from conflicting over a document
+ * neither of them is writing — see the note on `dmPeer` in `convex/schema.ts`.
+ *
+ * ## Pictures are proven, not passed
+ *
+ * `attachmentIds` names rows, and every row has to be this caller's and in
+ * `ready` — the state a picture only reaches after the classifier has said
+ * yes, see `convex/chat/attachments.ts`. A bare storage id is never accepted
+ * here, because a storage id proves nothing about who uploaded it or whether
+ * anybody looked. A message with a picture that fails this check is refused
+ * whole, with `image`: the client's copy is stale and it should start over.
  */
 export const send = mutation({
-  args: { conversationId: v.id("conversations"), body: v.string() },
-  handler: async (ctx, { conversationId, body }): Promise<SendResult> => {
+  args: {
+    conversationId: v.id("conversations"),
+    body: v.string(),
+    attachmentIds: v.optional(v.array(v.id("attachments"))),
+  },
+  handler: async (
+    ctx,
+    { conversationId, body, attachmentIds },
+  ): Promise<SendResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, refusal: "not-a-member" };
 
@@ -103,6 +144,32 @@ export const send = mutation({
       }
     }
 
+    // The pictures, before anything is judged. Deduplicated so a client that
+    // names one twice does not get it drawn twice, and read in full so that
+    // a refusal here costs the sender nothing — the rows stay `ready`, and a
+    // message that fails on its text can be sent again with the same ones.
+    const ids = [...new Set(attachmentIds ?? [])];
+    if (ids.length > MAX_IMAGES_PER_MESSAGE) {
+      return { ok: false, refusal: "too-many-images" };
+    }
+    // Pictures switched off between the upload and the send, or a client
+    // that never looked at the switch. Either way none may go out.
+    if (ids.length > 0 && !imagesEnabled()) {
+      return { ok: false, refusal: "image" };
+    }
+    const attached: Doc<"attachments">[] = [];
+    for (const id of ids) {
+      const row = await ctx.db.get(id);
+      if (
+        row === null ||
+        row.ownerClerkId !== profile.clerkId ||
+        row.status !== "ready"
+      ) {
+        return { ok: false, refusal: "image" };
+      }
+      attached.push(row);
+    }
+
     const now = Date.now();
 
     // The counter and the ring, which are the sender's own row rather than
@@ -122,6 +189,7 @@ export const send = mutation({
       mutedUntil: profile.mutedUntil,
       bannedAt: profile.bannedAt,
       recent: state.recent,
+      attachmentKey: attached.length > 0 ? ids.join(",") : undefined,
     };
 
     const verdict = screen(body, context);
@@ -147,7 +215,7 @@ export const send = mutation({
       return { ok: false, refusal: verdict.refusal, mutedUntil: profile.mutedUntil };
     }
 
-    await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert("messages", {
       conversationId,
       authorClerkId: profile.clerkId,
       authorHandle: profile.handle,
@@ -157,7 +225,23 @@ export const send = mutation({
       // Always empty now that tier three is refused rather than allowed — see
       // `flags` in `convex/schema.ts` for why the column stays anyway.
       flags: [],
+      images:
+        attached.length === 0
+          ? undefined
+          : attached.map((row) => ({
+              attachmentId: row._id,
+              storageId: row.storageId,
+              width: row.width,
+              height: row.height,
+            })),
     });
+
+    // From here the pictures are the message's. `sent` is what keeps the
+    // sweep off them and what stops the same row being named by a second
+    // send — see `attachments` in `convex/schema.ts`.
+    for (const row of attached) {
+      await ctx.db.patch(row._id, { status: "sent", messageId });
+    }
 
     const moved = {
       messagesSent: state.messagesSent + 1,
@@ -262,12 +346,41 @@ export const list = query({
         body: gone ? "" : message.body,
         status: message.status,
         reactions: gone ? [] : readReactions(message, profile.clerkId),
+        images: gone ? [] : await imagesOf(ctx, message),
       });
     }
 
     return { ...result, page };
   },
 });
+
+/**
+ * A message's pictures as something a browser can draw.
+ *
+ * One storage lookup per picture and no table reads: the dimensions ride on
+ * the message — see `images` in `convex/schema.ts`. A picture whose file has
+ * gone is dropped rather than drawn broken, which cannot happen through any
+ * path in this codebase and is handled because storage is the one table here
+ * that can be edited from a dashboard.
+ */
+async function imagesOf(
+  ctx: QueryCtx,
+  message: Doc<"messages">,
+): Promise<ChatImage[]> {
+  if (message.images === undefined) return [];
+  const images: ChatImage[] = [];
+  for (const image of message.images) {
+    const url = await ctx.storage.getUrl(image.storageId);
+    if (url === null) continue;
+    images.push({
+      attachmentId: image.attachmentId,
+      url,
+      width: image.width,
+      height: image.height,
+    });
+  }
+  return images;
+}
 
 /**
  * Add or remove one of the six reactions.
@@ -363,7 +476,10 @@ export const remove = mutation({
     // The strike a report may already have written is not touched. It belongs
     // to the ledger, carries its own excerpt, and is the account of a decision
     // rather than a copy of the message. See `convex/schema.ts`.
-    await ctx.db.delete(messageId);
+    //
+    // The pictures go with it — the row alone would leave their files in
+    // storage with nothing pointing at them. See `deleteMessage`.
+    await deleteMessage(ctx, message);
   },
 });
 

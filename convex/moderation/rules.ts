@@ -40,7 +40,17 @@ export type Refusal =
   | "not-a-member"
   | "blocked"
   | "too-new"
-  | "not-agreed";
+  | "not-agreed"
+  // Pictures. `sexual`, `self-harm` and `exploitation` above are shared with
+  // them — a picture of a thing is refused under the same name as a sentence
+  // about it. The three below are theirs alone: `graphic` is gore, which a
+  // word list has no category for; `image` is a file that could not be used
+  // at all; `image-check` is the classifier being unreachable, which refuses
+  // the picture rather than letting it through unread.
+  | "graphic"
+  | "image"
+  | "image-check"
+  | "too-many-images";
 
 /**
  * The weight each refusal adds to the sender's standing.
@@ -88,6 +98,13 @@ const WEIGHTS: Record<Refusal, number> = {
   // Not a violation. They have not agreed to the rules being enforced
   // against them, which is a reason to refuse and not a reason to charge.
   "not-agreed": 0,
+  // A gory picture is charged like telling somebody to hurt themselves: it
+  // is not the sexual rung, and it is more than a link.
+  graphic: 6,
+  // The rest are about the file and the service, not the person.
+  image: 0,
+  "image-check": 0,
+  "too-many-images": 0,
 };
 
 export function weightFor(refusal: Refusal): number {

@@ -60,6 +60,16 @@ export type SendContext = {
   mutedUntil?: number;
   bannedAt?: number;
   recent: RecentSend[];
+  /**
+   * Set when the message carries pictures: the attachment ids, joined.
+   *
+   * Its presence is what lets a message with no words through — the pictures
+   * are the message — and its value is what the ring records for it. The
+   * pictures themselves are not judged here; each one was judged on upload,
+   * by `convex/moderation/images.ts`, and `messages.send` refuses any that
+   * did not pass before this ever runs.
+   */
+  attachmentKey?: string;
 };
 
 /** What the ledger should record, when it should record anything. */
@@ -135,6 +145,16 @@ export function screen(raw: string, context: SendContext): Verdict {
   );
   if (overRate(context.recent, tier, context.now)) {
     return strikeFor("too-fast", raw.slice(0, 40));
+  }
+
+  // A message that is only pictures. Everything above still applied — a muted
+  // account cannot send a picture either, and pictures count against the
+  // rate — but there is no text to fold, scan, or match, and the shape check
+  // would refuse it as empty. The duplicate and broadcast rules are skipped
+  // too, and not out of leniency: an attachment can be sent exactly once, so
+  // the same key cannot appear twice in the ring for either of them to find.
+  if (raw.trim() === "" && context.attachmentKey !== undefined) {
+    return { allow: true, body: "", hash: hashBody(`image:${context.attachmentKey}`) };
   }
 
   // Shape, which is also the length cap, and therefore the guard that keeps

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { GLOBAL_RETENTION_MS } from "../moderation/limits";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
-import { clearSender } from "./shared";
+import { clearSender, deleteAttachment, deleteMessage } from "./shared";
 
 /**
  * The housekeeping, done in pieces small enough to finish.
@@ -78,7 +78,7 @@ export const trimGlobal = internalMutation({
       )
       .take(BATCH);
 
-    for (const message of old) await ctx.db.delete(message._id);
+    for (const message of old) await deleteMessage(ctx, message);
 
     if (old.length === BATCH) {
       await ctx.scheduler.runAfter(0, internal.chat.sweep.trimGlobal, {
@@ -118,7 +118,7 @@ export const purgeConversation = internalMutation({
       .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
       .take(BATCH);
 
-    for (const message of messages) await ctx.db.delete(message._id);
+    for (const message of messages) await deleteMessage(ctx, message);
 
     if (messages.length === BATCH) {
       await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
@@ -242,7 +242,7 @@ export const purgeAuthor = internalMutation({
       )
       .take(BATCH);
 
-    for (const message of messages) await ctx.db.delete(message._id);
+    for (const message of messages) await deleteMessage(ctx, message);
 
     if (messages.length === BATCH) {
       await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, again);
@@ -353,6 +353,20 @@ export const purgeAuthor = internalMutation({
       .collect();
     for (const row of [...blocksMade, ...blocksReceived]) {
       await ctx.db.delete(row._id);
+    }
+
+    // Pictures uploaded and never sent. The ones on messages went with the
+    // messages above; these are the composer's, and bounded by
+    // `MAX_UNSENT_IMAGES`. The sweep would take them within the hour, but an
+    // erasure that leaves files behind for a cron to find is not an erasure.
+    for (const status of ["checking", "ready"] as const) {
+      const unsent = await ctx.db
+        .query("attachments")
+        .withIndex("byOwner", (q) =>
+          q.eq("ownerClerkId", clerkId).eq("status", status),
+        )
+        .collect();
+      for (const row of unsent) await deleteAttachment(ctx, row);
     }
 
     // Reports they filed and reports filed against them. The second is the one

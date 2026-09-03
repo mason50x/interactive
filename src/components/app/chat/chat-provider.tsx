@@ -35,6 +35,13 @@ export type Chat = {
   hasUnread: boolean;
   /** Friend requests waiting on you, plus group invitations. */
   waiting: number;
+  /**
+   * Whether pictures may be sent. Read off the deployment — see
+   * `convex/features.ts` — and `false` until the answer arrives, so the
+   * button is absent rather than briefly present on a deployment where it
+   * is off.
+   */
+  images: boolean;
 };
 
 const EMPTY: Chat = {
@@ -44,6 +51,7 @@ const EMPTY: Chat = {
   unread: 0,
   hasUnread: false,
   waiting: 0,
+  images: false,
 };
 
 const ChatContext = createContext<Chat>(EMPTY);
@@ -65,6 +73,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     api.chat.groups.invitations,
     isAuthenticated ? {} : "skip",
   );
+  const features = useQuery(api.features.get, isAuthenticated ? {} : "skip");
 
   // Puts the account back in the global room. Idempotent, and it exists for the
   // accounts that claimed a handle before the room did — and for anyone who
@@ -102,6 +111,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     unread,
     hasUnread,
     waiting,
+    images: features?.images ?? false,
   };
 
   return <ChatContext value={value}>{children}</ChatContext>;

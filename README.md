@@ -231,6 +231,26 @@ Both are set on both deployments. The webhook secret is per Clerk instance, so
 the two deployments hold different `CLERK_WEBHOOK_SECRET` values — see the
 webhook endpoint table above.
 
+A third one is for chat pictures. Every picture is run past OpenAI's
+moderation endpoint before anybody sees it — the endpoint is free, so the key
+is never billed for this — and without the key every picture is refused
+rather than let through unread. See `convex/moderation/images.ts`.
+
+```bash
+npx convex env set OPENAI_API_KEY sk-...
+npx convex env set --prod OPENAI_API_KEY sk-...
+```
+
+The feature has its own switch, so it can be turned off without a deploy.
+`1` is on; anything else is off — the plus button goes, pastes and drops are
+ignored, and the server refuses uploads. Pictures already sent stay visible.
+See `convex/features.ts`.
+
+```bash
+npx convex env set IMAGES_ENABLED 1
+npx convex env set --prod IMAGES_ENABLED 1
+```
+
 ### Production DNS
 
 The Clerk production instance serves from

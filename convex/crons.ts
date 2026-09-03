@@ -46,4 +46,14 @@ crons.daily(
   {},
 );
 
+// Pictures uploaded and never sent, and files nothing ever claimed. Hourly
+// rather than daily, because unlike every table above this one is billed by
+// the byte — see `sweep` in `convex/chat/attachments.ts` for what it walks.
+crons.interval(
+  "reclaim unsent pictures",
+  { hours: 1 },
+  internal.chat.attachments.sweep,
+  {},
+);
+
 export default crons;

@@ -736,6 +736,28 @@
   }
 
   /*
+   * The composer at the foot of a thread.
+   *
+   * Its lift is `--elevation-card`, the same object the cards rest on, rather
+   * than a shadow of its own: the token already knows that a grey shadow does
+   * nothing on a black page and swaps in the hairline top edge instead.
+   *
+   * In the dark theme the field also steps up to the muted surface and the
+   * strong border. `--surface` is one step above the page there, which is
+   * enough for a card with a title and a body, and not enough for an empty
+   * pill with three words of placeholder in it — the field read as a slightly
+   * different black, and the eye could not find the edge to click.
+   */
+  :root[data-theme="dark"] .composer {
+    background-color: var(--surface-muted);
+    border-color: var(--border-strong);
+  }
+
+  :root[data-theme="dark"] .composer:focus-within {
+    border-color: var(--primary);
+  }
+
+  /*
    * The account popup and its submenu, on the way in and out.
    *
    * Written here rather than as Tailwind utilities because the two vocabularies

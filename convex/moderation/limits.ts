@@ -250,6 +250,65 @@ export const AVATAR_HUES = GROUP_HUES;
 export const AVATAR_EMOJI = GROUP_EMOJI;
 
 /**
+ * What a picture may be, before anybody looks at what is in it.
+ *
+ * Four formats, which are the four a browser can both decode and display
+ * everywhere. Anything else is refused at the claim, unread: the check in
+ * `convex/moderation/images.ts` costs a request per picture and a file that
+ * is not an image is not worth one. SVG is deliberately not here — it is a
+ * document that can carry script, and "image" is the last thing it is.
+ */
+export const IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+
+/**
+ * The most bytes one picture may be, as stored.
+ *
+ * The client shrinks everything to `MAX_IMAGE_EDGE` pixels on its longest
+ * side before uploading — see `src/lib/images.ts` — so a real upload is a few
+ * hundred kilobytes and this is only the ceiling for a client that did not
+ * bother. Six megabytes is under the classifier's own limit with room to spare.
+ */
+export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+
+/**
+ * The longest edge a picture is allowed to claim, in pixels.
+ *
+ * A sanity bound on the dimensions the client reports, which are only ever
+ * used to draw a box of the right shape. Past this the numbers are not a
+ * picture anybody took; they are an attempt to make the thread lay out a box
+ * the height of a building.
+ */
+export const MAX_IMAGE_EDGE = 8192;
+
+/** Pictures on one message. Four is a grid; more is an album. */
+export const MAX_IMAGES_PER_MESSAGE = 4;
+
+/**
+ * Pictures one account may have uploaded and not yet sent.
+ *
+ * The bound on storage an account can consume without ever saying anything:
+ * every picture past this is refused an upload URL until some are sent or
+ * discarded, or the sweep takes them. Two messages' worth is plenty for a
+ * composer that holds one message at a time.
+ */
+export const MAX_UNSENT_IMAGES = 8;
+
+/**
+ * How long an unsent picture survives.
+ *
+ * An hour is far past how long a composer stays open with something in it,
+ * and it is the window `sweep` in `convex/chat/attachments.ts` reclaims after.
+ * Nothing correct depends on it: an expired-but-unswept picture is still a
+ * valid `ready` row, and sending it works.
+ */
+export const IMAGE_TTL_MS = 60 * 60 * 1000;
+
+/**
  * How many letters somebody may put on their own disc.
  *
  * Two, because that is initials. It is also the whole of why this is not a

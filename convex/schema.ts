@@ -670,6 +670,36 @@ export default defineSchema({
     reactions: v.optional(
       v.array(v.object({ emoji: v.string(), by: v.array(v.string()) })),
     ),
+    /**
+     * The pictures sent with it, in the order they were attached.
+     *
+     * Denormalised onto the message for the same reason `authorHandle` is:
+     * drawing a page must not join anything. The thread query turns each
+     * `storageId` into a URL and reads no other table for it, and an
+     * optimistic send can build this array from the previews it already has
+     * on screen. `attachmentId` is the row in `attachments` below, kept so
+     * that deleting the message can take the file and its record with it —
+     * see `deleteMessage` in `convex/chat/shared.ts`, which is the only way a
+     * message with pictures is ever removed.
+     *
+     * `width` and `height` are what the client measured when it uploaded,
+     * and are for layout alone: a box of the right shape is drawn before the
+     * bytes arrive, so a thread does not jump as its pictures load.
+     *
+     * Absent on every message written before pictures existed, and on every
+     * message without one — the common case, which a required empty array
+     * would make everybody's history pay for.
+     */
+    images: v.optional(
+      v.array(
+        v.object({
+          attachmentId: v.id("attachments"),
+          storageId: v.id("_storage"),
+          width: v.number(),
+          height: v.number(),
+        }),
+      ),
+    ),
   })
     .index("byConversation", ["conversationId"])
     .index("byAuthor", ["authorClerkId"])
@@ -691,6 +721,78 @@ export default defineSchema({
       searchField: "body",
       filterFields: ["status"],
     }),
+
+  /**
+   * A picture somebody has uploaded, from the moment it lands until the
+   * message it went out in is deleted.
+   *
+   * ## Why a row and not just a storage id
+   *
+   * Because the storage id is the one thing here the client hands back, and
+   * a client can hand back anything. An upload URL from Convex is not tied to
+   * the account that asked for it, and a storage id is not tied to anything
+   * at all — so `messages.send` cannot be allowed to take a bare id and trust
+   * that it was uploaded by this person and looked at by the filter. This row
+   * is that proof. It is written by the server the moment a file is claimed,
+   * it names the owner, and it holds the one fact the whole feature turns on:
+   * `status`, which only reaches `ready` after the picture has been through
+   * the check in `convex/moderation/images.ts`. A send is refused unless every
+   * id it names is a row with this caller's id on it in exactly that state.
+   *
+   * ## The lifecycle
+   *
+   * `checking` is a file that has been claimed and is waiting on the verdict.
+   * `ready` is one that passed and has not been sent yet. `sent` is on a
+   * message — and from then on the message owns it: `deleteMessage` in
+   * `convex/chat/shared.ts` deletes the file, this row and the message
+   * together, and nothing else ever removes a `sent` row.
+   *
+   * A picture that fails has no state. The file is deleted and so is this row,
+   * in the same mutation that records the strike — there is nothing to keep,
+   * for the same reason a refused message is never inserted.
+   *
+   * ## What the sweep is for
+   *
+   * A file can be orphaned in three ways the row cannot see: the upload
+   * finished but the tab closed before the claim, the action died between the
+   * claim and the verdict, or the picture passed and was never sent. All three
+   * are the same to `sweep` in `convex/chat/attachments.ts`, which walks the
+   * storage table itself rather than this one and removes any file past
+   * `IMAGE_TTL_MS` that no `sent` row is holding. This table is the index it
+   * uses to tell, which is what `byStorage` is for.
+   *
+   * `byStorage` is also what makes a claim exclusive: one file, one row, and a
+   * second claim on somebody else's storage id is refused before it is read.
+   *
+   * ## This is not an avatar
+   *
+   * The note on `emoji` in `conversations` above, and the longer one in
+   * `monogram.tsx`, still hold: nobody's picture is a photograph, and there is
+   * no upload path to a profile. What this table holds is something said in
+   * a conversation, which is the thing chat already moderates — and it goes
+   * through the same standing, the same ladder, and the same ledger as a
+   * sentence, with a classifier reading it in place of the word lists.
+   */
+  attachments: defineTable({
+    storageId: v.id("_storage"),
+    ownerClerkId: v.string(),
+    status: v.union(
+      v.literal("checking"),
+      v.literal("ready"),
+      v.literal("sent"),
+    ),
+    /** The message it went out in. Set with `sent` and never cleared. */
+    messageId: v.optional(v.id("messages")),
+    contentType: v.string(),
+    size: v.number(),
+    /** As measured by the uploader, for layout. See `images` on `messages`. */
+    width: v.number(),
+    height: v.number(),
+  })
+    .index("byStorage", ["storageId"])
+    // How many an account has in flight, and everything of theirs to remove
+    // when they go. `status` second so the count skips what is already sent.
+    .index("byOwner", ["ownerClerkId", "status"]),
 
   /**
    * One row per pair of people, in either state.

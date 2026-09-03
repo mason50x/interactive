@@ -7,16 +7,31 @@ import {
   ChevronLeftIcon,
   EllipsisHorizontalIcon,
   FaceSmileIcon,
+  PhotoIcon,
+  PlusIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { MicrophoneIcon } from "@heroicons/react/24/solid";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
 import Link from "next/link";
 import {
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
+  type Ref,
 } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -27,8 +42,10 @@ import { GroupPanel } from "@/components/app/chat/group-panel";
 import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
+import { Photo } from "@/components/app/chat/photo";
 import { Present } from "@/components/app/chat/presence";
 import { StandingBanner } from "@/components/app/chat/standing-banner";
+import { Waveform } from "@/components/app/chat/waveform";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
   DELETE_WINDOW_MS,
@@ -36,12 +53,21 @@ import {
   conversationName,
   personName,
   refusalMessage,
+  type Refusal,
 } from "@/lib/chat";
+import {
+  MAX_IMAGES_PER_MESSAGE,
+  isImageFile,
+  prepareImage,
+  previewFor,
+  rememberPreview,
+} from "@/lib/images";
 import { CHAT_HREF } from "@/lib/nav";
+import { useDictation } from "@/lib/use-dictation";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import type { ChatMessage } from "../../../../convex/chat/messages";
+import type { ChatImage, ChatMessage } from "../../../../convex/chat/messages";
 
 /**
  * One conversation.
@@ -93,7 +119,7 @@ export function Thread({
   conversationId: Id<"conversations">;
 }) {
   const { userId } = useAuth();
-  const { profile, conversations } = useChat();
+  const { profile, conversations, images: pictures } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
 
   const { results, status, loadMore } = usePaginatedQuery(
@@ -133,8 +159,40 @@ export function Thread({
   /** Whether the reader is at the live end. See the note above. */
   const pinned = useRef(true);
 
-  /** Returns the refusal to show, or `null` when it went. */
-  async function submit(text: string): Promise<string | null> {
+  /**
+   * The composer, reached for by the drop handlers below.
+   *
+   * A picture can be dropped anywhere on the thread, not only on the box at
+   * the bottom of it — the thread is the thing you are adding to — but the
+   * box is where the picture has to end up, and its tray is state the box
+   * owns. An imperative handle is the smallest way across that gap: the
+   * thread hands over files, the composer does what it does with a paste.
+   */
+  const composer = useRef<ComposerHandle>(null);
+
+  /**
+   * Whether something is being dragged over the thread.
+   *
+   * Counted rather than toggled, because `dragleave` fires every time the
+   * pointer crosses into a child — the overlay would flicker off over every
+   * message. Depth goes up on enter and down on leave, and the overlay shows
+   * while it is above zero.
+   */
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
+
+  /**
+   * Returns the refusal, or `null` when it went.
+   *
+   * `previews` are the composer's own object URLs for the pictures, and they
+   * are what the placeholder message is drawn with — the real URLs do not
+   * exist until the row does. The composer revokes them once this resolves.
+   */
+  async function submit(
+    text: string,
+    attachmentIds: Id<"attachments">[],
+    previews: ChatImage[],
+  ): Promise<Refusal | null> {
     if (profile === null || userId === null || userId === undefined)
       return null;
 
@@ -147,11 +205,52 @@ export function Thread({
       body: text,
       status: "visible",
       reactions: [],
+      images: previews,
     });
 
-    const result = await send({ conversationId, body: text });
+    const result = await send({
+      conversationId,
+      body: text,
+      attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
+    });
     setPending(null);
-    return result.ok ? null : refusalMessage(result.refusal);
+    return result.ok ? null : result.refusal;
+  }
+
+  const shut =
+    profile !== null &&
+    (profile.bannedAt !== undefined || profile.mutedUntil !== undefined);
+
+  /** Whether a drag is something this thread would take. */
+  function droppable(event: DragEvent) {
+    return pictures && !shut && event.dataTransfer.types.includes("Files");
+  }
+
+  function onDragEnter(event: DragEvent) {
+    if (!droppable(event)) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setDragging(true);
+  }
+
+  function onDragOver(event: DragEvent) {
+    if (!droppable(event)) return;
+    // Without this the browser's default is to refuse the drop.
+    event.preventDefault();
+  }
+
+  function onDragLeave(event: DragEvent) {
+    if (!droppable(event)) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragging(false);
+  }
+
+  function onDrop(event: DragEvent) {
+    dragDepth.current = 0;
+    setDragging(false);
+    if (!droppable(event)) return;
+    event.preventDefault();
+    composer.current?.addFiles([...event.dataTransfer.files]);
   }
 
   /**
@@ -213,7 +312,25 @@ export function Thread({
   const name = detail === undefined ? "" : conversationName(detail);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-1 flex-col">
+    <div
+      className="relative flex h-full min-h-0 flex-1 flex-col"
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {/* Over everything, under the pointer's events — `pointer-events-none`
+          is what keeps the overlay from being the child that `dragleave`
+          fires for. */}
+      {dragging ? (
+        <div className="pointer-events-none absolute inset-2 z-20 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-background/85 backdrop-blur-sm">
+          <p className="flex items-center gap-2 text-[0.9375rem] font-semibold text-foreground">
+            <PhotoIcon className="size-5 text-primary" />
+            Drop to add a picture
+          </p>
+        </div>
+      ) : null}
+
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
         {/* Below `md` the conversation list is not on screen, so this is the
             only way back to it. Above `md` it is already there in the left
@@ -342,15 +459,10 @@ export function Thread({
         )}
 
         <Composer
+          ref={composer}
           onSubmit={submit}
-          lock={
-            profile !== null &&
-            (profile.bannedAt !== undefined || profile.mutedUntil !== undefined)
-              ? "muted"
-              : cooling !== null
-                ? "new"
-                : null
-          }
+          pictures={pictures}
+          lock={shut ? "muted" : cooling !== null ? "new" : null}
         />
       </div>
     </div>
@@ -694,10 +806,21 @@ function MessageRow({
           <p className="rounded-3xl border border-border px-3.5 py-2 text-[0.9375rem] text-faint italic">
             Message removed after reports
           </p>
-        ) : (
+        ) : null}
+
+        {/* Pictures above the words, the way a caption sits under a photo.
+            A message may be pictures alone, in which case there is no bubble
+            at all — a bubble with nothing in it would be a pause drawn as a
+            box. */}
+        {gone || message.images.length === 0 ? null : (
+          <Pictures images={message.images} />
+        )}
+
+        {gone || message.body === "" ? null : (
           <p
             className={cn(
               "relative rounded-3xl px-3.5 py-2 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap",
+              message.images.length > 0 && "mt-1",
               mine
                 ? "font-semibold text-primary-foreground"
                 : "text-foreground",
@@ -949,33 +1072,416 @@ const PLACEHOLDER: Record<"muted" | "new", string> = {
   new: "You can post here when the ring fills",
 };
 
+/** The textarea's own cap, which the server enforces again. */
+const MAX_BODY = 2000;
+
+/**
+ * How tall the box may be, in pixels: one line with its padding, and the
+ * same eight lines `max-h-32` used to allow before the height was measured.
+ * Past the ceiling the box scrolls, as it always did.
+ */
+const FIELD_MIN = 36;
+const FIELD_MAX = 128;
+
+/**
+ * A spoken segment after whatever is already in the box. A space between
+ * unless the box is empty or already ends in one, so dictating after typing
+ * does not weld the two words together.
+ */
+function joinSpoken(prev: string, next: string) {
+  return prev === "" || /\s$/.test(prev) ? prev + next : `${prev} ${next}`;
+}
+
+/** What the thread may ask of the composer. See `composer` in `Thread`. */
+export type ComposerHandle = { addFiles: (files: File[]) => void };
+
+/**
+ * A picture in the tray, from the moment it is chosen until it is sent.
+ *
+ * `preview` is an object URL for the shrunk blob. It is drawn in the tray,
+ * then in the placeholder message while the send is out, and revoked once
+ * the picture has left both. The three states are the three waits — the
+ * bytes going up, the classifier looking, done — and only `ready` carries an
+ * `attachmentId`, because only `ready` has one the server will accept.
+ *
+ * A refused picture has no state. It leaves the tray with a sentence over
+ * the box, exactly as a refused message does, and nothing of it is kept.
+ */
+type Attached = {
+  key: string;
+  preview: string;
+  width: number;
+  height: number;
+  state: "uploading" | "checking" | "ready";
+  attachmentId?: Id<"attachments">;
+};
+
+/** The one composer notice that is not a refusal from the server. */
+const TOO_MANY = "Up to four pictures on one message.";
+
 function Composer({
+  ref,
   onSubmit,
+  pictures,
   lock,
 }: {
-  onSubmit: (text: string) => Promise<string | null>;
+  ref: Ref<ComposerHandle>;
+  onSubmit: (
+    text: string,
+    attachmentIds: Id<"attachments">[],
+    previews: ChatImage[],
+  ) => Promise<Refusal | null>;
+  /**
+   * Whether pictures are on for this deployment. Off, there is no plus, no
+   * paste and no drop — `addFiles` is the one door and it is shut — and the
+   * box is the box it was before pictures existed.
+   */
+  pictures: boolean;
   lock: Lock;
 }) {
   const shut = lock !== null;
   const [body, setBody] = useState("");
-  const [refused, setRefused] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
 
-  async function submit() {
-    const text = body.trim();
-    if (text === "" || shut) return;
+  // Finals append to whatever is there, through an updater, so a keystroke
+  // and a spoken segment both land in arrival order and neither overwrites
+  // the other. The interim guess is shown after the text and never stored.
+  const dictation = useDictation({
+    onFinal: (segment) =>
+      setBody((prev) => joinSpoken(prev, segment).slice(0, MAX_BODY)),
+    onError: setNotice,
+  });
+  const live = dictation.state !== "idle";
+  const shown =
+    dictation.interim === ""
+      ? body
+      : joinSpoken(body, dictation.interim).slice(0, MAX_BODY);
 
-    setBody("");
-    setRefused(null);
-    const refusal = await onSubmit(text);
+  // A lock landing mid-sentence takes the microphone with it.
+  const { abort } = dictation;
+  useEffect(() => {
+    if (shut) abort();
+  }, [shut, abort]);
 
-    if (refusal !== null) {
-      setRefused(refusal);
-      // Handed back rather than dropped. Somebody who wrote three sentences and
-      // hit a rule on one word should not have to write them again.
-      setBody(text);
-      field.current?.focus();
+  // Keep the newest words in view once the box has hit its height.
+  useEffect(() => {
+    const el = field.current;
+    if (el !== null && dictation.interim !== "") el.scrollTop = el.scrollHeight;
+  }, [shown, dictation.interim]);
+
+  /**
+   * The box's height, measured off a twin rather than left to the browser.
+   *
+   * A textarea cannot animate to `auto`, and asking it for its own
+   * `scrollHeight` means first snapping it to `auto` to measure — which is
+   * the jump this exists to remove. So the same text is laid out in an
+   * invisible div with the same width, padding and type, that div's height
+   * is the answer, and the textarea is told it as a number it can move to.
+   * A `ResizeObserver` on the twin catches both a new line of text and a
+   * narrower window, which are the two things that change how it wraps.
+   */
+  const mirror = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(FIELD_MIN);
+
+  useEffect(() => {
+    const el = mirror.current;
+    if (el === null) return;
+    const observer = new ResizeObserver(() => {
+      setHeight(Math.min(FIELD_MAX, Math.max(FIELD_MIN, el.offsetHeight)));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  /*
+   * Pictures.
+   *
+   * Three calls to the server per picture — see the note at the top of
+   * `convex/chat/attachments.ts` for why it is three — and every one of them
+   * happens here, before the picture is ever offered to `onSubmit`. What the
+   * send receives is a list of ids the server has already said yes to.
+   */
+  const uploadUrl = useMutation(api.chat.attachments.uploadUrl);
+  const discard = useMutation(api.chat.attachments.discard);
+  const check = useAction(api.chat.attachments.check);
+  const picker = useRef<HTMLInputElement>(null);
+
+  const [attached, setAttached] = useState<Attached[]>([]);
+
+  /**
+   * What the tray last held, kept while it closes.
+   *
+   * The tray's height is animated by the grid trick below — a row that goes
+   * from `1fr` to `0fr` — and a row shrinking over nothing is a row that is
+   * already gone. So the last thumbnails stay drawn under the closing row
+   * until `onTransitionEnd` says it has shut. Set during render, which is
+   * the sanctioned shape for state that mirrors other state.
+   */
+  const [ghost, setGhost] = useState<Attached[]>([]);
+  if (attached.length > 0 && ghost !== attached) setGhost(attached);
+
+  /**
+   * Previews whose thumbnails are still on screen as ghosts. Revoking them
+   * the moment they left the tray drew broken images for the length of the
+   * close; they are released when it has finished.
+   */
+  const retired = useRef<string[]>([]);
+
+  function releaseRetired() {
+    for (const url of retired.current) URL.revokeObjectURL(url);
+    retired.current = [];
+  }
+
+  /**
+   * How many the tray holds, counted the moment a file is accepted rather
+   * than when its row appears in state. Six files dropped at once arrive in
+   * one event, and the cap has to be applied across them before any has
+   * finished decoding.
+   */
+  const count = useRef(0);
+
+  /**
+   * Keys taken out of the tray while their upload was still out.
+   *
+   * An upload cannot be cancelled, only disowned: the bytes finish landing,
+   * and whichever step comes next finds the key here and stops. A file that
+   * was never claimed is the sweep's; one that was claimed is discarded on
+   * the spot.
+   */
+  const removed = useRef(new Set<string>());
+
+  /** The tray as of the last render, for the unmount below. */
+  const tray = useRef<Attached[]>([]);
+  useEffect(() => {
+    tray.current = attached;
+  }, [attached]);
+
+  // Leaving the conversation with pictures in the box. Their previews are
+  // memory and their rows are storage, and neither is coming back — the
+  // rows would be swept within the hour, but a cross that was never pressed
+  // should not cost an hour of a file.
+  useEffect(() => {
+    return () => {
+      for (const entry of tray.current) {
+        URL.revokeObjectURL(entry.preview);
+        if (entry.attachmentId !== undefined) {
+          void discard({ attachmentId: entry.attachmentId });
+        }
+      }
+      for (const url of retired.current) URL.revokeObjectURL(url);
+    };
+  }, [discard]);
+
+  function patch(key: string, changes: Partial<Attached>) {
+    setAttached((list) =>
+      list.map((entry) =>
+        entry.key === key ? { ...entry, ...changes } : entry,
+      ),
+    );
+  }
+
+  /**
+   * Out of the tray, one seat freed, and the preview released — now if the
+   * thumbnail vanishes at once, later if it is the last one and the tray is
+   * about to close over it. See `retired`.
+   */
+  function drop(key: string) {
+    count.current = Math.max(0, count.current - 1);
+    setAttached((list) => {
+      const entry = list.find((candidate) => candidate.key === key);
+      const rest = list.filter((candidate) => candidate.key !== key);
+      if (entry !== undefined) {
+        if (rest.length === 0) retired.current.push(entry.preview);
+        else URL.revokeObjectURL(entry.preview);
+      }
+      return rest;
+    });
+  }
+
+  function fail(key: string, message: string) {
+    drop(key);
+    setNotice(message);
+  }
+
+  async function attach(file: File) {
+    const key = crypto.randomUUID();
+
+    const prepared = await prepareImage(file);
+    if (prepared === null) {
+      count.current = Math.max(0, count.current - 1);
+      setNotice("That picture could not be read.");
+      return;
     }
+
+    const preview = URL.createObjectURL(prepared.blob);
+    setAttached((list) => [
+      ...list,
+      {
+        key,
+        preview,
+        width: prepared.width,
+        height: prepared.height,
+        state: "uploading",
+      },
+    ]);
+
+    try {
+      const slot = await uploadUrl({});
+      if (!slot.ok) {
+        fail(key, refusalMessage(slot.refusal));
+        return;
+      }
+
+      const response = await fetch(slot.url, {
+        method: "POST",
+        headers: { "Content-Type": prepared.blob.type },
+        body: prepared.blob,
+      });
+      if (!response.ok) {
+        fail(key, refusalMessage("image"));
+        return;
+      }
+      const { storageId } = (await response.json()) as {
+        storageId: Id<"_storage">;
+      };
+
+      // Taken out while the bytes were going up. Nothing claimed it, so
+      // there is nothing to discard; the sweep reclaims the file.
+      if (removed.current.delete(key)) return;
+
+      patch(key, { state: "checking" });
+      const verdict = await check({
+        storageId,
+        width: prepared.width,
+        height: prepared.height,
+      });
+
+      // Taken out while the classifier was looking. It is claimed now, so
+      // if it passed it has a row to release.
+      if (removed.current.delete(key)) {
+        if (verdict.ok) void discard({ attachmentId: verdict.attachmentId });
+        return;
+      }
+
+      if (!verdict.ok) {
+        fail(key, refusalMessage(verdict.refusal));
+        return;
+      }
+      patch(key, { state: "ready", attachmentId: verdict.attachmentId });
+    } catch {
+      fail(key, refusalMessage("image"));
+    }
+  }
+
+  /**
+   * The one way pictures get in, whether they were picked, pasted, or
+   * dropped. Files that are not pictures are ignored rather than refused —
+   * a paste of a spreadsheet cell has a file in it that nobody meant to send.
+   */
+  function addFiles(files: File[]) {
+    if (!pictures || shut) return;
+    const images = files.filter(isImageFile);
+    if (images.length === 0) return;
+
+    const room = MAX_IMAGES_PER_MESSAGE - count.current;
+    if (images.length > room) setNotice(TOO_MANY);
+
+    for (const file of images.slice(0, Math.max(0, room))) {
+      count.current += 1;
+      void attach(file);
+    }
+  }
+
+  useImperativeHandle(ref, () => ({ addFiles }));
+
+  function remove(entry: Attached) {
+    if (entry.attachmentId !== undefined) {
+      void discard({ attachmentId: entry.attachmentId });
+    } else {
+      removed.current.add(entry.key);
+    }
+    drop(entry.key);
+  }
+
+  function onPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = [...event.clipboardData.files].filter(isImageFile);
+    if (files.length === 0) return;
+    // A pasted picture is the paste; the browser would otherwise also drop
+    // its filename into the box as text.
+    event.preventDefault();
+    addFiles(files);
+  }
+
+  function onPick(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files === null ? [] : [...event.target.files];
+    // Cleared so picking the same file twice fires twice.
+    event.target.value = "";
+    addFiles(files);
+  }
+
+  const ready = attached.filter((entry) => entry.state === "ready");
+  const waiting = ready.length !== attached.length;
+  const canSend =
+    !shut && !waiting && (shown.trim() !== "" || ready.length > 0);
+
+  async function submit() {
+    if (!canSend) return;
+    const text = shown.trim();
+    const sending = ready;
+
+    // Nothing further may arrive into a box that has just been emptied.
+    dictation.abort();
+    setBody("");
+    setAttached([]);
+    count.current = 0;
+    setNotice(null);
+
+    // Every entry in `sending` is `ready`, and `ready` always carries an id —
+    // see `Attached`. The filter is for the type, not for a case.
+    const proven = sending.flatMap((entry) =>
+      entry.attachmentId === undefined
+        ? []
+        : [{ ...entry, attachmentId: entry.attachmentId }],
+    );
+
+    const refusal = await onSubmit(
+      text,
+      proven.map((entry) => entry.attachmentId),
+      proven.map((entry) => ({
+        attachmentId: entry.attachmentId,
+        url: entry.preview,
+        width: entry.width,
+        height: entry.height,
+      })),
+    );
+
+    if (refusal === null) {
+      // The real rows are on screen by now — see `submit` in `Thread` for why
+      // that is a guarantee and not a race. The previews are not revoked:
+      // they are what the real rows will be drawn with, see `rememberPreview`.
+      for (const entry of proven) {
+        rememberPreview(entry.attachmentId, entry.preview);
+      }
+      return;
+    }
+
+    setNotice(refusalMessage(refusal));
+    // Handed back rather than dropped. Somebody who wrote three sentences and
+    // hit a rule on one word should not have to write them again.
+    setBody(text);
+
+    if (refusal === "image" || refusal === "too-many-images") {
+      // The rows are gone — swept, or discarded from another tab. The
+      // pictures have to be added again, so the previews go.
+      for (const entry of sending) URL.revokeObjectURL(entry.preview);
+    } else {
+      // Refused for the words. The pictures are still `ready` on the server
+      // and come back into the tray with the text.
+      setAttached(sending);
+      count.current = sending.length;
+    }
+    field.current?.focus();
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -983,54 +1489,381 @@ function Composer({
     event.preventDefault();
     void submit();
   }
+
+  function toggleDictation() {
+    setNotice(null);
+    if (live) dictation.stop();
+    else dictation.start();
+  }
+
   return (
     <div className="px-3 pb-3 sm:px-8 lg:px-14 xl:px-20">
-      {/* The category and never the rule. See `refusalMessage` in
-          `src/lib/chat.ts` — telling somebody exactly which word tripped is
+      {/* Refusals, and the few dictation failures worth a sentence.
+
+          For refusals: the category and never the rule. See `refusalMessage`
+          in `src/lib/chat.ts` — telling somebody exactly which word tripped is
           telling them how to spell it next time.
 
           Over the composer rather than under it, so it reads as the message
           coming back rather than as a line of small print. */}
-      {refused === null ? null : (
+      {notice === null ? null : (
         <div className="flex justify-center pb-2">
           <p
             role="alert"
             className="animate-notice-in max-w-full rounded-full border border-destructive/30 bg-surface px-3.5 py-1.5 text-center text-[0.8125rem] text-destructive shadow-[0_2px_8px_rgba(15,15,15,0.06)]"
           >
-            {refused}
+            {notice}
           </p>
         </div>
       )}
 
-      <div className="flex items-end gap-2 rounded-full border border-border bg-surface py-1.5 pr-1.5 pl-4 shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
-        <textarea
-          ref={field}
-          value={body}
-          onChange={(event) => {
-            setBody(event.target.value);
-            setRefused(null);
+      {/* One radius whatever is in it. At a single line the box is fifty
+          pixels tall, so a 25px corner *is* the pill; with a tray above or a
+          paragraph in it, the same corner is a card. It used to switch
+          between `rounded-full` and this, and animating a radius from nine
+          thousand pixels to twenty-five is a shape doing something strange
+          on the way. */}
+      <div className="flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
+        {/* The tray opens and closes by height. A grid row can go from
+            `0fr` to `1fr` and back, and unlike `height: auto` a browser can
+            draw the frames in between; the inner box clips what does not fit
+            yet. The padding is inside the clip so it closes with the rest. */}
+        <div
+          aria-hidden={attached.length === 0}
+          onTransitionEnd={() => {
+            if (attached.length > 0) return;
+            setGhost([]);
+            releaseRetired();
           }}
-          onKeyDown={onKeyDown}
-          rows={1}
-          disabled={shut}
-          maxLength={2000}
-          aria-label="Message"
-          placeholder={lock === null ? "Say something" : PLACEHOLDER[lock]}
-          className="max-h-32 min-h-9 flex-1 resize-none bg-transparent py-1.5 text-[0.9375rem] leading-relaxed outline-none placeholder:text-faint disabled:cursor-not-allowed"
-        />
-        <Button
-          size="lg"
-          className="rounded-full pr-3.5 pl-3"
-          onClick={() => void submit()}
-          disabled={shut || body.trim() === ""}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+            attached.length > 0 ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+          )}
         >
-          <ArrowUpIcon
-            strokeWidth={2.5}
-            className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
-          />
-          Send
-        </Button>
+          <div className="min-h-0 overflow-hidden">
+            <div className="flex gap-2 overflow-x-auto px-3 pt-3">
+              {(attached.length > 0 ? attached : ghost).map((entry) => (
+                <Thumb
+                  key={entry.key}
+                  entry={entry}
+                  // A ghost is only ever drawn while the tray shuts over it;
+                  // pressing its cross would remove something already gone.
+                  onRemove={
+                    attached.length > 0 ? () => remove(entry) : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "flex items-end gap-2 py-1.5 pr-1.5",
+            pictures ? "pl-1.5" : "pl-4",
+          )}
+        >
+          {/* The plus on the left, where every chat puts it. It opens the
+              picker; pasting and dropping reach the same `addFiles`. */}
+          {pictures ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-lg"
+                onClick={() => picker.current?.click()}
+                disabled={shut || attached.length >= MAX_IMAGES_PER_MESSAGE}
+                aria-label="Add a picture"
+                className="rounded-full text-faint hover:text-foreground"
+              >
+                <PlusIcon strokeWidth={2} className="size-5" />
+              </Button>
+              <input
+                ref={picker}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={onPick}
+              />
+            </>
+          ) : null}
+
+          {/* The box and its twin. The twin is absolute, so it costs the row
+              no height of its own, and it is given the same width by
+              `inset-x-0` — which is what makes its wrapping the box's
+              wrapping. See `mirror` above. */}
+          <div className="relative min-w-0 flex-1">
+            <div
+              ref={mirror}
+              aria-hidden
+              className="pointer-events-none invisible absolute inset-x-0 top-0 py-1.5 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap"
+            >
+              {/* The placeholder when empty, so an empty box is one line
+                  tall; a zero-width space at the end, so a trailing newline
+                  counts as the line it is about to be. */}
+              {shown === "" ? "Say something" : shown}
+              {"​"}
+            </div>
+            <textarea
+              ref={field}
+              value={shown}
+              style={{ height }}
+              onChange={(event) => {
+                const next = event.target.value;
+                // Editing while a guess is showing: keep the guess out of `body`
+                // while it is still at the end. If the edit went through it, keep
+                // what was typed and let the next final land after it.
+                const tail =
+                  dictation.interim === ""
+                    ? ""
+                    : joinSpoken(" ", dictation.interim);
+                setBody(
+                  tail !== "" && next.endsWith(tail)
+                    ? next.slice(0, -tail.length)
+                    : next,
+                );
+                setNotice(null);
+              }}
+              onKeyDown={onKeyDown}
+              onPaste={onPaste}
+              rows={1}
+              disabled={shut}
+              maxLength={MAX_BODY}
+              aria-label="Message"
+              placeholder={
+                lock !== null
+                  ? PLACEHOLDER[lock]
+                  : live
+                    ? "Listening…"
+                    : attached.length > 0
+                      ? "Add a caption, or just send"
+                      : "Say something"
+              }
+              className="block w-full resize-none overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed outline-none transition-[height] duration-150 ease-out placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none"
+            />
+          </div>
+          {/* Absent where the browser has no recogniser (Firefox) and on the
+              server, so it appears after hydration without a mismatch. The
+              waveform mounts only once the recogniser has actually started,
+              which is after the microphone was granted in this same tap. */}
+          {dictation.supported ? (
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              onClick={toggleDictation}
+              disabled={shut}
+              aria-pressed={live}
+              aria-label={live ? "Stop dictation" : "Start dictation"}
+              className={cn(
+                "rounded-full",
+                live
+                  ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  : "text-faint hover:text-foreground",
+              )}
+            >
+              {dictation.state === "listening" ? (
+                <Waveform />
+              ) : (
+                // Pulsing while arming or winding down: on, but not yet a signal.
+                <MicrophoneIcon
+                  className={cn("size-5", live && "animate-pulse")}
+                />
+              )}
+            </Button>
+          ) : null}
+          <Button
+            size="lg"
+            className="rounded-full pr-3.5 pl-3"
+            onClick={() => void submit()}
+            disabled={!canSend}
+          >
+            <ArrowUpIcon
+              strokeWidth={2.5}
+              className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
+            />
+            Send
+          </Button>
+        </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One picture in the tray: a square of it, dimmed with a spinner over it
+ * until the server has said yes, and a cross to take it out at any point.
+ */
+function Thumb({
+  entry,
+  onRemove,
+}: {
+  entry: Attached;
+  /** Absent on a ghost — see the tray in `Composer`. */
+  onRemove: (() => void) | undefined;
+}) {
+  const waiting = entry.state !== "ready";
+  return (
+    <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-muted">
+      <Photo
+        src={entry.preview}
+        className={cn(
+          "size-full object-cover transition-opacity",
+          waiting && "opacity-40",
+        )}
+      />
+      {waiting ? (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Spinner aria-hidden className="size-4 text-foreground" />
+        </div>
+      ) : null}
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={onRemove === undefined}
+        tabIndex={onRemove === undefined ? -1 : undefined}
+        aria-label="Remove picture"
+        className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/90 text-foreground shadow-[0_1px_3px_rgba(15,15,15,0.2)] outline-none transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-ring/60"
+      >
+        <XMarkIcon strokeWidth={2.5} className="size-3" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The pictures on a message.
+ *
+ * One is drawn at its own shape, capped in both directions so a tall photo
+ * does not take the pane and a wide one does not take the column. Two to
+ * four are a grid of squares, cropped — a grid of mixed shapes is a ransom
+ * note, and the whole picture is one press away.
+ *
+ * The `width` and `height` attributes are what let the browser draw the box
+ * before the bytes arrive, which is what keeps a thread from jumping as it
+ * loads; they came up with the upload for exactly this.
+ */
+function Pictures({ images }: { images: ChatImage[] }) {
+  const [open, setOpen] = useState<ChatImage | null>(null);
+  const single = images.length === 1;
+
+  return (
+    <>
+      <div
+        className={cn(
+          "grid gap-1 overflow-hidden rounded-3xl",
+          single ? "grid-cols-1" : "w-64 max-w-full grid-cols-2",
+        )}
+      >
+        {images.map((image) => (
+          <button
+            key={image.attachmentId}
+            type="button"
+            onClick={() => setOpen(image)}
+            aria-label="Open picture"
+            // The box is sized here, on the button, and the picture fills it.
+            // Letting the picture size itself and the box wrap it looked
+            // right until the picture was capped in height: the box kept the
+            // width the uncapped picture would have had, and drew its grey
+            // and its corners out past the edge of what was in it.
+            style={single ? singleBox(image) : undefined}
+            className={cn(
+              "block cursor-zoom-in overflow-hidden bg-surface-muted outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
+              !single && "aspect-square",
+            )}
+          >
+            <Photo
+              src={sourceOf(image)}
+              width={image.width}
+              height={image.height}
+              className="size-full object-cover"
+            />
+          </button>
+        ))}
+      </div>
+
+      {open === null ? null : (
+        <Lightbox image={open} onClose={() => setOpen(null)} />
+      )}
+    </>
+  );
+}
+
+/**
+ * Where a picture is drawn from: the preview this browser uploaded when it
+ * has one, and the stored file otherwise. Same pixels either way.
+ */
+function sourceOf(image: ChatImage): string {
+  return previewFor(image.attachmentId) ?? image.url;
+}
+
+/** The longest either side of a lone picture may be, in pixels. */
+const SINGLE_EDGE = 320;
+
+/**
+ * The box for a picture on its own.
+ *
+ * Its own shape, no larger than `SINGLE_EDGE` on either side, and never
+ * larger than the picture itself — a sixty-pixel sticker is not blown up to
+ * a poster. `min(100%, …)` is the column: on a narrow screen the column is
+ * narrower than the cap, and the box follows it. The height comes from the
+ * aspect ratio, so the width is the only number that needs deciding.
+ */
+function singleBox(image: ChatImage): React.CSSProperties {
+  const ratio = image.width / image.height;
+  const width = Math.round(
+    Math.min(image.width, SINGLE_EDGE, SINGLE_EDGE * ratio),
+  );
+  return {
+    aspectRatio: `${image.width} / ${image.height}`,
+    width: `min(100%, ${width}px)`,
+  };
+}
+
+/**
+ * A picture, full size, over everything.
+ *
+ * Into `document.body`, because the thread scrolls and a fixed element
+ * inside an ancestor with a transform is fixed to the ancestor. A press
+ * anywhere or an Escape closes it — there is nothing to do here but look.
+ */
+function Lightbox({
+  image,
+  onClose,
+}: {
+  image: ChatImage;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKey(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal
+      aria-label="Picture"
+      onClick={onClose}
+      className="animate-notice-in fixed inset-0 z-[100] flex cursor-zoom-out items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+    >
+      <Photo
+        src={sourceOf(image)}
+        width={image.width}
+        height={image.height}
+        className="block h-auto max-h-full w-auto max-w-full rounded-xl object-contain shadow-[0_24px_64px_-12px_rgba(0,0,0,0.6)]"
+      />
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full bg-white/10 text-white outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
+      >
+        <XMarkIcon strokeWidth={2} className="size-5" />
+      </button>
+    </div>,
+    document.body,
   );
 }

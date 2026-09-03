@@ -9,6 +9,7 @@
  */
 
 import type * as agreement from "../agreement.js";
+import type * as chat_attachments from "../chat/attachments.js";
 import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_conversations from "../chat/conversations.js";
 import type * as chat_erase from "../chat/erase.js";
@@ -22,9 +23,11 @@ import type * as chat_shared from "../chat/shared.js";
 import type * as chat_sweep from "../chat/sweep.js";
 import type * as crons from "../crons.js";
 import type * as days from "../days.js";
+import type * as features from "../features.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
 import type * as moderation_confusables from "../moderation/confusables.js";
+import type * as moderation_images from "../moderation/images.js";
 import type * as moderation_inspect from "../moderation/inspect.js";
 import type * as moderation_lexicon from "../moderation/lexicon.js";
 import type * as moderation_limits from "../moderation/limits.js";
@@ -46,6 +49,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   agreement: typeof agreement;
+  "chat/attachments": typeof chat_attachments;
   "chat/blocks": typeof chat_blocks;
   "chat/conversations": typeof chat_conversations;
   "chat/erase": typeof chat_erase;
@@ -59,9 +63,11 @@ declare const fullApi: ApiFromModules<{
   "chat/sweep": typeof chat_sweep;
   crons: typeof crons;
   days: typeof days;
+  features: typeof features;
   http: typeof http;
   invites: typeof invites;
   "moderation/confusables": typeof moderation_confusables;
+  "moderation/images": typeof moderation_images;
   "moderation/inspect": typeof moderation_inspect;
   "moderation/lexicon": typeof moderation_lexicon;
   "moderation/limits": typeof moderation_limits;

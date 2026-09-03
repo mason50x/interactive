@@ -239,6 +239,61 @@ export function pushRecent(
   return next.length <= RECENT_RING ? next : next.slice(next.length - RECENT_RING);
 }
 
+/**
+ * Delete one uploaded picture: the file and the row that owns it.
+ *
+ * Both, always, and in this order. The row is what the sweep uses to tell a
+ * held file from an orphan — see `attachments` in `convex/schema.ts` — so a
+ * row that outlived its file would be a claim on nothing, and a file that
+ * outlived its row would be swept anyway an hour later. Taking both here
+ * means neither state exists long enough to matter.
+ *
+ * The file is looked up before it is deleted, because a deletion that has
+ * already happened is not an error here: a message and a sweep can both
+ * reasonably decide the same picture is finished.
+ */
+export async function deleteAttachment(
+  ctx: MutationCtx,
+  row: Doc<"attachments">,
+): Promise<void> {
+  const file = await ctx.db.system.get("_storage", row.storageId);
+  if (file !== null) await ctx.storage.delete(row.storageId);
+  await ctx.db.delete(row._id);
+}
+
+/**
+ * Delete a message, and every picture that was on it.
+ *
+ * The single way a message with pictures leaves the table. Four callers
+ * reach it — the author taking it back, the global room's monthly trim, a
+ * conversation being purged, and an account being purged — and before this
+ * existed each of them deleted the row directly, which was fine for as long
+ * as a row was all a message was. A picture is a file in storage, and a file
+ * whose message has gone is a file nothing can ever find again: it is not in
+ * any thread, and the sweep only reclaims files no *sent* row is holding.
+ *
+ * So the pictures go first, through `deleteAttachment` above, and the row
+ * last. A message without pictures costs exactly what it did.
+ */
+export async function deleteMessage(
+  ctx: MutationCtx,
+  message: Doc<"messages">,
+): Promise<void> {
+  for (const image of message.images ?? []) {
+    const row = await ctx.db.get(image.attachmentId);
+    if (row !== null) {
+      await deleteAttachment(ctx, row);
+      continue;
+    }
+    // A file with no row, which nothing should leave behind. Taken anyway,
+    // because it is the file that costs money and the row that was only ever
+    // a pointer to it.
+    const file = await ctx.db.system.get("_storage", image.storageId);
+    if (file !== null) await ctx.storage.delete(image.storageId);
+  }
+  await ctx.db.delete(message._id);
+}
+
 /** The two ids in a stable order, which is what makes a pair one row. */
 export function pairOf(a: string, b: string): { userA: string; userB: string } {
   return a < b ? { userA: a, userB: b } : { userA: b, userB: a };
