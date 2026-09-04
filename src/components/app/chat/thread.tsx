@@ -171,7 +171,7 @@ function ConversationThread({
   /**
    * Everyone is a sequence of local calendar days rather than one endless
    * room. Zero is the live day; positive numbers walk backwards through its
-   * retained history. A minute clock advances an open tab across midnight.
+   * retained history. The day clock advances an open tab across midnight.
    */
   const now = useDayClock();
   const [daysAgo, setDaysAgo] = useState(0);
@@ -748,10 +748,27 @@ function DayPager({
   const newer = daysAgo > 0 ? dayBounds(now, daysAgo - 1).date : null;
   const live = daysAgo === 0;
 
+  if (live) {
+    return (
+      <nav aria-label="Everyone by day" className="flex justify-center pb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          aria-label={`View ${compactDay(older)}`}
+          onClick={() => onChange(1)}
+        >
+          <ChevronLeftIcon />
+          Yesterday
+        </Button>
+      </nav>
+    );
+  }
+
   return (
     <nav
       aria-label="Everyone by day"
-      className="flex justify-center border-b border-border pb-3"
+      className="flex justify-center pb-2"
     >
       <div className="grid grid-cols-[2rem_minmax(9rem,auto)_2rem] items-center">
         {daysAgo < GLOBAL_DAY_PAGES - 1 ? (
@@ -769,18 +786,14 @@ function DayPager({
         )}
 
         <p className="text-center text-[0.75rem] font-semibold text-muted-foreground">
-          {live
-            ? "Today"
-            : selected.toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
+          {selected.toLocaleDateString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
         </p>
 
-        {newer === null ? (
-          <span />
-        ) : (
+        {newer !== null ? (
           <Button
             variant="ghost"
             size="icon-sm"
@@ -794,7 +807,7 @@ function DayPager({
           >
             <ChevronRightIcon />
           </Button>
-        )}
+        ) : null}
       </div>
     </nav>
   );
