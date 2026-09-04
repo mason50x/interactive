@@ -7,47 +7,13 @@ import { clearSender, deleteAttachment, deleteMessage } from "./shared";
 /**
  * The housekeeping, done in pieces small enough to finish.
  *
- * A Convex mutation gets one second. That is the whole reason this file is
- * shaped the way it is: "delete every expired strike" is not a job, it is a job
- * that works for six months and then starts timing out, silently, on a
- * deployment nobody is watching. So each sweep takes a fixed bite, and if the
- * bite came back full it books itself again for immediately afterwards.
- *
- * Nothing here is load-bearing for correctness. Expired strikes are already
- * ignored when standing is computed, and a mute that has run out already reads
- * as lifted — see `standingFor` in `convex/chat/shared.ts` and `mine` in
- * `convex/chat/profiles.ts`. Both had to be true anyway, because a cron that
- * runs at eight in the morning cannot be what decides whether somebody is muted
- * at midnight. This file only keeps the tables from growing forever.
+ * A Convex mutation gets one second. Each sweep therefore takes a fixed bite,
+ * and if the bite came back full it books itself again for immediately
+ * afterwards.
  */
 
 /** How many rows one pass will touch. Well inside the second. */
 const BATCH = 200;
-
-/**
- * Delete strikes that have stopped counting.
- *
- * Thirty days after the fact, and the row's only remaining use is the ledger
- * the account holder reads — which filters to unexpired rows anyway. See
- * `STRIKE_TTL_MS` in `convex/moderation/limits.ts` for why they expire at all.
- */
-export const expireStrikes = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const now = Date.now();
-    const dead = await ctx.db
-      .query("strikes")
-      .withIndex("byExpiry", (q) => q.lt("expiresAt", now))
-      .take(BATCH);
-
-    for (const row of dead) await ctx.db.delete(row._id);
-
-    if (dead.length === BATCH) {
-      await ctx.scheduler.runAfter(0, internal.chat.sweep.expireStrikes, {});
-    }
-    return dead.length;
-  },
-});
 
 /**
  * Drop what the global room said a month ago.
@@ -106,16 +72,16 @@ export const trimGlobal = internalMutation({
  * half its history missing.
  *
  * Reports go too. A report is a claim about a message, and once the message
- * does not exist the claim is an id that resolves to nothing. The strikes it
- * caused stay: those are about a person, not about a room, and the person is
- * still here.
+ * does not exist the claim is an id that resolves to nothing.
  */
 export const purgeConversation = internalMutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
     const messages = await ctx.db
       .query("messages")
-      .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
       .take(BATCH);
 
     for (const message of messages) await deleteMessage(ctx, message);
@@ -129,7 +95,9 @@ export const purgeConversation = internalMutation({
 
     const reports = await ctx.db
       .query("reports")
-      .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
       .take(BATCH);
     for (const report of reports) await ctx.db.delete(report._id);
 
@@ -146,7 +114,9 @@ export const purgeConversation = internalMutation({
 
     const members = await ctx.db
       .query("conversationMembers")
-      .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
       .collect();
     for (const member of members) await ctx.db.delete(member._id);
 
@@ -202,12 +172,8 @@ export const pruneMemberships = internalMutation({
  * Take an account's chat out of the system, one bite at a time.
  *
  * Two callers reach this and one argument is the whole difference between them.
- * `users.deleteFromClerk` calls it in `account` mode: the Clerk account itself
- * is gone, so nothing is left of it anywhere and there is nobody left for a
- * strike to be about. `chat.erase.eraseMine` calls it in `chat` mode: the
- * person is still here and has asked only for their chat to end, so the ledger
- * stays — see the note in `convex/chat/erase.ts` for why clearing it would make
- * erasure the way out of a mute.
+ * `users.deleteFromClerk` calls it in `account` mode, while
+ * `chat.erase.eraseMine` calls it in `chat` mode.
  *
  * The other difference is what becomes of a group they own. An account leaving
  * Clerk hands its groups on, because a group is other people's and nobody asked
@@ -310,9 +276,13 @@ export const purgeAuthor = internalMutation({
         // note above this mutation.
         if (scope === "chat") {
           await ctx.db.delete(member._id);
-          await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
-            conversationId: member.conversationId,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            internal.chat.sweep.purgeConversation,
+            {
+              conversationId: member.conversationId,
+            },
+          );
           continue;
         }
 
@@ -323,21 +293,28 @@ export const purgeAuthor = internalMutation({
         const rest = await ctx.db
           .query("conversationMembers")
           .withIndex("byConversation", (q) =>
-            q.eq("conversationId", member.conversationId).eq("status", "active"),
+            q
+              .eq("conversationId", member.conversationId)
+              .eq("status", "active"),
           )
           .collect();
         const heir = rest
           .filter((row) => row.clerkId !== clerkId)
           .sort((first, second) => {
-            if (first.role !== second.role) return first.role === "admin" ? -1 : 1;
+            if (first.role !== second.role)
+              return first.role === "admin" ? -1 : 1;
             return first.joinedAt - second.joinedAt;
           })[0];
 
         if (heir === undefined) {
           await ctx.db.delete(member._id);
-          await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
-            conversationId: member.conversationId,
-          });
+          await ctx.scheduler.runAfter(
+            0,
+            internal.chat.sweep.purgeConversation,
+            {
+              conversationId: member.conversationId,
+            },
+          );
           continue;
         }
         await ctx.db.patch(heir._id, { role: "owner" });
@@ -381,25 +358,22 @@ export const purgeAuthor = internalMutation({
       await ctx.db.delete(row._id);
     }
 
-    // Pictures uploaded and never sent. The ones on messages went with the
-    // messages above; these are the composer's, and bounded by
-    // `MAX_UNSENT_IMAGES`. The sweep would take them within the hour, but an
-    // erasure that leaves files behind for a cron to find is not an erasure.
-    for (const status of ["checking", "ready"] as const) {
-      const unsent = await ctx.db
+    // Every picture still owned directly by this account. The ones on messages
+    // went with the messages above; these are unfinished uploads plus the
+    // active profile picture. The general sweep would eventually find an
+    // orphan, but an account erasure must remove its bytes immediately.
+    for (const status of ["checking", "ready", "avatar"] as const) {
+      const owned = await ctx.db
         .query("attachments")
         .withIndex("byOwner", (q) =>
           q.eq("ownerClerkId", clerkId).eq("status", status),
         )
         .collect();
-      for (const row of unsent) await deleteAttachment(ctx, row);
+      for (const row of owned) await deleteAttachment(ctx, row);
     }
 
-    // Reports they filed and reports filed against them. The second is the one
-    // worth being deliberate about: a report is a record of an accusation, and
-    // once the account it was about is gone there is nothing left for it to be
-    // evidence of. In `chat` mode the accusation outlives the report anyway —
-    // what a report was ever worth is the strike it caused, and those stay.
+    // Reports they filed and reports filed against them. Once the account a
+    // report was about is gone there is nothing left for it to describe.
     const filed = await ctx.db
       .query("reports")
       .withIndex("byReporter", (q) => q.eq("reporterClerkId", clerkId))
@@ -428,17 +402,9 @@ export const purgeAuthor = internalMutation({
       await ctx.db.patch(room._id, { createdBy: "" });
     }
 
-    // The ledger and the profile are the two things `chat` mode leaves alone.
-    // The ledger because it is about a person who is still here; the profile
-    // because `eraseMine` has already dealt with it, and had to — a profile
-    // still standing while this ran is an account that can still send.
+    // `eraseMine` already dealt with the profile in `chat` mode. Account mode
+    // reaches this directly from the Clerk deletion webhook and removes it here.
     if (scope === "account") {
-      const strikes = await ctx.db
-        .query("strikes")
-        .withIndex("byUser", (q) => q.eq("clerkId", clerkId))
-        .collect();
-      for (const row of strikes) await ctx.db.delete(row._id);
-
       const profile = await ctx.db
         .query("chatProfiles")
         .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
@@ -475,7 +441,9 @@ export const sweepPresence = internalMutation({
   handler: async (ctx) => {
     const dead = await ctx.db
       .query("presence")
-      .withIndex("bySeen", (q) => q.lt("lastSeenAt", Date.now() - PRESENCE_TTL_MS))
+      .withIndex("bySeen", (q) =>
+        q.lt("lastSeenAt", Date.now() - PRESENCE_TTL_MS),
+      )
       .take(BATCH);
 
     for (const row of dead) await ctx.db.delete(row._id);

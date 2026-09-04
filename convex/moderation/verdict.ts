@@ -4,28 +4,24 @@ import { maskMentions } from "./mentions";
 import { buildForms, prepare } from "./normalize";
 import { findPatterns } from "./patterns";
 import {
-  excerpt,
   hashBody,
   isBroadcast,
   isDuplicate,
   isTargeted,
   refusalForCategory,
   refusalForPattern,
-  weightFor,
   type RecentSend,
   type Refusal,
 } from "./rules";
-import { overRate, tierFor } from "./standing";
+import { overRate, tierFor } from "./rate";
 
 /**
  * The one function that decides whether a message exists.
  *
  * Everything else in this directory is a component of it: the shape check, the
- * folding, the word lists, the patterns, the arrangements, the ladder. This is
- * the order they run in, and the order is load-bearing — the cheap checks come
- * first so that a two-thousand-character message from a banned account costs a
- * comparison rather than a scan, and the mutation's one-second budget is never
- * spent on somebody who was not allowed to speak in the first place.
+ * folding, the word lists, the patterns, and the arrangements. This is the
+ * order they run in, and the order is load-bearing — cheap shape and rate checks
+ * happen before the bounded text scan.
  *
  * ## It is pure
  *
@@ -56,10 +52,6 @@ export type SendContext = {
   /** When the sender's chat profile was made. */
   createdAt: number;
   messagesSent: number;
-  /** Unexpired strike weight, already summed. */
-  standing: number;
-  mutedUntil?: number;
-  bannedAt?: number;
   recent: RecentSend[];
   /**
    * Set when the message carries pictures: the attachment ids, joined.
@@ -78,43 +70,29 @@ export type SendContext = {
    * `convex/moderation/mentions.ts` for why the word lists still see them.
    */
   mentions?: ReadonlySet<string>;
-};
-
-/** What the ledger should record, when it should record anything. */
-export type StrikeSpec = {
-  rule: Refusal;
-  weight: number;
-  banOnSight: boolean;
-  excerpt: string;
+  /**
+   * Verified synthetic mentions whose handles must not be read as message
+   * text by the lexicon. This is deliberately narrower than `mentions`:
+   * ordinary people's handles still go through the word lists, while a
+   * reserved system handle such as `@bot` cannot create a match merely by
+   * being present.
+   */
+  lexiconExemptMentions?: ReadonlySet<string>;
 };
 
 export type Verdict =
-  | { allow: false; refusal: Refusal; strike: StrikeSpec | null }
+  | { allow: false; refusal: Refusal }
   | { allow: true; body: string; hash: string };
 
-/** A refusal that costs nothing and says nothing to the ledger. */
 function refuse(refusal: Refusal): Verdict {
-  return { allow: false, refusal, strike: null };
-}
-
-/** A refusal that does. */
-function strikeFor(refusal: Refusal, body: string, banOnSight = false): Verdict {
-  const weight = weightFor(refusal);
-  if (weight === 0 && !banOnSight) return refuse(refusal);
-  return {
-    allow: false,
-    refusal,
-    strike: { rule: refusal, weight, banOnSight, excerpt: excerpt(body) },
-  };
+  return { allow: false, refusal };
 }
 
 /**
- * The heaviest thing found, so one message produces one strike.
+ * The most severe category found, so one refusal is returned.
  *
- * A message containing a slur and a link is refused for the slur. Charging for
- * both would mean a single message could cross two rungs of the ladder at once,
- * and the person on the other end of that would be told they had been muted for
- * "several things", which is not an explanation.
+ * A message containing a slur and profanity is refused for the slur. One clear
+ * reason is more useful than an arbitrary list ordered by scan position.
  */
 function worst(matches: Match[]): Match | null {
   let found: Match | null = null;
@@ -124,20 +102,12 @@ function worst(matches: Match[]): Match | null {
       found = match;
       continue;
     }
-    if (match.banOnSight && !found.banOnSight) found = match;
-    else if (match.tier < found.tier && !found.banOnSight) found = match;
+    if (match.tier < found.tier) found = match;
   }
   return found;
 }
 
 export function screen(raw: string, context: SendContext): Verdict {
-  // Standing first. None of it depends on what was typed, and an account that
-  // may not speak should not have its message read at all.
-  if (context.bannedAt !== undefined) return refuse("banned");
-  if (context.mutedUntil !== undefined && context.mutedUntil > context.now) {
-    return refuse("muted");
-  }
-
   if (
     context.surface === "global" &&
     context.now - context.createdAt < GLOBAL_COOLDOWN_MS
@@ -145,22 +115,15 @@ export function screen(raw: string, context: SendContext): Verdict {
     return refuse("too-new");
   }
 
-  const tier = tierFor(
-    context.createdAt,
-    context.messagesSent,
-    context.standing,
-    context.now,
-  );
+  const tier = tierFor(context.createdAt, context.messagesSent, context.now);
   if (overRate(context.recent, tier, context.now)) {
-    return strikeFor("too-fast", raw.slice(0, 40));
+    return refuse("too-fast");
   }
 
-  // A message that is only pictures. Everything above still applied — a muted
-  // account cannot send a picture either, and pictures count against the
-  // rate — but there is no text to fold, scan, or match, and the shape check
-  // would refuse it as empty. The duplicate and broadcast rules are skipped
-  // too, and not out of leniency: an attachment can be sent exactly once, so
-  // the same key cannot appear twice in the ring for either of them to find.
+  // A message that is only pictures. The rate still applies, but there is no
+  // text to fold, scan, or match, and the shape check would refuse it as empty.
+  // The duplicate and broadcast rules are skipped because an attachment can be
+  // sent exactly once, so its key cannot appear twice in the ring.
   if (raw.trim() === "" && context.attachmentKey !== undefined) {
     return { allow: true, body: "", hash: hashBody(`image:${context.attachmentKey}`) };
   }
@@ -168,14 +131,25 @@ export function screen(raw: string, context: SendContext): Verdict {
   // Shape, which is also the length cap, and therefore the guard that keeps
   // every pattern below it running against a bounded string.
   const prepared = prepare(raw, MAX_BODY[context.surface]);
-  if (!prepared.ok) return strikeFor(prepared.reason, raw.slice(0, 40));
+  if (!prepared.ok) return refuse(prepared.reason);
 
   const { clean, forms } = prepared;
-  const matches = scan(forms);
+
+  // A reserved system mention is syntax, not something the sender said. In
+  // particular, normalisation folds `@` to leetspeak `a`, so `@bot` becomes
+  // `abot` and can accidentally begin a listed term. Blank only the synthetic
+  // handles the caller explicitly trusts; real handles remain visible to the
+  // lexicon so they cannot be used to split an unsafe word across a boundary.
+  const lexiconText =
+    context.lexiconExemptMentions === undefined
+      ? clean
+      : maskMentions(clean, context.lexiconExemptMentions);
+  const lexiconForms = lexiconText === clean ? forms : buildForms(lexiconText);
+  const matches = scan(lexiconForms);
 
   const severe = worst(matches);
   if (severe !== null) {
-    return strikeFor(refusalForCategory(severe.category), clean, severe.banOnSight);
+    return refuse(refusalForCategory(severe.category));
   }
 
   // The patterns alone read a copy with the verified mentions blanked out:
@@ -186,19 +160,18 @@ export function screen(raw: string, context: SendContext): Verdict {
   const maskedForms = masked === clean ? forms : buildForms(masked);
   const patterns = findPatterns(masked, maskedForms.tokens);
   if (patterns.length > 0) {
-    return strikeFor(refusalForPattern(patterns[0].category), clean);
+    return refuse(refusalForPattern(patterns[0].category));
   }
 
   // Everything left is tier three: ordinary swearing, which does not go
-  // through. The only question left is what it costs, and that is the
-  // arrangement rather than the word — pointed at somebody it is harassment and
-  // goes on the record, and on its own it is a refusal that costs nothing.
+  // through. The arrangement decides the returned category: pointed at
+  // somebody it is harassment, and on its own it is profanity.
   const profanity = matches.filter((match) => match.tier === 3);
   if (profanity.length > 0) {
     const tokens = profanity
       .map((match) => match.token)
       .filter((token): token is string => token !== undefined);
-    if (isTargeted(forms.tokens, tokens)) return strikeFor("harassment", clean);
+    if (isTargeted(forms.tokens, tokens)) return refuse("harassment");
     return refuse("profanity");
   }
 
@@ -207,7 +180,7 @@ export function screen(raw: string, context: SendContext): Verdict {
   if (isDuplicate(context.recent, hash, context.now)) return refuse("duplicate");
 
   if (isBroadcast(context.recent, hash, context.conversationId, context.now)) {
-    return strikeFor("broadcast", clean);
+    return refuse("broadcast");
   }
 
   return { allow: true, body: clean, hash };
@@ -217,7 +190,7 @@ export function screen(raw: string, context: SendContext): Verdict {
  * The same screening, for text that is not a message.
  *
  * A group title is read by everyone who sees the group and has no sender, no
- * conversation and no history, so the standing checks, the rate windows and the
+ * conversation and no history, so the rate windows and the
  * cross-message rules have nothing to work on. What is left is the part that
  * reads the text itself — shape, lexicon, patterns. Tier three is refused here
  * as it is in `screen`, with the difference that there is no arrangement to

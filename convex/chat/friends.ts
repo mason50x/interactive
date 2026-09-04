@@ -8,6 +8,7 @@ import {
   type MutationCtx,
 } from "../_generated/server";
 import {
+  avatarAppearance,
   blockedEitherWay,
   callerProfile,
   dmKeyFor,
@@ -41,6 +42,7 @@ export type Friend = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  avatarUrl?: string;
 };
 
 export type FriendRequest = {
@@ -50,6 +52,7 @@ export type FriendRequest = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  avatarUrl?: string;
   /** True when the caller sent it and is waiting on the other person. */
   outgoing: boolean;
   requestedAt: number;
@@ -84,7 +87,7 @@ export type RequestResult =
   | { ok: true; state: "sent" | "accepted" }
   | {
       ok: false;
-      reason: "no-profile" | "unknown" | "blocked" | "already" | "closed" | "self";
+      reason: "no-profile" | "unknown" | "blocked" | "already" | "self";
     };
 
 /**
@@ -100,11 +103,10 @@ export const request = mutation({
   handler: async (ctx, { peerClerkId }): Promise<RequestResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
-    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
     if (peerClerkId === profile.clerkId) return { ok: false, reason: "self" };
 
     const peer = await profileFor(ctx, peerClerkId);
-    if (peer === null || peer.bannedAt !== undefined) {
+    if (peer === null) {
       return { ok: false, reason: "unknown" };
     }
     if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) {
@@ -113,7 +115,8 @@ export const request = mutation({
 
     const existing = await friendship(ctx, profile.clerkId, peerClerkId);
     if (existing !== null) {
-      if (existing.status === "accepted") return { ok: false, reason: "already" };
+      if (existing.status === "accepted")
+        return { ok: false, reason: "already" };
       if (existing.requestedBy === profile.clerkId) {
         return { ok: false, reason: "already" };
       }
@@ -141,14 +144,13 @@ export const accept = mutation({
   handler: async (ctx, { peerClerkId }) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
-    if (profile.bannedAt !== undefined) return;
 
     // The same bars `request` sets, because an acceptance grants the same
     // thing a request asks for — a standing permission to open a direct
-    // message. A pending row normally cannot outlive a block or a ban, but
-    // "normally" is a claim about the other code paths, not about this one.
+    // message. A pending row normally cannot outlive a block, but "normally"
+    // is a claim about the other code paths, not about this one.
     const peer = await profileFor(ctx, peerClerkId);
-    if (peer === null || peer.bannedAt !== undefined) return;
+    if (peer === null) return;
     if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) return;
 
     const existing = await friendship(ctx, profile.clerkId, peerClerkId);
@@ -225,14 +227,12 @@ export const list = query({
     const friends: Friend[] = [];
     for (const partner of partners) {
       const theirs = await profileFor(ctx, partner.other);
-      if (theirs === null || theirs.bannedAt !== undefined) continue;
+      if (theirs === null) continue;
       friends.push({
         clerkId: partner.other,
         handle: theirs.handle,
         displayName: theirs.displayName,
-        avatarHue: theirs.avatarHue,
-        avatarEmoji: theirs.avatarEmoji,
-        avatarInitials: theirs.avatarInitials,
+        ...(await avatarAppearance(ctx, theirs)),
       });
     }
     return friends.sort((first, second) =>
@@ -252,19 +252,19 @@ export const pending = query({
     const requests: FriendRequest[] = [];
     for (const partner of partners) {
       const theirs = await profileFor(ctx, partner.other);
-      if (theirs === null || theirs.bannedAt !== undefined) continue;
+      if (theirs === null) continue;
       requests.push({
         clerkId: partner.other,
         handle: theirs.handle,
         displayName: theirs.displayName,
-        avatarHue: theirs.avatarHue,
-        avatarEmoji: theirs.avatarEmoji,
-        avatarInitials: theirs.avatarInitials,
+        ...(await avatarAppearance(ctx, theirs)),
         outgoing: partner.requestedBy === profile.clerkId,
         requestedAt: partner.requestedAt,
       });
     }
-    return requests.sort((first, second) => second.requestedAt - first.requestedAt);
+    return requests.sort(
+      (first, second) => second.requestedAt - first.requestedAt,
+    );
   },
 });
 
@@ -292,7 +292,7 @@ export const linkDms = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, { clerkId }) => {
     const mine = await profileFor(ctx, clerkId);
-    if (mine === null || mine.bannedAt !== undefined) return { linked: 0 };
+    if (mine === null) return { linked: 0 };
     if (mine.dmPolicy === "nobody") return { linked: 0 };
 
     const partners = await partnersOf(ctx, clerkId, "accepted");
@@ -315,10 +315,10 @@ export const linkDms = internalMutation({
       if (existing !== null) continue;
 
       // The same bars `linkDm` clears on the way in. A friendship can outlive
-      // neither a block nor a ban, but this is the one path that reaches a row
+      // neither side of a block, but this is the one path that reaches a row
       // made at some other time under some other conditions.
       const theirs = await profileFor(ctx, partner.other);
-      if (theirs === null || theirs.bannedAt !== undefined) continue;
+      if (theirs === null) continue;
       if (theirs.dmPolicy === "nobody") continue;
       if (await blockedEitherWay(ctx, clerkId, partner.other)) continue;
 

@@ -282,7 +282,7 @@ export default defineSchema({
   }).index("byUserDay", ["clerkId", "day"]),
 
   /**
-   * Who somebody is in chat, and how much trouble they are in.
+   * Who somebody is in chat.
    *
    * ## Why this is not fields on `users`
    *
@@ -314,10 +314,10 @@ export default defineSchema({
    * and a row that a message rewrites is a row no other query can afford to
    * join — which this one is joined by nearly all of them, for a handle.
    *
-   * What is left is written when somebody renames themselves, picks a disc,
-   * changes who may reach them, or earns a mute. So a profile read is a read of
-   * something that mostly does not change, and the subscriptions that join one
-   * stop being recomputed by other people talking.
+   * What is left is written when somebody renames themselves, picks a disc, or
+   * changes who may reach them. So a profile read is a read of something that
+   * mostly does not change, and the subscriptions that join one stop being
+   * recomputed by other people talking.
    */
   chatProfiles: defineTable({
     clerkId: v.string(),
@@ -341,7 +341,17 @@ export default defineSchema({
      */
     handleChanges: v.optional(v.number()),
     /**
-     * The disc, when it has been chosen rather than derived.
+     * The chat-owned profile picture, when one has been uploaded.
+     *
+     * This points at an `attachments` row in the `avatar` state. The bytes
+     * live in Convex storage and never pass through Clerk: Clerk authenticates
+     * the account, while chat owns everything other people see about it.
+     * Keeping the attachment row makes ownership, moderation and cleanup part
+     * of the same lifecycle as every other image in chat.
+     */
+    avatarAttachmentId: v.optional(v.id("attachments")),
+    /**
+     * The fallback disc, when a profile picture has not been uploaded.
      *
      * All three optional and the hue independent of the other two: a hue with
      * no face is your first letter on a colour you picked, a face with no hue
@@ -349,7 +359,8 @@ export default defineSchema({
      * derived, which is what every profile started as — see `Monogram` in the
      * app for the fallbacks.
      *
-     * `avatarEmoji` and `avatarInitials` are alternatives rather than layers,
+     * The uploaded picture, `avatarEmoji` and `avatarInitials` are alternatives
+     * rather than layers,
      * exactly as they are on a conversation below: the disc has room for one
      * thing, and `setAvatar` clears the letters when a face arrives.
      *
@@ -381,18 +392,8 @@ export default defineSchema({
      * this table was keeping — `senderState` in `convex/chat/shared.ts` reads
      * them once, as the seed for that account's first sender row, and nothing
      * writes either field again.
-     */
+    */
     messagesSent: v.optional(v.number()),
-    /**
-     * The mute, and the rule that caused it. Both, because a mute somebody
-     * cannot see the reason for is indistinguishable from the app being broken,
-     * and there is nobody to ask.
-     */
-    mutedUntil: v.optional(v.number()),
-    mutedRule: v.optional(v.string()),
-    /** The one thing here that does not lift on its own. */
-    bannedAt: v.optional(v.number()),
-    banRule: v.optional(v.string()),
     recent: v.optional(
       v.array(
         v.object({
@@ -425,7 +426,7 @@ export default defineSchema({
    * them, and each of those re-runs re-read every profile it joined.
    *
    * Splitting them out leaves `chatProfiles` a cold table: a handle, a disc, a
-   * policy and a standing, written when somebody changes one of them. The
+   * policy, written when somebody changes one of them. The
    * documents got smaller too — `recent` is twenty objects, and it was being
    * read by every join that only ever wanted `handle`.
    *
@@ -463,16 +464,6 @@ export default defineSchema({
         flagged: v.boolean(),
       }),
     ),
-    /**
-     * The `@bot` allowance: the UTC day, and how many tags that day has
-     * spent. Here rather than anywhere else for the reason the ring is: it
-     * is written by the send that spends it, on the sender's own row, and
-     * nothing anybody else does recomputes it. A row from another day reads
-     * as zero. Both optional, because every row written before the bot
-     * existed has neither. See `convex/chat/bot.ts`.
-     */
-    botDay: v.optional(v.string()),
-    botUsed: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"]),
 
   /**
@@ -652,6 +643,8 @@ export default defineSchema({
     handle: v.string(),
     displayName: v.optional(v.string()),
     until: v.number(),
+    /** Only the synthetic bot uses this to isolate overlapping generations. */
+    token: v.optional(v.id("messages")),
   })
     .index("byConversationUntil", ["conversationId", "until"])
     .index("byConversationUser", ["conversationId", "clerkId"])
@@ -848,14 +841,15 @@ export default defineSchema({
    * ## The lifecycle
    *
    * `checking` is a file that has been claimed and is waiting on the verdict.
-   * `ready` is one that passed and has not been sent yet. `sent` is on a
-   * message — and from then on the message owns it: `deleteMessage` in
+   * `ready` is one that passed and has not been used yet. `sent` is on a
+   * message and `avatar` is on a chat profile — and from then on that owner
+   * keeps it: `deleteMessage` and `setAvatar` in
    * `convex/chat/shared.ts` deletes the file, this row and the message
    * together, and nothing else ever removes a `sent` row.
    *
-   * A picture that fails has no state. The file is deleted and so is this row,
-   * in the same mutation that records the strike — there is nothing to keep,
-   * for the same reason a refused message is never inserted.
+   * A picture that fails has no state. The file is deleted and so is this row —
+   * there is nothing to keep, for the same reason a refused message is never
+   * inserted.
    *
    * ## What the sweep is for
    *
@@ -870,14 +864,11 @@ export default defineSchema({
    * `byStorage` is also what makes a claim exclusive: one file, one row, and a
    * second claim on somebody else's storage id is refused before it is read.
    *
-   * ## This is not an avatar
-   *
-   * The note on `emoji` in `conversations` above, and the longer one in
-   * `monogram.tsx`, still hold: nobody's picture is a photograph, and there is
-   * no upload path to a profile. What this table holds is something said in
-   * a conversation, which is the thing chat already moderates — and it goes
-   * through the same standing, the same ladder, and the same ledger as a
-   * sentence, with a classifier reading it in place of the word lists.
+   * `purpose` separates composer uploads from profile-picture uploads. It is
+   * optional so rows created before avatars existed remain message pictures.
+   * Both purposes go through the same ownership checks and moderation pass, and
+   * storage cleanup; an avatar upload cannot later be smuggled into a message,
+   * or vice versa.
    */
   attachments: defineTable({
     storageId: v.id("_storage"),
@@ -886,7 +877,9 @@ export default defineSchema({
       v.literal("checking"),
       v.literal("ready"),
       v.literal("sent"),
+      v.literal("avatar"),
     ),
+    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
     /** The message it went out in. Set with `sent` and never cleared. */
     messageId: v.optional(v.id("messages")),
     contentType: v.string(),
@@ -950,21 +943,12 @@ export default defineSchema({
    * Somebody saying that something was wrong.
    *
    * Nobody reads these. That is not an oversight — there are no moderators, by
-   * design — so a report is not a message to a human, it is an input to the same
-   * arithmetic that everything else feeds. Which makes the shape of this table
-   * mostly about abuse of it.
+   * design — so a report is not a message to a human. Enough distinct reports
+   * hide a message; they never change the author's account.
    *
    * `byReporterMessage` enforces one report per person per message, so a single
-   * account cannot become a crowd. `weight` is stored rather than recomputed
-   * because it is a judgement made at the time — it depends on the reporter's
-   * own standing when they filed it — and recomputing it later would let
-   * somebody retroactively strengthen their old reports by keeping their record
-   * clean, or weaken them by not.
-   *
-   * The rest of the guard is in `convex/moderation/limits.ts`: a daily cap per
-   * reporter, and a hard ceiling on how much of anyone's standing can ever come
-   * from reports at all. A group can get somebody muted for a day. It cannot get
-   * them banned; only the filter, reading what was actually said, can do that.
+   * account cannot become a crowd. The rest of the guard is the daily cap in
+   * `convex/moderation/limits.ts`.
    */
   reports: defineTable({
     reporterClerkId: v.string(),
@@ -981,8 +965,6 @@ export default defineSchema({
       v.literal("other"),
     ),
     createdAt: v.number(),
-    /** The reporter's weight at the moment they filed. Never recomputed. */
-    weight: v.number(),
   })
     .index("byReporterMessage", ["reporterClerkId", "messageId"])
     .index("byMessage", ["messageId"])
@@ -993,44 +975,4 @@ export default defineSchema({
     // that no longer resolve.
     .index("byConversation", ["conversationId"]),
 
-  /**
-   * The ledger, and the whole of enforcement.
-   *
-   * Standing is the sum of the rows here that have not expired; the ladder in
-   * `convex/moderation/limits.ts` turns that number into a mute or a ban.
-   * Nothing else is consulted anywhere.
-   *
-   * It is a table of rows rather than a counter on the profile for one reason:
-   * the person it happened to is shown it. A number that says `14` is an
-   * accusation. Fourteen rows, each with a rule, a date, an excerpt of what was
-   * said, and the day it stops counting, is an explanation — and on a system
-   * with no appeal, an explanation is the only thing standing between automated
-   * enforcement and somebody being punished by a machine for reasons they will
-   * never learn.
-   *
-   * `expiresAt` is the index key so the nightly sweep can find what is dead
-   * without scanning, and so a read can stop early. Expired rows are also
-   * ignored at read time, because the sweep runs once a day and correctness
-   * cannot wait on it.
-   */
-  strikes: defineTable({
-    clerkId: v.string(),
-    at: v.number(),
-    weight: v.number(),
-    /** A `Refusal` from `convex/moderation/rules.ts`. */
-    rule: v.string(),
-    source: v.union(
-      v.literal("filter"),
-      v.literal("reports"),
-      v.literal("rate"),
-    ),
-    conversationId: v.optional(v.id("conversations")),
-    /** Enough of the message to recognise. Never enough to republish. */
-    excerpt: v.optional(v.string()),
-    expiresAt: v.number(),
-  })
-    .index("byUser", ["clerkId", "expiresAt"])
-    // The sweep's index. `byUser` cannot answer "everything dead everywhere",
-    // because its first field is the account and there is no account to fix.
-    .index("byExpiry", ["expiresAt"]),
 });

@@ -3,16 +3,13 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { RECENT_RING } from "../moderation/limits";
 import { prepare } from "../moderation/normalize";
 import type { RecentSend } from "../moderation/rules";
-import { activeStanding, expiryFor, muteUntil } from "../moderation/standing";
-import type { StrikeSpec } from "../moderation/verdict";
 
 /**
  * The pieces every chat module needs, so none of them keeps its own copy.
  *
  * The same argument as `convex/days.ts`: five modules were about to grow their
- * own way of finding the caller, their own idea of what a pair of user ids
- * sorts to, and their own version of what happens after a strike. Three copies
- * of the last one is how a system ends up muting people it did not mean to.
+ * own way of finding the caller and their own idea of what a pair of user ids
+ * sorts to.
  */
 
 /** The caller's Clerk id, or `null` when signed out. */
@@ -32,6 +29,47 @@ export async function profileFor(
 }
 
 /**
+ * The current chat-owned picture and the fallback disc behind it.
+ *
+ * Storage URLs are resolved at read time because Convex owns their lifetime;
+ * only the attachment id is persisted. A stale or manually removed attachment
+ * falls back to the emoji/initials disc instead of returning a broken image.
+ * Nothing here reads `users`, so a Clerk account picture can never leak into
+ * chat by accident.
+ */
+export type AvatarAppearance = {
+  avatarUrl?: string;
+  avatarHue?: number;
+  avatarEmoji?: string;
+  avatarInitials?: string;
+};
+
+export async function avatarAppearance(
+  ctx: QueryCtx,
+  profile: Doc<"chatProfiles">,
+): Promise<AvatarAppearance> {
+  let avatarUrl: string | undefined;
+  if (profile.avatarAttachmentId !== undefined) {
+    const attachment = await ctx.db.get(profile.avatarAttachmentId);
+    if (
+      attachment !== null &&
+      attachment.ownerClerkId === profile.clerkId &&
+      attachment.status === "avatar" &&
+      attachment.purpose === "avatar"
+    ) {
+      avatarUrl = (await ctx.storage.getUrl(attachment.storageId)) ?? undefined;
+    }
+  }
+
+  return {
+    avatarUrl,
+    avatarHue: profile.avatarHue,
+    avatarEmoji: profile.avatarEmoji,
+    avatarInitials: profile.avatarInitials,
+  };
+}
+
+/**
  * The longest a handle can be, as `vet` in `convex/chat/profiles.ts` has it.
  * Only the fold below needs it, and only as the bound `prepare` is given.
  */
@@ -44,7 +82,7 @@ const HANDLE_FOLD_LENGTH = 20;
  * same fold `claimHandle` made the handle unique on — so `@al1ce` finds alice,
  * exactly as claiming `al1ce` would have collided with her. That is the kind
  * answer for a mention: somebody who typed a name slightly wrong has named a
- * person, not shared a contact detail, and the difference is a strike.
+ * person, not shared a contact detail, and the difference is a refusal.
  */
 export async function profileByHandle(
   ctx: QueryCtx,
@@ -101,7 +139,8 @@ export function senderState(
   row: Doc<"chatSenders"> | null,
   profile: Doc<"chatProfiles">,
 ): SenderState {
-  if (row !== null) return { messagesSent: row.messagesSent, recent: row.recent };
+  if (row !== null)
+    return { messagesSent: row.messagesSent, recent: row.recent };
   return {
     messagesSent: profile.messagesSent ?? 0,
     recent: profile.recent ?? [],
@@ -125,135 +164,6 @@ export async function clearSender(
 }
 
 /**
- * Unexpired strike weight.
- *
- * The `> now` bound is applied here rather than trusted to the nightly sweep,
- * because the sweep runs once a day and somebody whose mute expired at four in
- * the morning should not be waiting on a cron job to find out.
- */
-export async function standingFor(
-  ctx: QueryCtx,
-  clerkId: string,
-  now: number,
-): Promise<number> {
-  const rows = await ctx.db
-    .query("strikes")
-    .withIndex("byUser", (q) => q.eq("clerkId", clerkId).gt("expiresAt", now))
-    .collect();
-  return activeStanding(rows, now);
-}
-
-/**
- * What the surviving ledger already carries, for a profile about to be made.
- *
- * This is the one thing standing between `chat.erase.eraseMine` and a mute you
- * can walk out of. Erasing your chat deletes the profile, and the mute is a
- * field *on* the profile — so without this, claiming a new handle a second
- * later would hand back a clean composer to somebody the system had just
- * stopped. The strikes are deliberately not deleted by that path, and this is
- * what makes keeping them mean anything.
- *
- * The mute is measured from the strike rather than from now. A mute that has
- * already been running for fifty minutes of its hour has ten minutes left, and
- * re-deriving it as `now + duration` would restart it — which would turn this
- * from a guard into a punishment for claiming a handle.
- *
- * A ban cannot normally be reached from here: `applyStrike` writes `bannedAt`
- * the moment one is earned, and a banned profile is kept rather than deleted
- * precisely so the ban survives. It is handled anyway, because "cannot be
- * reached" is a claim about today's callers.
- */
-export async function carriedConsequence(
-  ctx: QueryCtx,
-  clerkId: string,
-  now: number,
-): Promise<{
-  mutedUntil?: number;
-  mutedRule?: string;
-  bannedAt?: number;
-  banRule?: string;
-}> {
-  const rows = await ctx.db
-    .query("strikes")
-    .withIndex("byUser", (q) => q.eq("clerkId", clerkId).gt("expiresAt", now))
-    .collect();
-  if (rows.length === 0) return {};
-
-  // The rule shown is the one from the most recent strike, which is the same
-  // one `applyStrike` would have written had this standing been reached there.
-  const newest = rows.reduce((latest, row) => (row.at > latest.at ? row : latest));
-  const until = muteUntil(activeStanding(rows, now), now);
-
-  if (until === null) return { bannedAt: newest.at, banRule: newest.rule };
-  if (until === undefined) return {};
-
-  const ends = newest.at + (until - now);
-  return ends > now ? { mutedUntil: ends, mutedRule: newest.rule } : {};
-}
-
-/**
- * Write a strike and apply whatever it now adds up to.
- *
- * The single place standing turns into a consequence. Every refusal that costs
- * something goes through here, so there is exactly one implementation of the
- * ladder and exactly one place a ban can be issued from.
- */
-export async function applyStrike(
-  ctx: MutationCtx,
-  profile: Doc<"chatProfiles">,
-  spec: StrikeSpec,
-  source: "filter" | "reports" | "rate",
-  conversationId?: Id<"conversations">,
-): Promise<void> {
-  const now = Date.now();
-
-  await ctx.db.insert("strikes", {
-    clerkId: profile.clerkId,
-    at: now,
-    weight: spec.weight,
-    rule: spec.rule,
-    source,
-    conversationId,
-    excerpt: spec.excerpt,
-    expiresAt: expiryFor(now),
-  });
-
-  // The short list of rules that do not wait for a total. See `banOnSight` in
-  // `convex/moderation/lexicon.ts` for which they are and why.
-  if (spec.banOnSight) {
-    await ctx.db.patch(profile._id, { bannedAt: now, banRule: spec.rule });
-    return;
-  }
-
-  const standing = await standingFor(ctx, profile.clerkId, now);
-  const until = muteUntil(standing, now);
-
-  if (until === null) {
-    // A ban is the one thing a pile of reports may never cause. The weight of
-    // report-sourced strikes is already capped below the ban rung, but a
-    // reported account that was also close to it on its own would otherwise be
-    // pushed over by the crowd rather than by anything it said. So a report
-    // that lands on the ban rung is served the heaviest mute instead, and only
-    // the filter — which read the actual message — can end an account.
-    if (source === "reports") {
-      await ctx.db.patch(profile._id, {
-        mutedUntil: now + LONGEST_MUTE_MS,
-        mutedRule: spec.rule,
-      });
-      return;
-    }
-    await ctx.db.patch(profile._id, { bannedAt: now, banRule: spec.rule });
-    return;
-  }
-  if (until !== undefined) {
-    await ctx.db.patch(profile._id, { mutedUntil: until, mutedRule: spec.rule });
-  }
-}
-
-/** The heaviest rung that is not a ban, which is where reports top out. */
-const LONGEST_MUTE_MS = 24 * 60 * 60 * 1000;
-
-/**
  * Push one send onto the ring, dropping the oldest.
  *
  * Twenty entries, oldest first out. Every cross-message rule in
@@ -266,7 +176,9 @@ export function pushRecent(
   send: RecentSend,
 ): RecentSend[] {
   const next = [...recent, send];
-  return next.length <= RECENT_RING ? next : next.slice(next.length - RECENT_RING);
+  return next.length <= RECENT_RING
+    ? next
+    : next.slice(next.length - RECENT_RING);
 }
 
 /**

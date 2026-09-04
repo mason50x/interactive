@@ -1,16 +1,15 @@
-import { BROADCAST, DUPLICATE_WINDOW_MS, EXCERPT_CHARS } from "./limits";
+import { BROADCAST, DUPLICATE_WINDOW_MS } from "./limits";
 import type { Category } from "./lexicon";
 import type { PatternCategory } from "./patterns";
 
 /**
- * What each finding costs, and the handful of rules that need more than one
- * message to see.
+ * The rules that need more than one message to see.
  *
  * The lexicon and the patterns answer "is this in the message". Nothing they
  * return is a decision — `fuck` is a free bounce and `you are a fuck` is a
- * strike, and the difference is not a word, it is an arrangement of words. This
- * is where the arrangement is read, and where the last sends are allowed to
- * matter.
+ * refusal, and the difference is not a word, it is an arrangement of words.
+ * This is where the arrangement is read, and where the last sends are allowed
+ * to matter.
  */
 
 /** Everything a message can be refused for, in the vocabulary the client sees. */
@@ -35,8 +34,6 @@ export type Refusal =
   | "duplicate"
   | "broadcast"
   | "too-fast"
-  | "muted"
-  | "banned"
   | "not-a-member"
   | "blocked"
   | "reply-unavailable"
@@ -58,68 +55,6 @@ export type Refusal =
   | "image"
   | "image-check"
   | "too-many-images";
-
-/**
- * The weight each refusal adds to the sender's standing.
- *
- * Read this table against the ladder in `convex/moderation/limits.ts` and the
- * whole enforcement policy is legible in about ten seconds, which is the point
- * of both being numbers in one place. One slur is eight, which is an hour's
- * mute on its own. One link is two, so a person who has not read the rules
- * bumps into them twice before anything happens to them.
- *
- * Zero means refused and not held against you. A malformed message is a bug or
- * a paste, and `duplicate` is almost always somebody hitting send twice.
- */
-const WEIGHTS: Record<Refusal, number> = {
-  empty: 0,
-  "too-long": 0,
-  "hidden-characters": 0,
-  // Not zero: embedding a right-to-left override in an English sentence is not
-  // something that happens by accident.
-  reordering: 3,
-  "stacked-marks": 1,
-  "too-many-lines": 0,
-  slur: 8,
-  sexual: 8,
-  exploitation: 8,
-  threat: 8,
-  "self-harm": 6,
-  degrading: 6,
-  harassment: 4,
-  // Refused, and free. Swearing at nobody in particular is a house rule, not
-  // something to hold against a thirteen-year-old; the same word aimed at a
-  // person is `harassment` above and is charged there.
-  profanity: 0,
-  contact: 3,
-  link: 2,
-  location: 4,
-  duplicate: 0,
-  broadcast: 3,
-  "too-fast": 1,
-  muted: 0,
-  banned: 0,
-  "not-a-member": 0,
-  blocked: 0,
-  "reply-unavailable": 0,
-  mention: 0,
-  "mention-everyone": 0,
-  "too-new": 0,
-  // Not a violation. They have not agreed to the rules being enforced
-  // against them, which is a reason to refuse and not a reason to charge.
-  "not-agreed": 0,
-  // A gory picture is charged like telling somebody to hurt themselves: it
-  // is not the sexual rung, and it is more than a link.
-  graphic: 6,
-  // The rest are about the file and the service, not the person.
-  image: 0,
-  "image-check": 0,
-  "too-many-images": 0,
-};
-
-export function weightFor(refusal: Refusal): number {
-  return WEIGHTS[refusal];
-}
 
 /** A lexicon category, as the client is told about it. */
 export function refusalForCategory(category: Category): Refusal {
@@ -239,17 +174,4 @@ export function isBroadcast(
     rooms.add(send.conversationId);
   }
   return rooms.size >= BROADCAST.conversations;
-}
-
-/**
- * What of the message is kept on the strike it caused.
- *
- * Enough to recognise, not enough to republish. The person it happened to is
- * shown their own ledger, and a strike that says only "slur" with no excerpt is
- * an accusation they cannot check.
- */
-export function excerpt(body: string): string {
-  return body.length <= EXCERPT_CHARS
-    ? body
-    : `${body.slice(0, EXCERPT_CHARS)}…`;
 }

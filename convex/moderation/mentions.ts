@@ -16,10 +16,11 @@
  * — the rule this whole directory cares most about. A mention is the one
  * `@name` that is not a doorway out of the room: it names somebody who is
  * already in it. So the verified ones are masked out before the patterns run,
- * and only the patterns. The word lists still read the whole message, mention
- * included, because a handle sitting next to ordinary text can still spell
- * something across the boundary (`s @hit`), and that is the squash-and-separator
- * trick `normalize.ts` exists to catch. See `screen` in `verdict.ts`.
+ * and only the patterns. The word lists still read ordinary people's handles,
+ * because a handle sitting next to ordinary text can still spell something
+ * across the boundary (`s @hit`), and that is the squash-and-separator trick
+ * `normalize.ts` exists to catch. A caller may separately blank a verified
+ * synthetic handle such as the reserved `@bot`; see `screen` in `verdict.ts`.
  *
  * The pattern is mirrored in `src/lib/mentions.ts`, which draws the chips.
  * Change one, change the other. The server is the one that decides.

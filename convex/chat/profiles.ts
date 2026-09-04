@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { hasAccepted } from "../agreement";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { handleIsClean } from "../moderation/lexicon";
 import {
@@ -17,11 +17,12 @@ import { screenStatic } from "../moderation/verdict";
 import { mutation, query } from "../_generated/server";
 import {
   blockedEitherWay,
+  avatarAppearance,
   callerId,
   callerProfile,
-  carriedConsequence,
   clearSender,
   dmKeyFor,
+  deleteAttachment,
   ensureGlobalMembership,
   friendship,
   hasBlocked,
@@ -29,7 +30,6 @@ import {
   profileFor,
   senderRow,
   senderState,
-  standingFor,
 } from "./shared";
 
 /**
@@ -85,12 +85,40 @@ const SHAPE = /^[a-z][a-z0-9_]{2,19}$/;
  * `а_d_m_i_n` are refused by the same entry that refuses `admin`.
  */
 const RESERVED = new Set([
-  "admin", "administrator", "mod", "mods", "moderator", "moderators",
-  "staff", "team", "system", "official", "support", "help", "helpdesk",
-  "root", "owner", "operator", "security", "billing", "noreply",
-  "everyone", "here", "all", "channel", "announcement", "announcements",
-  "bot", "bots", "null", "undefined", "anonymous", "deleted",
-  "interactivelearning", "interactive", "learning",
+  "admin",
+  "administrator",
+  "mod",
+  "mods",
+  "moderator",
+  "moderators",
+  "staff",
+  "team",
+  "system",
+  "official",
+  "support",
+  "help",
+  "helpdesk",
+  "root",
+  "owner",
+  "operator",
+  "security",
+  "billing",
+  "noreply",
+  "everyone",
+  "here",
+  "all",
+  "channel",
+  "announcement",
+  "announcements",
+  "bot",
+  "bots",
+  "null",
+  "undefined",
+  "anonymous",
+  "deleted",
+  "interactivelearning",
+  "interactive",
+  "learning",
 ]);
 
 /**
@@ -121,7 +149,10 @@ type HandleRefusal = "shape" | "reserved" | "language" | "taken";
 async function vet(
   ctx: Parameters<typeof profileFor>[0],
   handle: string,
-): Promise<{ ok: true; handle: string; key: string } | { ok: false; reason: HandleRefusal }> {
+): Promise<
+  | { ok: true; handle: string; key: string }
+  | { ok: false; reason: HandleRefusal }
+> {
   const wanted = handle.trim().toLowerCase();
   if (
     wanted.length < MIN_HANDLE ||
@@ -173,6 +204,8 @@ export type MyProfile = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  /** Current Convex storage URL for the chat-owned profile picture. */
+  avatarUrl?: string;
   /**
    * How many messages this account has ever sent.
    *
@@ -182,13 +215,8 @@ export type MyProfile = {
    * seeing. Nobody else is ever told it: it is on `MyProfile` and deliberately
    * not on `PublicProfile`, because how much somebody talks is not a thing
    * strangers should be able to read off them.
-   */
+  */
   messagesSent: number;
-  standing: number;
-  mutedUntil?: number;
-  mutedRule?: string;
-  bannedAt?: number;
-  banRule?: string;
 };
 
 /**
@@ -206,6 +234,7 @@ export type PublicProfile = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  avatarUrl?: string;
 };
 
 /** What the field is told while somebody is still typing. See `available`. */
@@ -217,12 +246,7 @@ export type ClaimResult =
   | {
       ok: false;
       reason:
-        | "shape"
-        | "reserved"
-        | "language"
-        | "taken"
-        | "already"
-        | "not-agreed";
+        "shape" | "reserved" | "language" | "taken" | "already" | "not-agreed";
     };
 
 /**
@@ -254,15 +278,6 @@ export const claimHandle = mutation({
 
     const now = Date.now();
 
-    // A fresh profile, and whatever the ledger says is still owed on it.
-    //
-    // Almost always nothing: the overwhelming majority of people reaching here
-    // have never had a profile at all, and a strike is written against a Clerk
-    // id rather than against a handle. The one case it exists for is somebody
-    // who cleared their chat while muted — see `carriedConsequence` in
-    // `convex/chat/shared.ts`, which is the whole reason erasure may delete the
-    // profile without also deleting the mute that was on it.
-    //
     // `createdAt` and `messagesSent` start over on purpose. Both only ever feed
     // the trust tier, and a new identity starting at `fresh` — the slowest rate
     // limit and no shortcut past the global room's cooldown — is the strict
@@ -296,7 +311,6 @@ export const claimHandle = mutation({
       avatarHue: hue,
       dmPolicy: "friends",
       discoverable: true,
-      ...(await carriedConsequence(ctx, clerkId, now)),
     });
 
     await ensureGlobalMembership(ctx, clerkId);
@@ -336,7 +350,7 @@ export const available = query({
 });
 
 /**
- * The caller's own profile, standing included.
+ * The caller's own profile.
  *
  * `null` covers signed out and no-handle-yet, which the client treats the same
  * way — both mean the handle screen, and giving them one shape saves a branch.
@@ -347,7 +361,7 @@ export const mine = query({
     const profile = await callerProfile(ctx);
     if (profile === null) return null;
 
-    const now = Date.now();
+    const avatar = await avatarAppearance(ctx, profile);
     return {
       handle: profile.handle,
       displayName: profile.displayName,
@@ -356,75 +370,13 @@ export const mine = query({
       dmPolicy: profile.dmPolicy,
       discoverable: profile.discoverable,
       handleChanges: profile.handleChanges ?? 0,
-      avatarHue: profile.avatarHue,
-      avatarEmoji: profile.avatarEmoji,
-      avatarInitials: profile.avatarInitials,
+      ...avatar,
       // The sender's own row, not the profile — see `chatSenders` in
       // `convex/schema.ts`. `senderState` falls back to the profile for an
       // account that has not sent anything since the two moved apart.
-      messagesSent: senderState(
-        await senderRow(ctx, profile.clerkId),
-        profile,
-      ).messagesSent,
-      standing: await standingFor(ctx, profile.clerkId, now),
-      // A mute that has run out is not a mute. Filtered here rather than left
-      // to the sweep so the composer unlocks on the minute it should.
-      mutedUntil:
-        profile.mutedUntil !== undefined && profile.mutedUntil > now
-          ? profile.mutedUntil
-          : undefined,
-      mutedRule:
-        profile.mutedUntil !== undefined && profile.mutedUntil > now
-          ? profile.mutedRule
-          : undefined,
-      bannedAt: profile.bannedAt,
-      banRule: profile.banRule,
+      messagesSent: senderState(await senderRow(ctx, profile.clerkId), profile)
+        .messagesSent,
     };
-  },
-});
-
-/** One row of the caller's own record. */
-export type LedgerEntry = {
-  at: number;
-  rule: string;
-  weight: number;
-  excerpt?: string;
-  expiresAt: number;
-  source: "filter" | "reports" | "rate";
-};
-
-/**
- * Everything currently counted against the caller, and why.
- *
- * The most important query in this directory. Enforcement here is automatic and
- * there is nobody to appeal to, which makes this the only thing that separates
- * it from being punished by a machine for reasons you never learn: the rule
- * that fired, what you said, what it cost, and the day it stops counting.
- *
- * Self only. There is no way to read anybody else's.
- */
-export const ledger = query({
-  args: {},
-  handler: async (ctx): Promise<LedgerEntry[]> => {
-    const clerkId = await callerId(ctx);
-    if (clerkId === null) return [];
-
-    const now = Date.now();
-    const rows = await ctx.db
-      .query("strikes")
-      .withIndex("byUser", (q) => q.eq("clerkId", clerkId).gt("expiresAt", now))
-      .collect();
-
-    return rows
-      .sort((first, second) => second.at - first.at)
-      .map((row) => ({
-        at: row.at,
-        rule: row.rule,
-        weight: row.weight,
-        excerpt: row.excerpt,
-        expiresAt: row.expiresAt,
-        source: row.source,
-      }));
   },
 });
 
@@ -458,15 +410,12 @@ export const search = query({
     for (const hit of hits) {
       if (hit.clerkId === clerkId) continue;
       if (!hit.discoverable) continue;
-      if (hit.bannedAt !== undefined) continue;
       if (await blockedEitherWay(ctx, clerkId, hit.clerkId)) continue;
       results.push({
         clerkId: hit.clerkId,
         handle: hit.handle,
         displayName: hit.displayName,
-        avatarHue: hit.avatarHue,
-        avatarEmoji: hit.avatarEmoji,
-        avatarInitials: hit.avatarInitials,
+        ...(await avatarAppearance(ctx, hit)),
       });
     }
     return results;
@@ -494,6 +443,7 @@ export type PersonCard = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  avatarUrl?: string;
   standing: "none" | "sent" | "waiting" | "friends";
   /** The caller has blocked them. */
   blocked: boolean;
@@ -518,7 +468,7 @@ export const card = query({
     if (clerkId === profile.clerkId) return null;
 
     const theirs = await profileFor(ctx, clerkId);
-    if (theirs === null || theirs.bannedAt !== undefined) return null;
+    if (theirs === null) return null;
     if (await hasBlocked(ctx, clerkId, profile.clerkId)) return null;
 
     const blocked = await hasBlocked(ctx, profile.clerkId, clerkId);
@@ -536,16 +486,18 @@ export const card = query({
     let conversationId: Id<"conversations"> | null = null;
     const thread = await ctx.db
       .query("conversations")
-      .withIndex("byDmKey", (q) => q.eq("dmKey", dmKeyFor(profile.clerkId, clerkId)))
+      .withIndex("byDmKey", (q) =>
+        q.eq("dmKey", dmKeyFor(profile.clerkId, clerkId)),
+      )
       .unique();
     if (thread !== null) {
       const mine = await membership(ctx, thread._id, profile.clerkId);
-      if (mine !== null && mine.status === "active") conversationId = thread._id;
+      if (mine !== null && mine.status === "active")
+        conversationId = thread._id;
     }
 
     const canMessage =
       !blocked &&
-      profile.bannedAt === undefined &&
       theirs.dmPolicy !== "nobody" &&
       (theirs.dmPolicy === "anyone" || standing === "friends");
 
@@ -553,9 +505,7 @@ export const card = query({
       clerkId,
       handle: theirs.handle,
       displayName: theirs.displayName,
-      avatarHue: theirs.avatarHue,
-      avatarEmoji: theirs.avatarEmoji,
-      avatarInitials: theirs.avatarInitials,
+      ...(await avatarAppearance(ctx, theirs)),
       standing,
       blocked,
       canMessage,
@@ -568,7 +518,7 @@ export type RenameResult =
   | { ok: true; left: number }
   | {
       ok: false;
-      reason: HandleRefusal | "limit" | "same" | "no-profile" | "closed";
+      reason: HandleRefusal | "limit" | "same" | "no-profile";
       left?: number;
     };
 
@@ -588,12 +538,6 @@ export const renameHandle = mutation({
   handler: async (ctx, { handle }): Promise<RenameResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
-
-    // A ban freezes the name with everything else. The whole reason renames
-    // are rationed is that a name is what people know an account by, and the
-    // account whose conduct ended it is the account with the most to gain
-    // from being known by another one.
-    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
 
     const spent = profile.handleChanges ?? 0;
     if (spent >= MAX_HANDLE_CHANGES) {
@@ -619,8 +563,7 @@ export const renameHandle = mutation({
 });
 
 export type NameResult =
-  | { ok: true }
-  | { ok: false; reason: Refusal | "no-profile" | "closed" };
+  { ok: true } | { ok: false; reason: Refusal | "no-profile" };
 
 /**
  * The name shown over the handle, or nothing.
@@ -639,10 +582,6 @@ export const setDisplayName = mutation({
   handler: async (ctx, { name }): Promise<NameResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
-    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
-    if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now()) {
-      return { ok: false, reason: "muted" };
-    }
 
     if (name.trim() === "") {
       await ctx.db.patch(profile._id, { displayName: undefined });
@@ -658,8 +597,8 @@ export const setDisplayName = mutation({
 });
 
 /**
- * The disc: a colour off the wheel, and either a face off the sheet or up to
- * two letters on it.
+ * The chat profile picture: an uploaded, moderated image, or the fallback disc
+ * made from a colour and either a face off the sheet or up to two letters.
  *
  * The whole disc every time, and any part cleared by sending nothing for it,
  * which puts that part back to what it was derived as. Taking the whole thing
@@ -667,34 +606,58 @@ export const setDisplayName = mutation({
  * is showing, swaps the part you touched, and sends the result — there is no
  * patch here that could land half of somebody's choice.
  *
- * Nothing here is rate-limited or counted, because there is nothing here to
- * escape by changing. It is the same argument the group's `setLook` is under,
- * and the checks are the same checks: everything is matched against a closed
- * set, and anything outside one is dropped rather than refused, because this is
- * a picker and the only way to send something else is to not be using it.
+ * The uploaded file is accepted only when it belongs to this chat profile and
+ * has passed the same moderation action as a message image. Replacing or
+ * clearing it deletes the previous bytes in the same transaction. The profile
+ * stores no Clerk image URL and this mutation never writes to Clerk.
  */
+export type AvatarResult =
+  { ok: true } | { ok: false; reason: "no-profile" | "image" };
+
 export const setAvatar = mutation({
   args: {
     hue: v.optional(v.number()),
     emoji: v.optional(v.string()),
     initials: v.optional(v.string()),
+    attachmentId: v.optional(v.id("attachments")),
   },
-  handler: async (ctx, { hue, emoji, initials }) => {
+  handler: async (
+    ctx,
+    { hue, emoji, initials, attachmentId },
+  ): Promise<AvatarResult> => {
     const profile = await callerProfile(ctx);
-    if (profile === null) return;
+    if (profile === null) return { ok: false, reason: "no-profile" };
+
+    let picture: Doc<"attachments"> | null = null;
+    if (attachmentId !== undefined) {
+      picture = await ctx.db.get(attachmentId);
+      const alreadyMine = profile.avatarAttachmentId === attachmentId;
+      if (
+        picture === null ||
+        picture.ownerClerkId !== profile.clerkId ||
+        picture.purpose !== "avatar" ||
+        (picture.status !== "ready" &&
+          !(alreadyMine && picture.status === "avatar"))
+      ) {
+        return { ok: false, reason: "image" };
+      }
+    }
 
     const wheel: readonly number[] = AVATAR_HUES;
     const nextHue = hue !== undefined && wheel.includes(hue) ? hue : undefined;
 
     const faces: readonly string[] = AVATAR_EMOJI;
     const nextEmoji =
-      emoji !== undefined && faces.includes(emoji) ? emoji : undefined;
+      picture === null && emoji !== undefined && faces.includes(emoji)
+        ? emoji
+        : undefined;
 
     // Only when there is no emoji: the disc has room for one thing, and an
     // emoji is the more deliberate of the two to have chosen. Same rule, same
     // order, as a group's face.
     const wanted = (initials ?? "").trim();
     const nextInitials =
+      picture === null &&
       nextEmoji === undefined &&
       wanted.length >= 1 &&
       wanted.length <= MAX_INITIALS &&
@@ -702,11 +665,27 @@ export const setAvatar = mutation({
         ? wanted
         : undefined;
 
+    if (
+      profile.avatarAttachmentId !== undefined &&
+      profile.avatarAttachmentId !== attachmentId
+    ) {
+      const old = await ctx.db.get(profile.avatarAttachmentId);
+      if (old !== null && old.ownerClerkId === profile.clerkId) {
+        await deleteAttachment(ctx, old);
+      }
+    }
+
+    if (picture !== null && picture.status === "ready") {
+      await ctx.db.patch(picture._id, { status: "avatar" });
+    }
+
     await ctx.db.patch(profile._id, {
+      avatarAttachmentId: attachmentId,
       avatarHue: nextHue,
       avatarEmoji: nextEmoji,
       avatarInitials: nextInitials,
     });
+    return { ok: true };
   },
 });
 
@@ -768,7 +747,6 @@ export const joinGlobal = mutation({
   handler: async (ctx) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
-    if (profile.bannedAt !== undefined) return;
     await ensureGlobalMembership(ctx, profile.clerkId);
   },
 });

@@ -1,7 +1,12 @@
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { mutation, query } from "../_generated/server";
-import { callerProfile, clearSender, membership } from "./shared";
+import {
+  callerProfile,
+  clearSender,
+  deleteAttachment,
+  membership,
+} from "./shared";
 
 /**
  * Leaving chat, without leaving the site.
@@ -22,29 +27,6 @@ import { callerProfile, clearSender, membership } from "./shared";
  * monologue nobody consented to keeping. Friends, blocks in both directions,
  * reports filed and reports received, and the profile itself — which releases
  * the handle for anybody to claim.
- *
- * ## What stays, and why
- *
- * The strike ledger. It is the one thing here that is not theirs to clear, and
- * the reason is arithmetic rather than principle: the mute lives on the profile
- * and the profile is being deleted, so an erasure that also cleared the ledger
- * would be a working way out of every consequence this system can impose. Press
- * it, claim a new handle, and speak. `carriedConsequence` in
- * `convex/chat/shared.ts` is what puts the mute back on the new profile, and it
- * only has anything to put back because the strikes survive.
- *
- * They are not much of a record to leave behind. A strike is a rule, a weight,
- * an expiry, and up to a hundred and twenty characters of what was said; it
- * names no handle, because handles are not what it is keyed by. And it expires
- * on its own after thirty days.
- *
- * A ban is the same argument taken one step further. It has no expiry at all,
- * and it is a field on the profile rather than on the ledger — so for a banned
- * account, and only for a banned account, the profile is emptied instead of
- * deleted and the handle stays with it. Everything else still goes. That is
- * both halves of what the ban was for: the messages leave, and the name of the
- * account that earned it is not handed back to be claimed by somebody else or
- * re-claimed by them.
  */
 
 /** The most conversations one preview will count. */
@@ -58,12 +40,6 @@ export type ErasePreview = {
   groups: number;
   /** Direct messages. Both sides go — see the note above. */
   dms: number;
-  /**
-   * Whether the handle is kept because the account is closed. The button says
-   * something different when this is true, and it is the only thing that
-   * changes.
-   */
-  banned: boolean;
 };
 
 /**
@@ -112,12 +88,12 @@ export const preview = query({
       owned,
       groups,
       dms,
-      banned: profile.bannedAt !== undefined,
     };
   },
 });
 
-export type EraseResult = { ok: true } | { ok: false; reason: "no-profile" | "handle" };
+export type EraseResult =
+  { ok: true } | { ok: false; reason: "no-profile" | "handle" };
 
 /**
  * Do it.
@@ -175,19 +151,14 @@ export const eraseMine = mutation({
     // said and what it last said go with it.
     await clearSender(ctx, profile.clerkId);
 
-    // A closed account keeps its name and nothing else. See the note at the top
-    // for why this is the one profile that is emptied rather than deleted; the
-    // fields cleared here are every field on it that anybody but the system
-    // ever sees.
-    if (profile.bannedAt !== undefined) {
-      await ctx.db.patch(profile._id, {
-        avatarHue: undefined,
-        avatarEmoji: undefined,
-        avatarInitials: undefined,
-        dmPolicy: "nobody",
-        discoverable: false,
-      });
-      return { ok: true };
+    // The PFP is chat data, not Clerk data, so clearing chat owns its storage
+    // cleanup too. The attachment may already have been removed from the
+    // dashboard; that stale pointer is harmless and is cleared below.
+    if (profile.avatarAttachmentId !== undefined) {
+      const avatar = await ctx.db.get(profile.avatarAttachmentId);
+      if (avatar !== null && avatar.ownerClerkId === profile.clerkId) {
+        await deleteAttachment(ctx, avatar);
+      }
     }
 
     await ctx.db.delete(profile._id);

@@ -9,7 +9,13 @@ import {
 } from "../moderation/limits";
 import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type MutationCtx } from "../_generated/server";
-import { blockedEitherWay, callerProfile, membership, profileFor } from "./shared";
+import {
+  avatarAppearance,
+  blockedEitherWay,
+  callerProfile,
+  membership,
+  profileFor,
+} from "./shared";
 
 /**
  * Groups, and the three ways into one.
@@ -74,7 +80,8 @@ export type GroupResult =
   | { ok: true }
   | {
       ok: false;
-      reason: "not-allowed" | "unknown" | "full" | "already" | "blocked" | "closed";
+      reason:
+        "not-allowed" | "unknown" | "full" | "already" | "blocked" | "closed";
     };
 
 async function memberCount(
@@ -93,7 +100,10 @@ async function memberCount(
 /** Ask somebody to join. They still have to say yes. */
 export const invite = mutation({
   args: { conversationId: v.id("conversations"), peerClerkId: v.string() },
-  handler: async (ctx, { conversationId, peerClerkId }): Promise<GroupResult> => {
+  handler: async (
+    ctx,
+    { conversationId, peerClerkId },
+  ): Promise<GroupResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "closed" };
 
@@ -101,7 +111,7 @@ export const invite = mutation({
     if (me === null) return { ok: false, reason: "not-allowed" };
 
     const peer = await profileFor(ctx, peerClerkId);
-    if (peer === null || peer.bannedAt !== undefined) {
+    if (peer === null) {
       return { ok: false, reason: "unknown" };
     }
     if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) {
@@ -115,7 +125,8 @@ export const invite = mutation({
     if (existing !== null) {
       // Somebody the owner removed does not come back through an invitation
       // from an admin who disagreed with the removal.
-      if (existing.status === "banned") return { ok: false, reason: "not-allowed" };
+      if (existing.status === "banned")
+        return { ok: false, reason: "not-allowed" };
       if (existing.status === "active" || existing.status === "invited") {
         return { ok: false, reason: "already" };
       }
@@ -176,8 +187,6 @@ export const requestJoin = mutation({
   handler: async (ctx, { conversationId }): Promise<GroupResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "closed" };
-    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
-
     const conversation = await ctx.db.get(conversationId);
     if (conversation === null || conversation.kind !== "group") {
       return { ok: false, reason: "unknown" };
@@ -192,7 +201,8 @@ export const requestJoin = mutation({
     const status = conversation.joinPolicy === "open" ? "active" : "requested";
     const existing = await membership(ctx, conversationId, profile.clerkId);
     if (existing !== null) {
-      if (existing.status === "banned") return { ok: false, reason: "not-allowed" };
+      if (existing.status === "banned")
+        return { ok: false, reason: "not-allowed" };
       if (existing.status === "active" || existing.status === "requested") {
         return { ok: false, reason: "already" };
       }
@@ -489,7 +499,9 @@ export const invitations = query({
       const conversation = await ctx.db.get(row.conversationId);
       if (conversation === null || conversation.kind !== "group") continue;
       const inviter =
-        row.invitedBy === undefined ? null : await profileFor(ctx, row.invitedBy);
+        row.invitedBy === undefined
+          ? null
+          : await profileFor(ctx, row.invitedBy);
       waiting.push({
         conversationId: row.conversationId,
         title: conversation.title ?? "Group",
@@ -500,7 +512,16 @@ export const invitations = query({
   },
 });
 
-export type JoinRequest = { clerkId: string; handle: string; at: number };
+export type JoinRequest = {
+  clerkId: string;
+  handle: string;
+  displayName?: string;
+  avatarUrl?: string;
+  avatarHue?: number;
+  avatarEmoji?: string;
+  avatarInitials?: string;
+  at: number;
+};
 
 /** People waiting to be let into a group the caller administers. */
 export const requests = query({
@@ -510,7 +531,8 @@ export const requests = query({
     if (profile === null) return [];
 
     const me = await membership(ctx, conversationId, profile.clerkId);
-    if (me === null || me.status !== "active" || !canAdminister(me.role)) return [];
+    if (me === null || me.status !== "active" || !canAdminister(me.role))
+      return [];
 
     const rows = await ctx.db
       .query("conversationMembers")
@@ -523,7 +545,13 @@ export const requests = query({
     for (const row of rows) {
       const theirs = await profileFor(ctx, row.clerkId);
       if (theirs === null) continue;
-      waiting.push({ clerkId: row.clerkId, handle: theirs.handle, at: row.joinedAt });
+      waiting.push({
+        clerkId: row.clerkId,
+        handle: theirs.handle,
+        displayName: theirs.displayName,
+        ...(await avatarAppearance(ctx, theirs)),
+        at: row.joinedAt,
+      });
     }
     return waiting;
   },

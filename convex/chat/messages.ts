@@ -16,9 +16,9 @@ import { EVERYONE, findMentionTokens } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screen, type SendContext } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
-import { BOT_HANDLE, BOT_ID, BOT_TAGS_PER_DAY, dayKey } from "./bot";
+import { BOT_HANDLE, BOT_ID, botRateLimiter } from "./botConfig";
 import {
-  applyStrike,
+  avatarAppearance,
   blockedBy,
   blockedEitherWay,
   callerProfile,
@@ -30,7 +30,6 @@ import {
   pushRecent,
   senderRow,
   senderState,
-  standingFor,
 } from "./shared";
 
 /**
@@ -41,9 +40,7 @@ import {
  * There is no row for it, no id, nothing hidden behind a flag. The filter runs
  * before the insert and the insert does not happen, which means a message that
  * broke a rule cannot be recovered, cannot leak through a query that forgot to
- * exclude it, and never existed to be replicated to anybody's client. The only
- * trace is the strike, which carries a short excerpt and belongs to the person
- * who wrote it.
+ * exclude it, and never existed to be replicated to anybody's client.
  *
  * `status` on a message is therefore about the one thing that happens after it
  * is already real: reports piling up on it. Its author taking it back is not a
@@ -60,7 +57,7 @@ import {
  */
 
 export type SendResult =
-  { ok: true } | { ok: false; refusal: Refusal; mutedUntil?: number };
+  { ok: true } | { ok: false; refusal: Refusal };
 
 /** One message, exactly as it goes to the client. */
 export type ChatMessage = {
@@ -70,6 +67,11 @@ export type ChatMessage = {
   authorHandle: string;
   /** The author's display name when it was sent, if they had one. */
   authorName?: string;
+  /** The author's current chat-owned picture or fallback disc. */
+  authorAvatarUrl?: string;
+  authorAvatarHue?: number;
+  authorAvatarEmoji?: string;
+  authorAvatarInitials?: string;
   body: string;
   replyTo?: ChatReply;
   /**
@@ -135,8 +137,8 @@ export type ChatImage = {
  * Send a message, if it survives.
  *
  * Everything it reads belongs to the sender: their profile, their membership
- * row, their strikes, and now their pictures — an `attachments` row is the
- * sender's own, written by nobody else. Nothing shared is read at all, which
+ * row, and now their pictures — an `attachments` row is the sender's own,
+ * written by nobody else. Nothing shared is read at all, which
  * is what keeps two people talking at once from conflicting over a document
  * neither of them is writing — see the note on `dmPeer` in `convex/schema.ts`.
  *
@@ -228,7 +230,8 @@ export const send = mutation({
       if (
         row === null ||
         row.ownerClerkId !== profile.clerkId ||
-        row.status !== "ready"
+        row.status !== "ready" ||
+        (row.purpose ?? "message") !== "message"
       ) {
         return { ok: false, refusal: "image" };
       }
@@ -250,39 +253,22 @@ export const send = mutation({
       now,
       createdAt: profile.createdAt,
       messagesSent: state.messagesSent,
-      standing: await standingFor(ctx, profile.clerkId, now),
-      mutedUntil: profile.mutedUntil,
-      bannedAt: profile.bannedAt,
       recent: state.recent,
       attachmentKey: attached.length > 0 ? ids.join(",") : undefined,
       mentions: named.tokens,
+      // `@bot` is reserved syntax rather than user-authored text. Keep every
+      // word around it under the normal lexicon and pattern scans, but do not
+      // let the handle itself turn into a leetspeak match when `@` folds to
+      // `a` during normalisation.
+      lexiconExemptMentions: named.bot
+        ? new Set([BOT_HANDLE])
+        : undefined,
     };
 
     const verdict = screen(body, context);
 
     if (!verdict.allow) {
-      if (verdict.strike !== null) {
-        await applyStrike(
-          ctx,
-          profile,
-          verdict.strike,
-          verdict.strike.rule === "too-fast" ? "rate" : "filter",
-          conversationId,
-        );
-        // Re-read, because the strike may have just muted them and the client
-        // should be told when it lifts rather than discovering it by trying.
-        const after = await ctx.db.get(profile._id);
-        return {
-          ok: false,
-          refusal: verdict.refusal,
-          mutedUntil: after?.mutedUntil,
-        };
-      }
-      return {
-        ok: false,
-        refusal: verdict.refusal,
-        mutedUntil: profile.mutedUntil,
-      };
+      return { ok: false, refusal: verdict.refusal };
     }
 
     const messageId = await ctx.db.insert("messages", {
@@ -325,7 +311,8 @@ export const send = mutation({
     // `mentions` in `convex/schema.ts`. Not for the sender naming themself,
     // which is a chip and not a ping.
     for (const person of named.people) {
-      if (person.clerkId === profile.clerkId || person.clerkId === BOT_ID) continue;
+      if (person.clerkId === profile.clerkId || person.clerkId === BOT_ID)
+        continue;
       await ctx.db.insert("mentions", {
         conversationId,
         messageId,
@@ -353,14 +340,15 @@ export const send = mutation({
       }),
     };
 
-    // The `@bot` allowance, on the same row. A tag past the day's five is
-    // still a message — it was stored above like any other — and the old man
-    // still answers it, for free, to say so; see `convex/chat/bot.ts`.
-    const today = dayKey(now);
-    const botUsed = sender?.botDay === today ? (sender.botUsed ?? 0) : 0;
-    const botExhausted = named.bot && botUsed >= BOT_TAGS_PER_DAY;
-    const botSpent =
-      named.bot && !botExhausted ? { botDay: today, botUsed: botUsed + 1 } : {};
+    // Five immediately, then a use returns every 4.8 hours. This lives in the
+    // rate-limiter component rather than growing a row-per-tag usage log.
+    // Missing configuration is free so setup never burns a real allowance.
+    const botReady = Boolean(process.env.GEMINI_API_KEY);
+    const botLimit =
+      named.bot && botReady
+        ? await botRateLimiter.limit(ctx, "botTags", { key: profile.clerkId })
+        : null;
+    const botExhausted = botLimit?.ok === false;
 
     // The one document a send writes that anybody else's query could have
     // read is now not written at all: this is the sender's own row, and the
@@ -370,10 +358,9 @@ export const send = mutation({
       await ctx.db.insert("chatSenders", {
         clerkId: profile.clerkId,
         ...moved,
-        ...botSpent,
       });
     } else {
-      await ctx.db.patch(sender._id, { ...moved, ...botSpent });
+      await ctx.db.patch(sender._id, moved);
     }
 
     // Everything the old man does happens after this mutation has returned:
@@ -385,9 +372,9 @@ export const send = mutation({
         messageId,
         askerClerkId: profile.clerkId,
         askerHandle: profile.handle,
-        body: verdict.body,
-        day: today,
         exhausted: botExhausted,
+        retryAfter: botLimit?.retryAfter,
+        metered: botLimit?.ok === true,
       });
     }
 
@@ -432,11 +419,10 @@ type ResolvedMentions =
  * question, which is asked next.
  *
  * A word that *is* somebody's handle has to be somebody in the room. Naming a
- * person who is not — not a member, banned, or on either side of a block — is
+ * person who is not — not a member or on either side of a block — is
  * refused with `mention`, and refused rather than quietly left as text: text
- * that says `@name` goes on to the contact rule, which would charge a strike
- * for what was only ever a mention of the wrong person. The refusal is free
- * and hands the words back.
+ * that says `@name` goes on to the contact rule and would return the wrong
+ * reason. The refusal hands the words back.
  *
  * `@everyone` is a group's alone. Anywhere else it is refused the same way,
  * for the same reason: `everyone` is a reserved handle, so it resolves to
@@ -500,10 +486,11 @@ async function resolveMentions(
     // Two spellings that fold to the same person are one person.
     if (!seen.has(theirs.clerkId)) {
       if (theirs.clerkId !== profile.clerkId) {
-        if (theirs.bannedAt !== undefined) {
-          return { ok: false, refusal: "mention" };
-        }
-        const seat = await membership(ctx, member.conversationId, theirs.clerkId);
+        const seat = await membership(
+          ctx,
+          member.conversationId,
+          theirs.clerkId,
+        );
         if (seat === null || seat.status !== "active") {
           return { ok: false, refusal: "mention" };
         }
@@ -597,11 +584,19 @@ async function replyOf(
 export const list = query({
   args: {
     conversationId: v.id("conversations"),
+    /**
+     * The reader's local-day bounds. Only the global room uses them; direct
+     * messages and groups remain continuous conversations. The browser owns
+     * the boundary because it is the only place that knows the reader's
+     * timezone (and the DST offset of an archived day).
+     */
+    dayStart: v.number(),
+    dayEnd: v.number(),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (
     ctx,
-    { conversationId, paginationOpts },
+    { conversationId, dayStart, dayEnd, paginationOpts },
   ): Promise<PaginationResult<ChatMessage>> => {
     const profile = await callerProfile(ctx);
     if (profile === null) {
@@ -615,24 +610,47 @@ export const list = query({
 
     const blocked = await blockedBy(ctx, profile.clerkId);
 
-    const result = await ctx.db
-      .query("messages")
-      .withIndex("byConversation", (q) =>
-        q.eq("conversationId", conversationId),
-      )
+    const result = await (member.kind === "global"
+      ? ctx.db
+          .query("messages")
+          .withIndex("byConversation", (q) =>
+            q
+              .eq("conversationId", conversationId)
+              .gte("_creationTime", dayStart)
+              .lt("_creationTime", dayEnd),
+          )
+      : ctx.db
+          .query("messages")
+          .withIndex("byConversation", (q) =>
+            q.eq("conversationId", conversationId),
+          ))
       .order("desc")
       .paginate(paginationOpts);
 
     const page: ChatMessage[] = [];
+    const appearances = new Map<
+      string,
+      Awaited<ReturnType<typeof avatarAppearance>>
+    >();
     for (const message of result.page) {
       if (blocked.has(message.authorClerkId)) continue;
       const gone = message.status !== "visible";
+      let avatar = appearances.get(message.authorClerkId);
+      if (avatar === undefined) {
+        const author = await profileFor(ctx, message.authorClerkId);
+        avatar = author === null ? {} : await avatarAppearance(ctx, author);
+        appearances.set(message.authorClerkId, avatar);
+      }
       page.push({
         _id: message._id,
         _creationTime: message._creationTime,
         authorClerkId: message.authorClerkId,
         authorHandle: message.authorHandle,
         authorName: message.authorName,
+        authorAvatarUrl: avatar.avatarUrl,
+        authorAvatarHue: avatar.avatarHue,
+        authorAvatarEmoji: avatar.avatarEmoji,
+        authorAvatarInitials: avatar.avatarInitials,
         body: gone ? "" : message.body,
         replyTo: gone ? undefined : await replyOf(ctx, message, blocked),
         mentions: gone ? [] : (message.mentions ?? []),
@@ -692,9 +710,6 @@ export const react = mutation({
   handler: async (ctx, { messageId, emoji }) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
-    if (profile.bannedAt !== undefined) return;
-    if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now())
-      return;
     if (!(REACTIONS as readonly string[]).includes(emoji)) return;
 
     const message = await ctx.db.get(messageId);
@@ -821,10 +836,6 @@ export const remove = mutation({
       .collect();
     for (const report of reports) await ctx.db.delete(report._id);
 
-    // The strike a report may already have written is not touched. It belongs
-    // to the ledger, carries its own excerpt, and is the account of a decision
-    // rather than a copy of the message. See `convex/schema.ts`.
-    //
     // The pictures go with it — the row alone would leave their files in
     // storage with nothing pointing at them. See `deleteMessage`.
     await deleteMessage(ctx, message);

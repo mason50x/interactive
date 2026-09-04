@@ -22,10 +22,13 @@ export const dryRun = internalQuery({
     surface: v.optional(
       v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
     ),
-    /** Pretend the sender already has this much against them. */
-    standing: v.optional(v.number()),
+    /** Verified synthetic handles to omit from the lexicon, without `@`. */
+    lexiconExemptMentions: v.optional(v.array(v.string())),
   },
-  handler: async (_ctx, { body, surface, standing }) => {
+  handler: async (
+    _ctx,
+    { body, surface, lexiconExemptMentions },
+  ) => {
     const now = Date.now();
     const context: SendContext = {
       surface: surface ?? "global",
@@ -35,8 +38,11 @@ export const dryRun = internalQuery({
       // comes back is a judgement about the text and nothing else.
       createdAt: now - 30 * 24 * 60 * 60 * 1000,
       messagesSent: 50,
-      standing: standing ?? 0,
       recent: [],
+      lexiconExemptMentions:
+        lexiconExemptMentions === undefined
+          ? undefined
+          : new Set(lexiconExemptMentions),
     };
     return screen(body, context);
   },

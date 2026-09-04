@@ -50,67 +50,15 @@ export const MAX_CHAR_RUN = 16;
 export const MAX_COMBINING_RUN = 2;
 
 /**
- * How long a strike counts against you.
+ * Distinct reports needed on one message before it is hidden.
  *
- * Thirty days is the whole reason the ladder is survivable: someone who had one
- * bad afternoon in March is clear by April without anybody lifting it by hand,
- * which matters a great deal in a system where nobody is available to.
+ * One report per account is enforced separately, so this is a count of people
+ * rather than presses of the same button.
  */
-export const STRIKE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-/**
- * The ladder, read as "at or above this standing, this consequence".
- *
- * Ordered heaviest first; `consequenceFor` in `convex/moderation/standing.ts`
- * takes the first match. A `durationMs` of `null` is a ban, which is the only
- * step that does not lift on its own.
- */
-export const LADDER: { at: number; durationMs: number | null }[] = [
-  { at: 25, durationMs: null },
-  { at: 15, durationMs: 24 * 60 * 60 * 1000 },
-  { at: 8, durationMs: 60 * 60 * 1000 },
-  { at: 4, durationMs: 10 * 60 * 1000 },
-];
-
-/**
- * The most a pile of reports can ever add to someone's standing.
- *
- * This is the anti-brigade guard, and it is a cap rather than a clever
- * weighting scheme because a cap cannot be gamed by coordinating harder. Twelve
- * tops out inside the 24-hour mute step: a group that decides to bury someone
- * can cost them a day. It cannot cost them the account. Only the filter, which
- * reads what was actually said, can do that.
- */
-export const MAX_REPORT_STANDING = 12;
-
-/** What one upheld report adds, before the reporter's weight is applied. */
-export const REPORT_STRIKE_WEIGHT = 2;
-
-/**
- * Reports needed on one message before it is hidden and its author struck.
- *
- * Counted as summed reporter weight *and* as distinct reporters, because either
- * alone is weak: three accounts is cheap to make on an invite-only site if you
- * have friends, and one furious regular should not be able to hide anything.
- */
-export const REPORTS_TO_HIDE = { weight: 3, distinct: 3 };
+export const REPORTS_TO_HIDE = 3;
 
 /** The most reports one account's opinion is worth in a day. */
 export const MAX_REPORTS_PER_DAY = 10;
-
-/**
- * What a reporter's report is worth, by their own standing.
- *
- * Someone currently muted has an opinion worth exactly nothing, which is the
- * cheapest possible defence against a retaliation ring: the accounts most
- * motivated to mass-report are the ones that just got struck.
- */
-export function reporterWeight(standing: number, muted: boolean): number {
-  if (muted) return 0;
-  if (standing >= 4) return 0.25;
-  if (standing > 0) return 0.5;
-  return 1;
-}
 
 /** How long a new account waits before it may speak to the whole room. */
 export const GLOBAL_COOLDOWN_MS = 15 * 60 * 1000;
@@ -191,9 +139,6 @@ export const ALLOWED_LINK_HOSTS: ReadonlySet<string> = new Set<string>([]);
  * time instead, and thirty days is well past the point where anyone scrolls.
  */
 export const GLOBAL_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-
-/** How much of an offending message is kept on the strike that it caused. */
-export const EXCERPT_CHARS = 120;
 
 /** Reaction emoji, fixed here so there is nothing about them to moderate. */
 export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as const;

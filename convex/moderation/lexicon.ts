@@ -30,22 +30,19 @@ import { encodeRuns, matchRuns, tokenStartsWith, type Forms, type Run } from "./
  *
  * ## The three tiers
  *
- * Tier one is refused and struck hard: slurs, sexual content, sexual interest
- * in minors, credible threats. A named few are `banOnSight` and skip the ladder
- * entirely, because there is no count of them that should have been tolerated.
+ * Tier one is the most severe refusal: slurs, sexual content, sexual interest
+ * in minors, and credible threats.
  *
- * Tier two is refused and struck moderately: telling someone to kill
- * themselves, and threats to expose them.
+ * Tier two covers telling someone to kill themselves and threats to expose
+ * them.
  *
- * Tier three is refused and costs nothing: ordinary swearing. It does not
- * reach the room, and it does not go on the sender's record either, because a
- * thirteen-year-old typing `fuck` into a game site has broken a house rule and
- * not done anything to anybody. The tier is still worth having separately from
- * tiers one and two precisely because of that split — same refusal, no weight.
+ * Tier three is ordinary swearing. It is still refused, but it stays separate
+ * so the targeting rule can return `harassment` when the language is aimed at
+ * somebody.
  *
- * The arrangement still decides the price. `this is shit` is a bounce; `you are
- * shit` is the same word aimed at a person, and the targeting rule in
- * `convex/moderation/rules.ts` charges it as harassment.
+ * `this is shit` is a profanity refusal; `you are shit` is the same word aimed
+ * at a person, and the targeting rule in `convex/moderation/rules.ts` returns
+ * harassment.
  */
 
 export type Category =
@@ -62,19 +59,16 @@ export type Tier = 1 | 2 | 3;
 type Source = {
   category: Category;
   tier: Tier;
-  banOnSight?: boolean;
   terms: string[];
 };
 
 /**
- * Slurs. Tier one throughout, and the racial and anti-gay ones are the subset
- * that bans on sight: there is no number of times somebody says one of these
- * that a room of teenagers should have had to sit through first.
+ * Slurs. Tier one throughout. This list is split from the softer or ambiguous
+ * forms below so the categories remain easy to tune independently.
  */
 const SLURS_SEVERE: Source = {
   category: "slur",
   tier: 1,
-  banOnSight: true,
   terms: [
     "nigger", "nigga", "niggers", "niggas", "negro",
     "faggot", "faggots", "fag", "fags", "dyke", "dykes",
@@ -88,10 +82,9 @@ const SLURS_SEVERE: Source = {
 };
 
 /**
- * The same class of word, one step down: still refused, still struck heavily,
- * but not on its own worth ending an account over. Mostly the softened or
- * ambiguous forms, and the ones that are genuinely used as insults rather than
- * as identifiers.
+ * The same class of word, still refused. Mostly the softened or ambiguous
+ * forms, and the ones that are genuinely used as insults rather than as
+ * identifiers.
  */
 const SLURS: Source = {
   category: "slur",
@@ -136,15 +129,13 @@ const SEXUAL: Source = {
 /**
  * Sexual interest in minors, and the vocabulary that exists to arrange it.
  *
- * Every one of these bans on sight and none of them is a judgement call. The
- * combination rules in `convex/moderation/rules.ts` do the harder half of this
- * job — an ordinary sexual term next to an age is the shape that actually
+ * The combination rules in `convex/moderation/rules.ts` do the harder half of
+ * this job — an ordinary sexual term next to an age is the shape that actually
  * turns up — and these are the terms that need no context at all.
  */
 const EXPLOITATION: Source = {
   category: "exploitation",
   tier: 1,
-  banOnSight: true,
   terms: [
     "cp", "childporn", "childpornography", "kiddieporn", "jailbait",
     "loli", "lolicon", "shota", "shotacon", "pedo", "pedophile",
@@ -154,7 +145,7 @@ const EXPLOITATION: Source = {
 };
 
 /**
- * Threats. Tier one, and the explicit ones ban on sight.
+ * Threats. Tier one.
  *
  * Deliberately narrow. `i will kill you` is a threat and `this game is killing
  * me` is not, and the difference is a second-person object, so most of the work
@@ -164,7 +155,6 @@ const EXPLOITATION: Source = {
 const THREATS: Source = {
   category: "threat",
   tier: 1,
-  banOnSight: true,
   terms: [
     "i will kill you", "im going to kill you", "i am going to kill you",
     "imma kill you", "i will murder you", "i will stab you",
@@ -178,12 +168,9 @@ const THREATS: Source = {
 /**
  * Telling somebody to end their life, in the forms it is actually written in.
  *
- * Tier two rather than tier one, and refused rather than banned, which is a
- * considered position: this is overwhelmingly said by fourteen-year-olds who
- * have absorbed it as a way of saying "shut up" and who stop when something
- * stops them. Refusing it and striking it is what stops them. Banning on the
- * first one would remove a great many children who are not the problem, and the
- * ladder catches anybody who turns out to be.
+ * Tier two rather than tier one. This is overwhelmingly said by teenagers who
+ * have absorbed it as a way of saying "shut up"; refusing the message keeps it
+ * out of the room without imposing a later account consequence.
  */
 const SELF_HARM: Source = {
   category: "self-harm",
@@ -214,7 +201,7 @@ const DEGRADING: Source = {
 };
 
 /**
- * Ordinary profanity. Refused, and never on its own a strike.
+ * Ordinary profanity. Refused like every other listed category.
  *
  * See the note at the top of this file for why. Everything here is one edit
  * away from being allowed again — drop the tier-three branch in
@@ -290,7 +277,6 @@ type Entry = {
   term: string;
   category: Category;
   tier: Tier;
-  banOnSight: boolean;
   /** A phrase matches without the boundary test — see `scan`. */
   phrase: boolean;
   runs: Run[];
@@ -315,7 +301,6 @@ const BY_FIRST_LETTER: Map<string, Entry[]> = (() => {
         term,
         category: source.category,
         tier: source.tier,
-        banOnSight: source.banOnSight ?? false,
         phrase: /\s/.test(term),
         runs: encodeRuns(squashed),
       };
@@ -336,7 +321,6 @@ export type Match = {
   term: string;
   category: Category;
   tier: Tier;
-  banOnSight: boolean;
   /** It was only found once the separators were taken out. */
   obfuscated: boolean;
   /** The token it was found in, when it was found as a word. */
@@ -370,7 +354,6 @@ export function scan(forms: Forms): Match[] {
           term: entry.term,
           category: entry.category,
           tier: entry.tier,
-          banOnSight: entry.banOnSight,
           obfuscated: false,
           token,
         });
@@ -405,7 +388,6 @@ export function scan(forms: Forms): Match[] {
         term: entry.term,
         category: entry.category,
         tier: entry.tier,
-        banOnSight: entry.banOnSight,
         obfuscated: !entry.phrase,
       });
     }

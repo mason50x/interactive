@@ -18,13 +18,8 @@ import {
   MAX_IMAGE_EDGE,
   MAX_UNSENT_IMAGES,
 } from "../moderation/limits";
-import { weightFor, type Refusal } from "../moderation/rules";
-import {
-  applyStrike,
-  callerProfile,
-  deleteAttachment,
-  profileFor,
-} from "./shared";
+import type { Refusal } from "../moderation/rules";
+import { callerProfile, deleteAttachment, profileFor } from "./shared";
 
 /**
  * Getting a picture in, and looking at it before anybody else does.
@@ -62,12 +57,13 @@ import {
  */
 
 export type UploadResult =
-  | { ok: true; url: string }
-  | { ok: false; refusal: Refusal };
+  { ok: true; url: string } | { ok: false; refusal: Refusal };
 
 export type CheckResult =
   | { ok: true; attachmentId: Id<"attachments"> }
-  | { ok: false; refusal: Refusal; mutedUntil?: number };
+  | { ok: false; refusal: Refusal };
+
+type UploadPurpose = "message" | "avatar";
 
 /**
  * Whether this account may put a picture in right now, and if not why.
@@ -75,7 +71,7 @@ export type CheckResult =
  * The same bars a send has, minus the ones that need a conversation — a
  * picture is uploaded before anybody knows where it is going. Checked twice,
  * at `uploadUrl` and again at `claim`, because an upload URL is a thing a
- * client can hold on to and the standing behind it can change in between.
+ * client can hold on to and the account state can change in between.
  */
 async function maySend(
   ctx: MutationCtx,
@@ -91,10 +87,6 @@ async function maySend(
 
   if (!(await hasAccepted(ctx, profile.clerkId))) {
     return { ok: false, refusal: "not-agreed" };
-  }
-  if (profile.bannedAt !== undefined) return { ok: false, refusal: "banned" };
-  if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now()) {
-    return { ok: false, refusal: "muted" };
   }
 
   // The storage bound. Both unsent states count, and `take` on each keeps the
@@ -125,7 +117,9 @@ async function maySend(
  * can be handed out before the picture has been seen.
  */
 export const uploadUrl = mutation({
-  args: {},
+  args: {
+    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
+  },
   handler: async (ctx): Promise<UploadResult> => {
     const allowed = await maySend(ctx);
     if (!allowed.ok) return allowed;
@@ -151,12 +145,17 @@ export const check = action({
     storageId: v.id("_storage"),
     width: v.number(),
     height: v.number(),
+    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
   },
-  handler: async (ctx, { storageId, width, height }): Promise<CheckResult> => {
+  handler: async (
+    ctx,
+    { storageId, width, height, purpose },
+  ): Promise<CheckResult> => {
     const claimed = await ctx.runMutation(internal.chat.attachments.claim, {
       storageId,
       width,
       height,
+      purpose,
     });
     if (!claimed.ok) return claimed;
 
@@ -188,8 +187,12 @@ export const claim = internalMutation({
     storageId: v.id("_storage"),
     width: v.number(),
     height: v.number(),
+    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
   },
-  handler: async (ctx, { storageId, width, height }): Promise<ClaimResult> => {
+  handler: async (
+    ctx,
+    { storageId, width, height, purpose },
+  ): Promise<ClaimResult> => {
     const taken = await ctx.db
       .query("attachments")
       .withIndex("byStorage", (q) => q.eq("storageId", storageId))
@@ -224,6 +227,7 @@ export const claim = internalMutation({
       storageId,
       ownerClerkId: allowed.profile.clerkId,
       status: "checking",
+      purpose: (purpose ?? "message") satisfies UploadPurpose,
       contentType,
       size: file.size,
       width,
@@ -247,12 +251,9 @@ export const claim = internalMutation({
 /**
  * Record what the classifier said.
  *
- * A pass is one patch. A refusal is the file and the row gone, and — for the
- * categories that cost something — a strike through the same `applyStrike`
- * a sentence goes through, so a picture is one more entry on the same
- * ledger under the same rule name, and the ladder does not know the
- * difference. The excerpt is a placeholder, because the alternative is
- * keeping a copy of a picture that was just refused for what was in it.
+ * A pass is one patch. A refusal is the file and the row gone. Nothing about a
+ * rejected picture is persisted after that, which is the same rule as rejected
+ * message text.
  */
 export const settle = internalMutation({
   args: {
@@ -268,7 +269,6 @@ export const settle = internalMutation({
           v.literal("graphic"),
           v.literal("image-check"),
         ),
-        banOnSight: v.boolean(),
       }),
     ),
   },
@@ -284,32 +284,6 @@ export const settle = internalMutation({
     }
 
     await deleteAttachment(ctx, row);
-
-    const profile = await profileFor(ctx, row.ownerClerkId);
-    const weight = weightFor(verdict.refusal);
-
-    if (profile !== null && (weight > 0 || verdict.banOnSight)) {
-      await applyStrike(
-        ctx,
-        profile,
-        {
-          rule: verdict.refusal,
-          weight,
-          banOnSight: verdict.banOnSight,
-          excerpt: "[picture]",
-        },
-        "filter",
-      );
-      // Re-read for the same reason `messages.send` does: the strike may
-      // have just muted them, and the composer should be told when it lifts.
-      const after = await ctx.db.get(profile._id);
-      return {
-        ok: false,
-        refusal: verdict.refusal,
-        mutedUntil: after?.mutedUntil,
-      };
-    }
-
     return { ok: false, refusal: verdict.refusal };
   },
 });
@@ -331,7 +305,7 @@ export const discard = mutation({
     const row = await ctx.db.get(attachmentId);
     if (row === null) return;
     if (row.ownerClerkId !== profile.clerkId) return;
-    if (row.status === "sent") return;
+    if (row.status === "sent" || row.status === "avatar") return;
 
     await deleteAttachment(ctx, row);
   },
@@ -410,6 +384,10 @@ export const sweep = internalMutation({
         .unique();
 
       if (row !== null && row.status === "sent") continue;
+      if (row !== null && row.status === "avatar") {
+        const owner = await profileFor(ctx, row.ownerClerkId);
+        if (owner?.avatarAttachmentId === row._id) continue;
+      }
 
       if (row !== null) await deleteAttachment(ctx, row);
       else await ctx.storage.delete(file._id);

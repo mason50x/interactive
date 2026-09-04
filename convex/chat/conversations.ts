@@ -7,6 +7,7 @@ import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import {
+  avatarAppearance,
   blockedBy,
   blockedEitherWay,
   callerProfile,
@@ -62,6 +63,10 @@ export type ConversationSummary = {
   peerHandle?: string;
   /** The other person's display name, when they have one. */
   peerName?: string;
+  peerAvatarUrl?: string;
+  peerAvatarHue?: number;
+  peerAvatarEmoji?: string;
+  peerAvatarInitials?: string;
   role: "owner" | "admin" | "member";
   /** Groups only, and only once somebody has set one. See `conversations`. */
   emoji?: string;
@@ -190,10 +195,12 @@ export const list = query({
 
       let peerHandle: string | undefined;
       let peerName: string | undefined;
+      let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
       if (member.dmPeer !== undefined) {
         const peer = await profileFor(ctx, member.dmPeer);
         peerHandle = peer?.handle;
         peerName = peer?.displayName;
+        if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
       }
 
       summaries.push({
@@ -207,6 +214,10 @@ export const list = query({
         peerClerkId: member.dmPeer,
         peerHandle,
         peerName,
+        peerAvatarUrl: peerAvatar.avatarUrl,
+        peerAvatarHue: peerAvatar.avatarHue,
+        peerAvatarEmoji: peerAvatar.avatarEmoji,
+        peerAvatarInitials: peerAvatar.avatarInitials,
         role: member.role,
         emoji: conversation.emoji,
         initials: conversation.initials,
@@ -224,7 +235,10 @@ export const list = query({
 
 export type OpenResult =
   | { ok: true; conversationId: Id<"conversations"> }
-  | { ok: false; reason: "no-profile" | "unknown" | "blocked" | "not-friends" | "closed" };
+  | {
+      ok: false;
+      reason: "no-profile" | "unknown" | "blocked" | "not-friends" | "closed";
+    };
 
 /**
  * Open a direct message, or find the one that is already open.
@@ -249,11 +263,11 @@ export const openDm = mutation({
   handler: async (ctx, { peerClerkId }): Promise<OpenResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
-    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
-    if (peerClerkId === profile.clerkId) return { ok: false, reason: "unknown" };
+    if (peerClerkId === profile.clerkId)
+      return { ok: false, reason: "unknown" };
 
     const peer = await profileFor(ctx, peerClerkId);
-    if (peer === null || peer.bannedAt !== undefined) {
+    if (peer === null) {
       return { ok: false, reason: "unknown" };
     }
     if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) {
@@ -278,7 +292,7 @@ export const openDm = mutation({
 
 export type CreateResult =
   | { ok: true; conversationId: Id<"conversations"> }
-  | { ok: false; reason: Refusal | "no-profile" | "closed" };
+  | { ok: false; reason: Refusal | "no-profile" };
 
 /**
  * Make a group.
@@ -299,11 +313,6 @@ export const createGroup = mutation({
   handler: async (ctx, { title, joinPolicy }): Promise<CreateResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
-    if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
-    if (profile.mutedUntil !== undefined && profile.mutedUntil > Date.now()) {
-      return { ok: false, reason: "muted" };
-    }
-
     const screened = screenStatic(title, MAX_TITLE);
     if (!screened.ok) return { ok: false, reason: screened.refusal };
 
@@ -340,6 +349,10 @@ export type ConversationDetail = {
   peerClerkId?: string;
   peerHandle?: string;
   peerName?: string;
+  peerAvatarUrl?: string;
+  peerAvatarHue?: number;
+  peerAvatarEmoji?: string;
+  peerAvatarInitials?: string;
   /** Groups only, and only once somebody has set one. See `conversations`. */
   emoji?: string;
   initials?: string;
@@ -350,6 +363,10 @@ export type ConversationMember = {
   clerkId: string;
   handle: string;
   displayName?: string;
+  avatarUrl?: string;
+  avatarHue?: number;
+  avatarEmoji?: string;
+  avatarInitials?: string;
   role: "owner" | "admin" | "member";
   status: "active" | "invited" | "requested";
 };
@@ -375,7 +392,10 @@ const MAX_MEMBERS = 100;
  */
 export const get = query({
   args: { conversationId: v.id("conversations") },
-  handler: async (ctx, { conversationId }): Promise<ConversationDetail | null> => {
+  handler: async (
+    ctx,
+    { conversationId },
+  ): Promise<ConversationDetail | null> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return null;
 
@@ -387,10 +407,12 @@ export const get = query({
 
     let peerHandle: string | undefined;
     let peerName: string | undefined;
+    let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
     if (member.dmPeer !== undefined) {
       const peer = await profileFor(ctx, member.dmPeer);
       peerHandle = peer?.handle;
       peerName = peer?.displayName;
+      if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
     }
 
     return {
@@ -402,6 +424,10 @@ export const get = query({
       peerClerkId: member.dmPeer,
       peerHandle,
       peerName,
+      peerAvatarUrl: peerAvatar.avatarUrl,
+      peerAvatarHue: peerAvatar.avatarHue,
+      peerAvatarEmoji: peerAvatar.avatarEmoji,
+      peerAvatarInitials: peerAvatar.avatarInitials,
       emoji: conversation.emoji,
       initials: conversation.initials,
       hue: conversation.hue,
@@ -434,7 +460,9 @@ export const members = query({
 
     const rows = await ctx.db
       .query("conversationMembers")
-      .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
       .take(MAX_MEMBERS);
 
     const people: ConversationMember[] = [];
@@ -446,6 +474,7 @@ export const members = query({
         clerkId: row.clerkId,
         handle: theirs.handle,
         displayName: theirs.displayName,
+        ...(await avatarAppearance(ctx, theirs)),
         role: row.role,
         status: row.status,
       });
@@ -478,7 +507,10 @@ export type ConversationPreview = {
  */
 export const preview = query({
   args: { conversationId: v.id("conversations") },
-  handler: async (ctx, { conversationId }): Promise<ConversationPreview | null> => {
+  handler: async (
+    ctx,
+    { conversationId },
+  ): Promise<ConversationPreview | null> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return null;
 
@@ -488,7 +520,10 @@ export const preview = query({
     if (conversation.joinPolicy === "invite") return null;
 
     const mine = await membership(ctx, conversationId, profile.clerkId);
-    if (mine !== null && (mine.status === "active" || mine.status === "banned")) {
+    if (
+      mine !== null &&
+      (mine.status === "active" || mine.status === "banned")
+    ) {
       return null;
     }
 

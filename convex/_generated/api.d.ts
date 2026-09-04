@@ -12,6 +12,7 @@ import type * as agreement from "../agreement.js";
 import type * as chat_attachments from "../chat/attachments.js";
 import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_bot from "../chat/bot.js";
+import type * as chat_botConfig from "../chat/botConfig.js";
 import type * as chat_conversations from "../chat/conversations.js";
 import type * as chat_erase from "../chat/erase.js";
 import type * as chat_friends from "../chat/friends.js";
@@ -36,8 +37,8 @@ import type * as moderation_limits from "../moderation/limits.js";
 import type * as moderation_mentions from "../moderation/mentions.js";
 import type * as moderation_normalize from "../moderation/normalize.js";
 import type * as moderation_patterns from "../moderation/patterns.js";
+import type * as moderation_rate from "../moderation/rate.js";
 import type * as moderation_rules from "../moderation/rules.js";
-import type * as moderation_standing from "../moderation/standing.js";
 import type * as moderation_verdict from "../moderation/verdict.js";
 import type * as preferences from "../preferences.js";
 import type * as streaks from "../streaks.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   "chat/attachments": typeof chat_attachments;
   "chat/blocks": typeof chat_blocks;
   "chat/bot": typeof chat_bot;
+  "chat/botConfig": typeof chat_botConfig;
   "chat/conversations": typeof chat_conversations;
   "chat/erase": typeof chat_erase;
   "chat/friends": typeof chat_friends;
@@ -79,8 +81,8 @@ declare const fullApi: ApiFromModules<{
   "moderation/mentions": typeof moderation_mentions;
   "moderation/normalize": typeof moderation_normalize;
   "moderation/patterns": typeof moderation_patterns;
+  "moderation/rate": typeof moderation_rate;
   "moderation/rules": typeof moderation_rules;
-  "moderation/standing": typeof moderation_standing;
   "moderation/verdict": typeof moderation_verdict;
   preferences: typeof preferences;
   streaks: typeof streaks;
@@ -114,4 +116,7 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  agent: import("@convex-dev/agent/_generated/component.js").ComponentApi<"agent">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};

@@ -1,11 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import {
+  avatarAppearance,
   blockedBy,
   blockedEitherWay,
   callerProfile,
   clearTyping,
   membership,
+  profileFor,
 } from "./shared";
 
 /**
@@ -72,6 +74,10 @@ export type Typist = {
   clerkId: string;
   handle: string;
   displayName?: string;
+  avatarUrl?: string;
+  avatarHue?: number;
+  avatarEmoji?: string;
+  avatarInitials?: string;
   /** Milliseconds this row has left, as of the moment the query ran. */
   left: number;
 };
@@ -81,10 +87,8 @@ export type Typist = {
  *
  * Called on the first keystroke and then at most every `TYPING_BEAT_MS` for as
  * long as keys keep coming. Silent about everything, exactly as a presence
- * beat is: signed out, no handle, not a member, muted, banned — all write
- * nothing, and none of them is a fact this function has any reason to hand
- * back. The composer is shut for the muted and the banned anyway; this is
- * the check for a browser that was asked to call it regardless.
+ * beat is: signed out, no handle, or not a member all write nothing, and none
+ * of them is a fact this function has any reason to hand back.
  *
  * A blocked direct message writes nothing either. The send would be refused,
  * and "typing" from somebody whose message can never arrive is a promise of
@@ -95,10 +99,7 @@ export const start = mutation({
   handler: async (ctx, { conversationId }) => {
     const profile = await callerProfile(ctx);
     if (profile === null) return;
-    if (profile.bannedAt !== undefined) return;
-
     const now = Date.now();
-    if (profile.mutedUntil !== undefined && profile.mutedUntil > now) return;
 
     const member = await membership(ctx, conversationId, profile.clerkId);
     if (member === null || member.status !== "active") return;
@@ -193,13 +194,18 @@ export const who = query({
 
     const blocked = await blockedBy(ctx, profile.clerkId);
 
-    return rows
-      .filter((row) => row.clerkId !== profile.clerkId && !blocked.has(row.clerkId))
-      .map((row) => ({
+    const typists: Typist[] = [];
+    for (const row of rows) {
+      if (row.clerkId === profile.clerkId || blocked.has(row.clerkId)) continue;
+      const current = await profileFor(ctx, row.clerkId);
+      typists.push({
         clerkId: row.clerkId,
         handle: row.handle,
         displayName: row.displayName,
+        ...(current === null ? {} : await avatarAppearance(ctx, current)),
         left: row.until - now,
-      }));
+      });
+    }
+    return typists;
   },
 });

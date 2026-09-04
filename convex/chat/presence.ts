@@ -92,8 +92,7 @@ export type Presence = {
  * Called on open and then on an interval. Silent about everything: signed out,
  * no handle, not a member, a member who has not been admitted or who was
  * removed — all of them simply write nothing. A presence beat is not a request
- * that can be refused, and a refusal is a fact about somebody's standing that
- * this function has no reason to hand back.
+ * that needs to explain a refusal.
  *
  * Direct messages are skipped rather than tracked and ignored. There is no
  * count on screen for a conversation with two people in it, so a row would be a

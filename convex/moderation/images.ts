@@ -29,10 +29,9 @@ import type { Refusal } from "./rules";
  * ## What it refuses
  *
  * The categories that are about what is depicted. Sexual content, under the
- * same name the lexicon uses, and its minors variant under `exploitation`,
- * which bans on sight exactly as the word does. Self-harm, in every form the
- * model separates. Gore, which is `graphic` — the one category pictures have
- * that sentences do not.
+ * same name the lexicon uses, and its minors variant under `exploitation`.
+ * Self-harm, in every form the model separates. Gore, which is `graphic` — the
+ * one category pictures have that sentences do not.
  *
  * Plain `violence` is deliberately not on the list. On a site of game
  * screenshots it is the category most likely to fire on a picture nobody
@@ -60,13 +59,11 @@ const TIMEOUT_MS = 20_000;
 /**
  * What one picture came back as.
  *
- * `refusal` is a `Refusal` so the caller charges it through the same table as
- * a sentence — see `weightFor` in `./rules.ts`. `banOnSight` is carried
- * separately for the one category that skips the ladder entirely.
+ * `refusal` is a `Refusal` so pictures and text use the same client copy.
  */
 export type ImageVerdict =
   | { ok: true }
-  | { ok: false; refusal: ImageRefusal; banOnSight: boolean };
+  | { ok: false; refusal: ImageRefusal };
 
 /** The subset of refusals a picture can earn. Mirrored by `settle`'s validator. */
 export type ImageRefusal = Extract<
@@ -92,20 +89,19 @@ export type ModerationResult = {
  * trips more than one is refused for the worst, which is the same rule
  * `worst` in `./verdict.ts` applies to words.
  */
-const CATEGORIES: { key: string; refusal: ImageRefusal; banOnSight: boolean }[] = [
-  { key: "sexual/minors", refusal: "exploitation", banOnSight: true },
-  { key: "sexual", refusal: "sexual", banOnSight: false },
-  { key: "self-harm/instructions", refusal: "self-harm", banOnSight: false },
-  { key: "self-harm/intent", refusal: "self-harm", banOnSight: false },
-  { key: "self-harm", refusal: "self-harm", banOnSight: false },
-  { key: "violence/graphic", refusal: "graphic", banOnSight: false },
+const CATEGORIES: { key: string; refusal: ImageRefusal }[] = [
+  { key: "sexual/minors", refusal: "exploitation" },
+  { key: "sexual", refusal: "sexual" },
+  { key: "self-harm/instructions", refusal: "self-harm" },
+  { key: "self-harm/intent", refusal: "self-harm" },
+  { key: "self-harm", refusal: "self-harm" },
+  { key: "violence/graphic", refusal: "graphic" },
 ];
 
 /** The refusal every failure collapses to. Free, and says nothing about you. */
 const UNCHECKED: ImageVerdict = {
   ok: false,
   refusal: "image-check",
-  banOnSight: false,
 };
 
 /**
@@ -126,7 +122,6 @@ export async function inspectImage(url: string): Promise<ImageVerdict> {
       return {
         ok: false,
         refusal: category.refusal,
-        banOnSight: category.banOnSight,
       };
     }
   }
