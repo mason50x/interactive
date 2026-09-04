@@ -1,5 +1,6 @@
 "use client";
 
+import { AtSymbolIcon } from "@heroicons/react/24/outline";
 import { UserPlusIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -200,13 +201,28 @@ export function ConversationList() {
                         >
                           {name}
                         </span>
-                        <span className="block truncate text-[0.75rem] text-faint">
-                          {conversation.kind === "global"
-                            ? "Everyone here"
-                            : conversation.kind === "group"
-                              ? "Group"
-                              : `@${conversation.peerHandle ?? ""}`}
-                        </span>
+                        {/* Somebody in here said your name and you have not
+                            seen it yet. That is the one thing about a
+                            conversation worth saying in its subtitle, so it
+                            takes the line over until the thread is read. */}
+                        {conversation.mentioned ? (
+                          <span className="flex items-center gap-1 truncate text-[0.75rem] font-medium text-primary">
+                            <AtSymbolIcon
+                              aria-hidden
+                              className="size-3 shrink-0"
+                              strokeWidth={2.25}
+                            />
+                            Mentioned you
+                          </span>
+                        ) : (
+                          <span className="block truncate text-[0.75rem] text-faint">
+                            {conversation.kind === "global"
+                              ? "Everyone here"
+                              : conversation.kind === "group"
+                                ? "Group"
+                                : `@${conversation.peerHandle ?? ""}`}
+                          </span>
+                        )}
                       </span>
 
                       {/* A count where a count means something, a dot where

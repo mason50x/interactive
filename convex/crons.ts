@@ -46,6 +46,15 @@ crons.daily(
   {},
 );
 
+// Long-cold typing rows, for the same reason and with even less at stake —
+// see `sweepTyping`.
+crons.daily(
+  "clear out old typing",
+  { hourUTC: 9, minuteUTC: 10 },
+  internal.chat.sweep.sweepTyping,
+  {},
+);
+
 // Pictures uploaded and never sent, and files nothing ever claimed. Hourly
 // rather than daily, because unlike every table above this one is billed by
 // the byte — see `sweep` in `convex/chat/attachments.ts` for what it walks.

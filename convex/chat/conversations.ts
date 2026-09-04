@@ -1,10 +1,13 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { MAX_TITLE } from "../moderation/limits";
+import { EVERYONE } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
+import type { Doc } from "../_generated/dataModel";
 import {
+  blockedBy,
   blockedEitherWay,
   callerProfile,
   ensureDm,
@@ -50,6 +53,11 @@ export type ConversationSummary = {
    * a dot instead, which is all a room of strangers warrants.
    */
   unreadExact: boolean;
+  /**
+   * Whether something unread in here names the caller — by handle, or with
+   * `@everyone` in a group. The row says so instead of its usual subtitle.
+   */
+  mentioned: boolean;
   peerClerkId?: string;
   peerHandle?: string;
   /** The other person's display name, when they have one. */
@@ -77,6 +85,45 @@ async function unreadFor(
 }
 
 /**
+ * How many unread mentions are looked at before giving up on finding one
+ * from somebody who is not blocked. Nearly always the first row is the
+ * answer; this is only so that one blocked account naming the caller over
+ * and over cannot hide a real mention behind it.
+ */
+const MENTION_SCAN = 5;
+
+/**
+ * Whether anything unread in a conversation names the caller.
+ *
+ * One bounded indexed read per target — the caller, and in a group
+ * `@everyone` too — over the `mentions` table, from the reading position
+ * forward. See that table in `convex/schema.ts` for why it exists rather
+ * than this walking the messages. Not asked at all for a conversation with
+ * nothing unread, which the caller settles first.
+ */
+async function mentionedIn(
+  ctx: QueryCtx,
+  member: Doc<"conversationMembers">,
+  blocked: ReadonlySet<string>,
+): Promise<boolean> {
+  const targets =
+    member.kind === "group" ? [member.clerkId, EVERYONE] : [member.clerkId];
+  for (const target of targets) {
+    const rows = await ctx.db
+      .query("mentions")
+      .withIndex("byTargetConversation", (q) =>
+        q
+          .eq("target", target)
+          .eq("conversationId", member.conversationId)
+          .gt("_creationTime", member.lastReadAt),
+      )
+      .take(MENTION_SCAN);
+    if (rows.some((row) => !blocked.has(row.authorClerkId))) return true;
+  }
+  return false;
+}
+
+/**
  * Every conversation the caller is in, with the global room first.
  *
  * The order after that is by last message, which is why `lastMessageAt` is
@@ -96,6 +143,10 @@ export const list = query({
         q.eq("clerkId", profile.clerkId).eq("status", "active"),
       )
       .take(MAX_CONVERSATIONS);
+
+    // For the mentions alone: a mention from somebody the caller has blocked
+    // is not one. One read, and it only changes when the caller blocks.
+    const blocked = await blockedBy(ctx, profile.clerkId);
 
     const summaries: ConversationSummary[] = [];
     for (const member of members) {
@@ -131,6 +182,12 @@ export const list = query({
         ? 0
         : await unreadFor(ctx, member.conversationId, member.lastReadAt, exact);
 
+      // Only worth asking where there is something unread to be named in.
+      // The room always is, by construction — and the read for it is one
+      // row, invalidated by nothing but somebody naming the caller there.
+      const mentioned =
+        unread === 0 ? false : await mentionedIn(ctx, member, blocked);
+
       let peerHandle: string | undefined;
       let peerName: string | undefined;
       if (member.dmPeer !== undefined) {
@@ -146,6 +203,7 @@ export const list = query({
         lastMessageAt: conversation.lastMessageAt,
         unread,
         unreadExact: exact,
+        mentioned,
         peerClerkId: member.dmPeer,
         peerHandle,
         peerName,

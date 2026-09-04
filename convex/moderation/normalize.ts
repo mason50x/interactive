@@ -162,7 +162,7 @@ export function prepare(raw: string, maxBody: number): Prepared {
  * `confusables.ts`, which has to exist because a Cyrillic `а` is a genuinely
  * different letter and no normalisation form will ever say otherwise.
  */
-function buildForms(clean: string): Forms {
+export function buildForms(clean: string): Forms {
   const folded = clean
     .normalize("NFKC")
     .normalize("NFD")

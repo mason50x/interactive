@@ -133,6 +133,17 @@ export const purgeConversation = internalMutation({
       .take(BATCH);
     for (const report of reports) await ctx.db.delete(report._id);
 
+    // Whoever was mid-sentence. Bounded by `MAX_TYPING`-ish in practice and
+    // by the window in any case; the sweep below would take them within the
+    // day, but a purged room should not leave anybody "typing" in it.
+    const typing = await ctx.db
+      .query("typing")
+      .withIndex("byConversationUntil", (q) =>
+        q.eq("conversationId", conversationId),
+      )
+      .collect();
+    for (const row of typing) await ctx.db.delete(row._id);
+
     const members = await ctx.db
       .query("conversationMembers")
       .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
@@ -247,6 +258,21 @@ export const purgeAuthor = internalMutation({
     if (messages.length === BATCH) {
       await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, again);
       return { stage: "messages" as const, deleted: messages.length };
+    }
+
+    // Everything that named this account. The rows its own messages wrote
+    // went with the messages above; these are the ones other people's
+    // messages wrote about it, which nothing would ever read again — the
+    // list only asks about conversations the caller is in — and which would
+    // otherwise sit in the table for as long as the messages they belong to.
+    const named = await ctx.db
+      .query("mentions")
+      .withIndex("byTargetConversation", (q) => q.eq("target", clerkId))
+      .take(BATCH);
+    for (const row of named) await ctx.db.delete(row._id);
+    if (named.length === BATCH) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, again);
+      return { stage: "mentions" as const, deleted: named.length };
     }
 
     const rows = await ctx.db
@@ -456,6 +482,36 @@ export const sweepPresence = internalMutation({
 
     if (dead.length === BATCH) {
       await ctx.scheduler.runAfter(0, internal.chat.sweep.sweepPresence, {});
+    }
+    return dead.length;
+  },
+});
+
+/**
+ * Delete typing rows that stopped counting a long time ago.
+ *
+ * The same argument as `sweepPresence`, and even less load-bearing:
+ * `chat.typing.who` reads only rows still inside their window, and the client
+ * counts each one down on its own clock besides, so a row from last Tuesday
+ * is invisible whether or not this ever runs. It is here because the table
+ * would otherwise keep one row per person per conversation they have ever
+ * typed in, and an hour past the window is generous by a factor of several
+ * hundred.
+ */
+const TYPING_TTL_MS = 60 * 60 * 1000;
+
+export const sweepTyping = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const dead = await ctx.db
+      .query("typing")
+      .withIndex("byUntil", (q) => q.lt("until", Date.now() - TYPING_TTL_MS))
+      .take(BATCH);
+
+    for (const row of dead) await ctx.db.delete(row._id);
+
+    if (dead.length === BATCH) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.sweepTyping, {});
     }
     return dead.length;
   },

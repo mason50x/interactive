@@ -25,6 +25,7 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -42,11 +43,21 @@ import {
 } from "@/components/app/chat/global-unlock";
 import { GroupPanel } from "@/components/app/chat/group-panel";
 import { menuItemClass, popupClass } from "@/components/app/chat/menu";
+import {
+  MentionPicker,
+  MentionText,
+  optionId,
+  resolverFor,
+  useMentionPeople,
+  type MentionCandidate,
+  type MentionPerson,
+} from "@/components/app/chat/mentions";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
 import { Photo } from "@/components/app/chat/photo";
 import { Present } from "@/components/app/chat/presence";
 import { StandingBanner } from "@/components/app/chat/standing-banner";
+import { Typing, useTypingBeat, useTypists } from "@/components/app/chat/typing";
 import { Waveform } from "@/components/app/chat/waveform";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
@@ -64,6 +75,12 @@ import {
   previewFor,
   rememberPreview,
 } from "@/lib/images";
+import {
+  EVERYONE,
+  completeMention,
+  findMentionTokens,
+  mentionQueryAt,
+} from "@/lib/mentions";
 import { CHAT_HREF } from "@/lib/nav";
 import { useDictation } from "@/lib/use-dictation";
 import { cn } from "@/lib/utils";
@@ -71,6 +88,7 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import type {
   ChatImage,
+  ChatMention,
   ChatMessage,
   ChatReaction,
 } from "../../../../convex/chat/messages";
@@ -138,6 +156,9 @@ export function Thread({
   const send = useMutation(api.chat.messages.send);
   const newest = results[0]?._id;
 
+  /** Who else is writing in here. See `typing.tsx`. */
+  const typists = useTypists(conversationId);
+
   // The wait a new account serves before the global room will take anything —
   // shown as a ring rather than sprung as a refusal. See `global-unlock.tsx`.
   // Not shown to somebody muted or banned, who has a banner above already
@@ -202,6 +223,8 @@ export function Thread({
     attachmentIds: Id<"attachments">[],
     previews: ChatImage[],
     replyTo: ChatMessage | null,
+    mentions: ChatMention[],
+    everyone: boolean,
   ): Promise<Refusal | null> {
     if (profile === null || userId === null || userId === undefined)
       return null;
@@ -214,6 +237,11 @@ export function Thread({
       authorName: profile.displayName,
       body: text,
       replyTo: replyTo === null ? undefined : replyFromMessage(replyTo),
+      // What the composer resolved from the people it offered. The server
+      // resolves the body again for itself; this is only so the placeholder
+      // draws the same chips the real row is about to.
+      mentions,
+      mentionsEveryone: everyone,
       status: "visible",
       reactions: [],
       images: previews,
@@ -322,10 +350,69 @@ export function Thread({
   }, [conversationId, newest, pending, results.length]);
 
   /**
+   * The end of the thread, watched for growing.
+   *
+   * The typing row does not appear at its full height — it grows in over a
+   * few hundred milliseconds, and the effect above runs once, before the
+   * first of those frames. So the tail is observed instead, and every frame
+   * it gets taller a pinned reader is moved to the new end. Unpinned readers
+   * are left where they are, exactly as they are for a new message.
+   */
+  const tail = useRef<HTMLDivElement>(null);
+  const outside = detail === null;
+
+  useEffect(() => {
+    const element = tail.current;
+    const box = scroller.current;
+    if (element === null || box === null) return;
+    const observer = new ResizeObserver(() => {
+      if (pinned.current) box.scrollTop = box.scrollHeight;
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [outside]);
+
+  /**
    * Oldest first, for reading. A copy, because `results` is Convex's own array
    * and reversing it in place would reorder the store the query reads from.
    */
   const ordered = [...results].reverse();
+
+  /**
+   * Whoever has spoken in what is loaded, newest first, for the composer to
+   * offer when `@` is pressed. Built from the page rather than asked for:
+   * the people who just said something are already here, with the handle
+   * and name they said it under, and they are who a mention is nearly
+   * always of. See `useMentionPeople` for the rest of the list.
+   */
+  const authors = useMemo(() => {
+    const seen = new Set<string>();
+    const list: MentionPerson[] = [];
+    for (const message of results) {
+      if (seen.has(message.authorClerkId)) continue;
+      seen.add(message.authorClerkId);
+      list.push({
+        clerkId: message.authorClerkId,
+        handle: message.authorHandle,
+        displayName: message.authorName,
+      });
+    }
+    return list;
+  }, [results]);
+
+  /** A direct message's other person, who is the whole of its list. */
+  const peer: MentionPerson | null =
+    detail !== undefined &&
+    detail !== null &&
+    detail.kind === "dm" &&
+    detail.peerClerkId !== undefined &&
+    detail.peerHandle !== undefined
+      ? {
+          clerkId: detail.peerClerkId,
+          handle: detail.peerHandle,
+          displayName: detail.peerName,
+        }
+      : null;
 
   function onScroll() {
     const element = scroller.current;
@@ -395,9 +482,17 @@ export function Thread({
                   <h1 className="truncate text-[0.9375rem] font-semibold">
                     {name}
                   </h1>
-                  {detail.peerName === undefined ? null : (
+                  {/* The handle, or the fact that they are writing — the
+                      one thing worth taking that line over for, and shown
+                      up here as well as in the thread because the thread's
+                      dots are below the fold for anybody reading back. */}
+                  {detail.peerName === undefined && typists.length === 0 ? null : (
                     <span className="block truncate text-[0.75rem] text-faint">
-                      @{detail.peerHandle}
+                      {typists.length > 0 ? (
+                        <span className="text-shimmer">typing…</span>
+                      ) : (
+                        `@${detail.peerHandle}`
+                      )}
                     </span>
                   )}
                 </span>
@@ -460,6 +555,7 @@ export function Thread({
             message={message}
             previous={ordered[index - 1]}
             mine={message.authorClerkId === userId}
+            me={userId}
             canAct={profile !== null && profile.bannedAt === undefined}
             onReply={() => {
               setReplyingTo(message);
@@ -478,12 +574,19 @@ export function Thread({
               message={pending}
               previous={ordered[ordered.length - 1]}
               mine
+              me={userId}
               canAct={false}
               onReply={() => {}}
               onJumpToMessage={jumpToMessage}
             />
           </div>
         )}
+
+        {/* Under everything, where their message is about to be. Wrapped so
+            its growth can be watched — see `tail` above. */}
+        <div ref={tail}>
+          <Typing typists={typists} />
+        </div>
       </div>
 
       {/* Under the thread, in the flow. It floated over the messages on a
@@ -502,6 +605,11 @@ export function Thread({
           lock={shut ? "muted" : cooling !== null ? "new" : null}
           replyingTo={replyingTo}
           onCancelReply={() => setReplyingTo(null)}
+          conversationId={conversationId}
+          kind={detail === undefined ? null : detail.kind}
+          peer={peer}
+          authors={authors}
+          me={userId}
         />
       </div>
     </div>
@@ -773,6 +881,7 @@ function MessageRow({
   message,
   previous,
   mine,
+  me,
   canAct,
   onReply,
   onJumpToMessage,
@@ -780,6 +889,8 @@ function MessageRow({
   message: ChatMessage;
   previous: ChatMessage | undefined;
   mine: boolean;
+  /** The reader, for drawing a message that names them. */
+  me: string | null | undefined;
   canAct: boolean;
   onReply: () => void;
   onJumpToMessage: (messageId: Id<"messages">) => void;
@@ -824,6 +935,10 @@ function MessageRow({
     return () => clearTimeout(timer);
   }, [deletable, message._creationTime]);
 
+  // Replying to yourself adds no conversational context. Once the delete
+  // window closes, an own message therefore has nothing left in its menu.
+  const choosable = !mine || deletable;
+
   const time = new Date(message._creationTime).toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
@@ -835,6 +950,12 @@ function MessageRow({
     handle: message.authorHandle,
     displayName: message.authorName,
   };
+
+  /** Somebody else said the reader's name in this one. */
+  const named =
+    !mine &&
+    (message.mentionsEveryone ||
+      message.mentions.some((mention) => mention.clerkId === me));
 
   return (
     <div
@@ -908,9 +1029,19 @@ function MessageRow({
                 mine
                   ? "bubble-mine bg-primary"
                   : "bubble-theirs bg-surface-muted",
+                // The rim goes to the accent when it is about you. See
+                // `.bubble-named` in `globals.css`.
+                named && "bubble-named",
               )}
             />
-            <span className="relative">{message.body}</span>
+            <span className="relative">
+              <MentionText
+                body={message.body}
+                resolve={resolverFor(message.mentions, message.mentionsEveryone)}
+                me={me}
+                mine={mine}
+              />
+            </span>
           </p>
         )}
 
@@ -1022,98 +1153,106 @@ function MessageRow({
                 </Menu.Portal>
               </Menu.Root>
 
-              <Menu.Root open={choosing} onOpenChange={setChoosing}>
-                <Menu.Trigger
-                  aria-label="More"
-                  className="flex size-5 items-center justify-center rounded-md text-faint hover:bg-foreground/[0.06] hover:text-foreground"
-                >
-                  <EllipsisHorizontalIcon className="size-4" />
-                </Menu.Trigger>
-                <Menu.Portal>
-                  <Menu.Positioner
-                    side="bottom"
-                    align="end"
-                    sideOffset={6}
-                    className="z-50 outline-none"
+              {choosable ? (
+                <Menu.Root open={choosing} onOpenChange={setChoosing}>
+                  <Menu.Trigger
+                    aria-label="More"
+                    className="flex size-5 items-center justify-center rounded-md text-faint hover:bg-foreground/[0.06] hover:text-foreground"
                   >
-                    <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
-                      <Menu.Item
-                        onClick={onReply}
-                        className={cn(menuItemClass, "flex items-center gap-2")}
-                      >
-                        <ArrowUturnLeftIcon className="size-4 text-faint" />
-                        Reply
-                      </Menu.Item>
-
-                      {mine ? (
-                        deletable ? (
+                    <EllipsisHorizontalIcon className="size-4" />
+                  </Menu.Trigger>
+                  <Menu.Portal>
+                    <Menu.Positioner
+                      side="bottom"
+                      align="end"
+                      sideOffset={6}
+                      className="z-50 outline-none"
+                    >
+                      <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
+                        {mine ? null : (
                           <Menu.Item
-                            onClick={() =>
-                              void remove({ messageId: message._id })
-                            }
-                            className={cn(menuItemClass, "text-destructive")}
+                            onClick={onReply}
+                            className={cn(
+                              menuItemClass,
+                              "flex items-center gap-2",
+                            )}
                           >
-                            Delete
+                            <ArrowUturnLeftIcon className="size-4 text-faint" />
+                            Reply
                           </Menu.Item>
-                        ) : null
-                      ) : (
-                        <>
-                          {/* Reporting is not a message to anybody. It is weighted
+                        )}
+
+                        {mine ? (
+                          deletable ? (
+                            <Menu.Item
+                              onClick={() =>
+                                void remove({ messageId: message._id })
+                              }
+                              className={cn(menuItemClass, "text-destructive")}
+                            >
+                              Delete
+                            </Menu.Item>
+                          ) : null
+                        ) : (
+                          <>
+                            {/* Reporting is not a message to anybody. It is weighted
                                 by the reporter's own record and counted against a
                                 threshold — see `convex/chat/reports.ts`. Saying so
                                 here would be a paragraph nobody reads; what the copy
                                 does instead is avoid promising a review that is never
                                 going to happen. */}
-                          <Menu.SubmenuRoot>
-                            <Menu.SubmenuTrigger className={menuItemClass}>
-                              Report this
-                            </Menu.SubmenuTrigger>
-                            <Menu.Portal>
-                              <Menu.Positioner
-                                side="right"
-                                align="start"
-                                sideOffset={4}
-                                className="z-50 outline-none"
-                              >
-                                <Menu.Popup
-                                  className={cn(popupClass, "w-40 flex-col")}
+                            <Menu.SubmenuRoot>
+                              <Menu.SubmenuTrigger className={menuItemClass}>
+                                Report this
+                              </Menu.SubmenuTrigger>
+                              <Menu.Portal>
+                                <Menu.Positioner
+                                  side="right"
+                                  align="start"
+                                  sideOffset={4}
+                                  className="z-50 outline-none"
                                 >
-                                  {REPORT_REASONS.map(([reason, label]) => (
-                                    <Menu.Item
-                                      key={reason}
-                                      onClick={() =>
-                                        void report({
-                                          messageId: message._id,
-                                          targetClerkId: message.authorClerkId,
-                                          reason,
-                                        })
-                                      }
-                                      className={menuItemClass}
-                                    >
-                                      {label}
-                                    </Menu.Item>
-                                  ))}
-                                </Menu.Popup>
-                              </Menu.Positioner>
-                            </Menu.Portal>
-                          </Menu.SubmenuRoot>
+                                  <Menu.Popup
+                                    className={cn(popupClass, "w-40 flex-col")}
+                                  >
+                                    {REPORT_REASONS.map(([reason, label]) => (
+                                      <Menu.Item
+                                        key={reason}
+                                        onClick={() =>
+                                          void report({
+                                            messageId: message._id,
+                                            targetClerkId:
+                                              message.authorClerkId,
+                                            reason,
+                                          })
+                                        }
+                                        className={menuItemClass}
+                                      >
+                                        {label}
+                                      </Menu.Item>
+                                    ))}
+                                  </Menu.Popup>
+                                </Menu.Positioner>
+                              </Menu.Portal>
+                            </Menu.SubmenuRoot>
 
-                          <Menu.Item
-                            onClick={() =>
-                              void block({
-                                peerClerkId: message.authorClerkId,
-                              })
-                            }
-                            className={cn(menuItemClass, "text-destructive")}
-                          >
-                            Block {message.authorHandle}
-                          </Menu.Item>
-                        </>
-                      )}
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.Root>
+                            <Menu.Item
+                              onClick={() =>
+                                void block({
+                                  peerClerkId: message.authorClerkId,
+                                })
+                              }
+                              className={cn(menuItemClass, "text-destructive")}
+                            >
+                              Block {message.authorHandle}
+                            </Menu.Item>
+                          </>
+                        )}
+                      </Menu.Popup>
+                    </Menu.Positioner>
+                  </Menu.Portal>
+                </Menu.Root>
+              ) : null}
             </div>
           )}
         </div>
@@ -1335,6 +1474,10 @@ type Attached = {
 /** The one composer notice that is not a refusal from the server. */
 const TOO_MANY = "Up to four pictures on one message.";
 
+/** The picker's id, for the field to point `aria-controls` at. One thread
+ *  is on screen at a time, so one id is enough. */
+const PICKER_ID = "mention-picker";
+
 function Composer({
   ref,
   onSubmit,
@@ -1342,6 +1485,11 @@ function Composer({
   lock,
   replyingTo,
   onCancelReply,
+  conversationId,
+  kind,
+  peer,
+  authors,
+  me,
 }: {
   ref: Ref<ComposerHandle>;
   onSubmit: (
@@ -1349,6 +1497,8 @@ function Composer({
     attachmentIds: Id<"attachments">[],
     previews: ChatImage[],
     replyTo: ChatMessage | null,
+    mentions: ChatMention[],
+    everyone: boolean,
   ) => Promise<Refusal | null>;
   /**
    * Whether pictures are on for this deployment. Off, there is no plus, no
@@ -1359,11 +1509,56 @@ function Composer({
   lock: Lock;
   replyingTo: ChatMessage | null;
   onCancelReply: () => void;
+  /** For the mention picker. See `useMentionPeople`. */
+  conversationId: Id<"conversations">;
+  kind: "global" | "dm" | "group" | null;
+  peer: MentionPerson | null;
+  authors: MentionPerson[];
+  me: string | null | undefined;
 }) {
   const shut = lock !== null;
   const [body, setBody] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
+
+  // Tells everybody else there are words in here. Off while the box is shut:
+  // a muted account's words are still in the box, and are not typing.
+  useTypingBeat(conversationId, body, !shut);
+
+  /**
+   * Where the caret is, for the picker.
+   *
+   * Tracked from the field's events rather than read at render, because the
+   * caret moves on keys the change handler never sees — the arrows, a click
+   * — and whether there is an `@word` under it is a question about the caret
+   * as much as about the text.
+   */
+  const [caret, setCaret] = useState(0);
+
+  /**
+   * Where the caret was told to go once the next render has put the text
+   * there. Set by a pick and consumed by the layout effect below: the field
+   * cannot be told a position inside text it does not hold yet.
+   */
+  const pendingCaret = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const at = pendingCaret.current;
+    if (at === null) return;
+    pendingCaret.current = null;
+    field.current?.setSelectionRange(at, at);
+  });
+
+  /** The `@` somebody pressed Escape on, so it stays closed until the next. */
+  const [dismissed, setDismissed] = useState<number | null>(null);
+  const [active, setActive] = useState(0);
+
+  /** The coloured copy of the text under the field. See the render. */
+  const backdrop = useRef<HTMLDivElement>(null);
+  function syncBackdrop() {
+    if (backdrop.current !== null && field.current !== null) {
+      backdrop.current.scrollTop = field.current.scrollTop;
+    }
+  }
 
   useEffect(() => {
     if (replyingTo !== null) field.current?.focus();
@@ -1383,6 +1578,64 @@ function Composer({
       ? body
       : joinSpoken(body, dictation.interim).slice(0, MAX_BODY);
 
+  /**
+   * The `@word` under the caret, and the people to offer for it.
+   *
+   * Open is "there is one, and it was not escaped out of". The list is
+   * asked for only while it is open, which is what keeps a group's member
+   * list off the thread's subscriptions — see `useMentionPeople`.
+   */
+  const mention = shut ? null : mentionQueryAt(shown, caret);
+  const picking = mention !== null && dismissed !== mention.start;
+  const people = useMentionPeople({
+    conversationId,
+    kind,
+    peer,
+    authors,
+    me,
+    open: picking,
+    query: mention?.query ?? "",
+  });
+  const candidates = picking ? people.candidates : [];
+  const highlighted = Math.min(active, Math.max(0, candidates.length - 1));
+
+  /** What the box's chips are drawn from: everybody the picker has offered. */
+  function resolveTyped(handle: string): string | null | undefined {
+    if (handle === EVERYONE) return kind === "group" ? null : undefined;
+    return people.known.get(handle)?.clerkId;
+  }
+
+  /**
+   * The whole text, as the field now holds it, into `body`.
+   *
+   * Editing while a dictation guess is showing: keep the guess out of `body`
+   * while it is still at the end. If the edit went through it, keep what was
+   * typed and let the next final land after it.
+   */
+  function commit(next: string) {
+    const tail =
+      dictation.interim === "" ? "" : joinSpoken(" ", dictation.interim);
+    setBody(
+      tail !== "" && next.endsWith(tail) ? next.slice(0, -tail.length) : next,
+    );
+    setNotice(null);
+  }
+
+  /** Finish the `@word` under the caret with the person picked. */
+  function pick(candidate: MentionCandidate) {
+    if (mention === null) return;
+    const handle =
+      candidate.kind === "everyone" ? EVERYONE : candidate.person.handle;
+    const next = completeMention(shown, mention.start, caret, handle);
+    if (next.text.length > MAX_BODY) return;
+    commit(next.text);
+    setCaret(next.caret);
+    pendingCaret.current = next.caret;
+    setDismissed(null);
+    setActive(0);
+    field.current?.focus();
+  }
+
   // A lock landing mid-sentence takes the microphone with it.
   const { abort } = dictation;
   useEffect(() => {
@@ -1394,6 +1647,10 @@ function Composer({
     const el = field.current;
     if (el !== null && dictation.interim !== "") el.scrollTop = el.scrollHeight;
   }, [shown, dictation.interim]);
+
+  // The copy under the field follows it wherever the text moved it — a
+  // programmatic scroll fires no event the handler below would see.
+  useLayoutEffect(syncBackdrop, [shown]);
 
   /**
    * The box's height, measured off a twin rather than left to the browser.
@@ -1661,9 +1918,25 @@ function Composer({
     // Nothing further may arrive into a box that has just been emptied.
     dictation.abort();
     setBody("");
+    setCaret(0);
     setAttached([]);
     count.current = 0;
     setNotice(null);
+
+    // Who the text names, from the people the picker offered, for the
+    // placeholder to draw. The server reads the body and decides for itself.
+    const mentions: ChatMention[] = [];
+    let everyone = false;
+    for (const token of findMentionTokens(text)) {
+      if (token.handle === EVERYONE) {
+        if (kind === "group") everyone = true;
+        continue;
+      }
+      const person = people.known.get(token.handle);
+      if (person === undefined) continue;
+      if (mentions.some((entry) => entry.clerkId === person.clerkId)) continue;
+      mentions.push({ clerkId: person.clerkId, handle: person.handle });
+    }
 
     // Every entry in `sending` is `ready`, and `ready` always carries an id —
     // see `Attached`. The filter is for the type, not for a case.
@@ -1683,6 +1956,8 @@ function Composer({
         height: entry.height,
       })),
       replyingTo,
+      mentions,
+      everyone,
     );
 
     if (refusal === null) {
@@ -1714,6 +1989,33 @@ function Composer({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    // While the picker is up the keys are its: the arrows walk it, Enter and
+    // Tab take the row, Escape puts it away until the next `@`. With nobody
+    // in it Enter is Enter again, so a word that matches no one still sends.
+    if (picking && mention !== null) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDismissed(mention.start);
+        return;
+      }
+      if (candidates.length > 0) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setActive((highlighted + 1) % candidates.length);
+          return;
+        }
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setActive((highlighted - 1 + candidates.length) % candidates.length);
+          return;
+        }
+        if (event.key === "Enter" || event.key === "Tab") {
+          event.preventDefault();
+          pick(candidates[highlighted]);
+          return;
+        }
+      }
+    }
     if (event.key !== "Enter" || event.shiftKey) return;
     event.preventDefault();
     void submit();
@@ -1859,32 +2161,70 @@ function Composer({
               {shown === "" ? "Say something" : shown}
               {"​"}
             </div>
+
+            {/* The words, in colour, under the field. The textarea above
+                lays out the same text transparent and keeps everything a
+                textarea does — the caret, selection, undo, the platform's
+                own editing — and this is the only layer with ink in it, so
+                a mention can be a chip inside the box without the box
+                becoming something that is not a textarea. The two agree on
+                every glyph because they share a font, a width and a padding,
+                and because the chip changes no glyph's width — see
+                `.mention-chip` in `globals.css`. It scrolls with the field. */}
+            <div
+              ref={backdrop}
+              aria-hidden
+              className="pointer-events-none absolute inset-0 overflow-hidden py-1.5 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap text-foreground"
+            >
+              <MentionText body={body} resolve={resolveTyped} me={me} plain />
+              {/* The dictation guess, after the words, and quieter: it is
+                  not text yet. */}
+              {dictation.interim === "" ? null : (
+                <span className="text-muted-foreground">
+                  {shown.slice(body.length)}
+                </span>
+              )}
+              {"​"}
+            </div>
+
+            {picking ? (
+              <MentionPicker
+                id={PICKER_ID}
+                candidates={candidates}
+                active={highlighted}
+                loading={people.loading}
+                query={mention?.query ?? ""}
+                onActiveChange={setActive}
+                onPick={pick}
+              />
+            ) : null}
+
             <textarea
               ref={field}
               value={shown}
               style={{ height }}
               onChange={(event) => {
-                const next = event.target.value;
-                // Editing while a guess is showing: keep the guess out of `body`
-                // while it is still at the end. If the edit went through it, keep
-                // what was typed and let the next final land after it.
-                const tail =
-                  dictation.interim === ""
-                    ? ""
-                    : joinSpoken(" ", dictation.interim);
-                setBody(
-                  tail !== "" && next.endsWith(tail)
-                    ? next.slice(0, -tail.length)
-                    : next,
-                );
-                setNotice(null);
+                commit(event.target.value);
+                setCaret(event.target.selectionStart);
+                setActive(0);
               }}
+              onSelect={(event) =>
+                setCaret(event.currentTarget.selectionStart)
+              }
+              onScroll={syncBackdrop}
               onKeyDown={onKeyDown}
               onPaste={onPaste}
               rows={1}
               disabled={shut}
               maxLength={MAX_BODY}
               aria-label="Message"
+              aria-autocomplete="list"
+              aria-controls={picking ? PICKER_ID : undefined}
+              aria-activedescendant={
+                picking && candidates.length > 0
+                  ? optionId(PICKER_ID, highlighted)
+                  : undefined
+              }
               placeholder={
                 lock !== null
                   ? PLACEHOLDER[lock]
@@ -1894,7 +2234,11 @@ function Composer({
                       ? "Add a caption, or just send"
                       : "Say something"
               }
-              className="block w-full resize-none overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed outline-none transition-[height] duration-150 ease-out placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none"
+              // Transparent ink and a visible caret: the words are drawn by
+              // the layer behind. No scrollbar, so the field and that layer
+              // wrap at the same width — the box is eight lines at most and
+              // still scrolls under the wheel and the arrows.
+              className="relative block w-full resize-none overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed text-transparent caret-foreground outline-none transition-[height] duration-150 ease-out [scrollbar-width:none] placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none [&::-webkit-scrollbar]:hidden"
             />
           </div>
           {/* Absent where the browser has no recogniser (Firefox) and on the

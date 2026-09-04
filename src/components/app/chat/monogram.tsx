@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { LogoMark } from "@/components/wordmark";
-import { handleHue } from "@/lib/chat";
+import { BOT_FACE, BOT_HANDLE, handleHue } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 
 /**
@@ -97,7 +97,13 @@ export function Monogram({
       // them — see `.monogram` there.
       style={{ "--monogram-hue": hue } as CSSProperties}
     >
-      {emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase()}
+      {emoji ??
+        // The old man has no profile to have picked a face on, so his is
+        // fixed here — see `BOT_FACE` in `src/lib/chat.ts`. Nobody else can
+        // hold this handle; it is reserved.
+        (handle === BOT_HANDLE
+          ? BOT_FACE
+          : (initials ?? handle.slice(0, 1)).toUpperCase())}
     </span>
   );
 }

@@ -8,9 +8,11 @@ import {
   reporterWeight,
 } from "../moderation/limits";
 import { mutation, type MutationCtx } from "../_generated/server";
+import { BOT_ID } from "./bot";
 import {
   applyStrike,
   callerProfile,
+  clearMentions,
   membership,
   profileFor,
   standingFor,
@@ -74,6 +76,10 @@ export const report = mutation({
     // `reporterWeight` never sees the ban, so the ban has to refuse here.
     if (profile.bannedAt !== undefined) return { ok: false, reason: "closed" };
     if (args.targetClerkId === profile.clerkId) return { ok: false, reason: "self" };
+    // The old man has no standing to lose and no ledger to write to. A report
+    // against him would sit in `byTarget` as an accusation against an account
+    // that does not exist — see `convex/chat/bot.ts`.
+    if (args.targetClerkId === BOT_ID) return { ok: false, reason: "unknown" };
 
     // What the row records about a message report is read off the message, not
     // off the arguments. The ids in `args` have been through a browser, and a
@@ -87,6 +93,7 @@ export const report = mutation({
     if (args.messageId !== undefined) {
       const message = await ctx.db.get(args.messageId);
       if (message === null) return { ok: false, reason: "unknown" };
+      if (message.authorClerkId === BOT_ID) return { ok: false, reason: "unknown" };
 
       // Only somebody the message was actually shown to may report it. Without
       // this, any id that leaks out of a room reaches the tally from outside
@@ -181,6 +188,9 @@ async function tally(
   }
 
   await ctx.db.patch(messageId, { status: "hidden" });
+  // A message nobody can read any more should not be telling anybody's list
+  // that it named them. See `clearMentions`.
+  await clearMentions(ctx, messageId);
 
   const author = await profileFor(ctx, message.authorClerkId);
   if (author === null) return true;

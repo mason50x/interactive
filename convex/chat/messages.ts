@@ -1,25 +1,31 @@
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
 import { hasAccepted } from "../agreement";
+import { internal } from "../_generated/api";
 import { imagesEnabled } from "../features";
 import type { Doc, Id } from "../_generated/dataModel";
 import {
   DELETE_WINDOW_MS,
   MAX_IMAGES_PER_MESSAGE,
+  MAX_MENTIONS,
   MAX_REACTION_KINDS,
   MAX_REACTORS,
   REACTIONS,
 } from "../moderation/limits";
+import { EVERYONE, findMentionTokens } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screen, type SendContext } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
+import { BOT_HANDLE, BOT_ID, BOT_TAGS_PER_DAY, dayKey } from "./bot";
 import {
   applyStrike,
   blockedBy,
   blockedEitherWay,
   callerProfile,
+  clearTyping,
   deleteMessage,
   membership,
+  profileByHandle,
   profileFor,
   pushRecent,
   senderRow,
@@ -66,6 +72,13 @@ export type ChatMessage = {
   authorName?: string;
   body: string;
   replyTo?: ChatReply;
+  /**
+   * Who the body names, as the server resolved them — see `mentions` in
+   * `convex/schema.ts`. The thread finds each `@handle` in the body and draws
+   * it as a chip; an optimistic send fills these from the people it offered.
+   */
+  mentions: ChatMention[];
+  mentionsEveryone: boolean;
   status: "visible" | "hidden";
   reactions: ChatReaction[];
   /**
@@ -76,6 +89,9 @@ export type ChatMessage = {
    */
   images: ChatImage[];
 };
+
+/** One person a message names: the card to open, and the handle to find. */
+export type ChatMention = { clerkId: string; handle: string };
 
 /** The safe, current preview of the message a reply points to. */
 export type ChatReply = {
@@ -179,11 +195,19 @@ export const send = mutation({
         target === null ||
         target.conversationId !== conversationId ||
         target.status !== "visible" ||
+        target.authorClerkId === profile.clerkId ||
         (await blockedEitherWay(ctx, profile.clerkId, target.authorClerkId))
       ) {
         return { ok: false, refusal: "reply-unavailable" };
       }
     }
+
+    // Who the body names, settled before the filter reads it — the filter
+    // has to be told which `@words` are people in the room, or it refuses
+    // every one of them as contact details. A refusal here is free and the
+    // words come back to be changed. See `resolveMentions`.
+    const named = await resolveMentions(ctx, profile, member, body);
+    if (!named.ok) return { ok: false, refusal: named.refusal };
 
     // The pictures, before anything is judged. Deduplicated so a client that
     // names one twice does not get it drawn twice, and read in full so that
@@ -231,6 +255,7 @@ export const send = mutation({
       bannedAt: profile.bannedAt,
       recent: state.recent,
       attachmentKey: attached.length > 0 ? ids.join(",") : undefined,
+      mentions: named.tokens,
     };
 
     const verdict = screen(body, context);
@@ -267,6 +292,8 @@ export const send = mutation({
       authorName: profile.displayName,
       body: verdict.body,
       replyToId,
+      mentions: named.people.length === 0 ? undefined : named.people,
+      mentionsEveryone: named.everyone ? true : undefined,
       status: "visible",
       // Always empty now that tier three is refused rather than allowed — see
       // `flags` in `convex/schema.ts` for why the column stays anyway.
@@ -282,11 +309,37 @@ export const send = mutation({
             })),
     });
 
+    // The dots go with the words, in the same transaction, so nobody ever
+    // sees the message and "still typing" on one screen at once. See
+    // `convex/chat/typing.ts`.
+    await clearTyping(ctx, conversationId, profile.clerkId);
+
     // From here the pictures are the message's. `sent` is what keeps the
     // sweep off them and what stops the same row being named by a second
     // send — see `attachments` in `convex/schema.ts`.
     for (const row of attached) {
       await ctx.db.patch(row._id, { status: "sent", messageId });
+    }
+
+    // One row per person named, for their conversation list to find — see
+    // `mentions` in `convex/schema.ts`. Not for the sender naming themself,
+    // which is a chip and not a ping.
+    for (const person of named.people) {
+      if (person.clerkId === profile.clerkId || person.clerkId === BOT_ID) continue;
+      await ctx.db.insert("mentions", {
+        conversationId,
+        messageId,
+        target: person.clerkId,
+        authorClerkId: profile.clerkId,
+      });
+    }
+    if (named.everyone) {
+      await ctx.db.insert("mentions", {
+        conversationId,
+        messageId,
+        target: EVERYONE,
+        authorClerkId: profile.clerkId,
+      });
     }
 
     const moved = {
@@ -300,6 +353,15 @@ export const send = mutation({
       }),
     };
 
+    // The `@bot` allowance, on the same row. A tag past the day's five is
+    // still a message — it was stored above like any other — and the old man
+    // still answers it, for free, to say so; see `convex/chat/bot.ts`.
+    const today = dayKey(now);
+    const botUsed = sender?.botDay === today ? (sender.botUsed ?? 0) : 0;
+    const botExhausted = named.bot && botUsed >= BOT_TAGS_PER_DAY;
+    const botSpent =
+      named.bot && !botExhausted ? { botDay: today, botUsed: botUsed + 1 } : {};
+
     // The one document a send writes that anybody else's query could have
     // read is now not written at all: this is the sender's own row, and the
     // profile beside it — which every conversation list, friends list and
@@ -308,9 +370,25 @@ export const send = mutation({
       await ctx.db.insert("chatSenders", {
         clerkId: profile.clerkId,
         ...moved,
+        ...botSpent,
       });
     } else {
-      await ctx.db.patch(sender._id, moved);
+      await ctx.db.patch(sender._id, { ...moved, ...botSpent });
+    }
+
+    // Everything the old man does happens after this mutation has returned:
+    // the dots, the model, the pause, the reply. The sender's own message is
+    // already stored, so a slow answer costs them nothing.
+    if (named.bot) {
+      await ctx.scheduler.runAfter(0, internal.chat.bot.ask, {
+        conversationId,
+        messageId,
+        askerClerkId: profile.clerkId,
+        askerHandle: profile.handle,
+        body: verdict.body,
+        day: today,
+        exhausted: botExhausted,
+      });
     }
 
     // Your own message is read. Written on your own row, so it conflicts with
@@ -326,6 +404,121 @@ export const send = mutation({
     return { ok: true };
   },
 });
+
+type ResolvedMentions =
+  | {
+      ok: true;
+      /** The people named, deduplicated, in the order they appear. */
+      people: ChatMention[];
+      everyone: boolean;
+      /**
+       * The `@words` as typed (lowercased) that turned out to be people, for
+       * the filter to look past. Not the same set as the handles in `people`:
+       * `@al1ce` resolves to alice, and it is `al1ce` the body says.
+       */
+      tokens: Set<string>;
+      /** `@bot` was said, in the one room he answers in. */
+      bot: boolean;
+    }
+  | { ok: false; refusal: Refusal };
+
+/**
+ * Which of the `@words` in a body are people in this conversation.
+ *
+ * The server reads the body and decides, rather than trusting a list from the
+ * client — see `convex/moderation/mentions.ts` for why. Each word is looked
+ * up by its folded handle, and a word that is nobody's handle is left alone:
+ * it is not a mention, and whether it is contact details is the filter's
+ * question, which is asked next.
+ *
+ * A word that *is* somebody's handle has to be somebody in the room. Naming a
+ * person who is not — not a member, banned, or on either side of a block — is
+ * refused with `mention`, and refused rather than quietly left as text: text
+ * that says `@name` goes on to the contact rule, which would charge a strike
+ * for what was only ever a mention of the wrong person. The refusal is free
+ * and hands the words back.
+ *
+ * `@everyone` is a group's alone. Anywhere else it is refused the same way,
+ * for the same reason: `everyone` is a reserved handle, so it resolves to
+ * nobody, and the contact rule would take it from there.
+ *
+ * ## What this reads
+ *
+ * A membership row per person named, which is a row that person writes on
+ * every message they read. That is the one thing the send path otherwise
+ * never touches — see `dmPeer` in `convex/schema.ts` — and it is accepted
+ * here because it is bounded by `MAX_MENTIONS`, paid only by messages that
+ * name somebody, and the alternative is trusting the client about who is in
+ * the room. A conflict with the named person marking the thread read is a
+ * retry, not a wrong answer.
+ */
+async function resolveMentions(
+  ctx: QueryCtx,
+  profile: Doc<"chatProfiles">,
+  member: Doc<"conversationMembers">,
+  body: string,
+): Promise<ResolvedMentions> {
+  const people: ChatMention[] = [];
+  const tokens = new Set<string>();
+  const seen = new Set<string>();
+  let everyone = false;
+  let bot = false;
+
+  for (const token of findMentionTokens(body)) {
+    if (tokens.has(token.handle)) continue;
+
+    // The old man. A reserved handle, so `profileByHandle` below would find
+    // nobody and the contact rule would take it from there — which is the
+    // right answer everywhere but the room, the one place he lives. He is
+    // put in `people` so the thread draws him as a chip; `send` knows not to
+    // write him a mention row. See `convex/chat/bot.ts`.
+    if (token.handle === BOT_HANDLE) {
+      if (member.kind !== "global") return { ok: false, refusal: "mention" };
+      bot = true;
+      tokens.add(token.handle);
+      if (!seen.has(BOT_ID)) {
+        seen.add(BOT_ID);
+        people.push({ clerkId: BOT_ID, handle: BOT_HANDLE });
+      }
+      continue;
+    }
+
+    if (token.handle === EVERYONE) {
+      if (member.kind !== "group") {
+        return { ok: false, refusal: "mention-everyone" };
+      }
+      everyone = true;
+      tokens.add(token.handle);
+      continue;
+    }
+
+    const theirs = await profileByHandle(ctx, token.handle);
+    if (theirs === null) continue;
+
+    if (seen.size >= MAX_MENTIONS) return { ok: false, refusal: "mention" };
+
+    // Two spellings that fold to the same person are one person.
+    if (!seen.has(theirs.clerkId)) {
+      if (theirs.clerkId !== profile.clerkId) {
+        if (theirs.bannedAt !== undefined) {
+          return { ok: false, refusal: "mention" };
+        }
+        const seat = await membership(ctx, member.conversationId, theirs.clerkId);
+        if (seat === null || seat.status !== "active") {
+          return { ok: false, refusal: "mention" };
+        }
+        if (await blockedEitherWay(ctx, profile.clerkId, theirs.clerkId)) {
+          return { ok: false, refusal: "mention" };
+        }
+      }
+      seen.add(theirs.clerkId);
+      people.push({ clerkId: theirs.clerkId, handle: theirs.handle });
+    }
+    tokens.add(token.handle);
+  }
+
+  return { ok: true, people, everyone, tokens, bot };
+}
 
 /** Fold the stored reactions into counts, and whether the caller is in them. */
 function readReactions(
@@ -442,6 +635,8 @@ export const list = query({
         authorName: message.authorName,
         body: gone ? "" : message.body,
         replyTo: gone ? undefined : await replyOf(ctx, message, blocked),
+        mentions: gone ? [] : (message.mentions ?? []),
+        mentionsEveryone: gone ? false : (message.mentionsEveryone ?? false),
         status: message.status,
         reactions: gone ? [] : readReactions(message, profile.clerkId),
         images: gone ? [] : await imagesOf(ctx, message),

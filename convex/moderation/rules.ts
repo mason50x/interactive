@@ -40,6 +40,12 @@ export type Refusal =
   | "not-a-member"
   | "blocked"
   | "reply-unavailable"
+  // A mention that could not be honoured: somebody named who is not in the
+  // conversation, or `@everyone` outside a group. Both are the word being
+  // handed back to be changed, and neither costs anything — see
+  // `resolveMentions` in `convex/chat/messages.ts`.
+  | "mention"
+  | "mention-everyone"
   | "too-new"
   | "not-agreed"
   // Pictures. `sexual`, `self-harm` and `exploitation` above are shared with
@@ -96,6 +102,8 @@ const WEIGHTS: Record<Refusal, number> = {
   "not-a-member": 0,
   blocked: 0,
   "reply-unavailable": 0,
+  mention: 0,
+  "mention-everyone": 0,
   "too-new": 0,
   // Not a violation. They have not agreed to the rules being enforced
   // against them, which is a reason to refuse and not a reason to charge.

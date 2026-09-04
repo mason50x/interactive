@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { RECENT_RING } from "../moderation/limits";
+import { prepare } from "../moderation/normalize";
 import type { RecentSend } from "../moderation/rules";
 import { activeStanding, expiryFor, muteUntil } from "../moderation/standing";
 import type { StrikeSpec } from "../moderation/verdict";
@@ -28,6 +29,35 @@ export async function profileFor(
     .query("chatProfiles")
     .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
     .unique();
+}
+
+/**
+ * The longest a handle can be, as `vet` in `convex/chat/profiles.ts` has it.
+ * Only the fold below needs it, and only as the bound `prepare` is given.
+ */
+const HANDLE_FOLD_LENGTH = 20;
+
+/**
+ * The profile a typed handle points at, or `null`.
+ *
+ * Looked up by the folded key rather than the handle itself, which is the
+ * same fold `claimHandle` made the handle unique on — so `@al1ce` finds alice,
+ * exactly as claiming `al1ce` would have collided with her. That is the kind
+ * answer for a mention: somebody who typed a name slightly wrong has named a
+ * person, not shared a contact detail, and the difference is a strike.
+ */
+export async function profileByHandle(
+  ctx: QueryCtx,
+  handle: string,
+): Promise<Doc<"chatProfiles"> | null> {
+  const prepared = prepare(handle, HANDLE_FOLD_LENGTH);
+  if (!prepared.ok) return null;
+  const key = prepared.forms.squashed;
+  if (key === "") return null;
+  return await ctx.db
+    .query("chatProfiles")
+    .withIndex("byHandleKey", (q) => q.eq("handleKey", key))
+    .first();
 }
 
 /**
@@ -274,11 +304,16 @@ export async function deleteAttachment(
  *
  * So the pictures go first, through `deleteAttachment` above, and the row
  * last. A message without pictures costs exactly what it did.
+ *
+ * The mention rows go the same way, for the same reason: a row that says
+ * "this message named you" about a message that no longer exists would keep
+ * a conversation saying "mentioned you" about nothing.
  */
 export async function deleteMessage(
   ctx: MutationCtx,
   message: Doc<"messages">,
 ): Promise<void> {
+  await clearMentions(ctx, message._id);
   for (const image of message.images ?? []) {
     const row = await ctx.db.get(image.attachmentId);
     if (row !== null) {
@@ -292,6 +327,48 @@ export async function deleteMessage(
     if (file !== null) await ctx.storage.delete(image.storageId);
   }
   await ctx.db.delete(message._id);
+}
+
+/**
+ * Take back what a message said about who it named.
+ *
+ * Called when the message goes, and when reports hide it — a hidden message
+ * draws as a gap in the thread, and a gap should not be lighting anybody's
+ * list up. Nothing is written on the message itself: its own `mentions` stay
+ * as the record of what it said, and the thread empties a hidden body anyway.
+ */
+export async function clearMentions(
+  ctx: MutationCtx,
+  messageId: Id<"messages">,
+): Promise<void> {
+  const rows = await ctx.db
+    .query("mentions")
+    .withIndex("byMessage", (q) => q.eq("messageId", messageId))
+    .collect();
+  for (const row of rows) await ctx.db.delete(row._id);
+}
+
+/**
+ * Drop somebody's "typing" row for a conversation, if there is one.
+ *
+ * Reached from `typing.stop`, from a send — so the dots go in the same
+ * transaction that puts the message on screen — and from the purges, so a
+ * conversation or an account does not leave a row behind that says it is
+ * still writing. Already gone is not an error: a stop and a send can both
+ * reasonably decide the same row is finished.
+ */
+export async function clearTyping(
+  ctx: MutationCtx,
+  conversationId: Id<"conversations">,
+  clerkId: string,
+): Promise<void> {
+  const row = await ctx.db
+    .query("typing")
+    .withIndex("byConversationUser", (q) =>
+      q.eq("conversationId", conversationId).eq("clerkId", clerkId),
+    )
+    .unique();
+  if (row !== null) await ctx.db.delete(row._id);
 }
 
 /** The two ids in a stable order, which is what makes a pair one row. */

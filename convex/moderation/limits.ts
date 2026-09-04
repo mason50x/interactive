@@ -331,3 +331,13 @@ export const MAX_INITIALS = 2;
  * sent under. That is a feature of this limit rather than a defect of it.
  */
 export const MAX_HANDLE_CHANGES = 2;
+
+/**
+ * How many different people one message may name.
+ *
+ * Past this the message is refused rather than trimmed, and for free: it is a
+ * shape nobody reaches by talking, and the only thing it can be is somebody
+ * pasting a member list to make everyone's list light up. `@everyone` is one
+ * name and covers the room — see `convex/moderation/mentions.ts`.
+ */
+export const MAX_MENTIONS = 20;

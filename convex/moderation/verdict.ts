@@ -1,6 +1,7 @@
 import { GLOBAL_COOLDOWN_MS, MAX_BODY, type Surface } from "./limits";
 import { scan, type Match } from "./lexicon";
-import { prepare } from "./normalize";
+import { maskMentions } from "./mentions";
+import { buildForms, prepare } from "./normalize";
 import { findPatterns } from "./patterns";
 import {
   excerpt,
@@ -70,6 +71,13 @@ export type SendContext = {
    * did not pass before this ever runs.
    */
   attachmentKey?: string;
+  /**
+   * The `@words` in the body that the caller has already established are
+   * people in this conversation, lowercased and without the `@`. These and
+   * only these are hidden from the contact-details rule — see
+   * `convex/moderation/mentions.ts` for why the word lists still see them.
+   */
+  mentions?: ReadonlySet<string>;
 };
 
 /** What the ledger should record, when it should record anything. */
@@ -170,7 +178,13 @@ export function screen(raw: string, context: SendContext): Verdict {
     return strikeFor(refusalForCategory(severe.category), clean, severe.banOnSight);
   }
 
-  const patterns = findPatterns(clean, forms.tokens);
+  // The patterns alone read a copy with the verified mentions blanked out:
+  // `@alice` is contact details everywhere except when alice is in the room.
+  // The lexicon above read the whole thing, on purpose.
+  const masked =
+    context.mentions === undefined ? clean : maskMentions(clean, context.mentions);
+  const maskedForms = masked === clean ? forms : buildForms(masked);
+  const patterns = findPatterns(masked, maskedForms.tokens);
   if (patterns.length > 0) {
     return strikeFor(refusalForPattern(patterns[0].category), clean);
   }

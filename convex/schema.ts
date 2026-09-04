@@ -463,6 +463,16 @@ export default defineSchema({
         flagged: v.boolean(),
       }),
     ),
+    /**
+     * The `@bot` allowance: the UTC day, and how many tags that day has
+     * spent. Here rather than anywhere else for the reason the ring is: it
+     * is written by the send that spends it, on the sender's own row, and
+     * nothing anybody else does recomputes it. A row from another day reads
+     * as zero. Both optional, because every row written before the bot
+     * existed has neither. See `convex/chat/bot.ts`.
+     */
+    botDay: v.optional(v.string()),
+    botUsed: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"]),
 
   /**
@@ -617,6 +627,38 @@ export default defineSchema({
     .index("bySeen", ["lastSeenAt"]),
 
   /**
+   * Who is writing something right now.
+   *
+   * The same shape as `presence` above and for the same reasons, only faster
+   * and shorter-lived: one row per person per conversation, written by that
+   * person alone while their box has words in it, and read by everybody else
+   * in the conversation. Nothing is ever marked "stopped typing" — a row
+   * simply carries the instant it stops counting, and a browser that closed
+   * mid-sentence falls out of the answer on its own a few seconds later.
+   *
+   * `until` rather than `lastSeenAt`, because the question the reader asks
+   * is "is this still true", and the window is short enough that the client
+   * has to answer it on its own clock between pushes — see `who` in
+   * `convex/chat/typing.ts` for how it is handed over without trusting two
+   * clocks to agree.
+   *
+   * The handle and name are copied onto the row so the reader's query can
+   * draw a face and a caption without a profile read per typist. They are
+   * seconds old at most, which is well inside how stale a name may be.
+   */
+  typing: defineTable({
+    conversationId: v.id("conversations"),
+    clerkId: v.string(),
+    handle: v.string(),
+    displayName: v.optional(v.string()),
+    until: v.number(),
+  })
+    .index("byConversationUntil", ["conversationId", "until"])
+    .index("byConversationUser", ["conversationId", "clerkId"])
+    // For the sweep alone. See `sweepTyping` in `convex/chat/sweep.ts`.
+    .index("byUntil", ["until"]),
+
+  /**
    * What was said.
    *
    * Ordered by `_creationTime` through `byConversation`, which is what the
@@ -668,6 +710,27 @@ export default defineSchema({
      * written before replies existed.
      */
     replyToId: v.optional(v.id("messages")),
+    /**
+     * Who this message names, resolved by the server from the `@words` in
+     * its body — see `resolveMentions` in `convex/chat/messages.ts`.
+     *
+     * Denormalised for the reason `authorHandle` is: the thread draws the
+     * chips from this and the body alone, and an optimistic send can build
+     * both. `handle` is the handle as it was when the message was sent, and
+     * like `authorHandle` it is not rewritten by a rename; `clerkId` is what
+     * the chip opens a card for. Absent on every message that names nobody,
+     * which is nearly all of them.
+     *
+     * `mentionsEveryone` is `@everyone`, which is a mention with no `clerkId`
+     * and no profile. Groups only, enforced on the way in.
+     *
+     * Neither is what the conversation list reads to say "mentioned you" —
+     * that is the `mentions` table below, which is indexed by who was named.
+     */
+    mentions: v.optional(
+      v.array(v.object({ clerkId: v.string(), handle: v.string() })),
+    ),
+    mentionsEveryone: v.optional(v.boolean()),
     status: v.union(v.literal("visible"), v.literal("hidden")),
     flags: v.array(v.string()),
     /**
@@ -730,6 +793,40 @@ export default defineSchema({
       searchField: "body",
       filterFields: ["status"],
     }),
+
+  /**
+   * One row per person a message names, so "mentioned you" is a lookup.
+   *
+   * The message already carries its mentions — see `mentions` above — but
+   * an array on a document is not something an index can point into, and
+   * the question the conversation list asks is the other way round: not "who
+   * does this message name" but "does anything unread in here name *me*". The
+   * honest way to answer that from the messages table is to read every
+   * unread message in every conversation, which for the global room is the
+   * one query this schema is built never to run.
+   *
+   * So a message that names people writes one of these per person, and the
+   * list asks `byTargetConversation` for rows newer than its reading position
+   * and takes one. That read is bounded, indexed, and invalidated only when
+   * somebody names the caller in that conversation — not by anybody talking.
+   *
+   * `target` is a Clerk id, or the literal `everyone` for `@everyone`, which
+   * is one row rather than one per member: the list asks about both targets,
+   * and a hundred writes per message would be the cost of not doing so.
+   *
+   * `authorClerkId` is here so the list can drop a mention from somebody the
+   * caller has blocked without fetching the message. The rows go with the
+   * message — see `deleteMessage` in `convex/chat/shared.ts` — and with a
+   * message reports have hidden, and with the account they name.
+   */
+  mentions: defineTable({
+    conversationId: v.id("conversations"),
+    messageId: v.id("messages"),
+    target: v.string(),
+    authorClerkId: v.string(),
+  })
+    .index("byTargetConversation", ["target", "conversationId"])
+    .index("byMessage", ["messageId"]),
 
   /**
    * A picture somebody has uploaded, from the moment it lands until the

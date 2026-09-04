@@ -75,6 +75,8 @@ const REFUSALS: Record<string, string> = {
   "not-a-member": "You are not in this conversation.",
   blocked: "You cannot message this person.",
   "reply-unavailable": "That message is no longer available to reply to.",
+  mention: "You can only mention people who are in this conversation.",
+  "mention-everyone": "@everyone only works in a group.",
   // Nearly unreachable, and deliberately so: the wait is drawn as a ring above
   // the composer and the composer is shut until it closes, so the only way here
   // is a browser clock running ahead of the server's. Worded as the near miss
@@ -248,6 +250,41 @@ export const DELETE_WINDOW_MS = 30 * 1000;
  * feature — see the note at the top of `convex/chat/presence.ts`.
  */
 export const HEARTBEAT_MS = 15 * 1000;
+
+/**
+ * How often a box with words in it says so.
+ *
+ * The other half of `TYPING_WINDOW_MS` in `convex/chat/typing.ts`, which is
+ * how long one of these beats counts for and is set to comfortably more than
+ * two of them. A keystroke is not a beat: the composer sends one on the first
+ * character and then at most one per this interval while keys keep coming,
+ * because every beat that lands re-runs the subscription of everybody reading
+ * the conversation — see the note at the top of that file.
+ */
+export const TYPING_BEAT_MS = 3 * 1000;
+
+/**
+ * Who is writing, in the words the caption under the dots says it in.
+ *
+ * Up to three are named and the rest are counted, because "alice, bob, cara,
+ * dan and eve are typing" is a sentence nobody finishes reading before one of
+ * them has sent. Names come through `personName`, so a display name is used
+ * where there is one and the handle where there is not — the same rule as
+ * everywhere else a person is named on one line.
+ */
+export function typingLabel(
+  people: { handle: string; displayName?: string }[],
+): string {
+  const names = people.map(personName);
+  if (names.length === 0) return "";
+  if (names.length === 1) return `${names[0]} is typing`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are typing`;
+  if (names.length === 3) {
+    return `${names[0]}, ${names[1]} and ${names[2]} are typing`;
+  }
+  const others = names.length - 2;
+  return `${names[0]}, ${names[1]} and ${others} others are typing`;
+}
 
 /** Shape only. Everything else about a handle is decided on the server. */
 export function handleShapeError(handle: string): string | null {
@@ -460,4 +497,27 @@ export function onGroupPanelRequest(
     handler((event as CustomEvent<GroupPanelRequest>).detail);
   window.addEventListener(GROUP_PANEL_EVENT, listener);
   return () => window.removeEventListener(GROUP_PANEL_EVENT, listener);
+}
+
+/**
+ * The old man in the room.
+ *
+ * `@bot` in the global room is answered by a character — see
+ * `convex/chat/bot.ts` — whose replies are ordinary messages signed with
+ * `BOT_ID` in `authorClerkId`. He has no profile, so the three things that
+ * open one — the face in a message row, a mention chip, the name in a reply
+ * preview — check `isBot` first and draw him plain. Mirrored from the server
+ * for the reason `REACTIONS` above is: the two bundles do not share a
+ * module. Change one, change the other.
+ */
+export const BOT_ID = "bot";
+export const BOT_HANDLE = "bot";
+/** What his disc shows, in place of a letter. */
+export const BOT_FACE = "👴";
+/** How he is introduced in the mention picker. */
+export const BOT_NAME = "Bot";
+export const BOT_TAGS_PER_DAY = 5;
+
+export function isBot(clerkId: string | undefined): boolean {
+  return clerkId === BOT_ID;
 }

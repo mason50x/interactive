@@ -736,6 +736,56 @@
   }
 
   /*
+   * Somebody else's bubble that says your name.
+   *
+   * The rim goes to the accent and nothing else moves: the bubble is still
+   * theirs, still grey, still on the left. A tinted fill was tried and read
+   * as a different kind of message rather than the same message with your
+   * name in it. Declared after both `.bubble-theirs` rules and with a dark
+   * rule of its own, because the dark rule above outranks a lone class.
+   */
+  .bubble-theirs.bubble-named,
+  :root[data-theme="dark"] .bubble-theirs.bubble-named {
+    border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+  }
+
+  /*
+   * A person named in a message, drawn as a chip.
+   *
+   * No padding and no change of weight, and that is the whole design. The
+   * same chip is drawn *under* the composer's textarea — the textarea lays out
+   * its own glyphs, transparent, and this is the coloured copy behind them —
+   * so anything here that moved a glyph, even by the width of a bold stroke,
+   * would put the caret beside the wrong letter. The tint that would have
+   * been padding is a box-shadow instead, which paints outside the box
+   * without taking any room in the line; `box-decoration-break: clone` gives
+   * a chip that wraps a rounded end on each line.
+   *
+   * `-me` is a mention of the reader, a shade stronger. `-mine` is a mention
+   * inside the reader's own bubble, which is white text on the accent, so the
+   * accent tint would vanish into it: a white wash instead.
+   */
+  .mention-chip {
+    color: var(--primary);
+    background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 14%, transparent);
+    border-radius: 3px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .mention-chip-me {
+    background-color: color-mix(in oklab, var(--primary) 26%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 26%, transparent);
+  }
+
+  .mention-chip-mine {
+    color: inherit;
+    background-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+  }
+
+  /*
    * The composer at the foot of a thread.
    *
    * Its lift is `--elevation-card`, the same object the cards rest on, rather
@@ -914,6 +964,68 @@
 
 .animate-notice-in {
   animation: notice-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------------------------------------------------------------------------
+ * Somebody is typing.
+ *
+ * Three dots in a bubble, doing what three dots in a bubble do — but the
+ * wave is drawn with care, because this is the one animation in the thread
+ * that runs for as long as somebody is thinking. Each dot lifts, brightens
+ * and swells together on the way up and settles on the way down, with a long
+ * rest at the bottom so the loop reads as a ripple travelling through the
+ * three rather than three things bouncing. The stagger is `--i`, one delay
+ * per dot, so the keyframes are written once.
+ *
+ * Everything is transform and opacity, on three elements, for the same reason
+ * the streak flame is: it stays on the compositor and asks the main thread
+ * for nothing while a conversation sits open.
+ *
+ * The row itself arrives from the bottom-left corner of the bubble, slightly
+ * under-scaled, on the same spring the composer's notices use — it should
+ * read as having come up out of the thread, not faded in over it. The faces
+ * beside it take the same entrance a beat apart, `--i` again.
+ *
+ * Under `prefers-reduced-motion` the blanket rule at the foot of this file
+ * collapses all of it to the final keyframe, which for the dots is their
+ * resting state: three still dots in a bubble, which still reads as "typing"
+ * to anybody who has used a phone.
+ * ------------------------------------------------------------------------ */
+
+@keyframes typing-dot {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0) scale(0.82);
+    opacity: 0.4;
+  }
+  22% {
+    transform: translateY(-4px) scale(1.08);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typing-dot 1.35s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation-delay: calc(var(--i, 0) * 0.16s);
+  will-change: transform, opacity;
+}
+
+@keyframes typing-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.typing-in {
+  transform-origin: bottom left;
+  animation: typing-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.06s);
 }
 
 /* ---------------------------------------------------------------------------
