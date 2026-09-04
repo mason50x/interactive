@@ -21,6 +21,7 @@ const CONTEXT_SCAN = 30;
 
 /** Refresh sooner than the eight-second window in `typing.ts`. */
 const BOT_TYPING_BEAT_MS = 2_500;
+const BOT_REQUEST_TIMEOUT_MS = 45_000;
 
 /** Current stable, low-latency Gemini model; overridable without a deploy. */
 const DEFAULT_MODEL = "gemini-3.5-flash-lite";
@@ -248,6 +249,12 @@ export const finish = internalMutation({
       recent: [],
       mentions: new Set(),
     });
+    if (!verdict.allow) {
+      console.warn("@bot output refused", {
+        messageId: args.messageId,
+        refusal: verdict.refusal,
+      });
+    }
     const body = verdict.allow ? verdict.body : SAFE_FALLBACK;
 
     await ctx.db.insert("messages", {
@@ -272,17 +279,8 @@ export const finish = internalMutation({
   },
 });
 
-function shortReply(raw: string): string {
-  const plain = raw.replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim();
-  if (plain === "") return SAFE_FALLBACK;
-
-  const sentences = plain.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [plain];
-  const answer = sentences.slice(0, 2).join(" ").trim();
-  const words = answer.split(" ");
-  if (words.length <= 48 && answer.length <= 320) return answer;
-
-  const clipped = words.slice(0, 48).join(" ").slice(0, 319).trimEnd();
-  return `${clipped.replace(/[,.!?;:]$/, "")}…`;
+function plainReply(raw: string): string {
+  return raw.replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim();
 }
 
 function transcriptOf(
@@ -323,98 +321,122 @@ export const ask = internalAction({
     });
     if (!started) return null;
 
-    if (args.exhausted) {
-      const hours = Math.max(1, Math.ceil((args.retryAfter ?? 0) / 3_600_000));
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      await ctx.runMutation(internal.chat.bot.finish, {
-        conversationId: args.conversationId,
-        messageId: args.messageId,
-        body: `Easy there, youngster—these old bones need a rest. Try me again in about ${hours} ${hours === 1 ? "hour" : "hours"}.`,
-      });
-      return null;
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error("@bot cannot answer: GEMINI_API_KEY is not set on this deployment.");
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      await ctx.runMutation(internal.chat.bot.finish, {
-        conversationId: args.conversationId,
-        messageId: args.messageId,
-        body: "Speak up, youngster—my hearing aid is whistling. The grown-ups still need to connect my Gemini key.",
-      });
-      return null;
-    }
-
-    const room = await ctx.runQuery(internal.chat.bot.context, {
-      conversationId: args.conversationId,
-      messageId: args.messageId,
-      askerClerkId: args.askerClerkId,
-    });
-    if (room === null) {
-      await ctx.runMutation(internal.chat.bot.stopTyping, {
-        conversationId: args.conversationId,
-        messageId: args.messageId,
-      });
-      return null;
-    }
-
+    const startedAt = Date.now();
+    const model = process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BOT_REQUEST_TIMEOUT_MS);
     let beating = true;
     const heartbeat = (async () => {
       while (beating) {
         await new Promise((resolve) => setTimeout(resolve, BOT_TYPING_BEAT_MS));
         if (!beating) break;
-        await ctx.runMutation(internal.chat.bot.beat, {
-          conversationId: args.conversationId,
-          messageId: args.messageId,
-        });
+        try {
+          await ctx.runMutation(internal.chat.bot.beat, {
+            conversationId: args.conversationId,
+            messageId: args.messageId,
+          });
+        } catch (error) {
+          console.warn("@bot typing heartbeat failed", {
+            messageId: args.messageId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     })();
 
     try {
+      if (args.exhausted) {
+        const hours = Math.max(1, Math.ceil((args.retryAfter ?? 0) / 3_600_000));
+        await ctx.runMutation(internal.chat.bot.finish, {
+          conversationId: args.conversationId,
+          messageId: args.messageId,
+          body: `Easy there, youngster—these old bones need a rest. Try me again in about ${hours} ${hours === 1 ? "hour" : "hours"}.`,
+        });
+        return null;
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) throw new Error("GEMINI_API_KEY is not set on this deployment");
+
+      const room = await ctx.runQuery(internal.chat.bot.context, {
+        conversationId: args.conversationId,
+        messageId: args.messageId,
+        askerClerkId: args.askerClerkId,
+      });
+      if (room === null) return null;
+
       const google = createGoogleGenerativeAI({ apiKey });
       const oldMan = new Agent(components.agent, {
         name: BOT_NAME,
-        languageModel: google(process.env.GEMINI_MODEL ?? DEFAULT_MODEL),
+        languageModel: google(model),
         instructions: INSTRUCTIONS,
       });
-      const result = await oldMan.streamText(
+      // The room only displays the finished, moderated reply. Await the full
+      // result so provider failures cannot disappear into an empty text stream.
+      const result = await oldMan.generateText(
         ctx,
-        // Agent calls require a scope even when no component thread is used.
-        // A user id satisfies that contract without persisting a second chat
-        // history; the bounded room transcript below remains the full context.
         { userId: args.askerClerkId },
         {
           prompt: transcriptOf(room.messages, args.askerHandle),
-          maxOutputTokens: 96,
+          // Leave room for reasoning and let the prompt control reply length.
+          maxOutputTokens: 4_096,
           temperature: 0.85,
+          maxRetries: 1,
+          abortSignal: controller.signal,
         },
       );
-
-      let reply = "";
-      for await (const chunk of result.textStream) reply += chunk;
+      console.info("@bot generation completed", {
+        messageId: args.messageId,
+        model,
+        durationMs: Date.now() - startedAt,
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        usage: result.usage,
+      });
+      if (!result.text.trim()) {
+        throw new Error(`Empty model response (${result.finishReason})`);
+      }
 
       await ctx.runMutation(internal.chat.bot.finish, {
         conversationId: args.conversationId,
         messageId: args.messageId,
-        body: shortReply(reply),
+        body: plainReply(result.text),
       });
     } catch (error) {
-      console.error("@bot Gemini request failed", error);
-      if (args.metered) {
-        await botRateLimiter.limit(ctx, "botTags", {
-          key: args.askerClerkId,
-          count: -1,
-        });
-      }
+      console.error("@bot generation failed", {
+        messageId: args.messageId,
+        model,
+        durationMs: Date.now() - startedAt,
+        timedOut: controller.signal.aborted,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // A refund outage must never prevent the user from receiving a reply.
       await ctx.runMutation(internal.chat.bot.finish, {
         conversationId: args.conversationId,
         messageId: args.messageId,
         body: SAFE_FALLBACK,
       });
+      if (args.metered) {
+        try {
+          await botRateLimiter.limit(ctx, "botTags", {
+            key: args.askerClerkId,
+            count: -1,
+          });
+        } catch (refundError) {
+          console.error("@bot quota refund failed", {
+            messageId: args.messageId,
+            error: refundError instanceof Error ? refundError.message : String(refundError),
+          });
+        }
+      }
     } finally {
+      clearTimeout(timeout);
       beating = false;
       await heartbeat;
+      await ctx.runMutation(internal.chat.bot.stopTyping, {
+        conversationId: args.conversationId,
+        messageId: args.messageId,
+      });
     }
     return null;
   },

@@ -1,30 +1,43 @@
-import { hero } from "@/lib/content";
-import { AuthButton } from "@/components/auth-button";
+import { ArrowRightIcon } from "@heroicons/react/20/solid";
 import { ButtonLink } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
-import { MarkedText } from "./marked-text";
+import { LearningScene } from "./learning-scene";
+import { RotatingWord } from "./rotating-word";
+import styles from "./landing.module.css";
 
 export function Hero() {
   return (
-    <section className="pt-12 pb-10 sm:pt-24 sm:pb-20 lg:pt-28">
-      <Container>
-        <h1 className="text-display animate-rise-in max-w-3xl text-balance text-[1.875rem] min-[400px]:text-[2rem] sm:text-[2.75rem] lg:text-[3.25rem] xl:text-[3.5rem]">
-          <MarkedText text={hero.headline} />
+    <section
+      className={`${styles.container} ${styles.hero}`}
+      aria-labelledby="hero-heading"
+    >
+      <div className={styles.heroCopy}>
+        <h1 id="hero-heading" aria-label="The new way of Learning, Planning, Organizing.">
+          <span><b className={styles.headlineText}>The new way</b></span>
+          <span><b className={styles.headlineText}>of </b><RotatingWord /></span>
         </h1>
-
-        {/* Stacked and full width on a phone, where a thumb wants the whole
-            measure, and a row from `sm` where two pills side by side fit. */}
-        <div
-          className="animate-rise-in mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:items-center sm:gap-4"
-          style={{ animationDelay: "120ms" }}
-        >
-          <AuthButton size="xl">{hero.primaryCta}</AuthButton>
-          <ButtonLink href="#platform" variant="secondary" size="xl">
-            {hero.secondaryCta}
-            <span aria-hidden>↓</span>
+        <p>
+          A little curiosity. A little practice. See where it takes you.
+        </p>
+        <div className={styles.actions}>
+          <ButtonLink
+            href="/auth/sign-up"
+            size="xl"
+            className={styles.waitlistButton}
+          >
+            Join the Waitlist
+          </ButtonLink>
+          <ButtonLink
+            href="/auth/sign-in"
+            variant="link"
+            size="xl"
+            className="gap-2 text-foreground"
+          >
+            Sign in
+            <ArrowRightIcon aria-hidden="true" className="size-4" />
           </ButtonLink>
         </div>
-      </Container>
+      </div>
+      <LearningScene />
     </section>
   );
 }
