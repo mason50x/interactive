@@ -22,6 +22,7 @@ export type Person = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  avatarUrl?: string;
 };
 
 /**
@@ -48,6 +49,7 @@ export function PersonRow({
     <>
       <Monogram
         handle={person.handle}
+        imageUrl={person.avatarUrl}
         hue={person.avatarHue}
         emoji={person.avatarEmoji}
         initials={person.avatarInitials}
@@ -79,7 +81,9 @@ export function PersonRow({
         </span>
       )}
       {children === undefined ? null : (
-        <span className="flex shrink-0 items-center gap-1 pr-1">{children}</span>
+        <span className="flex shrink-0 items-center gap-1 pr-1">
+          {children}
+        </span>
       )}
     </li>
   );

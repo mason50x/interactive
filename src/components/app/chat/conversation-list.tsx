@@ -98,7 +98,9 @@ export function ConversationList() {
     () =>
       new Set(
         conversations.flatMap((conversation) =>
-          conversation.peerClerkId === undefined ? [] : [conversation.peerClerkId],
+          conversation.peerClerkId === undefined
+            ? []
+            : [conversation.peerClerkId],
         ),
       ),
     [conversations],
@@ -187,8 +189,22 @@ export function ConversationList() {
                             ? (conversation.peerHandle ?? name)
                             : name
                         }
-                        emoji={conversation.emoji}
-                        hue={conversation.hue}
+                        imageUrl={conversation.peerAvatarUrl}
+                        emoji={
+                          conversation.kind === "dm"
+                            ? conversation.peerAvatarEmoji
+                            : conversation.emoji
+                        }
+                        initials={
+                          conversation.kind === "dm"
+                            ? conversation.peerAvatarInitials
+                            : conversation.initials
+                        }
+                        hue={
+                          conversation.kind === "dm"
+                            ? conversation.peerAvatarHue
+                            : conversation.hue
+                        }
                         brand={conversation.kind === "global"}
                       />
 

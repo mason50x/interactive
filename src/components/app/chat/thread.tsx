@@ -7,6 +7,7 @@ import {
   ArrowUpIcon,
   ArrowUturnLeftIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   EllipsisHorizontalIcon,
   FaceSmileIcon,
   PhotoIcon,
@@ -56,14 +57,18 @@ import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
 import { Photo } from "@/components/app/chat/photo";
 import { Present } from "@/components/app/chat/presence";
-import { StandingBanner } from "@/components/app/chat/standing-banner";
-import { Typing, useTypingBeat, useTypists } from "@/components/app/chat/typing";
+import {
+  Typing,
+  useTypingBeat,
+  useTypists,
+} from "@/components/app/chat/typing";
 import { Waveform } from "@/components/app/chat/waveform";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
   DELETE_WINDOW_MS,
   REACTIONS,
   conversationName,
+  isBot,
   personName,
   refusalMessage,
   type Refusal,
@@ -142,13 +147,39 @@ export function Thread({
 }: {
   conversationId: Id<"conversations">;
 }) {
+  // Next may preserve a client component while only its dynamic route param
+  // changes. The key makes a conversation's day page part of that
+  // conversation, so opening another one always starts live rather than on the
+  // archive page the previous room was left on.
+  return (
+    <ConversationThread
+      key={conversationId}
+      conversationId={conversationId}
+    />
+  );
+}
+
+function ConversationThread({
+  conversationId,
+}: {
+  conversationId: Id<"conversations">;
+}) {
   const { userId } = useAuth();
   const { profile, conversations, images: pictures } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
 
+  /**
+   * Everyone is a sequence of local calendar days rather than one endless
+   * room. Zero is the live day; positive numbers walk backwards through its
+   * retained history. A minute clock advances an open tab across midnight.
+   */
+  const now = useDayClock();
+  const [daysAgo, setDaysAgo] = useState(0);
+  const day = dayBounds(now, daysAgo);
+
   const { results, status, loadMore } = usePaginatedQuery(
     api.chat.messages.list,
-    { conversationId },
+    { conversationId, dayStart: day.start, dayEnd: day.end },
     { initialNumItems: 40 },
   );
 
@@ -161,15 +192,11 @@ export function Thread({
 
   // The wait a new account serves before the global room will take anything —
   // shown as a ring rather than sprung as a refusal. See `global-unlock.tsx`.
-  // Not shown to somebody muted or banned, who has a banner above already
-  // saying something more important about the same composer.
   const unlockAt =
     detail !== undefined &&
     detail !== null &&
     detail.kind === "global" &&
-    profile !== null &&
-    profile.bannedAt === undefined &&
-    profile.mutedUntil === undefined
+    profile !== null
       ? profile.globalUnlockAt
       : null;
 
@@ -235,6 +262,10 @@ export function Thread({
       authorClerkId: userId,
       authorHandle: profile.handle,
       authorName: profile.displayName,
+      authorAvatarUrl: profile.avatarUrl,
+      authorAvatarHue: profile.avatarHue,
+      authorAvatarEmoji: profile.avatarEmoji,
+      authorAvatarInitials: profile.avatarInitials,
       body: text,
       replyTo: replyTo === null ? undefined : replyFromMessage(replyTo),
       // What the composer resolved from the people it offered. The server
@@ -275,13 +306,15 @@ export function Thread({
     });
   }
 
-  const shut =
-    profile !== null &&
-    (profile.bannedAt !== undefined || profile.mutedUntil !== undefined);
-
   /** Whether a drag is something this thread would take. */
   function droppable(event: DragEvent) {
-    return pictures && !shut && event.dataTransfer.types.includes("Files");
+    const archived = detail?.kind === "global" && daysAgo > 0;
+    return (
+      pictures &&
+      cooling === null &&
+      !archived &&
+      event.dataTransfer.types.includes("Files")
+    );
   }
 
   function onDragEnter(event: DragEvent) {
@@ -330,15 +363,21 @@ export function Thread({
   const unread = summary === undefined || summary.unread > 0;
 
   useEffect(() => {
-    if (!unread) return;
+    if (!unread || daysAgo > 0) return;
     void markRead({ conversationId });
-  }, [conversationId, newest, unread, markRead]);
+  }, [conversationId, daysAgo, newest, unread, markRead]);
 
   // Opening a conversation always lands at its live end, whatever the last one
   // was left at.
   useEffect(() => {
     pinned.current = true;
   }, [conversationId]);
+
+  // A different day is a different page. Land at that day's most recent
+  // message, which is the point from which the reader paged backwards.
+  useEffect(() => {
+    pinned.current = true;
+  }, [daysAgo]);
 
   // Before the paint rather than after it. A thread opens at its live end, and
   // an effect that runs after the browser has drawn shows one frame of the top
@@ -347,7 +386,7 @@ export function Thread({
     const element = scroller.current;
     if (element === null || !pinned.current) return;
     element.scrollTop = element.scrollHeight;
-  }, [conversationId, newest, pending, results.length]);
+  }, [conversationId, daysAgo, newest, pending, results.length]);
 
   /**
    * The end of the thread, watched for growing.
@@ -395,6 +434,10 @@ export function Thread({
         clerkId: message.authorClerkId,
         handle: message.authorHandle,
         displayName: message.authorName,
+        avatarUrl: message.authorAvatarUrl,
+        avatarHue: message.authorAvatarHue,
+        avatarEmoji: message.authorAvatarEmoji,
+        avatarInitials: message.authorAvatarInitials,
       });
     }
     return list;
@@ -411,6 +454,10 @@ export function Thread({
           clerkId: detail.peerClerkId,
           handle: detail.peerHandle,
           displayName: detail.peerName,
+          avatarUrl: detail.peerAvatarUrl,
+          avatarHue: detail.peerAvatarHue,
+          avatarEmoji: detail.peerAvatarEmoji,
+          avatarInitials: detail.peerAvatarInitials,
         }
       : null;
 
@@ -427,6 +474,8 @@ export function Thread({
   if (detail === null) return <Outside conversationId={conversationId} />;
 
   const name = detail === undefined ? "" : conversationName(detail);
+  const global = detail?.kind === "global";
+  const live = !global || daysAgo === 0;
 
   return (
     <div
@@ -471,11 +520,19 @@ export function Thread({
                   clerkId: detail.peerClerkId,
                   handle: detail.peerHandle ?? name,
                   displayName: detail.peerName,
+                  avatarUrl: detail.peerAvatarUrl,
+                  avatarHue: detail.peerAvatarHue,
+                  avatarEmoji: detail.peerAvatarEmoji,
+                  avatarInitials: detail.peerAvatarInitials,
                 }}
                 className="-ml-1.5 flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg px-1.5 py-1 text-left outline-none hover:bg-foreground/[0.04] focus-visible:ring-2 focus-visible:ring-ring/60"
               >
                 <Monogram
                   handle={detail.peerHandle ?? name}
+                  imageUrl={detail.peerAvatarUrl}
+                  hue={detail.peerAvatarHue}
+                  emoji={detail.peerAvatarEmoji}
+                  initials={detail.peerAvatarInitials}
                   className="size-7 text-[0.75rem]"
                 />
                 <span className="min-w-0 flex-1">
@@ -486,7 +543,8 @@ export function Thread({
                       one thing worth taking that line over for, and shown
                       up here as well as in the thread because the thread's
                       dots are below the fold for anybody reading back. */}
-                  {detail.peerName === undefined && typists.length === 0 ? null : (
+                  {detail.peerName === undefined &&
+                  typists.length === 0 ? null : (
                     <span className="block truncate text-[0.75rem] text-faint">
                       {typists.length > 0 ? (
                         <span className="text-shimmer">typing…</span>
@@ -526,13 +584,19 @@ export function Thread({
         )}
       </header>
 
-      <StandingBanner />
-
       <div
         ref={scroller}
         onScroll={onScroll}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
       >
+        {global ? (
+          <DayPager
+            now={now}
+            daysAgo={daysAgo}
+            onChange={setDaysAgo}
+          />
+        ) : null}
+
         {status === "LoadingFirstPage" ? (
           <div className="flex justify-center py-6">
             <Spinner />
@@ -547,7 +611,9 @@ export function Thread({
           </div>
         ) : null}
 
-        {status === "Exhausted" && results.length === 0 ? <Quiet /> : null}
+        {status === "Exhausted" && results.length === 0 ? (
+          <Quiet archived={!live} />
+        ) : null}
 
         {ordered.map((message, index) => (
           <MessageRow
@@ -556,7 +622,7 @@ export function Thread({
             previous={ordered[index - 1]}
             mine={message.authorClerkId === userId}
             me={userId}
-            canAct={profile !== null && profile.bannedAt === undefined}
+            canAct={profile !== null}
             onReply={() => {
               setReplyingTo(message);
               composer.current?.focus();
@@ -568,7 +634,7 @@ export function Thread({
         {/* Last in document order, so it sits under the newest confirmed
             message. Held at reduced opacity so it reads as not yet sent —
             it may still be refused. */}
-        {pending === null ? null : (
+        {!live || pending === null ? null : (
           <div className="opacity-50">
             <MessageRow
               message={pending}
@@ -585,7 +651,7 @@ export function Thread({
         {/* Under everything, where their message is about to be. Wrapped so
             its growth can be watched — see `tail` above. */}
         <div ref={tail}>
-          <Typing typists={typists} />
+          {live ? <Typing typists={typists} /> : null}
         </div>
       </div>
 
@@ -594,25 +660,143 @@ export function Thread({
           — cost the last message of every conversation, which sat half
           behind it until you scrolled. A footer is a footer. */}
       <div className="shrink-0">
-        {cooling === null ? null : (
+        {!live || cooling === null ? null : (
           <GlobalUnlock remaining={cooling} total={cooldown} />
         )}
 
-        <Composer
-          ref={composer}
-          onSubmit={submit}
-          pictures={pictures}
-          lock={shut ? "muted" : cooling !== null ? "new" : null}
-          replyingTo={replyingTo}
-          onCancelReply={() => setReplyingTo(null)}
-          conversationId={conversationId}
-          kind={detail === undefined ? null : detail.kind}
-          peer={peer}
-          authors={authors}
-          me={userId}
-        />
+        {live ? (
+          <Composer
+            ref={composer}
+            onSubmit={submit}
+            pictures={pictures}
+            lock={cooling !== null ? "new" : null}
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+            conversationId={conversationId}
+            kind={detail === undefined ? null : detail.kind}
+            peer={peer}
+            authors={authors}
+            me={userId}
+          />
+        ) : null}
       </div>
     </div>
+  );
+}
+
+/** Today plus the twenty-nine complete calendar pages behind it. Mirrors the
+ *  global room's thirty-day retention window on the server. */
+const GLOBAL_DAY_PAGES = 30;
+
+/**
+ * A clock that moves only when the calendar page changes. Using the app's
+ * minute clock here would re-render every loaded message sixty times an hour
+ * even though the day bounds and every label stay identical.
+ */
+function useDayClock(): number {
+  const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const delay = Math.max(1_000, midnight.getTime() - Date.now() + 100);
+    const timer = setTimeout(() => setNow(Date.now()), delay);
+    return () => clearTimeout(timer);
+  }, [now]);
+
+  return now;
+}
+
+/**
+ * The exact local-midnight bounds for one page of Everyone.
+ *
+ * Local Date arithmetic matters here: subtracting a flat 24 hours is wrong on
+ * the two days a year that daylight saving time changes. The server receives
+ * the resulting instants and uses them only to bound a conversation the caller
+ * is already allowed to read.
+ */
+function dayBounds(now: number, daysAgo: number) {
+  const date = new Date(now);
+  date.setDate(date.getDate() - daysAgo);
+  date.setHours(0, 0, 0, 0);
+
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+
+  return { date, start: date.getTime(), end: next.getTime() };
+}
+
+function compactDay(date: Date): string {
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function DayPager({
+  now,
+  daysAgo,
+  onChange,
+}: {
+  now: number;
+  daysAgo: number;
+  onChange: (daysAgo: number) => void;
+}) {
+  const selected = dayBounds(now, daysAgo).date;
+  const older = dayBounds(now, daysAgo + 1).date;
+  const newer = daysAgo > 0 ? dayBounds(now, daysAgo - 1).date : null;
+  const live = daysAgo === 0;
+
+  return (
+    <nav
+      aria-label="Everyone by day"
+      className="flex justify-center border-b border-border pb-3"
+    >
+      <div className="grid grid-cols-[2rem_minmax(9rem,auto)_2rem] items-center">
+        {daysAgo < GLOBAL_DAY_PAGES - 1 ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground"
+            aria-label={`View ${compactDay(older)}`}
+            onClick={() => onChange(daysAgo + 1)}
+          >
+            <ChevronLeftIcon />
+          </Button>
+        ) : (
+          <span />
+        )}
+
+        <p className="text-center text-[0.75rem] font-semibold text-muted-foreground">
+          {live
+            ? "Today"
+            : selected.toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+        </p>
+
+        {newer === null ? (
+          <span />
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground"
+            aria-label={
+              daysAgo === 1
+                ? "Return to today's messages"
+                : `View ${compactDay(newer)}`
+            }
+            onClick={() => onChange(daysAgo - 1)}
+          >
+            <ChevronRightIcon />
+          </Button>
+        )}
+      </div>
+    </nav>
   );
 }
 
@@ -802,7 +986,7 @@ const BUBBLE_SAYING = [-8, 0, 8];
  * at the top of an empty column. Everything about how it is built is in
  * `.dot-bubble` in `globals.css`.
  */
-function Quiet() {
+function Quiet({ archived = false }: { archived?: boolean }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10">
       {/* The accent, like the search orb — the two pieces of decoration in the
@@ -842,7 +1026,9 @@ function Quiet() {
       </div>
 
       <p className="text-center text-[0.9375rem] font-semibold text-foreground">
-        Nothing has been said here yet.
+        {archived
+          ? "Nothing was said here on this day."
+          : "Nothing has been said here yet."}
       </p>
     </div>
   );
@@ -916,6 +1102,7 @@ function MessageRow({
     message._creationTime - previous._creationTime < GROUP_WINDOW_MS;
 
   const gone = message.status !== "visible";
+  const bot = isBot(message.authorClerkId);
 
   /**
    * Whether this is still yours to unsend.
@@ -949,6 +1136,10 @@ function MessageRow({
     clerkId: message.authorClerkId,
     handle: message.authorHandle,
     displayName: message.authorName,
+    avatarUrl: message.authorAvatarUrl,
+    avatarHue: message.authorAvatarHue,
+    avatarEmoji: message.authorAvatarEmoji,
+    avatarInitials: message.authorAvatarInitials,
   };
 
   /** Somebody else said the reader's name in this one. */
@@ -971,12 +1162,28 @@ function MessageRow({
     >
       {mine ? null : grouped ? (
         <span className="w-8 shrink-0" />
+      ) : bot ? (
+        <span className="shrink-0 self-start">
+          <Monogram
+            handle={message.authorHandle}
+            imageUrl={message.authorAvatarUrl}
+            hue={message.authorAvatarHue}
+            emoji={message.authorAvatarEmoji}
+            initials={message.authorAvatarInitials}
+          />
+        </span>
       ) : (
         <PersonCard
           person={author}
           className="shrink-0 cursor-pointer self-start rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <Monogram handle={message.authorHandle} />
+          <Monogram
+            handle={message.authorHandle}
+            imageUrl={message.authorAvatarUrl}
+            hue={message.authorAvatarHue}
+            emoji={message.authorAvatarEmoji}
+            initials={message.authorAvatarInitials}
+          />
         </PersonCard>
       )}
 
@@ -1037,7 +1244,10 @@ function MessageRow({
             <span className="relative">
               <MentionText
                 body={message.body}
-                resolve={resolverFor(message.mentions, message.mentionsEveryone)}
+                resolve={resolverFor(
+                  message.mentions,
+                  message.mentionsEveryone,
+                )}
                 me={me}
                 mine={mine}
               />
@@ -1081,7 +1291,11 @@ function MessageRow({
             mine && "flex-row-reverse",
           )}
         >
-          {mine || grouped ? null : (
+          {mine || grouped ? null : bot ? (
+            <span className="truncate text-[0.875rem] font-semibold">
+              {personName(author)}
+            </span>
+          ) : (
             <PersonCard
               person={author}
               className="cursor-pointer truncate rounded text-[0.875rem] font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
@@ -1193,7 +1407,7 @@ function MessageRow({
                               Delete
                             </Menu.Item>
                           ) : null
-                        ) : (
+                        ) : bot ? null : (
                           <>
                             {/* Reporting is not a message to anybody. It is weighted
                                 by the reporter's own record and counted against a
@@ -1413,14 +1627,12 @@ const REPORT_REASONS = [
 /**
  * Why the composer is shut, when it is.
  *
- * `muted` is a rule somebody broke and `new` is a wait everybody serves, and
- * the two want different words in the same box — which is the whole reason
- * this is a reason rather than a boolean.
+ * A new account's global-room wait is represented as a reason rather than a
+ * boolean so the composer can show useful copy.
  */
-type Lock = "muted" | "new" | null;
+type Lock = "new" | null;
 
-const PLACEHOLDER: Record<"muted" | "new", string> = {
-  muted: "You cannot send messages right now",
+const PLACEHOLDER: Record<"new", string> = {
   new: "You can post here when the ring fills",
 };
 
@@ -1521,8 +1733,8 @@ function Composer({
   const [notice, setNotice] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
 
-  // Tells everybody else there are words in here. Off while the box is shut:
-  // a muted account's words are still in the box, and are not typing.
+  // Tells everybody else there are words in here. Off while the box is shut by
+  // the new-account global-room wait.
   useTypingBeat(conversationId, body, !shut);
 
   /**
@@ -2208,9 +2420,7 @@ function Composer({
                 setCaret(event.target.selectionStart);
                 setActive(0);
               }}
-              onSelect={(event) =>
-                setCaret(event.currentTarget.selectionStart)
-              }
+              onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
               onScroll={syncBackdrop}
               onKeyDown={onKeyDown}
               onPaste={onPaste}

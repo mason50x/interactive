@@ -53,6 +53,7 @@ export function PersonCard({
     avatarHue?: number;
     avatarEmoji?: string;
     avatarInitials?: string;
+    avatarUrl?: string;
   };
   /** What is pressed to open it. */
   children: ReactNode;
@@ -112,6 +113,7 @@ function Body({
     avatarHue?: number;
     avatarEmoji?: string;
     avatarInitials?: string;
+    avatarUrl?: string;
   };
   onClose: () => void;
 }) {
@@ -171,6 +173,7 @@ function Body({
       <div className="flex items-center gap-3">
         <Monogram
           handle={shown.handle}
+          imageUrl={shown.avatarUrl}
           hue={shown.avatarHue}
           emoji={shown.avatarEmoji}
           initials={shown.avatarInitials}

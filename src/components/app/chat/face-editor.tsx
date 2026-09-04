@@ -1,7 +1,7 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import { PencilIcon } from "@heroicons/react/24/solid";
+import { ArrowUpTrayIcon, PencilIcon } from "@heroicons/react/24/solid";
 import {
   useEffect,
   useLayoutEffect,
@@ -26,11 +26,14 @@ import { cn } from "@/lib/utils";
  */
 export type Face = { emoji?: string; initials?: string; hue?: number };
 
+export type FaceUploadResult =
+  { ok: true; previewUrl: string } | { ok: false; message: string };
+
 /** The two halves of the choice, in the order they are asked. */
 type Step = "picture" | "colour";
 
 /** And the two things a picture can be. There is deliberately no third. */
-type Mode = "emoji" | "letters";
+type Mode = "photo" | "emoji" | "letters";
 
 const STEPS: readonly { step: Step; title: string; hint: string }[] = [
   {
@@ -85,15 +88,17 @@ const STEPS: readonly { step: Step; title: string; hint: string }[] = [
  *
  * ## What it may write
  *
- * Nothing that was not already in the app. The faces come from `AVATAR_EMOJI`,
- * the colours from `AVATAR_HUES`, and the letters are two characters that the
- * server shape-checks — see `monogram.tsx` for why a picked picture, and never
- * an uploaded one, is the whole design here.
+ * The faces come from `AVATAR_EMOJI`, the colours from `AVATAR_HUES`, and the
+ * letters are two characters that the server shape-checks. A person may also
+ * upload a moderated image owned by their chat profile; groups remain on the
+ * built-in faces and letters.
  */
 export function FaceEditor({
   name,
   label,
   face,
+  imageUrl,
+  onUpload,
   onChange,
   children,
 }: {
@@ -102,6 +107,10 @@ export function FaceEditor({
   /** What the disc is called to a screen reader — "your picture", "the group picture". */
   label: string;
   face: Face;
+  /** A moderated image owned by this chat profile, never a Clerk image. */
+  imageUrl?: string;
+  /** Present only for people; group pictures remain emoji or letters. */
+  onUpload?: (file: File) => Promise<FaceUploadResult>;
   /** The whole face, every time. See `Face`. */
   onChange: (face: Face) => void;
   /** What sits to the right of the disc. A name, and a number about it. */
@@ -117,9 +126,22 @@ export function FaceEditor({
   // in use, and after that it is the user's — somebody who clears their letters
   // is still on the letters step and about to type different ones, not asking
   // to be sent back to the emoji sheet.
-  const [mode, setMode] = useState<Mode>(
-    emoji === undefined && initials !== undefined ? "letters" : "emoji",
+  const [mode, setMode] = useState<Mode>(() =>
+    imageUrl !== undefined
+      ? "photo"
+      : emoji === undefined && initials !== undefined
+        ? "letters"
+        : "emoji",
   );
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [localImage, setLocalImage] = useState<
+    { url: string; replaces?: string } | undefined
+  >();
+  const localImageCurrent =
+    localImage !== undefined && imageUrl === localImage.replaces;
+  const shownImage = localImageCurrent ? localImage.url : imageUrl;
 
   const body = useRef<HTMLDivElement>(null);
 
@@ -142,6 +164,8 @@ export function FaceEditor({
    * yet committed still belongs to the face.
    */
   function send(part: Face) {
+    clearLocalImage();
+    setUploadError(null);
     onChange({ emoji, initials: worn, hue, ...part });
   }
 
@@ -174,6 +198,46 @@ export function FaceEditor({
       // yet.
       if (initials !== undefined) setMode("letters");
     }
+  }
+
+  const [seenImage, setSeenImage] = useState(imageUrl);
+  if (seenImage !== imageUrl) {
+    setSeenImage(imageUrl);
+    if (imageUrl !== undefined && localImage === undefined) setMode("photo");
+  }
+
+  // Keep the local processed pixels on screen until the reactive profile read
+  // returns the replacement storage URL, then release the object URL.
+  useEffect(() => {
+    if (localImage === undefined || imageUrl === localImage.replaces) return;
+    URL.revokeObjectURL(localImage.url);
+  }, [imageUrl, localImage]);
+
+  useEffect(
+    () => () => {
+      if (localImage !== undefined) URL.revokeObjectURL(localImage.url);
+    },
+    [localImage],
+  );
+
+  function clearLocalImage() {
+    if (localImage !== undefined) URL.revokeObjectURL(localImage.url);
+    setLocalImage(undefined);
+  }
+
+  async function upload(file: File) {
+    if (onUpload === undefined || uploading) return;
+    setUploading(true);
+    setUploadError(null);
+    const result = await onUpload(file);
+    setUploading(false);
+    if (!result.ok) {
+      setUploadError(result.message);
+      return;
+    }
+    clearLocalImage();
+    setLocalImage({ url: result.previewUrl, replaces: imageUrl });
+    setMode("photo");
   }
 
   // The letters settle before they are sent. A colour or a face is one press
@@ -210,7 +274,10 @@ export function FaceEditor({
 
   const at = STEPS.findIndex((one) => one.step === step);
   const chosen =
-    emoji !== undefined || initials !== undefined || hue !== undefined;
+    shownImage !== undefined ||
+    emoji !== undefined ||
+    initials !== undefined ||
+    hue !== undefined;
 
   return (
     <Popover.Root
@@ -234,6 +301,7 @@ export function FaceEditor({
         >
           <Monogram
             handle={name === "" ? "?" : name}
+            imageUrl={shownImage}
             emoji={emoji}
             initials={initials}
             hue={hue}
@@ -288,7 +356,16 @@ export function FaceEditor({
             </div>
 
             <div
-              style={{ height: bodyHeight }}
+              // The upload panel is intentionally compact. Let it take its
+              // natural height instead of briefly inheriting the taller emoji
+              // grid's measured height, which otherwise leaves a large empty
+              // shelf above the footer after switching to Photo.
+              style={{
+                height:
+                  step === "picture" && mode === "photo"
+                    ? undefined
+                    : bodyHeight,
+              }}
               className="overflow-hidden transition-[height] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
             >
               {/* The measured one, and deliberately not the keyed one below
@@ -315,8 +392,22 @@ export function FaceEditor({
                       mode={mode}
                       emoji={emoji}
                       letters={letters}
+                      imageUrl={shownImage}
+                      canUpload={onUpload !== undefined}
+                      uploading={uploading}
+                      error={uploadError}
                       onMode={(next) => {
                         setMode(next);
+                        // A stored photo belongs only to Photo mode. Leaving
+                        // it is a real style change, so remove its attachment
+                        // immediately rather than keeping hidden bytes around
+                        // until an emoji or letters are chosen later.
+                        if (next !== "photo" && shownImage !== undefined) {
+                          setLetters("");
+                          setPushed(undefined);
+                          send({ emoji: undefined, initials: undefined });
+                          return;
+                        }
                         // Choosing to write letters is choosing not to wear a
                         // face. Choosing the sheet writes nothing until one is
                         // picked — the letters stay on the disc until something
@@ -324,6 +415,7 @@ export function FaceEditor({
                         // not an edit.
                         if (next === "letters") send({ emoji: undefined });
                       }}
+                      onFile={(file) => void upload(file)}
                       onEmoji={(next) => {
                         // The disc has room for one thing, and the server drops
                         // the letters when a face arrives. Dropped here too —
@@ -353,9 +445,11 @@ export function FaceEditor({
                 size="sm"
                 disabled={!chosen}
                 onClick={() => {
+                  clearLocalImage();
                   setLetters("");
                   setPushed(undefined);
                   setMode("emoji");
+                  setUploadError(null);
                   onChange({});
                 }}
               >
@@ -379,12 +473,12 @@ export function FaceEditor({
                 type="button"
                 size="sm"
                 onClick={() =>
-                  at < STEPS.length - 1
+                  at < STEPS.length - 1 && mode !== "photo"
                     ? setStep(STEPS[at + 1].step)
                     : setOpen(false)
                 }
               >
-                {at < STEPS.length - 1 ? "Next" : "Done"}
+                {at < STEPS.length - 1 && mode !== "photo" ? "Next" : "Done"}
               </Button>
             </div>
           </Popover.Popup>
@@ -394,13 +488,18 @@ export function FaceEditor({
   );
 }
 
-/** Step one: sixteen faces, or two letters. One or the other, never both. */
+/** Step one: a moderated upload, sixteen faces, or two letters. */
 function Picture({
   name,
   mode,
   emoji,
   letters,
+  imageUrl,
+  canUpload,
+  uploading,
+  error,
   onMode,
+  onFile,
   onEmoji,
   onLetters,
 }: {
@@ -408,27 +507,75 @@ function Picture({
   mode: Mode;
   emoji?: string;
   letters: string;
+  imageUrl?: string;
+  canUpload: boolean;
+  uploading: boolean;
+  error: string | null;
   onMode: (mode: Mode) => void;
+  onFile: (file: File) => void;
   onEmoji: (emoji: string | undefined) => void;
   onLetters: (letters: string) => void;
 }) {
+  const field = useRef<HTMLInputElement>(null);
+
+  function take(files: FileList | null) {
+    const file = files?.[0];
+    if (file !== undefined) onFile(file);
+  }
+
   return (
     <>
-      {/* No icons on these two, unlike every other set of tiles in the app: the
-          answer to "emoji or letters" is a sheet of pictures or a field of
-          letters directly underneath, and an icon over each would be a third
-          drawing of the same idea. */}
       <OptionTiles
         value={mode}
         onPick={onMode}
-        className="grid grid-cols-2 gap-1"
+        className={cn("grid gap-1", canUpload ? "grid-cols-3" : "grid-cols-2")}
         options={[
-          { value: "emoji", label: "Emoji" },
-          { value: "letters", label: "Letters" },
+          ...(canUpload ? [{ value: "photo" as const, label: "Photo" }] : []),
+          { value: "emoji" as const, label: "Emoji" },
+          { value: "letters" as const, label: "Letters" },
         ]}
       />
 
-      {mode === "emoji" ? (
+      {mode === "photo" && canUpload ? (
+        <>
+          <input
+            ref={field}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            onChange={(event) => {
+              take(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+          />
+          <button
+            type="button"
+            disabled={uploading}
+            aria-label={
+              imageUrl === undefined
+                ? "Upload profile picture"
+                : "Replace profile picture"
+            }
+            onClick={() => field.current?.click()}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              take(event.dataTransfer.files);
+            }}
+            className="mt-2 flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dotted border-border-strong bg-foreground/[0.025] text-muted-foreground transition-colors outline-none hover:border-primary/60 hover:bg-primary/[0.035] hover:text-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-wait"
+          >
+            <ArrowUpTrayIcon className="size-6 text-primary" />
+            <span className="text-[0.8125rem] font-medium">
+              {uploading ? "Checking…" : "Drop or Click"}
+            </span>
+          </button>
+          {error === null ? null : (
+            <p role="status" className="mt-2 text-[0.75rem] text-destructive">
+              {error}
+            </p>
+          )}
+        </>
+      ) : mode === "emoji" ? (
         <div className="mt-2 grid grid-cols-8 gap-1">
           {AVATAR_EMOJI.map((face) => {
             const on = emoji === face;

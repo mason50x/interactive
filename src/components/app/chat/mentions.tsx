@@ -5,7 +5,14 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
-import { personName } from "@/lib/chat";
+import {
+  BOT_HANDLE,
+  BOT_ID,
+  BOT_NAME,
+  BOT_TAGS_PER_DAY,
+  isBot,
+  personName,
+} from "@/lib/chat";
 import { EVERYONE, segmentMentions } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
@@ -51,12 +58,12 @@ export type MentionPerson = {
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
+  avatarUrl?: string;
 };
 
 /** One row of the picker. */
 export type MentionCandidate =
-  | { kind: "person"; person: MentionPerson }
-  | { kind: "everyone" };
+  { kind: "person"; person: MentionPerson } | { kind: "everyone" };
 
 /** The most rows the picker shows. Past this, type another letter. */
 const MAX_SHOWN = 6;
@@ -136,6 +143,9 @@ export function useMentionPeople({
       seen.add(person.clerkId);
       list.push(person);
     };
+    if (global) {
+      add({ clerkId: BOT_ID, handle: BOT_HANDLE, displayName: BOT_NAME });
+    }
     for (const author of authors) add(author);
     if (peer !== null) add(peer);
     for (const member of members ?? []) {
@@ -144,12 +154,16 @@ export function useMentionPeople({
         clerkId: member.clerkId,
         handle: member.handle,
         displayName: member.displayName,
+        avatarUrl: member.avatarUrl,
+        avatarHue: member.avatarHue,
+        avatarEmoji: member.avatarEmoji,
+        avatarInitials: member.avatarInitials,
       });
     }
     for (const friend of friends ?? []) add(friend);
     for (const person of found ?? []) add(person);
     return list;
-  }, [authors, peer, members, friends, found, me]);
+  }, [authors, peer, members, friends, found, me, global]);
 
   // Remembered across the picker closing. Set during render, which is the
   // sanctioned shape for state that mirrors other state — see `ghost` in the
@@ -167,8 +181,9 @@ export function useMentionPeople({
   const candidates = useMemo(() => {
     const ranked = people
       .map((person, index) => ({ person, index, rank: rankOf(person, query) }))
-      .filter((entry): entry is typeof entry & { rank: number } =>
-        entry.rank !== null,
+      .filter(
+        (entry): entry is typeof entry & { rank: number } =>
+          entry.rank !== null,
       )
       .sort((first, second) =>
         first.rank !== second.rank
@@ -234,7 +249,11 @@ export function MentionPicker({
         const current = index === active;
         return (
           <button
-            key={candidate.kind === "everyone" ? "@everyone" : candidate.person.clerkId}
+            key={
+              candidate.kind === "everyone"
+                ? "@everyone"
+                : candidate.person.clerkId
+            }
             type="button"
             role="option"
             id={optionId(id, index)}
@@ -271,6 +290,7 @@ export function MentionPicker({
               <>
                 <Monogram
                   handle={candidate.person.handle}
+                  imageUrl={candidate.person.avatarUrl}
                   hue={candidate.person.avatarHue}
                   emoji={candidate.person.avatarEmoji}
                   initials={candidate.person.avatarInitials}
@@ -281,7 +301,9 @@ export function MentionPicker({
                     {personName(candidate.person)}
                   </span>
                   <span className="block truncate text-[0.75rem] text-faint">
-                    @{candidate.person.handle}
+                    {isBot(candidate.person.clerkId)
+                      ? `${BOT_TAGS_PER_DAY} tags, refilling through the day`
+                      : `@${candidate.person.handle}`}
                   </span>
                 </span>
               </>
@@ -359,12 +381,23 @@ export function MentionText({
       "mention-chip",
       mine ? "mention-chip-mine" : named && "mention-chip-me",
     );
-    if (plain || named || segment.clerkId === undefined) {
+    if (
+      plain ||
+      named ||
+      segment.clerkId === undefined ||
+      isBot(segment.clerkId)
+    ) {
       return (
         <span
           key={index}
           className={chip}
-          title={segment.clerkId === undefined ? "Everyone in this group" : undefined}
+          title={
+            segment.clerkId === undefined
+              ? "Everyone in this group"
+              : isBot(segment.clerkId)
+                ? "Room bot"
+                : undefined
+          }
         >
           {segment.text}
         </span>

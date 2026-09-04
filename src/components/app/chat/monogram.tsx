@@ -1,19 +1,16 @@
 import type { CSSProperties } from "react";
 import { LogoMark } from "@/components/wordmark";
-import { BOT_FACE, BOT_HANDLE, handleHue } from "@/lib/chat";
+import { Photo } from "@/components/app/chat/photo";
+import { BOT_AVATAR, BOT_HANDLE, handleHue } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 
 /**
- * A person, drawn as a letter.
+ * A person, drawn as their chat-owned profile picture or fallback disc.
  *
- * Chat has no avatars and this is the reason: the only picture this app holds
- * is the one Clerk collected at signup, and a photograph of a thirteen-year-old
- * next to their messages in a room of strangers is the worst available default.
- * It would also mean the thread query had to join against the account table,
- * which is the table chat is built to stay out of entirely.
- *
- * So a letter, on a colour derived from the handle — stable for everybody
- * looking at it, stored nowhere, and needing no request to draw.
+ * Uploaded pictures come only from Convex chat storage after moderation. This
+ * component has no Clerk dependency and never falls back to the account photo:
+ * without an app-owned picture it draws the existing emoji, initials or handle
+ * letter on a colour derived from the handle.
  *
  * Both halves may be overridden, and for two different reasons. A group is a
  * thing several people share rather than a person, and naming it is not the
@@ -21,10 +18,8 @@ import { cn } from "@/lib/utils";
  * person may now do the same with `initials` and a `hue`, which is as far as
  * "choose your picture" goes here and deliberately so.
  *
- * None of it is free text: `emoji` comes from the fixed set in
- * `src/lib/chat.ts`, `hue` from the fixed wheel beside it, and `initials` from
- * a two-character shape the server checks. That is what keeps a picked picture
- * from being an uploaded one.
+ * `emoji` comes from the fixed set in `src/lib/chat.ts`, `hue` from the fixed
+ * wheel beside it, and `initials` from a two-character shape the server checks.
  *
  * Every override is optional and they fall back independently — a hue with no
  * initials is your first letter on a colour you chose, initials with no hue is
@@ -51,6 +46,7 @@ import { cn } from "@/lib/utils";
  */
 export function Monogram({
   handle,
+  imageUrl,
   emoji,
   initials,
   hue: given,
@@ -58,6 +54,7 @@ export function Monogram({
   className,
 }: {
   handle: string;
+  imageUrl?: string;
   emoji?: string;
   initials?: string;
   hue?: number;
@@ -65,6 +62,7 @@ export function Monogram({
   className?: string;
 }) {
   const hue = given ?? handleHue(handle);
+  const bot = handle === BOT_HANDLE;
 
   if (brand) {
     return (
@@ -89,7 +87,7 @@ export function Monogram({
     <span
       aria-hidden
       className={cn(
-        "monogram flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-semibold select-none",
+        "monogram relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[0.8125rem] font-semibold select-none",
         className,
       )}
       // Only the hue crosses over. The lightness and chroma are in
@@ -97,13 +95,23 @@ export function Monogram({
       // them — see `.monogram` there.
       style={{ "--monogram-hue": hue } as CSSProperties}
     >
-      {emoji ??
-        // The old man has no profile to have picked a face on, so his is
-        // fixed here — see `BOT_FACE` in `src/lib/chat.ts`. Nobody else can
-        // hold this handle; it is reserved.
-        (handle === BOT_HANDLE
-          ? BOT_FACE
-          : (initials ?? handle.slice(0, 1)).toUpperCase())}
+      {bot
+        ? null
+        : (emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase())}
+      {bot ? (
+        // The old man has no profile row, so his app-owned portrait is fixed
+        // here. The image itself moves inside the clipped circle; every place
+        // that already renders a Monogram therefore gets the same idle face.
+        <Photo
+          src={BOT_AVATAR}
+          className="absolute inset-0 size-full rounded-[inherit] object-cover [image-rendering:pixelated]"
+        />
+      ) : imageUrl === undefined ? null : (
+        <Photo
+          src={imageUrl}
+          className="absolute inset-0 size-full rounded-[inherit] object-cover"
+        />
+      )}
     </span>
   );
 }

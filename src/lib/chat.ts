@@ -15,8 +15,7 @@ import { api } from "../../convex/_generated/api";
  * Two reasons, and the second is the one that matters. A list of slurs in a
  * public JavaScript chunk is a list of slurs anybody can read. And a filter you
  * can read is a filter you can walk around at leisure — the value of a rule
- * nobody has seen is that finding its edge costs a message, a refusal, and
- * eventually a strike.
+ * nobody has seen is that finding its edge costs repeated refused attempts.
  *
  * The refusal type below is not an exception. It is derived from the return
  * type of the mutation, so it arrives through `convex/_generated/api` — which
@@ -52,7 +51,7 @@ const REFUSALS: Record<string, string> = {
 
   slur: "That is a slur, and it is not allowed anywhere here.",
   sexual: "Sexual content is not allowed here.",
-  exploitation: "That is not allowed here, and the account has been closed.",
+  exploitation: "That is not allowed here.",
   threat: "Threats are not allowed here.",
   "self-harm": "Telling someone to hurt themselves is not allowed here.",
   degrading: "Threatening to expose someone is not allowed here.",
@@ -70,8 +69,6 @@ const REFUSALS: Record<string, string> = {
   broadcast: "That has gone to enough places.",
   "too-fast": "Slow down a moment.",
 
-  muted: "You cannot send messages right now.",
-  banned: "This account can no longer use chat.",
   "not-a-member": "You are not in this conversation.",
   blocked: "You cannot message this person.",
   "reply-unavailable": "That message is no longer available to reply to.",
@@ -95,32 +92,6 @@ const REFUSALS: Record<string, string> = {
 
 export function refusalMessage(refusal: Refusal): string {
   return REFUSALS[refusal] ?? "That message could not be sent.";
-}
-
-/**
- * The same copy, for the ledger, where it is describing something that already
- * happened rather than something that just failed.
- */
-const RULES: Record<string, string> = {
-  slur: "Used a slur",
-  sexual: "Sexual content",
-  exploitation: "Sexual content involving minors",
-  threat: "Threatened someone",
-  "self-harm": "Told someone to hurt themselves",
-  degrading: "Threatened to expose someone",
-  harassment: "Aimed language at someone",
-  contact: "Shared contact details",
-  link: "Posted a link",
-  location: "Shared an address",
-  broadcast: "Sent the same message to several places",
-  "too-fast": "Sent messages too quickly",
-  reordering: "Used text-direction characters",
-  "stacked-marks": "Used stacked accents",
-  graphic: "Sent a graphic picture",
-};
-
-export function ruleLabel(rule: string): string {
-  return RULES[rule] ?? rule;
 }
 
 /**
@@ -189,14 +160,9 @@ export function personName(person: {
  * the same as the composer's — see `refusalMessage` above.
  */
 export function displayNameError(
-  reason: Refusal | "no-profile" | "closed",
+  reason: Refusal | "no-profile",
 ): string {
   switch (reason) {
-    case "muted":
-      return "You cannot change your name while you cannot send messages.";
-    case "banned":
-    case "closed":
-      return "This account can no longer use chat.";
     case "no-profile":
       return "Pick a handle first.";
     case "too-long":
@@ -319,8 +285,6 @@ export function claimError(reason: string): string {
       return "That is already your handle.";
     case "no-profile":
       return "You do not have a handle yet.";
-    case "closed":
-      return "This account is closed.";
     default:
       return "That handle will not work.";
   }
@@ -343,23 +307,13 @@ export function changesLeftLabel(spent: number): string {
 /**
  * Why a group did not get made.
  *
- * Worth spelling out rather than collapsing into one line, because only some of
- * these are about the name at all. Somebody who is muted and reads "that name
- * will not work" will try four more names before working out that the name was
- * never the problem.
- *
  * The filter refusals stay vague on purpose, the same as the composer's — see
  * `refusalMessage` above.
  */
 export function groupNameError(
-  reason: Refusal | "no-profile" | "closed",
+  reason: Refusal | "no-profile",
 ): string {
   switch (reason) {
-    case "muted":
-      return "You cannot make a group while you cannot send messages.";
-    case "banned":
-    case "closed":
-      return "This account can no longer use chat.";
     case "no-profile":
       return "Pick a handle first.";
     case "not-agreed":
@@ -437,7 +391,7 @@ export function handleHue(handle: string): number {
   return Math.abs(hash) % 360;
 }
 
-/** How long is left on a mute, in the words somebody would use. */
+/** How long remains in a countdown, in the words somebody would use. */
 export function untilLabel(until: number, now: number): string {
   const seconds = Math.max(0, Math.round((until - now) / 1000));
   if (seconds < 60) return `${seconds} seconds`;
@@ -512,8 +466,8 @@ export function onGroupPanelRequest(
  */
 export const BOT_ID = "bot";
 export const BOT_HANDLE = "bot";
-/** What his disc shows, in place of a letter. */
-export const BOT_FACE = "👴";
+/** His fixed, app-owned portrait. He has no profile row of his own. */
+export const BOT_AVATAR = "/chat/bot-avatar.webp";
 /** How he is introduced in the mention picker. */
 export const BOT_NAME = "Bot";
 export const BOT_TAGS_PER_DAY = 5;

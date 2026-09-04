@@ -354,7 +354,15 @@ function AddView({
           <SectionLabel>Asking to join</SectionLabel>
           <ul className="mt-2 flex flex-col">
             {(requests ?? []).map((person) => (
-              <Line key={person.clerkId} handle={person.handle}>
+              <Line
+                key={person.clerkId}
+                handle={person.handle}
+                name={person.displayName}
+                imageUrl={person.avatarUrl}
+                hue={person.avatarHue}
+                emoji={person.avatarEmoji}
+                initials={person.avatarInitials}
+              >
                 <Button
                   size="sm"
                   variant="ghost"
@@ -428,6 +436,7 @@ function AddView({
                     key={person.clerkId}
                     handle={person.handle}
                     name={person.displayName}
+                    imageUrl={person.avatarUrl}
                     hue={person.avatarHue}
                     emoji={person.avatarEmoji}
                     initials={person.avatarInitials}
@@ -544,6 +553,10 @@ function SettingsView({
               key={member.clerkId}
               handle={member.handle}
               name={member.displayName}
+              imageUrl={member.avatarUrl}
+              hue={member.avatarHue}
+              emoji={member.avatarEmoji}
+              initials={member.avatarInitials}
               detail={member.role === "member" ? undefined : member.role}
             >
               {owner && member.role !== "owner" ? (
@@ -869,6 +882,7 @@ function Line({
   handle,
   name,
   detail,
+  imageUrl,
   hue,
   emoji,
   initials,
@@ -877,6 +891,7 @@ function Line({
   handle: string;
   name?: string;
   detail?: string;
+  imageUrl?: string;
   /** The disc, when the row's source carries one. See `PublicProfile`. */
   hue?: number;
   emoji?: string;
@@ -891,6 +906,7 @@ function Line({
     <li className="flex items-center gap-2.5 border-b border-border py-2 last:border-b-0">
       <Monogram
         handle={handle}
+        imageUrl={imageUrl}
         hue={hue}
         emoji={emoji}
         initials={initials}

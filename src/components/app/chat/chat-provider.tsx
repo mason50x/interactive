@@ -10,7 +10,7 @@ import type { MyProfile } from "../../../../convex/chat/profiles";
  * Everything about chat that something outside chat needs to know.
  *
  * Which is less than it sounds: the rail wants a dot, and the chat pages want
- * the conversation list and the caller's own standing without each of them
+ * the conversation list and the caller's own profile without each of them
  * opening its own subscription to the same two queries. Mounted in the
  * dashboard layout rather than inside `/dashboard/chat`, because the dot has to
  * be right on the activities page too.

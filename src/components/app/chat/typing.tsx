@@ -1,7 +1,13 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { Monogram } from "@/components/app/chat/monogram";
 import { TYPING_BEAT_MS, typingLabel } from "@/lib/chat";
 import { cn } from "@/lib/utils";
@@ -36,9 +42,8 @@ import type { Typist } from "../../../../convex/chat/typing";
  * the conversation both say so at once, because those are the two cases
  * where waiting out the window would be visibly wrong.
  *
- * `enabled` is the composer's lock: a muted account's box is disabled, but
- * the words that were in it are still in it, and they should not be counted
- * as typing.
+ * `enabled` is the composer's lock. Words in a disabled box should not be
+ * counted as typing.
  */
 export function useTypingBeat(
   conversationId: Id<"conversations">,
@@ -113,12 +118,15 @@ export function useTypists(conversationId: Id<"conversations">): Typist[] {
     const timers = rows.map((row) =>
       // A few milliseconds late rather than early, so the render that
       // follows sees the row as gone rather than as about to be.
-      setTimeout(() => {
-        setLapsed((prev) => ({
-          of: rows,
-          ids: prev.of === rows ? [...prev.ids, row.clerkId] : [row.clerkId],
-        }));
-      }, Math.max(0, row.left) + 20),
+      setTimeout(
+        () => {
+          setLapsed((prev) => ({
+            of: rows,
+            ids: prev.of === rows ? [...prev.ids, row.clerkId] : [row.clerkId],
+          }));
+        },
+        Math.max(0, row.left) + 20,
+      ),
     );
     return () => {
       for (const timer of timers) clearTimeout(timer);
@@ -200,7 +208,13 @@ export function Typing({ typists }: { typists: Typist[] }) {
                 )}
                 style={{ "--i": index } as CSSProperties}
               >
-                <Monogram handle={person.handle} />
+                <Monogram
+                  handle={person.handle}
+                  imageUrl={person.avatarUrl}
+                  hue={person.avatarHue}
+                  emoji={person.avatarEmoji}
+                  initials={person.avatarInitials}
+                />
               </span>
             ))}
           </div>

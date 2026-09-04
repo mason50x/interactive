@@ -8,12 +8,16 @@ import {
   PlusIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/solid";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { FaceEditor, type Face } from "@/components/app/chat/face-editor";
+import {
+  FaceEditor,
+  type Face,
+  type FaceUploadResult,
+} from "@/components/app/chat/face-editor";
 import { NameEditor } from "@/components/app/chat/name-editor";
 import { OptionTiles } from "@/components/app/chat/option-tiles";
 import {
@@ -32,11 +36,14 @@ import {
   displayNameError,
   groupNameError,
   handleShapeError,
+  refusalMessage,
 } from "@/lib/chat";
+import { prepareImage } from "@/lib/images";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import type { Icon } from "@/lib/icons";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
 /**
  * Everything that is not a conversation, folded into the top of the list.
@@ -354,9 +361,7 @@ function Tool({
  */
 function SettingsPanel({ open }: { open: boolean }) {
   const { profile } = useChat();
-  const blocked = useHeld(
-    useQuery(api.chat.blocks.list, open ? {} : "skip"),
-  );
+  const blocked = useHeld(useQuery(api.chat.blocks.list, open ? {} : "skip"));
   const setDmPolicy = useMutation(api.chat.profiles.setDmPolicy);
   const setDiscoverable = useMutation(api.chat.profiles.setDiscoverable);
   const unblock = useMutation(api.chat.blocks.unblock);
@@ -536,10 +541,7 @@ function Friends({ open }: { open: boolean }) {
  * themselves should be. See `handle-gate.tsx`.
  */
 function EraseChat({ open }: { open: boolean }) {
-  const { profile } = useChat();
-  const preview = useHeld(
-    useQuery(api.chat.erase.preview, open ? {} : "skip"),
-  );
+  const preview = useHeld(useQuery(api.chat.erase.preview, open ? {} : "skip"));
   const erase = useMutation(api.chat.erase.eraseMine);
 
   const field = useRef<HTMLInputElement>(null);
@@ -586,15 +588,8 @@ function EraseChat({ open }: { open: boolean }) {
     "Your friends, everyone you have blocked, and every report you filed.",
   );
   lines.push(
-    preview.banned
-      ? `@${preview.handle} stays yours. A closed account keeps its name.`
-      : `@${preview.handle} is released, and anybody may claim it.`,
+    `@${preview.handle} is released, and anybody may claim it.`,
   );
-
-  // Only shown to somebody who has one. For everybody else it is a paragraph
-  // about a consequence they have never had, on the screen where they are
-  // already being asked to read carefully.
-  const record = preview.banned || (profile?.standing ?? 0) > 0;
 
   async function go() {
     if (!ready) return;
@@ -635,16 +630,6 @@ function EraseChat({ open }: { open: boolean }) {
               </li>
             ))}
           </ul>
-
-          {record ? (
-            <p className="mt-2.5 text-[0.75rem] leading-relaxed text-muted-foreground">
-              Your record stays. It is the one thing here that is not yours to
-              clear — the mute is kept on the profile this deletes, so an
-              erasure that took the record with it would be the way out of every
-              mute there is. It names no handle, and it clears itself thirty
-              days after the last strike on it.
-            </p>
-          ) : null}
 
           <label className="mt-3 block text-[0.8125rem] text-muted-foreground">
             Type {preview.handle} to confirm
@@ -763,15 +748,19 @@ function sentLabel(sent: number): string {
  * and it is also the honest record.
  */
 function Me() {
-  const { profile } = useChat();
+  const { profile, images } = useChat();
   const rename = useMutation(api.chat.profiles.renameHandle);
   const setDisplayName = useMutation(api.chat.profiles.setDisplayName);
   const setAvatar = useMutation(api.chat.profiles.setAvatar);
+  const uploadUrl = useMutation(api.chat.attachments.uploadUrl);
+  const checkImage = useAction(api.chat.attachments.check);
+  const discard = useMutation(api.chat.attachments.discard);
 
   const spent = profile?.handleChanges ?? 0;
   const left = MAX_HANDLE_CHANGES - spent;
   const current = profile?.handle ?? "";
   const name = profile?.displayName ?? "";
+  const avatarHue = profile?.avatarHue;
 
   // Held steady across renders: the editor debounces the letters against this
   // callback, and a new function on every render — this component re-renders
@@ -780,6 +769,64 @@ function Me() {
   const setFace = useCallback(
     (face: Face) => void setAvatar(face),
     [setAvatar],
+  );
+
+  const uploadPicture = useCallback(
+    async (file: File): Promise<FaceUploadResult> => {
+      const prepared = await prepareImage(file);
+      if (prepared === null) {
+        return { ok: false, message: "That picture could not be read." };
+      }
+
+      const previewUrl = URL.createObjectURL(prepared.blob);
+      try {
+        const slot = await uploadUrl({ purpose: "avatar" });
+        if (!slot.ok) {
+          URL.revokeObjectURL(previewUrl);
+          return { ok: false, message: refusalMessage(slot.refusal) };
+        }
+
+        const response = await fetch(slot.url, {
+          method: "POST",
+          headers: { "Content-Type": prepared.blob.type },
+          body: prepared.blob,
+        });
+        if (!response.ok) {
+          URL.revokeObjectURL(previewUrl);
+          return { ok: false, message: refusalMessage("image") };
+        }
+
+        const { storageId } = (await response.json()) as {
+          storageId: Id<"_storage">;
+        };
+        const verdict = await checkImage({
+          storageId,
+          width: prepared.width,
+          height: prepared.height,
+          purpose: "avatar",
+        });
+        if (!verdict.ok) {
+          URL.revokeObjectURL(previewUrl);
+          return { ok: false, message: refusalMessage(verdict.refusal) };
+        }
+
+        const changed = await setAvatar({
+          attachmentId: verdict.attachmentId,
+          hue: avatarHue,
+        });
+        if (!changed.ok) {
+          await discard({ attachmentId: verdict.attachmentId });
+          URL.revokeObjectURL(previewUrl);
+          return { ok: false, message: refusalMessage("image") };
+        }
+
+        return { ok: true, previewUrl };
+      } catch {
+        URL.revokeObjectURL(previewUrl);
+        return { ok: false, message: refusalMessage("image") };
+      }
+    },
+    [avatarHue, checkImage, discard, setAvatar, uploadUrl],
   );
 
   return (
@@ -792,6 +839,8 @@ function Me() {
           initials: profile?.avatarInitials,
           hue: profile?.avatarHue,
         }}
+        imageUrl={profile?.avatarUrl}
+        onUpload={images ? uploadPicture : undefined}
         onChange={setFace}
       >
         <div className="min-w-0">
@@ -930,4 +979,3 @@ function NewGroupPanel({
     </form>
   );
 }
-
