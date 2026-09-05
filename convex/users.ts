@@ -182,6 +182,8 @@ export const deleteFromClerk = internalMutation({
     // only a later one. See `purgeAuthor` in `convex/chat/sweep.ts`.
     await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
 
+    await ctx.scheduler.runAfter(0, internal.simulator.cleanup.purgeOwner, { clerkId });
+
     // Add deletes for any other table keyed by this user above this line.
 
     return {

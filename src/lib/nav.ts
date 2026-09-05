@@ -1,9 +1,11 @@
 import {
+  CpuChipIcon,
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
   PuzzlePieceIcon,
 } from "@heroicons/react/24/outline";
 import {
+  CpuChipIcon as CpuChipIconSolid,
   ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid,
   HomeModernIcon as HomeModernIconSolid,
   PuzzlePieceIcon as PuzzlePieceIconSolid,
@@ -28,6 +30,8 @@ export type NavItem = {
 /** The catalogue. Has a search box of its own, separate from the rail's. */
 export const ACTIVITIES_HREF = "/dashboard/activities";
 
+export const SIMULATOR_HREF = "/dashboard/learning-simulator";
+
 export const CHAT_HREF = "/dashboard/chat";
 
 /**
@@ -46,6 +50,11 @@ export const navItems: NavItem[] = [
     label: "Activities",
     href: ACTIVITIES_HREF,
     icon: { outline: PuzzlePieceIcon, solid: PuzzlePieceIconSolid },
+  },
+  {
+    label: "Learning Simulator",
+    href: SIMULATOR_HREF,
+    icon: { outline: CpuChipIcon, solid: CpuChipIconSolid },
   },
   {
     label: "Chat",

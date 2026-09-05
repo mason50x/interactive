@@ -19,6 +19,7 @@ const eslintConfig = defineConfig([
     // gitignored, which eslint does not read, so it has to be named here —
     // otherwise a lint run walks ~18,000 files and takes minutes.
     ".cache/**",
+    "public/simulator/core/**",
   ]),
 
   /**

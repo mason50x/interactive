@@ -1,7 +1,15 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { entryFields, saveFields } from "./simulator/model";
+
 export default defineSchema({
+  simulatorEntries: defineTable(entryFields)
+    .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"])
+    .index("by_ownerClerkId_and_lastOpenedAt", ["ownerClerkId", "lastOpenedAt"]),
+  simulatorSaves: defineTable(saveFields)
+    .index("by_entryId_and_slot", ["entryId", "slot"])
+    .index("by_ownerClerkId", ["ownerClerkId"]),
   users: defineTable({
     // Clerk user id — this is `identity.subject` on the Convex side
     // and `data.id` in Clerk webhook payloads.

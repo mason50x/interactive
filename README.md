@@ -618,3 +618,29 @@ scripts/
 Add it to `convex/schema.ts`, write functions in a new `convex/*.ts` file, and
 `npx convex dev` regenerates `convex/_generated`. Gate anything user-scoped on
 `ctx.auth.getUserIdentity()` the way `users.ts` does.
+
+## Learning Simulator
+
+The protected `/dashboard/learning-simulator` library includes the original Pixel
+Field sample and memory-only `.gb` / `.gbc` imports. Imported program files are
+never uploaded or stored by the app. Re-select the original after a refresh or
+leaving the simulator. Only metadata and bounded native progress checkpoints
+persist in account-namespaced IndexedDB and the two `simulator*` Convex tables.
+
+Local autosave runs every ten active seconds; cloud sync runs every minute and
+on explicit save/pause. Current/previous autosaves and three manual slots use
+revision checks, a durable outbox and explicit conflict choices. Cloud limits
+are 20 entries and five slots each, up to 512 KiB binary per slot. Web Locks are
+required to start a player; the same file cannot run twice in one browser profile.
+
+- `npm run test:simulator`: verify the pinned core, exercise actual WASM save
+  restoration, and run file/Convex/synchronization regressions.
+- `npm run simulator:sample`: regenerate the original sample and matching manifest.
+- `node scripts/build-simulator-core.mjs --fetch`: restore the pinned upstream
+  runtime assets and verify their recorded checksums. Keep the bundled MIT notice.
+- `npx convex dev --once`: generate/push functions to the configured development
+  deployment; inspect `.env.local` deployment selection before running.
+
+See [the implementation plan and verification report](docs/learning-simulator-mvp.md)
+for routes, files, schema, privacy boundaries and release checks. No new secrets,
+Next API endpoints, `_storage` blobs or production infrastructure are required.

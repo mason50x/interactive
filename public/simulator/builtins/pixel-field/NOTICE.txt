@@ -1,0 +1,2 @@
+Pixel Field is an original 50x sample. Source: scripts/build-simulator-sample.mjs.
+Copyright 2026. Distributed as part of this application.
