@@ -51,7 +51,7 @@ for (const inPage of [true, false]) {
           return Reflect.get(target, property);
         },
       });
-      const handler = (list as unknown as { _handler: (ctx: QueryCtx, args: typeof args) => ReturnType<typeof alice.query<typeof api.chat.messages.list>> })._handler;
+      const handler = (list as unknown as { _handler: (ctx: QueryCtx, input: typeof args) => ReturnType<typeof alice.query<typeof api.chat.messages.list>> })._handler;
       const result = await handler({ ...ctx, db }, args);
       return { result, reads: gets.filter(id => id === ids.original).length };
     });
@@ -64,6 +64,18 @@ for (const inPage of [true, false]) {
     let page = (await alice.query(api.chat.messages.list, args)).page;
     expect(page.filter(m => m.replyTo?.unavailable)).toHaveLength(9);
     expect(page.every(m => !m.replyTo?.preview)).toBe(true);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(ids.original, { status: "visible", authorClerkId: "bob" });
+      await ctx.db.insert("blocks", { blocker: "alice", blocked: "bob", createdAt: Date.now() });
+    });
+    page = (await alice.query(api.chat.messages.list, args)).page;
+    expect(page.filter(m => m.replyTo?.unavailable)).toHaveLength(9);
+    await t.run(async (ctx) => {
+      const other = await ctx.db.insert("conversations", { kind: "group", createdBy: "alice", createdAt: Date.now() });
+      await ctx.db.patch(ids.original, { authorClerkId: "alice", conversationId: other });
+    });
+    page = (await alice.query(api.chat.messages.list, args)).page;
+    expect(page.filter(m => m.replyTo?.unavailable)).toHaveLength(9);
     await t.run(ctx => ctx.db.delete(ids.original));
     page = (await alice.query(api.chat.messages.list, args)).page;
     expect(page.filter(m => m.replyTo?.unavailable)).toHaveLength(9);
