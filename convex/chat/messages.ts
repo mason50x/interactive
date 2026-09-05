@@ -534,10 +534,14 @@ async function replyOf(
   ctx: QueryCtx,
   message: Doc<"messages">,
   blocked: Set<string>,
+  originals: Map<Id<"messages">, Doc<"messages"> | null>,
 ): Promise<ChatReply | undefined> {
   if (message.replyToId === undefined) return undefined;
 
-  const target = await ctx.db.get(message.replyToId);
+  if (!originals.has(message.replyToId)) {
+    originals.set(message.replyToId, await ctx.db.get(message.replyToId));
+  }
+  const target = originals.get(message.replyToId) ?? null;
   if (
     target === null ||
     target.status !== "visible" ||
@@ -628,6 +632,11 @@ export const list = query({
       .paginate(paginationOpts);
 
     const page: ChatMessage[] = [];
+    // Reuse this transaction's page rows, including hidden/blocked originals:
+    // replyOf still applies every visibility check before exposing a preview.
+    const originals = new Map<Id<"messages">, Doc<"messages"> | null>(
+      result.page.map((message) => [message._id, message]),
+    );
     const appearances = new Map<
       string,
       Awaited<ReturnType<typeof avatarAppearance>>
@@ -652,7 +661,7 @@ export const list = query({
         authorAvatarEmoji: avatar.avatarEmoji,
         authorAvatarInitials: avatar.avatarInitials,
         body: gone ? "" : message.body,
-        replyTo: gone ? undefined : await replyOf(ctx, message, blocked),
+        replyTo: gone ? undefined : await replyOf(ctx, message, blocked, originals),
         mentions: gone ? [] : (message.mentions ?? []),
         mentionsEveryone: gone ? false : (message.mentionsEveryone ?? false),
         status: message.status,

@@ -2,6 +2,7 @@
 // and a Convex fetch that expects a minted token, neither of which mean
 // anything in a browser. The gate is a server fact; this is what keeps it one.
 import "server-only";
+import { cache } from "react";
 
 import { auth } from "@clerk/nextjs/server";
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
@@ -41,7 +42,9 @@ export async function hasAgreed(): Promise<boolean> {
  * called — and the case where Clerk could not be asked. `hasAgreed` reads that
  * as "has not agreed", which is the right way for a gate to fail.
  */
-export async function serverAgreement(): Promise<Agreement | null> {
+// Layout and page share this result only within one server render. Never cache
+// an authenticated agreement across requests or across accounts.
+export const serverAgreement = cache(async (): Promise<Agreement | null> => {
   const { userId, getToken } = await auth();
   if (!userId) return null;
 
@@ -72,7 +75,7 @@ export async function serverAgreement(): Promise<Agreement | null> {
   if (!token) return null;
 
   return await fetchQuery(api.agreement.mine, {}, { token });
-}
+});
 
 /**
  * The part of a Clerk failure worth putting in a log.

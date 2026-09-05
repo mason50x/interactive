@@ -326,9 +326,16 @@ export const ask = internalAction({
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), BOT_REQUEST_TIMEOUT_MS);
     let beating = true;
+    let wakeHeartbeat: (() => void) | undefined;
+    let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
     const heartbeat = (async () => {
       while (beating) {
-        await new Promise((resolve) => setTimeout(resolve, BOT_TYPING_BEAT_MS));
+        await new Promise<void>((resolve) => {
+          wakeHeartbeat = resolve;
+          heartbeatTimer = setTimeout(resolve, BOT_TYPING_BEAT_MS);
+        });
+        wakeHeartbeat = undefined;
+        heartbeatTimer = undefined;
         if (!beating) break;
         try {
           await ctx.runMutation(internal.chat.bot.beat, {
@@ -432,6 +439,10 @@ export const ask = internalAction({
     } finally {
       clearTimeout(timeout);
       beating = false;
+      // Wake a sleeping beat immediately; still await an in-flight mutation
+      // before deleting typing so it cannot recreate the row after cleanup.
+      clearTimeout(heartbeatTimer);
+      wakeHeartbeat?.();
       await heartbeat;
       await ctx.runMutation(internal.chat.bot.stopTyping, {
         conversationId: args.conversationId,
