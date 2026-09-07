@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { FeatureAnimation } from "./feature-animation";
 import styles from "./landing.module.css";
 
@@ -42,30 +41,6 @@ export function Showcase() {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-      <section className={`${styles.explore} ${styles.contentSection}`} aria-labelledby="content-heading">
-        <h2 id="content-heading" className={styles.exploreHeading}>Good content, broken concept.</h2>
-        <p className={styles.intro}>
-          There’s plenty to watch. Understanding takes a little more.
-        </p>
-        <div className={styles.learningFeature}>
-            <Image
-              className={styles.learningPicture}
-              src="/images/learning-dashboard.png"
-              alt="An illustrated learning dashboard with activity cards and daily progress."
-              width={1254}
-              height={1254}
-              sizes="(max-width: 760px) 100vw, 50vw"
-            />
-          <div className={styles.learningCopy}>
-            <h3>Learn by getting involved.</h3>
-            <p>
-              Move things around. Test an idea. See what changes. Interactive
-              learning turns a lesson into something you can explore, one
-              discovery at a time.
-            </p>
-          </div>
         </div>
       </section>
     </div>

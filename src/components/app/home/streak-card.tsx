@@ -16,27 +16,27 @@ import { api } from "../../../../convex/_generated/api";
  * it would be the least useful thing on the page. What is not anywhere else is
  * the *shape* of the run, and that is what this card draws.
  *
- * The chain is this week: seven nodes with the links between them lit only
+ * The chain is this week: five nodes with the links between them lit only
  * where both ends are. That is what turns a row of dots into a run — a missed
  * Wednesday does not merely leave a gap, it visibly breaks the chain on both
  * sides, which is the thing a streak is actually about.
  *
- * Monday to Sunday, always, rather than the seven days ending today. A rolling
+ * Monday to Friday, always, rather than the five days ending today. A rolling
  * window puts today on the right and slides every other day left overnight,
  * which means the labels change every morning and no column means anything
  * twice. A calendar week is a week the reader already keeps: the letters read
- * M T W T F S S every day of the year, Thursday is always the fourth node, and
- * the run's shape is somewhere you can point. Sunday is the far end whether or
+ * M T W T F every day of the year, Thursday is always the fourth node, and
+ * the run's shape is somewhere you can point. Friday is the far end whether or
  * not you have got there yet.
  */
 
-/** Seven placeholders, so the card is its final height on the first frame and
+/** Five placeholders, so the card is its final height on the first frame and
  *  the cards beside it do not jump when the query lands. */
-const PENDING = Array.from({ length: 7 }, () => null);
+const PENDING = Array.from({ length: 5 }, () => null);
 
 /** Monday-first, to label the placeholders before any day key exists to read
  *  one off. The real row derives its letters from the days themselves. */
-const LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
+const LETTERS = ["M", "T", "W", "T", "F"];
 
 export function StreakCard() {
   const streak = useStreak();
@@ -92,7 +92,7 @@ export function StreakCard() {
             fact this states outright. */}
         <p className="sr-only">
           {week
-            ? `${week.filter((day) => day.visited).length} of the seven days this week, Monday to Sunday.`
+            ? `${week.filter((day) => day.visited).length} of the five days this week, Monday to Friday.`
             : "Loading this week."}
         </p>
       </div>
@@ -101,7 +101,7 @@ export function StreakCard() {
 }
 
 /**
- * Seven days as a chain: a node per day, a link between each pair.
+ * Five days as a chain: a node per day, a link between each pair.
  *
  * The link is lit only when the days on both sides of it are, which is what
  * makes an unbroken week read as one continuous object and a broken one read
@@ -134,7 +134,7 @@ function Chain({
   days: readonly ({ day: string; visited: boolean; today: boolean } | null)[];
 }) {
   // Where the week stops being history. `-1` while the query is pending and on
-  // the impossible row that contains no today, and both want the same thing:
+  // weekends, when the row contains no today, and both want the same thing:
   // nothing is in the future, so nothing gets the lighter treatment and the
   // placeholders stay a uniform row.
   const present = days.findIndex((day) => day?.today);
@@ -187,7 +187,7 @@ function Chain({
       </div>
 
       {/* The same flex skeleton as the row above — a fixed-width cell per day
-          with a flexing gap between — rather than `justify-between` over seven
+          with a flexing gap between — rather than `justify-between` over five
           spans. `justify-between` distributes by the letters' own widths, which
           lands each one a few pixels off the node it belongs to; mirroring the
           structure puts them under the nodes exactly. */}

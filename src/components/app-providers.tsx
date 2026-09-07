@@ -4,7 +4,6 @@ import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { PreferencesProvider } from "@/components/preferences-provider";
 import { StoreUser } from "@/components/store-user";
-import { ThemeProvider } from "@/components/theme-provider";
 
 /**
  * Everything the app needs and an activity must never get.
@@ -19,11 +18,6 @@ import { ThemeProvider } from "@/components/theme-provider";
  * Analytics rides along for the same reason. An activity frame firing its own
  * pageviews would double-count every session.
  *
- * The theme is here rather than in the root layout for a third reason: the
- * *application* of a theme belongs to every route (the root layout's inline
- * script does that, `/learn` included), but the ability to read and change one
- * is only ever used by app chrome.
- *
  * The accent's pre-paint script is the one thing that could not follow that
  * rule. It belongs beside the theme's in the root layout — see `preferencesScript`,
  * which skips `/learn` itself — because a `<script>` mounted here is created by
@@ -35,17 +29,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <>
       <ClerkProvider>
         <ConvexClientProvider>
-          <ThemeProvider>
-            {/* Inside Convex, because the settings *are* a Convex subscription,
-              and inside Clerk, because whose settings they are depends on the
-              session. It wraps the children rather than sitting beside them:
-              the accent and the panic key apply to the whole tree. */}
-            <PreferencesProvider>
-              <StoreUser />
-              {children}
-              <GoogleAnalytics />
-            </PreferencesProvider>
-          </ThemeProvider>
+          {/* Inside Convex, because the settings *are* a Convex subscription,
+            and inside Clerk, because whose settings they are depends on the
+            session. It wraps the children rather than sitting beside them:
+            the accent and the panic key apply to the whole tree. */}
+          <PreferencesProvider>
+            <StoreUser />
+            {children}
+            <GoogleAnalytics />
+          </PreferencesProvider>
         </ConvexClientProvider>
       </ClerkProvider>
     </>

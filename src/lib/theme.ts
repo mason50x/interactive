@@ -17,6 +17,11 @@ export const THEME_ATTRIBUTE = "data-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
+/** Only authenticated app routes use the saved appearance preference. */
+export function usesAppTheme(pathname: string): boolean {
+  return /^\/(dashboard|learn)(?:\/|$)/.test(pathname);
+}
+
 export function isThemePreference(value: unknown): value is ThemePreference {
   return (
     typeof value === "string" &&
@@ -155,9 +160,9 @@ export function applyTheme(theme: ResolvedTheme): void {
  * drift — the values are interpolated from the constants above rather than
  * written out twice.
  */
-export const themeScript = `(function(){try{var p=localStorage.getItem(${JSON.stringify(
+export const themeScript = `(function(){try{var p="system";if((${usesAppTheme.toString()})(location.pathname)){try{p=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
-)});var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
+)});}catch(_){}}var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
   DARK_QUERY,
 )}).matches?"dark":"light");var e=document.documentElement;e.setAttribute(${JSON.stringify(
   THEME_ATTRIBUTE,

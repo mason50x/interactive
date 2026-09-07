@@ -1089,22 +1089,6 @@
   }
 }
 
-/* The chip acknowledging the number it just changed to. */
-@keyframes streak-pop {
-  0% {
-    transform: scale(1);
-  }
-  32% {
-    transform: scale(1.3);
-  }
-  58% {
-    transform: scale(0.94);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 .flame-body {
   transform-box: fill-box;
   transform-origin: 50% 100%;
@@ -1115,66 +1099,6 @@
   transform-box: fill-box;
   transform-origin: 50% 100%;
   animation: flame-core 1.13s ease-in-out infinite;
-}
-
-.animate-streak-pop {
-  animation: streak-pop 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* ---------------------------------------------------------------------------
- * The claim, celebrated on the chip that changed rather than on an overlay in
- * front of it. The app itself moves: it scales about the chip in the rail and
- * carries it into the middle of the screen, the number turns over, and then it
- * goes back. See `StreakProvider`, which measures the move onto the shell as
- * `--streak-dx`, `--streak-dy` and a `transform-origin`, and swaps these two
- * classes at the turn.
- *
- * The translate is written first, which is what makes it apply *after* the
- * scale — so the two offsets stay the pixel distances they were measured as
- * rather than being multiplied by the zoom on their way through.
- *
- * Animations and not a transition on purpose: a transition started in the same
- * commit that first gives the element a duration is at the mercy of which
- * style the browser reads the duration from, and this one has to run the first
- * time, every time.
- *
- * Durations are mirrored in that file as `ZOOM_IN_MS` and `ZOOM_OUT_MS` — the
- * number has to turn over on the frame the zoom lands, and nothing but those
- * two constants can know when that is.
- * ------------------------------------------------------------------------ */
-
-@keyframes streak-zoom-in {
-  from {
-    transform: translate(0, 0) scale(1);
-  }
-  to {
-    transform: translate(var(--streak-dx), var(--streak-dy))
-      scale(var(--streak-zoom));
-  }
-}
-
-@keyframes streak-zoom-out {
-  from {
-    transform: translate(var(--streak-dx), var(--streak-dy))
-      scale(var(--streak-zoom));
-  }
-  to {
-    transform: translate(0, 0) scale(1);
-  }
-}
-
-/* `both` on both halves, so the shell holds the far end of the zoom through
-   the hold in the middle instead of snapping back between the two. */
-.streak-zoom-in {
-  --streak-zoom: 3;
-  animation: streak-zoom-in 620ms cubic-bezier(0.5, 0, 0.2, 1) both;
-  will-change: transform;
-}
-
-.streak-zoom-out {
-  --streak-zoom: 3;
-  animation: streak-zoom-out 520ms cubic-bezier(0.4, 0, 0.2, 1) both;
-  will-change: transform;
 }
 
 /* The chip catching light as the number turns over.
@@ -1190,23 +1114,19 @@
    on a screen where nothing else is moving. */
 @keyframes streak-flare {
   0% {
-    transform: scale(1);
     filter: drop-shadow(0 0 0 transparent);
   }
   26% {
-    transform: scale(1.24);
     filter: drop-shadow(
       0 0 12px color-mix(in srgb, var(--fire) 75%, transparent)
     );
   }
   58% {
-    transform: scale(0.97);
     filter: drop-shadow(
       0 0 7px color-mix(in srgb, var(--fire) 45%, transparent)
     );
   }
   100% {
-    transform: scale(1);
     filter: drop-shadow(0 0 0 transparent);
   }
 }
@@ -1568,224 +1488,84 @@
   animation-delay: calc(var(--i) * 0.17s), 0s;
 }
 
-/* ---------------------------------------------------------------------------
- * The errand that runs in front of a loading activity.
- *
- * See `src/components/app/packet-cover.tsx` for what is being drawn and why it
- * is a joke rather than a progress bar. Everything here is transform and
- * opacity on about a dozen elements, because this plays for five seconds at a
- * time while the main thread is busy pulling tens of megabytes of bundle
- * through two frames — a loader that stutters is worse than no loader.
- *
- * Two clocks, and only two. `--run` is one crossing of the scene; `--step` is
- * one stride. Every other duration here is derived from one of them, so the
- * legs cannot fall out of step with the body and the laptop cannot flash
- * before the paper reaches it.
- *
- * The blanket reduced-motion rule at line ~1047 collapses durations but leaves
- * the animation *named*, which for a loop means a frozen first frame — here,
- * a courier standing invisible at the edge of the scene. So this block ends by
- * naming `animation: none` and posing the scene by hand: the man halfway
- * across, holding the paper, lights on. A stilled picture rather than a
- * broken one.
- * ------------------------------------------------------------------------ */
-.packet-scene {
-  /* One crossing. The cover holds for five seconds, so 2.5s is exactly two
-     trips — a third one cut off halfway is the thing to avoid. */
-  --run: 2.5s;
-  /* One stride, front foot to front foot. */
-  --step: 0.42s;
-  /* One sheet's flutter. Deliberately not a multiple of the stride: paper
-     coming loose is the one thing in the scene that is not part of the gait. */
-  --flutter: 0.66s;
+/* Flowing dot waves and a thick, softly glowing prismatic rim. */
+@property --packet-light-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
 }
-
-/* The crossing. He fades in at the rack and out at the laptop rather than
-   snapping back, so the loop has no seam — and he is still moving as he goes,
-   because a figure fading out while its legs run in place reads as a bug. */
-@keyframes packet-run {
-  0% {
-    opacity: 0;
-    transform: translateX(0);
-  }
-  8% {
-    opacity: 1;
-  }
-  78% {
-    opacity: 1;
-    transform: translateX(94px);
-  }
-  90%,
-  100% {
-    opacity: 0;
-    transform: translateX(104px);
-  }
+.packet-cover {
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: opacity 400ms ease-out;
 }
-
-/* A limb about its joint. Both ends of the stride are the same magnitude —
-   the asymmetry that makes a run read as a run comes from the lean of the
-   torso and the bob, not from a longer reach forward. */
-@keyframes packet-stride {
-  0%,
-  100% {
-    transform: rotate(26deg);
-  }
-  50% {
-    transform: rotate(-26deg);
-  }
+.packet-grid {
+  position: absolute;
+  inset: -48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, transparent 5%, #000 65%);
 }
-
-/* The free arm, which travels further than a leg and starts at the opposite
-   end of the swing from the near leg. */
-@keyframes packet-swing {
-  0%,
-  100% {
-    transform: rotate(-34deg);
-  }
-  50% {
-    transform: rotate(30deg);
-  }
+.packet-grid-row {
+  display: block;
+  flex: 1 0 24px;
+  background: radial-gradient(circle, currentColor 1.7px, transparent 2px) center / 24px 24px;
+  opacity: .2;
+  animation: packet-grid-flow 2.8s ease-in-out infinite;
 }
-
-/* Twice a stride, because a body rises once per footfall and there are two
-   feet. Small on purpose: 2px at this size is a gait, 6px is a hop. */
-@keyframes packet-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-2px);
-  }
+.packet-border {
+  position: absolute;
+  inset: 12px;
+  border-radius: 24px;
+  padding: 6px;
+  pointer-events: none;
+  background: conic-gradient(from var(--packet-light-angle),
+    transparent 0deg, #a4dfff33 35deg, #86eaff 65deg,
+    #b4a2ff 90deg, #ffb9e8 112deg, #ffe8b0 134deg,
+    #b6ffe433 165deg, transparent 195deg, transparent 245deg,
+    #c4b5fd55 280deg, #b5f3ffbb 308deg, transparent 345deg);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: packet-light-travel 3.5s linear infinite, packet-rim-flow 3s ease-in-out infinite;
+  opacity: .85;
 }
-
-@keyframes packet-flutter {
-  0%,
-  100% {
-    opacity: 0.8;
-    transform: translate(0, 0) rotate(-10deg);
-  }
-  50% {
-    opacity: 0.35;
-    transform: translate(-3px, -5px) rotate(12deg);
-  }
+.packet-border-halo {
+  inset: 8px;
+  padding: 20px;
+  border-radius: 28px;
+  filter: blur(16px);
+  opacity: .4;
 }
-
-@keyframes packet-led {
-  0%,
-  45% {
-    opacity: 0.9;
-  }
-  50%,
-  100% {
-    opacity: 0.22;
-  }
-}
-
-/* The hand-off, on the crossing's clock rather than its own so it can only
-   ever fire at the moment the paper arrives — and then *held*, lit, until the
-   next trip sets off. The tail of a crossing is the only stretch with nobody
-   on the stage; a screen that goes dark the moment it is filled leaves an
-   empty scene, and a screen that stays on says the errand worked. It is also
-   what the cover lifts on, since the hold runs out a beat after the second
-   delivery. */
-@keyframes packet-flash {
-  0% {
-    opacity: 0.45;
-  }
-  8%,
-  74% {
-    opacity: 0;
-  }
-  80%,
-  100% {
-    opacity: 0.45;
-  }
-}
-
-.packet-runner {
-  animation: packet-run var(--run) linear infinite;
-}
-
-.packet-body {
-  animation: packet-bob calc(var(--step) / 2) ease-in-out infinite;
-}
-
-/* An SVG element's transform origin is the corner of the *viewBox*, so a leg
-   asked to rotate about its hip would instead swing about the top left of the
-   scene. `fill-box` moves the origin onto the shape's own box, and every limb
-   is drawn as a line hanging down from its joint — so the joint is the top of
-   that box, every time. */
-.packet-limb {
-  transform-box: fill-box;
-  transform-origin: 50% 0;
-}
-
-.packet-leg {
-  --beat: var(--step);
-  animation: packet-stride var(--step) ease-in-out infinite;
-}
-
-.packet-arm {
-  --beat: var(--step);
-  animation: packet-swing var(--step) ease-in-out infinite;
-}
-
-.packet-carry {
-  animation: packet-bob calc(var(--step) / 2) ease-in-out infinite;
-}
-
-.packet-sheet {
-  --beat: var(--flutter);
-  transform-box: fill-box;
-  transform-origin: 50% 50%;
-  animation: packet-flutter var(--flutter) ease-in-out infinite;
-}
-
-.packet-led {
-  animation: packet-led 1.4s steps(1, end) infinite;
-}
-
-.packet-flash {
-  opacity: 0;
-  animation: packet-flash var(--run) ease-out infinite;
-}
-
-/* Half a beat behind, in whatever cycle the element it is on runs at — the
-   back leg against the front one, the second sheet against the first. Written
-   once because it is one idea, and last because it has to win the delay. */
-.packet-behind {
-  animation-delay: calc(var(--beat) / -2);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .packet-runner,
-  .packet-body,
-  .packet-carry,
-  .packet-limb,
-  .packet-sheet,
-  .packet-flash,
-  .packet-led {
-    animation: none;
-  }
-
-  /* Mid-scene, mid-errand: far enough from the rack to have left it, not yet
-     at the laptop. The limbs fall back to the pose they are drawn in, which is
-     a man standing still holding a stack of paper. */
-  .packet-runner {
-    transform: translateX(58px);
-  }
-
-  .packet-led {
-    opacity: 0.9;
-  }
-}
-
-/* The caption under the scene. The shimmer is the same one the handle search
-   uses, but the cover is black regardless of the theme — so the band's two
-   colours are said here rather than borrowed from a palette that may be
-   light. Nothing else on this cover is themed either. */
 .packet-caption {
-  --shimmer-base: rgba(255, 255, 255, 0.42);
-  --shimmer-crest: #ffffff;
+  position: relative;
+  --shimmer-base: color-mix(in srgb, var(--foreground) 48%, transparent);
+  --shimmer-crest: var(--foreground);
+}
+.packet-detail {
+  position: relative;
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 48%, transparent);
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+.packet-reveal { opacity: 0; }
+@keyframes packet-grid-flow {
+  0%, 100% { transform: translate3d(-14px, -7px, 0) scaleX(.98); }
+  25% { transform: translate3d(0, -14px, 0) scaleX(1.015); }
+  50% { transform: translate3d(14px, 7px, 0) scaleX(1.025); }
+  75% { transform: translate3d(0, 14px, 0) scaleX(.99); }
+}
+@keyframes packet-rim-flow {
+  0%, 100% { border-radius: 24px 38px 26px 42px; transform: scale(1); }
+  50% { border-radius: 42px 24px 38px 26px; transform: scale(.99); }
+}
+@keyframes packet-light-travel {
+  to { --packet-light-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
 }

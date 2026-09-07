@@ -5,13 +5,11 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpTrayIcon,
-  CpuChipIcon,
-  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import { api } from "../../../convex/_generated/api";
 import { Button, ButtonLink } from "@/components/ui/button";
-import type { Builtin, LocalEntry } from "@/lib/simulator/types";
+import type { LocalEntry } from "@/lib/simulator/types";
 import { openProgram } from "@/lib/simulator/files";
 import {
   clearLocal,
@@ -19,8 +17,11 @@ import {
   removeLocal,
 } from "@/lib/simulator/local-store";
 import { useSimulatorSession } from "./session-provider";
+import styles from "./library.module.css";
+import { Spinner } from "@/components/ui/spinner";
+import { PixelController } from "./pixel-controller";
 const ROOT = "/dashboard/learning-simulator";
-export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
+export function SimulatorLibrary() {
   const { userId } = useAuth(),
     { isAuthenticated } = useConvexAuth();
   const router = useRouter();
@@ -69,7 +70,7 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
     setError("");
     try {
       const p = await openProgram(f);
-      setProgram(p);
+      await setProgram(p);
       router.push(`${ROOT}/${p.contentHash}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to open file.");
@@ -86,14 +87,14 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
         if (e.dataTransfer.files[0]) void select(e.dataTransfer.files[0]);
       }}
     >
-      <header className="flex flex-wrap items-start justify-between gap-5">
+      <header className="flex flex-wrap items-center justify-between gap-5">
         <div>
           <h1 className="text-display text-display-title text-3xl sm:text-4xl">
             Learning Simulator
           </h1>
         </div>
         <Button size="lg" disabled={busy} onClick={() => file.current?.click()}>
-          {busy ? "Opening…" : "Open file"}
+          {busy ? <Spinner /> : "Open file"}
         </Button>
       </header>
       <input
@@ -116,46 +117,8 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
           {error}
         </p>
       )}
-      <section className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
-        {builtins.map((b) => (
-          <div
-            key={b.id}
-            className="overflow-hidden rounded-2xl border border-border bg-background"
-          >
-            <div
-              className="relative flex h-52 items-center justify-center overflow-hidden bg-[#182a26]"
-              aria-hidden="true"
-            >
-              <div
-                className="absolute inset-0 opacity-25"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(#bdddb7 1px, transparent 1px)",
-                  backgroundSize: "16px 16px",
-                }}
-              />
-              <div className="grid size-24 place-items-center rounded-[1.7rem] border border-[#b9dcaa]/30 bg-[#a9cb9a]/10 text-[#c4e0ad]">
-                <CpuChipIcon className="size-12" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-5 p-6">
-              <div>
-                <h2 className="text-lg font-semibold">{b.label}</h2>
-                <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
-                  {b.description}
-                </p>
-              </div>
-              <ButtonLink
-                href={`${ROOT}/${b.contentHash}`}
-                size="icon-lg"
-                aria-label={`Open ${b.label}`}
-              >
-                <ArrowRightIcon />
-              </ButtonLink>
-            </div>
-          </div>
-        ))}
-        <div className="flex flex-col items-start justify-center rounded-2xl border border-dashed border-border p-8">
+      <section>
+        <div className={`${styles.uploadPanel} flex flex-col items-start justify-center rounded-2xl p-8`}>
           <ArrowUpTrayIcon className="mb-5 size-7 text-muted-foreground" />
           <h2 className="text-lg font-semibold">Bring your own file</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -200,6 +163,7 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
                     await remove({ entryId: entry._id });
                   }
                   await clearLocal(userId);
+                  await setProgram(null);
                   setLocal([]);
                 } catch {
                   setError(
@@ -230,10 +194,11 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
           </div>
         </div>
         {rows.length === 0 ? (
-          <div className="rounded-xl border border-border px-6 py-10 text-sm text-muted-foreground">
-            {search
+          <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-border px-6 py-10 text-center text-sm text-muted-foreground">
+            {!search && <PixelController />}
+            <p>{search
               ? "No matching simulations."
-              : "Saved simulations will appear here. Start Pixel Field or open a file to begin."}
+              : "Saved simulations will appear here. Open a file to begin."}</p>
           </div>
         ) : (
           <div className="divide-y divide-border rounded-xl border border-border bg-background">
@@ -252,9 +217,7 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
                       hour: "numeric",
                       minute: "2-digit",
                     })}
-                    {!builtins.some((b) => b.contentHash === row.hash)
-                      ? " · Select original file to resume"
-                      : ""}
+                    
                   </p>
                 </div>
                 <ButtonLink variant="outline" href={`${ROOT}/${row.hash}`}>
@@ -287,6 +250,7 @@ export function SimulatorLibrary({ builtins }: { builtins: Builtin[] }) {
                     try {
                       if (row.id) await remove({ entryId: row.id });
                       await removeLocal(userId, row.hash);
+                      await setProgram(null);
                       setLocal(await listLocal(userId));
                     } catch (e) {
                       setError(

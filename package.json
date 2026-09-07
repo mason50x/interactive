@@ -11,8 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "deploy": "node scripts/deploy.mjs",
-    "test:simulator": "node scripts/build-simulator-core.mjs && node scripts/check-simulator.mjs && vitest run",
-    "simulator:sample": "node scripts/build-simulator-sample.mjs"
+    "test:simulator": "node scripts/build-simulator-core.mjs && node scripts/check-simulator.mjs && vitest run"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.63",

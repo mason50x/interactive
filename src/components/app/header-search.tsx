@@ -1,5 +1,7 @@
 "use client";
 
+import { Spinner } from "@/components/ui/spinner";
+
 import { useClerk } from "@clerk/nextjs";
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -338,7 +340,7 @@ export function HeaderSearch() {
                 className="px-3 py-8 text-center text-[0.875rem] text-muted-foreground"
               >
                 {found === undefined && chatText !== ""
-                  ? "Searching…"
+                  ? <Spinner className="mx-auto size-5" />
                   : `Nothing matches "${query.trim()}".`}
               </p>
             ) : (

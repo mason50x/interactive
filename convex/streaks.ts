@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import {
   clampOffset,
   dayKey,
-  dayWindow,
   foldUserDay,
   weekWindow,
   userDaysBetween,
@@ -28,7 +27,7 @@ import {
  * The claim additionally writes a row in `userDays`. That table is not the
  * streak — the streak is still the three fields on the user, and still needs
  * no history to be correct — it is the record of *which* days, which is what
- * the strip of seven dots on the home page draws and what the counters beside
+ * the strip of five weekday dots on the home page draws and what the counters beside
  * it sum over. It only reaches back as far as its own first write, though — it
  * was added mid-streak for everybody who was already here — so the strip reads
  * the count as well (`runDays`) and the claim writes the difference back
@@ -37,6 +36,20 @@ import {
 
 /** Days in a week: the length of the strip, and how far back anything reads. */
 const WEEK = 7;
+
+/** Date keys already represent the user's local calendar day. */
+function isWeekday(day: string): boolean {
+  const dow = new Date(`${day}T00:00:00Z`).getUTCDay();
+  return dow !== 0 && dow !== 6;
+}
+
+function previousWeekday(day: string): string {
+  let previous = day;
+  do {
+    previous = dayKey(Date.parse(`${previous}T00:00:00Z`) - DAY_MS, 0);
+  } while (!isWeekday(previous));
+  return previous;
+}
 
 async function callerRow(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -57,17 +70,15 @@ export type Streak = {
   countedToday: boolean;
 };
 
+const streakFields = {
+  current: v.number(),
+  best: v.number(),
+  countedToday: v.boolean(),
+};
+
 const NO_STREAK: Streak = { current: 0, best: 0, countedToday: false };
 
-/**
- * Turns the three stored fields into the two numbers a reader wants.
- *
- * This is the "calculated" half, and it is why a lapse needs no cron to sweep
- * it up: a streak whose last day is neither today nor yesterday is simply read
- * as zero, whatever the stored count says. Yesterday still counts as alive —
- * the day is not over until it is over, and a streak that vanished at midnight
- * and came back on the next page load would look like a bug.
- */
+/** A run stays alive until a weekday is missed; weekends are neutral. */
 function resolve(
   row: { streakCount?: number; streakBest?: number; streakLastDay?: string },
   nowMs: number,
@@ -78,13 +89,14 @@ function resolve(
   if (last === undefined) return { ...NO_STREAK, best };
 
   const today = dayKey(nowMs, offsetMinutes);
-  const yesterday = dayKey(nowMs - DAY_MS, offsetMinutes);
-  const alive = last === today || last === yesterday;
+  const previous = previousWeekday(today);
+  // Also preserve runs whose last claim was a weekend under the old rules.
+  const alive = last <= today && last >= previous;
 
   return {
     current: alive ? (row.streakCount ?? 0) : 0,
     best,
-    countedToday: last === today,
+    countedToday: isWeekday(today) && last === today,
   };
 }
 
@@ -98,6 +110,7 @@ function resolve(
  */
 export const mine = query({
   args: { tzOffsetMinutes: v.number() },
+  returns: v.object(streakFields),
   handler: async (ctx, { tzOffsetMinutes }): Promise<Streak> => {
     const row = await callerRow(ctx);
     if (row === null) return NO_STREAK;
@@ -140,7 +153,7 @@ export type StreakDay = {
  * So the count speaks for its own days. `streakCount` days ending at
  * `streakLastDay` were, by the definition of the number, days this account
  * turned up. Clipping to `WEEK` is only because that is the whole window
- * anything reads — the strip draws seven days and the stats card sums seven,
+ * anything reads — the strip draws five weekdays and the stats card sums seven days,
  * so a run longer than that has no reader to be wrong in front of.
  *
  * Both sides use this. `week` unions it over the rows so the card is
@@ -159,7 +172,13 @@ function runDays(row: {
   const last = row.streakLastDay;
   const count = row.streakCount ?? 0;
   if (last === undefined || count < 1) return [];
-  return dayWindow(last, Math.min(count, WEEK));
+  const days: string[] = [];
+  let day = isWeekday(last) ? last : previousWeekday(last);
+  for (let i = 0; i < Math.min(count, WEEK); i++) {
+    days.unshift(day);
+    day = previousWeekday(day);
+  }
+  return days;
 }
 
 /**
@@ -208,11 +227,11 @@ async function healRun(
 }
 
 /**
- * This Monday-to-Sunday week, oldest first, always exactly seven long.
+ * This Monday-to-Friday week, oldest first, always exactly five long.
  *
  * A calendar week and not the seven days behind you — see `weekWindow` in
  * `convex/days.ts` for why the columns are worth holding still. What it means
- * here is that the row runs past today: on a Tuesday, Wednesday through Sunday
+ * here is that the row runs past today: on a Tuesday, Wednesday through Friday
  * are days that have not happened, and they come back `visited: false` like a
  * missed day does. `today` is what tells the two apart, and drawing them apart
  * is the component's job.
@@ -228,10 +247,13 @@ async function healRun(
  */
 export const week = query({
   args: { tzOffsetMinutes: v.number() },
+  returns: v.array(v.object({
+    day: v.string(), visited: v.boolean(), today: v.boolean(), seconds: v.number(),
+  })),
   handler: async (ctx, { tzOffsetMinutes }): Promise<StreakDay[]> => {
     const offset = clampOffset(tzOffsetMinutes);
     const today = dayKey(Date.now(), offset);
-    const days = weekWindow(today);
+    const days = weekWindow(today).filter(isWeekday);
 
     const user = await callerRow(ctx);
     if (user === null) {
@@ -287,6 +309,7 @@ export type ClaimResult = Streak & { extended: boolean; deferred: boolean };
  */
 export const claimToday = mutation({
   args: { tzOffsetMinutes: v.number() },
+  returns: v.object({ ...streakFields, extended: v.boolean(), deferred: v.boolean() }),
   handler: async (ctx, { tzOffsetMinutes }): Promise<ClaimResult> => {
     const row = await callerRow(ctx);
     // No row yet means `StoreUser`'s upsert has not landed — the two mount
@@ -300,15 +323,12 @@ export const claimToday = mutation({
     const now = Date.now();
     const today = dayKey(now, offset);
 
-    if (row.streakLastDay === today) {
+    if (!isWeekday(today) || row.streakLastDay === today) {
       return { ...resolve(row, now, offset), extended: false, deferred: false };
     }
 
-    // Yesterday continues the run; anything else — a gap, or a first ever
-    // visit — starts a new one at today.
-    const yesterday = dayKey(now - DAY_MS, offset);
-    const current =
-      row.streakLastDay === yesterday ? (row.streakCount ?? 0) + 1 : 1;
+    // Friday continues on Monday; a missed weekday starts a new run.
+    const current = resolve(row, now, offset).current + 1;
     const best = Math.max(row.streakBest ?? 0, current);
 
     await ctx.db.patch(row._id, {

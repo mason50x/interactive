@@ -1,26 +1,23 @@
-import { readFileSync } from "node:fs";
+import { createTestProgram } from "./simulator-fixture.mjs";
 import { describe, expect, it } from "vitest";
-import { identify, openProgram } from "../../src/lib/simulator/files";
+import { identify, openProgram, programLabel } from "../../src/lib/simulator/files";
 import {
   importProgress,
   makeProgress,
   STATE_BYTES,
 } from "../../src/lib/simulator/progress";
-const sample = () =>
-  Uint8Array.from(
-    readFileSync("public/simulator/builtins/pixel-field/program.gb"),
-  ).buffer;
+const sample = () => new Uint8Array(createTestProgram()).buffer;
 const header = (data: Uint8Array) => {
   let sum = 0;
   for (let i = 0x134; i <= 0x14c; i++) sum = (sum - data[i] - 1) & 255;
   data[0x14d] = sum;
 };
 describe("simulation file boundary", () => {
-  it("matches identical bytes after renaming and retains no filename", async () => {
+  it("matches identical bytes after renaming and retains only a display label", async () => {
     const a = await openProgram(new File([sample()], "first.gb"));
     const b = await openProgram(new File([sample()], "renamed.GB"));
     expect(a.contentHash).toBe(b.contentHash);
-    expect(Object.keys(a).sort()).toEqual(["bytes", "contentHash", "mode"]);
+    expect(Object.keys(a).sort()).toEqual(["bytes", "contentHash", "label", "mode"]);
   });
   it("separates modified content and detects color mode", async () => {
     const a = await identify(sample());
@@ -78,4 +75,11 @@ describe("simulation file boundary", () => {
       importProgress(new File([new Uint8Array(750001)], "test.progress"), hash),
     ).rejects.toThrow("too large");
   });
+});
+
+it("cleans ROM filenames while retaining meaningful titles", () => {
+  expect(programLabel("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb")).toBe("Pokemon — Red Version");
+  expect(programLabel("Super_Mario_Land (World) (Rev 1) [!].gb")).toBe("Super Mario Land");
+  expect(programLabel("Zelda (Link’s Awakening).gbc")).toBe("Zelda (Link’s Awakening)");
+  expect(programLabel("[!].gb")).toBe("Imported simulation");
 });

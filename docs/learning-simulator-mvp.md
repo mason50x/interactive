@@ -8,9 +8,9 @@ Status: implemented locally and deployed to the development Convex instance on S
 - Use Learning Simulator in headings, navigation, metadata, empty states, and first-party filenames. Controls say Open file, Start, Resume, Pause, Restart, Save now, Saves, and Export progress. Keep required upstream license notices intact in technical distribution files.
 - Run a pinned, self-hosted WASM core with our own interface. Use binjgb pinned to `c60e138da5a795ebb55e56b11b7e90024e41112c`; the checkpoint ABI is 199,608 bytes and has been verified with cross-instance restore. No runtime CDN dependency.
 - Support `.gb` and `.gbc` inputs initially. Explain accepted extensions in the file picker without hardware branding in the interface. No archive extraction, remote URL imports, BIOS imports, or additional systems in MVP.
-- Include both a built-in catalogue and locally selected files. Ship only built-in content with explicit redistribution permission; one original or permissively licensed sample is sufficient for the first release. Content selection remains a delivery dependency, not an excuse to omit the built-in loading path.
-- Imported program bytes are **memory-only**. Never upload them, write them to IndexedDB/localStorage/Cache Storage, keep file-system handles, or include them in logs, telemetry, or URLs. Refreshing, closing, or leaving the simulator releases them. The original file remains wherever the user selected it from.
-- Persist progress locally and in the signed-in user's cloud account automatically. Cloud metadata includes content hash, display label, format, and timestamps; it does not include the selected file or its original filename. Default imported labels to “Imported simulation”; allow a user-supplied label.
+- Support locally selected files. No built-in games are bundled.
+- Imported program bytes are cached **locally in account-namespaced IndexedDB**, separately from progress. Never upload them, keep file-system handles, or include them in logs, telemetry, or URLs. Refreshing or returning loads the cached bytes and verifies their content hash. Deleting an entry or clearing local progress also deletes its cached ROM. Storage failures fall back to selecting the original file.
+- Persist progress locally and in the signed-in user's cloud account automatically. Cloud metadata includes content hash, display label, format, and timestamps; it does not include the selected file or its original filename. Derive display labels from uploaded filenames by stripping extensions and common dump metadata; use “Imported simulation” only as a fallback and preserve user-renamed labels.
 - Selecting the same bytes again matches existing progress even if the filename changes. A different revision of a file is a different simulation unless an explicit migration is added later.
 - No claim that naming, hosting, or this integration prevents school filtering.
 
@@ -23,7 +23,7 @@ Status: implemented locally and deployed to the development Convex instance on S
 
 Both pages call `auth.protect()` individually and apply the existing agreement gate. The existing proxy already protects `/dashboard(.*)`. The nested layout owns an ephemeral client session provider so a file selected on the library page survives navigation to the player. Leaving this route subtree destroys the runtime and drops byte references.
 
-Direct navigation to a built-in hash resolves a server-owned manifest entry. Direct navigation to an imported hash shows “Select the original file to resume”; hashes grant no access to another user's saves. A valid unknown hash can show the same prompt without revealing whether another user has used it. Invalid hashes return 404.
+Direct navigation to a built-in hash resolves a server-owned manifest entry. Direct navigation to an imported hash loads the account’s local ROM cache, falling back to “Select the original file to resume” when unavailable; hashes grant no access to another user's saves. A valid unknown hash can show the same prompt without revealing whether another user has used it. Invalid hashes return 404.
 
 Player layout: title and back link, centered pixel-preserving canvas, compact controls, optional touch controls, and a small save status. Reuse current design tokens and UI primitives. Fullscreen targets the player container so controls stay available; offer a viewport-filling layout where native fullscreen is unavailable. Audio starts only after a user gesture.
 
@@ -42,7 +42,7 @@ Paths below are relative to `/Users/mason/Desktop/50x`. This is the intended imp
 | `src/app/dashboard/learning-simulator/[contentHash]/page.tsx` | Protected player server page, route validation, manifest lookup. |
 | `src/app/dashboard/learning-simulator/loading.tsx` | Lightweight route loading state. |
 | `src/app/dashboard/learning-simulator/error.tsx` | Recoverable route failure UI. |
-| `src/components/simulator/session-provider.tsx` | In-memory file ownership and deterministic teardown. |
+| `src/components/simulator/session-provider.tsx` | Account-scoped local ROM caching and in-memory file ownership. |
 | `src/components/simulator/library.tsx` | Built-ins, recent progress, file selection, rename/delete actions. |
 | `src/components/simulator/player.tsx` | Browser-only engine loading and player lifecycle. |
 | `src/components/simulator/controls.tsx` | Transport, volume, keyboard/gamepad/touch input and focus handling. |
@@ -66,7 +66,6 @@ Paths below are relative to `/Users/mason/Desktop/50x`. This is the intended imp
 | `public/simulator/core/<build-id>/runtime.wasm` | Matching pinned generated binary. |
 | `public/simulator/core/<build-id>/LICENSE.txt` | Unmodified required upstream notices. |
 | `public/simulator/core/<build-id>/build.json` | Source commit, artifact checksums, ABI/save-format version. |
-| `public/simulator/builtins/<id>/...` | Approved built-in program, optional thumbnail, redistribution notice. |
 | `scripts/build-simulator-core.mjs` | Reproducible build/download verification against a pinned source/artifact version. |
 | `scripts/check-simulator.mjs` | Save-format, file-validation, and reconciliation regression checks. |
 | `scripts/tests/simulator-cloud.test.ts` | Isolated Convex integration checks with two authenticated test identities, ownership, concurrency, limits and deletion. |
@@ -146,7 +145,6 @@ All public functions use object-form args and return validators. Derive owner id
 | `simulator/saves:remove` | Mutation | CAS-protected removal of a slot and revision increment so stale writers cannot overwrite deletion unnoticed. |
 | `simulator/cleanup:purgeOwner` | Internal mutation | Bounded deletion by owner, rescheduling until complete; invoked by account-deletion webhook. |
 
-Share the built-in allowlist with Convex through a generated small manifest file (`convex/simulator/builtins.json`), produced by the build script from the same source as the server catalogue. Add this generated file to the inventory when built-ins are selected. It contains IDs/hashes/modes, not binary programs.
 
 Use the installed rate-limiter component with a simulator-specific namespace, independent of chat trust tiers. Proposed save allowance: 6 writes/minute/account with burst capacity 10, including manual saves; library registration/rename gets a separate bounded bucket. Validate first and return retry timing. Enforce limits server-side; client debounce is not enforcement.
 
@@ -170,18 +168,18 @@ Cloud deletion does not physically clear offline browsers. On reconnect, missing
 
 ## Delivery order and acceptance gates
 
-1. **Engine/save spike:** pin a build, run an approved sample, validate mono/color inputs, audio, save/restore, battery/clock handling, snapshot size, and that no ROM buffer is persisted. Measure frame pacing on target devices. This resolves the remaining engine-specific uncertainties before schema constants are finalized.
+1. **Engine/save spike:** pin a build, run an approved sample, validate mono/color inputs, audio, save/restore, battery/clock handling, snapshot size, and that no ROM buffer enters a progress envelope. Measure frame pacing on target devices. This resolves the remaining engine-specific uncertainties before schema constants are finalized.
 2. **Routes and runtime:** sidebar, protected pages, ephemeral provider, built-in/import flow, controls and teardown. Verify core assets load only on player intent and long sidebar label fits.
 3. **Local progress:** IndexedDB, slots, import/export and persistence failures. Refresh → reselect same file → resume; rename file → same progress; different bytes → distinct entry.
 4. **Cloud backend:** additive schema, validators/indexes, limits, cleanup, generated API and development deployment. Test two authenticated owners: neither can read, write, restore or delete the other's records.
 5. **Synchronization:** retries, reload with pending outbox, lost acknowledgement, concurrent tabs/devices, manual slot changes during an in-flight autosave, conflict choice and stale deletion generation.
 6. **End-to-end release checks:** built-in cold launch, imported launch, local resume, second-device cloud resume after reselection, one-hour retention, offline recovery, storage quota refusal, unsupported/corrupt save, core-version mismatch, account deletion and mobile audio/fullscreen behavior.
 
-Privacy verification inspects requests, IndexedDB, localStorage and Cache Storage after importing a uniquely identifiable test file. Only metadata and exported progress may persist; no selected File/Blob/program buffer or file handle may appear. Check that core serialization does not contain the full source buffer; distinguish ordinary working-memory contents from storing the ROM.
+Privacy verification inspects requests, IndexedDB, localStorage and Cache Storage after importing a uniquely identifiable test file. ROM bytes may persist only in the separate account-namespaced IndexedDB programs store. They must not enter network requests, progress records, localStorage, Cache Storage, or logs. No file handle is kept. Check that core serialization does not contain the full source buffer; distinguish ordinary working-memory contents from storing the ROM.
 
 Run targeted lint, Next type generation if routes require it, TypeScript, save/sync regression checks, development Convex push, and authenticated runtime checks. Build/static checks alone do not establish cloud autosave correctness. Leave implementation uncommitted unless requested; production rollout is a separate concrete deployment step.
 
-MVP excludes rewind, achievements, multiplayer/linking, screenshots, unlimited save history, cloud ROM libraries, automatic ROM caching, and full offline installation. Fast-forward is optional only after normal-speed audio/timing and saves pass; reliable progress takes priority.
+MVP excludes rewind, achievements, multiplayer/linking, screenshots, unlimited save history, cloud ROM libraries and full offline installation. Fast-forward is optional only after normal-speed audio/timing and saves pass; reliable progress takes priority.
 
 ## Source references and current evidence
 
@@ -192,9 +190,9 @@ MVP excludes rewind, achievements, multiplayer/linking, screenshots, unlimited s
 
 ## Implementation and verification report
 
-Additional implemented files: `src/components/simulator/player-loader.tsx`, `src/lib/simulator/lock.ts`, `convex/simulator/model.ts`, `convex/simulator/builtins.json`, `scripts/build-simulator-sample.mjs`, `scripts/tests/simulator-sync.test.ts`, `scripts/tests/simulator-files.test.ts`, and `vitest.config.mts`. Vendored generated runtime code is excluded from ESLint; all first-party simulator code remains checked.
+Additional implemented files: `src/components/simulator/player-loader.tsx`, `src/lib/simulator/lock.ts`, `convex/simulator/model.ts`, `scripts/tests/simulator-sync.test.ts`, `scripts/tests/simulator-files.test.ts`, and `vitest.config.mts`. Vendored generated runtime code is excluded from ESLint; all first-party simulator code remains checked.
 
-The built-in Pixel Field is original, generated source with a redistribution notice. `npm run simulator:sample` regenerates its binary and manifest together. No third-party game content is bundled. There is no runtime CDN, ROM upload function, file-handle persistence or service-worker cache.
+The simulator ships without bundled games. Users open local files. Engine checks use a test-only idle-loop cartridge generated in memory. There is no runtime CDN, ROM upload function, file-handle persistence or service-worker cache.
 
 Verified so far:
 

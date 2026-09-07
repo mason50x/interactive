@@ -315,11 +315,9 @@ export function MentionPicker({
       {candidates.length === 0 ? (
         loading ? (
           <div
-            role="status"
             className="flex items-center justify-center gap-2 py-3"
           >
-            <Spinner aria-hidden className="size-3.5 text-faint" />
-            <span className="text-shimmer text-[0.8125rem]">Searching</span>
+            <Spinner className="size-3.5 text-faint" />
           </div>
         ) : (
           <p className="px-2 py-3 text-center text-[0.8125rem] leading-snug text-muted-foreground">

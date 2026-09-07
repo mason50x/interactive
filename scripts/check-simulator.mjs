@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
-import { createHash } from "node:crypto";
+import { createTestProgram } from "./tests/simulator-fixture.mjs";
 const root = new URL("../", import.meta.url);
 const wasm = await readFile(
   new URL("public/simulator/core/c60e138/runtime.wasm", root),
@@ -10,16 +10,7 @@ const loader = await readFile(
   new URL("public/simulator/core/c60e138/runtime.js", root),
   "utf8",
 );
-const original = await readFile(
-  new URL("public/simulator/builtins/pixel-field/program.gb", root),
-);
-const manifest = JSON.parse(
-  await readFile(new URL("convex/simulator/builtins.json", root), "utf8"),
-);
-assert.equal(
-  createHash("sha256").update(original).digest("hex"),
-  manifest[0].contentHash,
-);
+const original = Buffer.from(createTestProgram());
 async function core(bytes) {
   const sandbox = {
     console: { log() {}, warn() {}, error() {} },
@@ -121,21 +112,3 @@ b.dispose();
 console.log(
   "Simulator engine: mono/color execution, cross-instance restore, battery state, pinned ABI and ROM exclusion passed.",
 );
-
-const inputTest=await core(original);
-inputTest.m._emulator_set_builtin_palette(inputTest.e,79);run(inputTest);
-function reachVblank(c){for(let i=0;i<160&&c.m._emulator_read_mem(c.e,0xff44)<144;i++)run(c,456);}
-reachVblank(inputTest);
-const startX=inputTest.m._emulator_read_mem(inputTest.e,0xfe01);
-inputTest.m._set_joyp_right(inputTest.e,1);run(inputTest,419430);
-inputTest.m._set_joyp_right(inputTest.e,0);run(inputTest,419430);
-reachVblank(inputTest);
-const movedX=inputTest.m._emulator_read_mem(inputTest.e,0xfe01);
-assert.ok(movedX>startX,'Directional input moves the sample');
-const inputSave=state(inputTest);const resumed=await core(original);resumed.m._emulator_set_builtin_palette(resumed.e,79);restore(resumed,inputSave);run(resumed);
-reachVblank(resumed);
-assert.equal(resumed.m._emulator_read_mem(resumed.e,0xfe01),movedX,'Restored position stays stable without input');
-const frameHash=c=>{const p=c.m._get_frame_buffer_ptr(c.e);return createHash('sha256').update(c.m.HEAPU8.subarray(p,p+160*144*4)).digest('hex');};
-assert.equal(frameHash(resumed),frameHash(inputTest),'Rendered progress survives cross-instance restore');
-inputTest.dispose();resumed.dispose();
-console.log('Directional input and rendered save restoration passed.');

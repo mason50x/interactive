@@ -49,11 +49,12 @@ export class ProgressSync {
     mode: Mode,
     private client: ConvexReactClient,
     private changed: () => void,
+    private importedLabel?: string,
   ) {
     this.record = {
       contentHash: hash,
       mode,
-      label: "Imported simulation",
+      label: importedLabel ?? "Imported simulation",
       revision: 0,
       updatedAt: Date.now(),
       saves: {},
@@ -85,6 +86,7 @@ export class ProgressSync {
       const local = await readLocal(this.owner, this.record.contentHash);
       if (local) {
         this.record = local;
+        if (this.record.label === "Imported simulation" && this.importedLabel) this.record.label = this.importedLabel;
         this.status.local = "saved";
       }
     } catch {
@@ -124,11 +126,12 @@ export class ProgressSync {
       this.status.cloud = "ready";
       return;
     }
-    if (!cloud)
+    if (!cloud || (cloud.label === "Imported simulation" && this.importedLabel))
       cloud = await timeout(
         this.client.mutation(api.simulator.library.register, {
           contentHash: this.record.contentHash,
           mode: this.record.mode,
+          ...(this.importedLabel ? { label: this.importedLabel } : {}),
         }),
       );
     if (this.stopped) return;

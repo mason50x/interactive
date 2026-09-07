@@ -1,11 +1,17 @@
-import type { LocalEntry } from "./types";
+import { identify } from "./files";
+import type { Program, LocalEntry } from "./types";
 const database = "50x-learning-simulator-v1";
 function connect(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(database, 1);
-    request.onupgradeneeded = () =>
-      request.result.createObjectStore("progress");
-    request.onsuccess = () => resolve(request.result);
+    const request = indexedDB.open(database, 2);
+    request.onupgradeneeded = () => {
+      for (const name of ["progress", "programs"])
+        if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name);
+    };
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error);
     request.onblocked = () =>
       reject(new Error("Close other simulator tabs to update local storage."));
@@ -17,11 +23,12 @@ export function accountKey(owner: string) {
 async function transaction<T>(
   mode: IDBTransactionMode,
   run: (store: IDBObjectStore) => IDBRequest<T>,
+  storeName = "progress",
 ): Promise<T> {
   const db = await connect();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction("progress", mode);
-    const req = run(tx.objectStore("progress"));
+    const tx = db.transaction(storeName, mode);
+    const req = run(tx.objectStore(storeName));
     tx.oncomplete = () => {
       db.close();
       resolve(req.result);
@@ -73,7 +80,7 @@ export async function writeLocal(owner: string, entry: LocalEntry) {
   });
 }
 export async function removeLocal(owner: string, hash: string) {
-  await transaction("readwrite", (s) => s.delete(accountKey(owner) + hash));
+  await deleteStored(accountKey(owner) + hash);
 }
 export async function listLocal(owner: string): Promise<LocalEntry[]> {
   const prefix = accountKey(owner);
@@ -83,7 +90,26 @@ export async function listLocal(owner: string): Promise<LocalEntry[]> {
 }
 export async function clearLocal(owner: string) {
   const prefix = accountKey(owner);
-  await transaction("readwrite", (s) =>
-    s.delete(IDBKeyRange.bound(prefix, prefix + "\uffff")),
-  );
+  await deleteStored(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+}
+
+// Program bytes live only in this browser store, never in progress envelopes.
+export async function writeProgram(owner: string, program: Program) {
+  await transaction("readwrite", store => store.put({ bytes: program.bytes, label: program.label }, accountKey(owner) + program.contentHash), "programs");
+}
+export async function readProgram(owner: string, hash: string): Promise<Program | null> {
+  const cached = await transaction<ArrayBuffer | { bytes: ArrayBuffer; label?: string } | undefined>("readonly", store => store.get(accountKey(owner) + hash), "programs");
+  if (!cached) return null;
+  const program = await identify(cached instanceof ArrayBuffer ? cached : cached.bytes);
+  if (program.contentHash !== hash) throw new Error("The stored game file is damaged. Select the original file again.");
+  return cached instanceof ArrayBuffer ? program : { ...program, ...(cached.label ? { label: cached.label } : {}) };
+}
+async function deleteStored(key: string | IDBKeyRange) {
+  const db = await connect();
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(["progress", "programs"], "readwrite");
+    for (const name of ["progress", "programs"]) tx.objectStore(name).delete(key);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = tx.onabort = () => { db.close(); reject(tx.error ?? new Error("Could not clear local storage.")); };
+  });
 }

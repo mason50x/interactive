@@ -24,12 +24,7 @@ export function SavesPanel({
 }) {
   const file = useRef<HTMLInputElement>(null);
   return (
-    <section className="rounded-xl border border-border bg-background p-5">
-      <h2 className="font-semibold">Saved progress</h2>
-      <p className="mt-1 mb-4 text-xs leading-5 text-muted-foreground">
-        Autosaves keep your latest session and one recovery point. Manual slots
-        stay until you replace them.
-      </p>
+    <section aria-label="Save slots" className="rounded-xl border border-border bg-background p-5">
       <div className="divide-y divide-border">
         {(["auto", "previous", "manual1", "manual2", "manual3"] as Slot[]).map(
           (slot, i) => {

@@ -3,7 +3,6 @@ import { mutation, query } from "../_generated/server";
 import { caller, owned, hash, label } from "./shared";
 import { entryDoc, mode } from "./model";
 import { limits } from "./limits";
-import builtins from "./builtins.json";
 export const list = query({
   args: {},
   returns: v.array(entryDoc),
@@ -34,7 +33,7 @@ export const get = query({
   },
 });
 export const register = mutation({
-  args: { contentHash: v.string(), mode },
+  args: { contentHash: v.string(), mode, label: v.optional(v.string()) },
   returns: entryDoc,
   handler: async (ctx, args) => {
     const owner = await caller(ctx, true);
@@ -50,8 +49,9 @@ export const register = mutation({
       .unique();
     const now = Date.now();
     if (existing) {
-      await ctx.db.patch(existing._id, { lastOpenedAt: now });
-      return { ...existing, lastOpenedAt: now };
+      const title = existing.label === "Imported simulation" && args.label ? label(args.label) : existing.label;
+      await ctx.db.patch(existing._id, { lastOpenedAt: now, label: title });
+      return { ...existing, lastOpenedAt: now, label: title };
     }
     const all = await ctx.db
       .query("simulatorEntries")
@@ -63,14 +63,12 @@ export const register = mutation({
       throw new ConvexError(
         "Your library is full. Remove an entry before adding another.",
       );
-    const builtin = builtins.find((b) => b.contentHash === args.contentHash);
     const id = await ctx.db.insert("simulatorEntries", {
       ownerClerkId: owner,
       contentHash: args.contentHash,
-      label: builtin?.label ?? "Imported simulation",
-      source: builtin ? "builtin" : "imported",
-      ...(builtin ? { builtinId: builtin.id } : {}),
-      mode: builtin ? "mono" : args.mode,
+      label: args.label ? label(args.label) : "Imported simulation",
+      source: "imported",
+      mode: args.mode,
       createdAt: now,
       lastOpenedAt: now,
       updatedAt: now,

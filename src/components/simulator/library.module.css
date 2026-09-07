@@ -1,0 +1,45 @@
+@property --simulator-upload-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.uploadPanel {
+  position: relative;
+  border: 3px solid #22d3ee;
+  box-shadow: 0 0 20px rgb(34 211 238 / 15%);
+}
+
+.uploadPanel::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  padding: 3px;
+  background: repeating-conic-gradient(
+    from var(--simulator-upload-angle),
+    #0891b2 0deg,
+    #0891b2 30deg,
+    #22d3ee 55deg,
+    #ecfeff 70deg,
+    #ecfeff 76deg,
+    #0891b2 80deg,
+    #0891b2 90deg
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: uploadBorderTravel 4s linear infinite;
+}
+
+@keyframes uploadBorderTravel {
+  to {
+    --simulator-upload-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uploadPanel::before {
+    animation: none;
+  }
+}

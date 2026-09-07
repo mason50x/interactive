@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import { brand } from "@/lib/brand";
@@ -126,7 +128,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       )}
     >
       <body className="flex min-h-full flex-col">
-        {/* Before anything paints: reads the stored preference and puts the
+        {/* Before anything paints: uses the route’s system or saved preference and puts the
             resolved theme on <html>. A component could not do this — the
             server has no storage to read, so React would paint light first
             and snap to dark on hydration. */}
@@ -155,6 +157,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: consoleGreetingScript }}
           suppressHydrationWarning
         />
+        <Suspense fallback={null}>
+          <ThemeProvider />
+        </Suspense>
         {children}
       </body>
     </html>

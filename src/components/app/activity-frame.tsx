@@ -15,6 +15,7 @@ import { LogoMark } from "@/components/wordmark";
 import { ACTIVITIES_HREF } from "@/lib/nav";
 import { safePanicUrl } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
+import styles from "./activity-frame.module.css";
 
 /**
  * The app's side of the origin boundary.
@@ -42,32 +43,16 @@ import { cn } from "@/lib/utils";
  * value is treated as a *claim* — display only. Anything durable, a ranking or
  * a streak, has to be written by code the framed document cannot reach.
  *
- * ## The ring
- *
- * The shell is a rounded card and the bundle is a square document, so there
- * has to be a margin between them or the activity's corners get clipped. That
- * margin used to be a flat dark band, which read as a frame around a picture.
- * It is now painted with the activity's own colours: the tile art, blurred hard
- * and laid under the whole stage, so the 12px that shows around the edge of
- * the frame is a smear of whatever the art has at that edge. The activity
- * looks like it runs out to the rounded corner rather than stopping short of it.
- *
- * The art rather than the activity itself, because the activity is the one
- * thing that cannot be sampled — the bundle is cross-origin two frames down,
- * and a canvas that has drawn it is tainted before the first pixel is read.
- * The tile is the closest thing to the activity's palette we are allowed to
- * look at. Where the art is missing (a handful of upstream tiles 404) the layer
- * paints nothing and the stage's own dark ground shows, which is the old look.
+ * The edge blends the live embed through a narrow backdrop blur. It uses
+ * the browser's compositing rather than sampling cross-origin pixels in JS,
+ * so the colours always come from the displayed activity, not its thumbnail.
  */
 export function ActivityFrame({
   title,
   src,
-  art,
 }: {
   title: string;
   src: string;
-  /** The activity's tile art, the source of the ring's colours. */
-  art: string;
 }) {
   // The element that goes fullscreen. The stage rather than the iframe, so the
   // controls come with it — fullscreening the iframe alone would hand the
@@ -149,28 +134,7 @@ export function ActivityFrame({
       ref={stage}
       className="relative size-full overflow-hidden bg-[#111418]"
     >
-      {/* The ambient layer. Overscanned past the stage on every side so the
-          blur's soft edge — which fades to transparent — falls outside the
-          clip rather than darkening the ring it exists to colour. `bg-cover`
-          on the overscanned box means the smear at the ring is drawn from a
-          little inside the art's edge rather than its outermost pixels, which
-          is fine: it is a wash, not a measurement. Static, so the compositor
-          rasterises it once and it costs the activity nothing per frame. */}
-      <div
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute -inset-16 bg-cover bg-center blur-xl saturate-150",
-          // Nothing to see in fullscreen — the frame covers the stage — so
-          // it is dropped rather than left to be painted under the activity.
-          full && "hidden",
-        )}
-        style={{ backgroundImage: `url("${art}")` }}
-      />
-
-      {/* The ring. Gone in fullscreen: on a screen with no rounded corners
-          there is nothing for a margin to protect, and every pixel of it is
-          one the activity could have. */}
-      <div className={cn("absolute inset-0", full ? "p-0" : "p-3")}>
+      <div className="absolute inset-0">
         <iframe
           key={run}
           src={src}
@@ -196,6 +160,8 @@ export function ActivityFrame({
           className="block size-full border-0"
         />
       </div>
+
+      {!full && <div aria-hidden className={styles.edge} />}
 
       {/* Keyed on the same value as the frame, which is the whole of its
           scheduling: a restart tears both down together, so the cover is

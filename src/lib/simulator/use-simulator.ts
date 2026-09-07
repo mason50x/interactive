@@ -59,6 +59,7 @@ export function useSimulator(
           setStatus({ ...manager.status });
         }
       },
+      program?.label,
     );
     sync.current = manager;
     const stored = readSettings();
@@ -145,7 +146,7 @@ export function useSimulator(
       if (finalSave) void finalSave.finally(() => release?.());
       else release?.();
     };
-  }, [owner, hash, client, builtin?.mode, program?.mode]);
+  }, [owner, hash, client, builtin?.mode, program?.mode, program?.label]);
   async function start() {
     if (!ready || starting.current || !canvas.current || !sync.current) return;
     starting.current = true;

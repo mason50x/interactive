@@ -163,7 +163,9 @@ is the user's local day, not UTC: a streak is a human counting bedtimes, so the
 client sends its UTC offset and the server does the arithmetic. The date itself
 is never taken from the client. `streakCount` is the run that ended on
 `streakLastDay`, which is not the same as the run in effect now; deciding
-whether it is still alive is the reader's job.
+whether it is still alive is the reader's job. Only Monday–Friday advances the
+streak: weekends neither increment it nor break it, and the strip shows those
+five weekdays. Existing counts and personal bests are preserved.
 
 **Preferences** get their own table, and the browser keeps a copy in
 `localStorage` that is what the page actually reads. A preference needing a
@@ -621,11 +623,13 @@ Add it to `convex/schema.ts`, write functions in a new `convex/*.ts` file, and
 
 ## Learning Simulator
 
-The protected `/dashboard/learning-simulator` library includes the original Pixel
-Field sample and memory-only `.gb` / `.gbc` imports. Imported program files are
-never uploaded or stored by the app. Re-select the original after a refresh or
-leaving the simulator. Only metadata and bounded native progress checkpoints
-persist in account-namespaced IndexedDB and the two `simulator*` Convex tables.
+The protected `/dashboard/learning-simulator` library accepts `.gb` / `.gbc`
+imports. Imported program files are cached in account-namespaced IndexedDB on
+this browser so they can be reopened after refresh; they are never uploaded.
+Only metadata and bounded native progress checkpoints sync to Convex. Deleting
+an entry or clearing the local library also removes its cached program. A new
+browser, cleared browser storage, or a failed cache write requires selecting the
+original file again. Starting playback still requires a click to enable audio.
 
 Local autosave runs every ten active seconds; cloud sync runs every minute and
 on explicit save/pause. Current/previous autosaves and three manual slots use
@@ -635,7 +639,6 @@ required to start a player; the same file cannot run twice in one browser profil
 
 - `npm run test:simulator`: verify the pinned core, exercise actual WASM save
   restoration, and run file/Convex/synchronization regressions.
-- `npm run simulator:sample`: regenerate the original sample and matching manifest.
 - `node scripts/build-simulator-core.mjs --fetch`: restore the pinned upstream
   runtime assets and verify their recorded checksums. Keep the bundled MIT notice.
 - `npx convex dev --once`: generate/push functions to the configured development

@@ -84,10 +84,7 @@ export default async function DashboardLayout({
     <AppProviders>
       {/* Here and not in `AppProviders`, which also wraps the marketing site
           and the auth pages: arriving at the app is a day's activity, reading
-          the pricing page is not. It is outside the viewport-height row rather
-          than inside it because it renders the celebration overlay, and a
-          `fixed` element inside a `overflow-hidden` flex row is one more thing
-          that can be clipped for no reason. */}
+          the pricing page is not. */}
       <StreakProvider>
         {/* Wraps both the rail and the shell, for the same reason the search
             does: the card that accepts the terms is in the rail and the

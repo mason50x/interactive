@@ -37,7 +37,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { CenteredSpinner, Spinner } from "@/components/ui/spinner";
 import {
   GlobalUnlock,
   useRemaining,
@@ -1590,7 +1590,7 @@ function ReactionPill({
               Reacted with {reaction.emoji}
             </p>
             {people === undefined ? (
-              <p className="text-[0.8125rem] text-muted-foreground">Loading…</p>
+              <CenteredSpinner className="h-12 min-h-0" />
             ) : people.length === 0 ? (
               <p className="text-[0.8125rem] text-muted-foreground">
                 No names available

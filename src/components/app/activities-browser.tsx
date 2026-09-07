@@ -106,7 +106,7 @@ export function ActivitiesBrowser({
         className={cn(
           "sticky top-0 z-20 flex items-center gap-3 py-3",
           "-mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10",
-          "bg-background/85 backdrop-blur-md",
+          "bg-surface/85 backdrop-blur-md",
         )}
       >
         <search className="relative min-w-0 flex-1">

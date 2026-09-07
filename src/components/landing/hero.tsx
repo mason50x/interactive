@@ -30,7 +30,7 @@ export function Hero() {
             href="/auth/sign-in"
             variant="link"
             size="xl"
-            className="gap-2 text-foreground"
+            className="gap-2 text-[var(--landing-ink)]"
           >
             Sign in
             <ArrowRightIcon aria-hidden="true" className="size-4" />

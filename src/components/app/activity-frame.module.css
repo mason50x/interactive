@@ -1,0 +1,11 @@
+/* Blend live pixels in a narrow rim; leave the centre sharp and interactive. */
+.edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 6px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}

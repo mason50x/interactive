@@ -5,7 +5,6 @@ import { ActivityFrame } from "@/components/app/activity-frame";
 import { AgreementRequired } from "@/components/app/agreement-required";
 import { ViewRecorder } from "@/components/app/view-recorder";
 import { findActivity } from "@/lib/activities";
-import { thumbnailSrc } from "@/lib/activity";
 import { hasAgreed } from "@/lib/agreement-gate";
 import { activityFrameSrc } from "@/lib/learn";
 
@@ -59,7 +58,6 @@ export default async function ActivityPage({
       <ActivityFrame
         title={activity.title}
         src={activityFrameSrc(activity.slug)}
-        art={thumbnailSrc(activity)}
       />
     </>
   );
