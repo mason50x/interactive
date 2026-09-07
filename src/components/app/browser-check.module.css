@@ -1,0 +1,37 @@
+.trace {
+  fill: currentColor;
+  fill-opacity: 0;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: trace-letter 8s ease-in-out infinite;
+}
+
+@keyframes trace-letter {
+  0% {
+    stroke-dashoffset: 100;
+    fill-opacity: 0;
+  }
+  45% {
+    stroke-dashoffset: 0;
+    fill-opacity: 0;
+  }
+  60%, 68% {
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+  }
+  83% {
+    stroke-dashoffset: 0;
+    fill-opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    fill-opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
