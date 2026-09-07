@@ -22,7 +22,7 @@ import {
 import { usePreferences } from "@/components/preferences-provider";
 import { RailSearch } from "@/components/app/rail-search";
 import { UserMenu } from "@/components/app/user-menu";
-import { NAV_HREFS, navItems } from "@/lib/nav";
+import { NAV_HREFS, PHILOSOPHY_HREF, navItems } from "@/lib/nav";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
 import { type RailState, rememberRailState } from "@/lib/rail";
@@ -137,7 +137,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   // a server component — see `src/app/dashboard/activities/[slug]/page.tsx`.
   // `/dashboard/activities` itself is the browser, not an activity, so this wants
   // the trailing segment and not just the prefix.
-  const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname);
+  const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname) || pathname === PHILOSOPHY_HREF;
 
   const activeHref = navItems.reduce((best, item) => {
     const matches =
