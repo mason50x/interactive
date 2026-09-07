@@ -98,7 +98,8 @@ export function AnnouncementsCard() {
         </button>
         <div id={panelId} inert={!open} style={{ height: open ? height : 0 }}
           className="overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none">
-          <div ref={setPanel} className={cn("max-h-[min(24rem,45dvh)] overflow-y-auto border-t border-border px-3 py-3 transition-opacity duration-200", open ? "opacity-100 delay-150" : "opacity-0")}>
+          {/* Lay out at the final width so text does not rewrap as the card opens. */}
+          <div ref={setPanel} className={cn("w-[calc(18rem-2px)] wide:w-[calc(21rem-2px)] max-h-[min(24rem,45dvh)] overflow-y-auto [scrollbar-gutter:stable] border-t border-border px-3 py-3 transition-opacity duration-200", open ? "opacity-100 delay-150" : "opacity-0")}>
             {!posts || !posts.length ? <p className="text-[0.8125rem] text-muted-foreground">{posts ? "No announcements yet. Check back soon." : "Loading announcements…"}</p> : (
               <div className="flex flex-col gap-4">
                 {unreadPosts.map(post => (
