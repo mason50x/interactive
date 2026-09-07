@@ -1503,3 +1503,45 @@
 @media (prefers-reduced-motion: reduce) {
   .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
 }
+
+/* A thin comet of light follows the unread announcement card's outline. */
+@property --announcement-rim-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.announcement-unread-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--announcement-rim-angle),
+    transparent 0deg 215deg,
+    color-mix(in oklch, var(--primary) 8%, transparent) 255deg,
+    color-mix(in oklch, var(--primary) 40%, transparent) 300deg,
+    color-mix(in oklch, var(--primary) 85%, white) 333deg,
+    white 344deg,
+    color-mix(in oklch, var(--primary) 30%, transparent) 352deg,
+    transparent 360deg
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 3px color-mix(in oklch, var(--primary) 45%, transparent));
+  animation: announcement-rim-travel 5s linear infinite;
+}
+
+@keyframes announcement-rim-travel {
+  to { --announcement-rim-angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-unread-glow::after {
+    animation: none;
+    --announcement-rim-angle: 35deg;
+  }
+}

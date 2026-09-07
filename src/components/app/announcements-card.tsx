@@ -78,6 +78,8 @@ export function AnnouncementsCard() {
         {unread > 0 && <span className="absolute top-2.5 right-3.5 size-2 rounded-full bg-primary" />}
       </button>
       <Card className={cn(
+        "relative",
+        unread > 0 && "announcement-unread-glow",
         "overflow-hidden rounded-xl transition-[width,box-shadow,opacity,visibility] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
         open ? "z-30 shadow-lg shadow-black/[0.08] wide:relative wide:w-[21rem]" : "wide:w-[14.25rem]",
         "narrow:absolute narrow:bottom-full narrow:left-3 narrow:mb-1 narrow:w-72 narrow:shadow-lg",
