@@ -1,0 +1,63 @@
+.page {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  overflow: hidden;
+  padding: 28px;
+  color: var(--foreground);
+}
+
+.stage {
+  position: relative;
+  width: min(360px, 100%);
+  aspect-ratio: 1;
+  isolation: isolate;
+}
+
+.ban {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  color: #ef4444;
+  pointer-events: none;
+}
+
+.ban svg {
+  width: 100%;
+  height: 100%;
+}
+
+.slot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: swap 8s cubic-bezier(0.22, 1, 0.36, 1) infinite both;
+}
+
+.phone { animation-delay: 1s; }
+.fun { animation-delay: 3.35s; }
+.chatgpt { animation-delay: 5.7s; }
+
+.phoneGlyph { width: 44%; height: 69%; }
+.chatgptGlyph { width: 61%; height: 61%; }
+.funGlyph { width: 77%; height: auto; overflow: visible; }
+
+.stillBan { display: none; }
+
+/* A quick directional smear, then a long, perfectly sharp hold. The blank
+   first beat lets the prohibition sign register before the phone arrives. */
+@keyframes swap {
+  0% { opacity: 0; filter: blur(18px); transform: translateX(70px) scaleX(1.18) scaleY(0.9); }
+  4%, 23% { opacity: 1; filter: blur(0); transform: translateX(0) scale(1); }
+  29%, 100% { opacity: 0; filter: blur(18px); transform: translateX(-70px) scaleX(1.18) scaleY(0.9); }
+}
+
+/* Keep the complete sequence available without motion. */
+@media (prefers-reduced-motion: reduce) {
+  .stage { display: grid; gap: 24px; width: min(180px, 100%); aspect-ratio: auto; }
+  .stage > .ban { display: none; }
+  .slot { position: relative; aspect-ratio: 1; animation: none; opacity: 1; }
+  .stillBan { display: block; }
+}

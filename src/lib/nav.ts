@@ -11,6 +11,7 @@ import {
   PuzzlePieceIcon as PuzzlePieceIconSolid,
 } from "@heroicons/react/24/solid";
 import type { IconPair } from "@/lib/icons";
+import { BrainIcon, BrainIconSolid } from "@/components/app/brain-icon";
 
 export type NavItem = {
   label: string;
@@ -33,6 +34,8 @@ export const ACTIVITIES_HREF = "/dashboard/activities";
 export const SIMULATOR_HREF = "/dashboard/learning-simulator";
 
 export const CHAT_HREF = "/dashboard/chat";
+
+export const PHILOSOPHY_HREF = "/dashboard/our-philosophy";
 
 /**
  * Every destination inside the signed-in app, in the order the rail shows
@@ -64,6 +67,11 @@ export const navItems: NavItem[] = [
       solid: ChatBubbleLeftRightIconSolid,
     },
     unread: true,
+  },
+  {
+    label: "Our Philosophy",
+    href: PHILOSOPHY_HREF,
+    icon: { outline: BrainIcon, solid: BrainIconSolid },
   },
 ];
 
