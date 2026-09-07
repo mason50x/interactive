@@ -91,7 +91,7 @@ const ACTIVITY_LIMIT = 5;
  * you have asked it to be.
  *
  * Focus is the asking. The row then grows out of the rail on the same curve
- * and duration the agreement and invite cards grow on, and takes a surface and
+ * and duration the invite cards grow on, and takes a surface and
  * a border while it does: one gesture, shared by every part of this chrome
  * that changes shape, so a blooming search reads as the same kind of object as
  * a widening card rather than a new trick. It holds that shape while there is
@@ -427,8 +427,8 @@ export function RailSearch() {
               ? // Both widths are absolute lengths so there is something to
                 // interpolate. The resting one is the rail (`wide:w-60`) less
                 // this wrapper's `pl-3`; the open one is wider than the invite
-                // and agreement cards because it is the only one of the three
-                // that has to hold two lines of somebody else's sentence. The
+                // card because it
+                // has to hold two lines of somebody else's sentence. The
                 // extra comes off the shell, which is why the open state is
                 // the one that carries a shadow.
                 "z-30 w-[27rem] bg-popover text-foreground shadow-xl shadow-black/[0.1]"

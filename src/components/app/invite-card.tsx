@@ -28,10 +28,7 @@ import { api } from "../../../convex/_generated/api";
  *
  * The query is skipped until Clerk's token has actually reached the Convex
  * client rather than run and answered `null` for "nobody is signed in". The
- * answer is the same either way here, but the two are not the same thing, and
- * the agreement card next door was reading exactly that `null` as a settled
- * reply and asking accounts that had already agreed to agree again on every
- * refresh. On a cold load this is a second or two of Clerk booting, which is
+ * card waits for authentication before fetching its allowance, which is
  * why the card can sit on its skeleton for a moment before the pips arrive.
  */
 export function useInvites() {

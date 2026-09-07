@@ -1,14 +1,13 @@
 import { ConvexError } from "convex/values";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { hasAccepted } from "../agreement";
 import {
   ENGINE_BUILD,
   STATE_BYTES,
   STATE_HEADER,
   MAX_SAVE_BYTES,
 } from "./model";
-export async function caller(ctx: QueryCtx | MutationCtx, writing = false) {
+export async function caller(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new ConvexError("Sign in to access your progress.");
   const user = await ctx.db
@@ -16,16 +15,13 @@ export async function caller(ctx: QueryCtx | MutationCtx, writing = false) {
     .withIndex("byClerkId", (q) => q.eq("clerkId", identity.subject))
     .unique();
   if (!user) throw new ConvexError("Your account is not available.");
-  if (writing && !(await hasAccepted(ctx, identity.subject)))
-    throw new ConvexError("Accept the agreement to save progress.");
   return identity.subject;
 }
 export async function owned(
   ctx: QueryCtx | MutationCtx,
   entryId: Id<"simulatorEntries">,
-  writing = false,
 ) {
-  const owner = await caller(ctx, writing);
+  const owner = await caller(ctx);
   const entry = await ctx.db.get(entryId);
   if (entry && entry.ownerClerkId !== owner)
     throw new ConvexError("Progress is not available.");

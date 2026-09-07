@@ -57,7 +57,7 @@
 /*
  * The rail's swapped elements: the things that exist at one width only and
  * have a counterpart at the other. The search box and its icon button, the
- * invite and agreement cards and theirs, the account row's name, the two
+ * invite cards and theirs, the account row's name, the two
  * halves of the collapse control.
  *
  * The rail changes width over 300ms and these cannot follow it: a box that
@@ -577,68 +577,8 @@
     color: oklch(0.86 0.09 var(--monogram-hue));
   }
 
-  /*
-   * The barrier, as a fill.
-   *
-   * The invite card fills its pips as they are spent, and the obvious way to
-   * draw the agreement card's one slot with nothing in it is an empty track.
-   * That was wrong beside the pink row above it: an empty grey track reads as
-   * "nothing yet", and this is not nothing yet — it is the one thing standing
-   * between the account and everything the tiles open. So it is drawn as what
-   * it is, which is a barrier: hazard stripes, in the same red the header's
-   * triangle and the word `Required` are already in.
-   *
-   * It moves because a static barrier is scenery. One tile's travel per period,
-   * so the pattern lands exactly on itself and the loop has no seam — shifting
-   * by anything other than `background-size` is a stripe that jumps every time
-   * it repeats. The tile and the period are variables so a larger surface can
-   * scale both together and keep the stripes travelling at the same speed;
-   * scaling one alone is the same material moving at a different rate, which
-   * reads as a second, unrelated pattern.
-   *
-   * `.hazard-text` is the same fill clipped to the glyphs, which is why the
-   * ink is so much stronger there: on a 6px bar the stripes are the shape, and
-   * inside a letterform they are what is left of it after the counters and the
-   * stems have taken their bite. `color: transparent` is not a hidden label —
-   * the text is in the DOM and read out exactly as if it were painted.
-   *
-   * Nothing is needed for reduced motion. The blanket rule at the foot of this
-   * file stops the travel, and what is left is the barrier itself, still saying
-   * the same thing without moving.
-   */
-  .hazard-bar,
-  .hazard-text {
-    --hazard-tile: 12px;
-    --hazard-period: 620ms;
-    background-color: var(--hazard-base);
-    background-image: linear-gradient(
-      -45deg,
-      var(--hazard-stripe) 25%,
-      transparent 25%,
-      transparent 50%,
-      var(--hazard-stripe) 50%,
-      var(--hazard-stripe) 75%,
-      transparent 75%,
-      transparent
-    );
-    background-size: var(--hazard-tile) var(--hazard-tile);
-    animation: hazard-slide var(--hazard-period) linear infinite;
-  }
 
-  .hazard-bar {
-    --hazard-base: color-mix(in oklab, var(--destructive) 14%, transparent);
-    --hazard-stripe: color-mix(in oklab, var(--destructive) 62%, transparent);
-  }
 
-  .hazard-text {
-    --hazard-tile: 20px;
-    --hazard-period: 1030ms;
-    --hazard-base: color-mix(in oklab, var(--destructive) 58%, transparent);
-    --hazard-stripe: var(--destructive);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
 
   :root[data-theme="dark"] .nav-pill {
     background-image: linear-gradient(
@@ -882,12 +822,6 @@
   filter: invert(1);
 }
 
-/* One tile, whatever the tile has been set to. See the note on `.hazard-bar`. */
-@keyframes hazard-slide {
-  to {
-    background-position: calc(var(--hazard-tile) * -1) 0;
-  }
-}
 
 @keyframes drift {
   0%,

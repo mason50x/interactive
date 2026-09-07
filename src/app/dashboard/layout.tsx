@@ -2,13 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
-import { AgreementProvider } from "@/components/app/agreement-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { SearchProvider } from "@/components/app/search-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
 import { ACTIVITIES } from "@/lib/activities";
-import { serverAgreement } from "@/lib/agreement-gate";
 import { RAIL_COOKIE, railState } from "@/lib/rail";
 
 export const metadata: Metadata = {
@@ -57,11 +55,6 @@ export default async function DashboardLayout({
 }: LayoutProps<"/dashboard">) {
   await auth.protect();
 
-  // Read here so the rail is right on the first frame rather than seconds
-  // later, once Clerk has booted in the browser and the subscription can
-  // answer. See `AgreementProvider`.
-  const agreement = await serverAgreement();
-
   // The rail's width, for the same reason: drawn at the remembered width in
   // the first frame rather than sliding there once React is up. See
   // `src/lib/rail.ts`.
@@ -86,28 +79,23 @@ export default async function DashboardLayout({
           and the auth pages: arriving at the app is a day's activity, reading
           the pricing page is not. */}
       <StreakProvider>
-        {/* Wraps both the rail and the shell, for the same reason the search
-            does: the card that accepts the terms is in the rail and the
-            tiles they gate are in the shell, and both read one value. */}
-        <AgreementProvider initial={agreement}>
-          {/* Also wraps both, and for a smaller reason than the others: the
-              unread dot is on a row in the rail, and the conversations it counts
-              are read on a page in the shell. Mounted here rather than inside
-              `/dashboard/chat` so the dot is right while you are looking at an
-              activity, which is the only time it is worth having. */}
-          <ChatProvider>
-            {/* Carries the catalogue to the rail's search box without a
-                client import of the index. See `SearchProvider`. */}
-            <SearchProvider activities={activities}>
-              <div className="flex h-svh overflow-hidden bg-sidebar">
-                <AppSidebar initialRail={rail} />
-                <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
-                  {children}
-                </main>
-              </div>
-            </SearchProvider>
-          </ChatProvider>
-        </AgreementProvider>
+        {/* Wraps both the rail and shell: the
+            unread dot is on a row in the rail, and the conversations it counts
+            are read on a page in the shell. Mounted here rather than inside
+            `/dashboard/chat` so the dot is right while you are looking at an
+            activity, which is the only time it is worth having. */}
+        <ChatProvider>
+          {/* Carries the catalogue to the rail's search box without a
+              client import of the index. See `SearchProvider`. */}
+          <SearchProvider activities={activities}>
+            <div className="flex h-svh overflow-hidden bg-sidebar">
+              <AppSidebar initialRail={rail} />
+              <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
+                {children}
+              </main>
+            </div>
+          </SearchProvider>
+        </ChatProvider>
       </StreakProvider>
     </AppProviders>
   );

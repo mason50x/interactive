@@ -30,11 +30,6 @@ beforeEach(async () => {
   await t.run(async (ctx) => {
     for (const clerkId of ["alice", "bob"]) {
       await ctx.db.insert("users", { clerkId });
-      await ctx.db.insert("agreements", {
-        clerkId,
-        version: 1,
-        agreedAt: Date.now(),
-      });
     }
   });
 });
@@ -171,19 +166,12 @@ test("rejects malformed/oversized payloads and unknown build", async () => {
       }),
     ).rejects.toThrow();
 });
-test("cloud writes require agreement but export and deletion remain available", async () => {
+test("accounts can save, read and delete progress without acceptance", async () => {
   const a = alice(),
     e = await a.mutation(api.simulator.library.register, {
       contentHash: hash,
       mode: "mono",
     });
-  await t.run(async (ctx) => {
-    const row = await ctx.db
-      .query("agreements")
-      .withIndex("byClerkId", (q) => q.eq("clerkId", "alice"))
-      .unique();
-    await ctx.db.delete(row!._id);
-  });
   await expect(
     a.mutation(api.simulator.saves.commit, {
       entryId: e._id,
@@ -191,10 +179,10 @@ test("cloud writes require agreement but export and deletion remain available", 
       slot: "auto",
       ...progress(),
     }),
-  ).rejects.toThrow();
+  ).resolves.toMatchObject({ ok: true });
   expect(
     await a.query(api.simulator.saves.read, { entryId: e._id, slot: "auto" }),
-  ).toBeNull();
+  ).not.toBeNull();
   await a.mutation(api.simulator.library.remove, { entryId: e._id });
 });
 test("cleanup erases only the deleted owner and cannot delete chat storage", async () => {

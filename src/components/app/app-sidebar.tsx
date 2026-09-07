@@ -10,8 +10,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { AgreementCard } from "@/components/app/agreement-card";
 import { useChat } from "@/components/app/chat/chat-provider";
+import { AnnouncementsCard } from "@/components/app/announcements-card";
 import { InviteCard } from "@/components/app/invite-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import {
@@ -387,16 +387,12 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
           })}
         </ul>
 
-        {/* The terms sit above the allowance because they outrank it: until they
-          are accepted the catalogue is inert and nothing opens, so this is the
-          one control in the rail that has to be found. See `AgreementCard`. */}
-        <AgreementCard />
-
         {/* The allowance sits above the account button rather than inside its
           menu: it is the one thing in this chrome that moves on its own, and
           a number you have to open a popup to read is a number nobody reads.
           It renders nothing while invites are switched off on the server.
           See `InviteCard`. */}
+        <AnnouncementsCard />
         <InviteCard />
 
         {/* Nothing links back to the marketing site: `/` bounces a live session

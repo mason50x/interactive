@@ -79,7 +79,6 @@ const REFUSALS: Record<string, string> = {
   // is a browser clock running ahead of the server's. Worded as the near miss
   // it is rather than as a rule somebody has run into.
   "too-new": "Not quite yet — the ring above has a moment left on it.",
-  "not-agreed": "Accept the terms before you can send anything.",
 
   // Pictures. `sexual` and `self-harm` above already read correctly for a
   // picture, and are what one comes back with — see
@@ -98,8 +97,7 @@ export function refusalMessage(refusal: Refusal): string {
  * The reactions, fixed.
  *
  * The same six as `REACTIONS` in `convex/moderation/limits.ts`, duplicated for
- * the same reason `AGREEMENT_PHRASE` is duplicated between `src/lib/agreement.ts`
- * and `convex/agreement.ts`: Convex bundles from `convex/` and the browser
+ * bundle isolation: Convex bundles from `convex/` and the browser
  * bundles from `src/`, so a shared constant would have to live in one and be
  * imported across the boundary this module exists to keep. Change one, change
  * the other. The server is the one that decides.
@@ -277,8 +275,6 @@ export function claimError(reason: string): string {
       return "Pick something else.";
     case "already":
       return "You already have a handle.";
-    case "not-agreed":
-      return "Accept the terms first.";
     case "limit":
       return "You have used both of your changes.";
     case "same":
@@ -316,8 +312,6 @@ export function groupNameError(
   switch (reason) {
     case "no-profile":
       return "Pick a handle first.";
-    case "not-agreed":
-      return "Accept the terms first.";
     case "empty":
       return "Give it a name first.";
     case "too-long":

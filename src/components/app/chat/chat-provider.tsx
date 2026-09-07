@@ -19,8 +19,7 @@ import type { MyProfile } from "../../../../convex/chat/profiles";
  * boilerplate. A Convex query that runs before Clerk's token has reached the
  * server comes back `null`, which is the same value `profiles.mine` returns for
  * "this account has no handle" — so without the skip, every sign-in would flash
- * the handle screen at somebody who already has one. The same bug is documented
- * in `agreement-provider.tsx` and `invite-card.tsx`.
+ * the handle screen at somebody who already has one. The invite card uses the same authentication guard.
  */
 
 export type Chat = {

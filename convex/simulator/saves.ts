@@ -101,7 +101,7 @@ export const commit = mutation({
   },
   returns: commitResult,
   handler: async (ctx, args) => {
-    const entry = await owned(ctx, args.entryId, true);
+    const entry = await owned(ctx, args.entryId);
     if (!entry)
       return { ok: false as const, reason: "deleted" as const, revision: 0 };
     validateSave(args);
@@ -149,7 +149,7 @@ export const restore = mutation({
   },
   returns: commitResult,
   handler: async (ctx, args) => {
-    const entry = await owned(ctx, args.entryId, true);
+    const entry = await owned(ctx, args.entryId);
     if (!entry)
       return { ok: false as const, reason: "deleted" as const, revision: 0 };
     if (entry.revision !== args.expectedRevision)

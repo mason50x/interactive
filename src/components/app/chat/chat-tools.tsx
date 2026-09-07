@@ -52,7 +52,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
  * problem. Changing who may reach you and starting a group are things you do
  * *while* looking at your conversations, and each of them took the list away
  * to do it. So they open here instead, in the same gesture the rail's invite
- * and agreement cards use: the surface grows, the thing you came for is inside
+ * cards use: the surface grows, the thing you came for is inside
  * it, and the conversation you were reading is still behind.
  *
  * There were three of these and there are two. The third was People — a

@@ -21,7 +21,7 @@ Status: implemented locally and deployed to the development Convex instance on S
 | `/dashboard/learning-simulator` | Protected library: built-in simulations, saved progress, Open file, storage/settings controls. |
 | `/dashboard/learning-simulator/[contentHash]` | Protected player; validate lowercase SHA-256 route parameter; restore matching progress only after the program is available. |
 
-Both pages call `auth.protect()` individually and apply the existing agreement gate. The existing proxy already protects `/dashboard(.*)`. The nested layout owns an ephemeral client session provider so a file selected on the library page survives navigation to the player. Leaving this route subtree destroys the runtime and drops byte references.
+Both pages call `auth.protect()` individually. The existing proxy already protects `/dashboard(.*)`. The nested layout owns an ephemeral client session provider so a file selected on the library page survives navigation to the player. Leaving this route subtree destroys the runtime and drops byte references.
 
 Direct navigation to a built-in hash resolves a server-owned manifest entry. Direct navigation to an imported hash loads the account’s local ROM cache, falling back to “Select the original file to resume” when unavailable; hashes grant no access to another user's saves. A valid unknown hash can show the same prompt without revealing whether another user has used it. Invalid hashes return 404.
 
@@ -57,7 +57,7 @@ Paths below are relative to `/Users/mason/Desktop/50x`. This is the intended imp
 | `src/lib/simulator/sync.ts` | Serialized autosave, outbox, reconciliation, retry and conflict state machine. |
 | `src/lib/simulator/use-simulator.ts` | React orchestration; attach/detach listeners and timers. |
 | `src/lib/simulator/settings.ts` | Device-specific volume and touch-control visibility. The canvas scales responsively; keyboard mappings are fixed for MVP. |
-| `convex/simulator/shared.ts` | Auth/owner/agreement checks, typed limits, validation helpers. |
+| `convex/simulator/shared.ts` | Auth/owner checks, typed limits, validation helpers. |
 | `convex/simulator/library.ts` | List, get, register, rename, remove. |
 | `convex/simulator/saves.ts` | Save metadata, explicit payload reads, atomic commit, restore/delete. |
 | `convex/simulator/limits.ts` | Existing rate-limiter component configuration for simulator operations. |
@@ -80,7 +80,7 @@ Existing files to edit:
 - `README.md`: built-in asset preparation, pinned build procedure, save/privacy behavior and development verification.
 - `convex/_generated/*`: normal codegen as required.
 
-No new Next API route, HTTP action, file-upload endpoint, production secret, service worker, cron, or storage bucket is needed for this MVP. Existing account authentication and agreement infrastructure is reused.
+No new Next API route, HTTP action, file-upload endpoint, production secret, service worker, cron, or storage bucket is needed for this MVP. Existing account authentication infrastructure is reused.
 
 ## Runtime design
 
@@ -129,7 +129,7 @@ Keep library queries on metadata rows only. Save-list responses omit bytes; they
 
 ## Backend function contract
 
-All public functions use object-form args and return validators. Derive owner identity from auth, never a client owner argument. Writes require an existing account and accepted agreement; owned export/delete remain available for data management if an agreement changes. All reads verify ownership. Use indexed, bounded reads; enforce uniqueness in transactions.
+All public functions use object-form args and return validators. Derive owner identity from auth, never a client owner argument. Writes require an existing account; owned export/delete remain available for data management. All reads verify ownership. Use indexed, bounded reads; enforce uniqueness in transactions.
 
 | Function | Kind | Contract |
 | --- | --- | --- |
@@ -183,7 +183,7 @@ MVP excludes rewind, achievements, multiplayer/linking, screenshots, unlimited s
 
 ## Source references and current evidence
 
-- Current app: `src/lib/nav.ts`, `src/app/dashboard/layout.tsx`, `src/proxy.ts`, `src/app/learn/[slug]/page.tsx`, `convex/schema.ts`, `convex/agreement.ts`, `convex/users.ts`, `convex/chat/attachments.ts`.
+- Current app: `src/lib/nav.ts`, `src/app/dashboard/layout.tsx`, `src/proxy.ts`, `src/app/learn/[slug]/page.tsx`, `convex/schema.ts`, `convex/users.ts`, `convex/chat/attachments.ts`.
 - Installed Next guidance: `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`.
 - Core candidate and licensing: https://github.com/binji/binjgb
 - Save API inspected: https://raw.githubusercontent.com/binji/binjgb/main/src/emulator.c — distinct checkpoint and external-RAM exports. The pinned version was audited and exercised by the engine checks.
@@ -197,7 +197,7 @@ The simulator ships without bundled games. Users open local files. Engine checks
 Verified so far:
 
 - Native WASM: mono/color execution, directional input, rendered checkpoint restoration in a fresh instance, battery export, exact state ABI and exclusion of the source program buffer.
-- 22 Vitest tests: cloud ownership with separate identities, accepted-agreement enforcement, entry/slot limits, revision conflicts, capture idempotence, stale generation deletion, account cleanup, outbox reload, in-flight coalescing, lost acknowledgements, backoff, offline divergence and explicit conflict resolution; file hashing, renamed inputs, color headers, corrupt inputs, bounded progress imports and stripping unknown import fields.
+- 22 Vitest tests: cloud ownership with separate identities, saving without acceptance, entry/slot limits, revision conflicts, capture idempotence, stale generation deletion, account cleanup, outbox reload, in-flight coalescing, lost acknowledgements, backoff, offline divergence and explicit conflict resolution; file hashing, renamed inputs, color headers, corrupt inputs, bounded progress imports and stripping unknown import fields.
 - Helium with the Chrome extension, signed into the real development account: built-in launch, pause/resume, manual slot save, local IndexedDB payload inspection, successful cloud autosave, cloud-only recovery after verifying the local store was empty, offline local save followed by automatic cloud reconnect, and duplicate-tab guard. Responsive layout checked at 390 by 844 as well as desktop.
 - TypeScript, targeted ESLint and Next production build pass. Cloud runtime checks use `dev:cheerful-guanaco-637`; no production deployment was performed.
 

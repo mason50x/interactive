@@ -553,8 +553,7 @@ export function safePanicUrl(url: string): string | null {
  * provider through the layout for one boolean would be a context whose only
  * two participants are eight inches apart on the same screen.
  *
- * So: a window event, exactly as `requestAgreement` in `src/lib/agreement.ts`
- * does it, and for the same reason. Callers need nothing but this module, and
+ * A window event lets callers depend only on this module, and
  * the menu listens and opens itself.
  */
 const SETTINGS_EVENT = "50x:settings-request";

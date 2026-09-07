@@ -36,7 +36,7 @@ export const register = mutation({
   args: { contentHash: v.string(), mode, label: v.optional(v.string()) },
   returns: entryDoc,
   handler: async (ctx, args) => {
-    const owner = await caller(ctx, true);
+    const owner = await caller(ctx);
     hash(args.contentHash);
     const rate = await limits.limit(ctx, "simulatorLibrary", { key: owner });
     if (!rate.ok)
@@ -81,7 +81,7 @@ export const rename = mutation({
   args: { entryId: v.id("simulatorEntries"), label: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const entry = await owned(ctx, args.entryId, true);
+    const entry = await owned(ctx, args.entryId);
     if (!entry) throw new ConvexError("Progress was deleted.");
     const rate = await limits.limit(ctx, "simulatorLibrary", {
       key: entry.ownerClerkId,

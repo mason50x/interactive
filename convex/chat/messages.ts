@@ -1,6 +1,5 @@
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
-import { hasAccepted } from "../agreement";
 import { internal } from "../_generated/api";
 import { imagesEnabled } from "../features";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -165,13 +164,6 @@ export const send = mutation({
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, refusal: "not-a-member" };
 
-    // The terms are what the rules below are enforced under, so this is the
-    // gate rather than the page that draws it. The page can only ever be a
-    // courtesy: this mutation is called from a browser and a browser can be
-    // asked to call it without ever rendering the card.
-    if (!(await hasAccepted(ctx, profile.clerkId))) {
-      return { ok: false, refusal: "not-agreed" };
-    }
 
     const member = await membership(ctx, conversationId, profile.clerkId);
     if (member === null || member.status !== "active") {

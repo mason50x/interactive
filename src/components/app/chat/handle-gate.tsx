@@ -152,8 +152,7 @@ export function HandleGate({ onHold }: { onHold: (held: boolean) => void }) {
     // this is a prop rather than a piece of state in here.
     //
     // Nothing on this screen navigates: the profile query is a subscription, so
-    // the row landing is what swaps this screen for the chat — the same way the
-    // agreement card gets out of its own way. But Convex resolves a mutation
+    // the row landing is what swaps this screen for the chat. Convex resolves a mutation
     // only once the queries it changed have been applied, so by the line after
     // this `await` the profile is already there and `ChatFrame` has already
     // taken the gate down. A hold asked for at that point is asked for by a

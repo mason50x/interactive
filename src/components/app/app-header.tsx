@@ -4,7 +4,6 @@ import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { HeaderAgreement } from "@/components/app/header-agreement";
 import { HeaderInvites } from "@/components/app/header-invites";
 import { HeaderSearch } from "@/components/app/header-search";
 import { RailConstellation } from "@/components/app/rail-constellation";
@@ -149,9 +148,8 @@ export function AppHeader() {
         <HeaderSearch />
       </div>
 
-      {/* Right: Actions (Agreement, Invites, UserMenu, Mobile Hamburger) */}
+      {/* Right: Actions (Invites, UserMenu, Mobile Hamburger) */}
       <div className="flex items-center gap-1 sm:gap-2">
-        <HeaderAgreement />
         <HeaderInvites />
         <UserMenu />
 

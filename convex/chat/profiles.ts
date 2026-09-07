@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { hasAccepted } from "../agreement";
 import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { handleIsClean } from "../moderation/lexicon";
@@ -246,7 +245,7 @@ export type ClaimResult =
   | {
       ok: false;
       reason:
-        "shape" | "reserved" | "language" | "taken" | "already" | "not-agreed";
+        "shape" | "reserved" | "language" | "taken" | "already";
     };
 
 /**
@@ -265,10 +264,6 @@ export const claimHandle = mutation({
   handler: async (ctx, { handle }): Promise<ClaimResult> => {
     const clerkId = await callerId(ctx);
     if (clerkId === null) throw new Error("Not signed in");
-
-    if (!(await hasAccepted(ctx, clerkId))) {
-      return { ok: false, reason: "not-agreed" };
-    }
 
     const existing = await profileFor(ctx, clerkId);
     if (existing !== null) return { ok: false, reason: "already" };

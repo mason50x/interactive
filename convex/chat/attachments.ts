@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { hasAccepted } from "../agreement";
 import { imagesEnabled } from "../features";
 import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -84,10 +83,6 @@ async function maySend(
 
   const profile = await callerProfile(ctx);
   if (profile === null) return { ok: false, refusal: "not-a-member" };
-
-  if (!(await hasAccepted(ctx, profile.clerkId))) {
-    return { ok: false, refusal: "not-agreed" };
-  }
 
   // The storage bound. Both unsent states count, and `take` on each keeps the
   // read at the cap rather than at however many an account has managed.

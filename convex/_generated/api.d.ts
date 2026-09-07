@@ -8,7 +8,7 @@
  * @module
  */
 
-import type * as agreement from "../agreement.js";
+import type * as announcements from "../announcements.js";
 import type * as chat_attachments from "../chat/attachments.js";
 import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_bot from "../chat/bot.js";
@@ -58,7 +58,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  agreement: typeof agreement;
+  announcements: typeof announcements;
   "chat/attachments": typeof chat_attachments;
   "chat/blocks": typeof chat_blocks;
   "chat/bot": typeof chat_bot;
