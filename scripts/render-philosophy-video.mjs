@@ -95,8 +95,8 @@ async function render(compact, hands, phone) {
 (async () => {
   await fs.mkdir(OUTPUT, { recursive: true });
   const [hands, phone] = await Promise.all([
-    loadImage(path.join(ROOT, 'public/images/philosophy/hands.png')),
-    loadImage(path.join(ROOT, 'public/images/philosophy/phone.png')),
+    loadImage(path.join(ROOT, 'public/images/6eb34ee789e68827.png')),
+    loadImage(path.join(ROOT, 'public/images/8780df12a3142aeb.png')),
   ]);
   await render(false, hands, phone);
   await render(true, hands, phone);

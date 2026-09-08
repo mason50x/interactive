@@ -39,7 +39,7 @@
 .handImage {
   position: absolute;
   inset: 0;
-  background: url("/images/philosophy/hands.png") left top / 200% 100% no-repeat;
+  background: url("/images/6eb34ee789e68827.png") left top / 200% 100% no-repeat;
   pointer-events: none;
 }
 .hand[data-hand="1"] .handImage { background-position: right top; }
@@ -63,7 +63,7 @@
   top: 100%;
   width: 100%;
   height: 10cqw;
-  background: url("/images/philosophy/phone.png") 50.46% top / 209% 100% no-repeat;
+  background: url("/images/8780df12a3142aeb.png") 50.46% top / 209% 100% no-repeat;
 }
 
 @media (max-width: 800px) {
