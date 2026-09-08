@@ -800,10 +800,10 @@ function Me() {
           storageId: Id<"_storage">;
         };
         const verdict = await checkImage({
+          reservationId: slot.reservationId,
           storageId,
           width: prepared.width,
           height: prepared.height,
-          purpose: "avatar",
         });
         if (!verdict.ok) {
           URL.revokeObjectURL(previewUrl);

@@ -852,6 +852,14 @@ export default defineSchema({
    * storage cleanup; an avatar upload cannot later be smuggled into a message,
    * or vice versa.
    */
+  attachmentUploadReservations: defineTable({
+    ownerClerkId: v.string(),
+    purpose: v.union(v.literal("message"), v.literal("avatar")),
+    expiresAt: v.number(),
+  })
+    .index("byOwner", ["ownerClerkId"])
+    .index("byExpiresAt", ["expiresAt"]),
+
   attachments: defineTable({
     storageId: v.id("_storage"),
     ownerClerkId: v.string(),

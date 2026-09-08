@@ -2059,6 +2059,7 @@ function Composer({
 
       patch(key, { state: "checking" });
       const verdict = await check({
+        reservationId: slot.reservationId,
         storageId,
         width: prepared.width,
         height: prepared.height,

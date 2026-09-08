@@ -1,6 +1,7 @@
 import { v } from "convex/values";
+import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { imagesEnabled } from "../features";
-import { internal } from "../_generated/api";
+import { components, internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import {
   action,
@@ -56,13 +57,29 @@ import { callerProfile, deleteAttachment, profileFor } from "./shared";
  */
 
 export type UploadResult =
-  { ok: true; url: string } | { ok: false; refusal: Refusal };
+  | {
+      ok: true;
+      url: string;
+      reservationId: Id<"attachmentUploadReservations">;
+    }
+  | { ok: false; refusal: Refusal };
 
 export type CheckResult =
   | { ok: true; attachmentId: Id<"attachments"> }
   | { ok: false; refusal: Refusal };
 
 type UploadPurpose = "message" | "avatar";
+
+const UPLOAD_RESERVATION_TTL_MS = 10 * 60 * 1000;
+
+const uploadRateLimiter = new RateLimiter(components.rateLimiter, {
+  imageUploadUrl: {
+    kind: "token bucket",
+    rate: 24,
+    period: HOUR,
+    capacity: MAX_UNSENT_IMAGES,
+  },
+});
 
 /**
  * Whether this account may put a picture in right now, and if not why.
@@ -75,7 +92,8 @@ type UploadPurpose = "message" | "avatar";
 async function maySend(
   ctx: MutationCtx,
 ): Promise<
-  { ok: true; profile: Doc<"chatProfiles"> } | { ok: false; refusal: Refusal }
+  | { ok: true; profile: Doc<"chatProfiles">; unsent: number }
+  | { ok: false; refusal: Refusal }
 > {
   // The switch, before anything is read. Off means the button is not on
   // screen, so a call here is a client that was asked to make one.
@@ -100,7 +118,7 @@ async function maySend(
     return { ok: false, refusal: "too-many-images" };
   }
 
-  return { ok: true, profile };
+  return { ok: true, profile, unsent };
 }
 
 /**
@@ -115,10 +133,43 @@ export const uploadUrl = mutation({
   args: {
     purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
   },
-  handler: async (ctx): Promise<UploadResult> => {
+  handler: async (ctx, { purpose }): Promise<UploadResult> => {
     const allowed = await maySend(ctx);
     if (!allowed.ok) return allowed;
-    return { ok: true, url: await ctx.storage.generateUploadUrl() };
+
+    const now = Date.now();
+    const reservations = await ctx.db
+      .query("attachmentUploadReservations")
+      .withIndex("byOwner", (q) =>
+        q.eq("ownerClerkId", allowed.profile.clerkId),
+      )
+      .take(MAX_UNSENT_IMAGES + 1);
+    const active = reservations.filter((row) => row.expiresAt > now);
+    for (const row of reservations) {
+      if (row.expiresAt <= now) await ctx.db.delete(row._id);
+    }
+    if (allowed.unsent + active.length >= MAX_UNSENT_IMAGES) {
+      return { ok: false, refusal: "too-many-images" };
+    }
+
+    const rate = await uploadRateLimiter.limit(ctx, "imageUploadUrl", {
+      key: allowed.profile.clerkId,
+    });
+    if (!rate.ok) return { ok: false, refusal: "too-many-images" };
+
+    const reservationId = await ctx.db.insert(
+      "attachmentUploadReservations",
+      {
+        ownerClerkId: allowed.profile.clerkId,
+        purpose: purpose ?? "message",
+        expiresAt: now + UPLOAD_RESERVATION_TTL_MS,
+      },
+    );
+    return {
+      ok: true,
+      url: await ctx.storage.generateUploadUrl(),
+      reservationId,
+    };
   },
 });
 
@@ -137,20 +188,20 @@ export const uploadUrl = mutation({
  */
 export const check = action({
   args: {
+    reservationId: v.id("attachmentUploadReservations"),
     storageId: v.id("_storage"),
     width: v.number(),
     height: v.number(),
-    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
   },
   handler: async (
     ctx,
-    { storageId, width, height, purpose },
+    { reservationId, storageId, width, height },
   ): Promise<CheckResult> => {
     const claimed = await ctx.runMutation(internal.chat.attachments.claim, {
+      reservationId,
       storageId,
       width,
       height,
-      purpose,
     });
     if (!claimed.ok) return claimed;
 
@@ -179,15 +230,31 @@ type ClaimResult =
  */
 export const claim = internalMutation({
   args: {
+    reservationId: v.id("attachmentUploadReservations"),
     storageId: v.id("_storage"),
     width: v.number(),
     height: v.number(),
-    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
   },
   handler: async (
     ctx,
-    { storageId, width, height, purpose },
+    { reservationId, storageId, width, height },
   ): Promise<ClaimResult> => {
+    const allowed = await maySend(ctx);
+    if (!allowed.ok) return allowed;
+
+    const reservation = await ctx.db.get(reservationId);
+    if (
+      reservation === null ||
+      reservation.ownerClerkId !== allowed.profile.clerkId
+    ) {
+      return { ok: false, refusal: "image" };
+    }
+    await ctx.db.delete(reservationId);
+    if (reservation.expiresAt <= Date.now()) {
+      await ctx.storage.delete(storageId);
+      return { ok: false, refusal: "image" };
+    }
+
     const taken = await ctx.db
       .query("attachments")
       .withIndex("byStorage", (q) => q.eq("storageId", storageId))
@@ -196,12 +263,6 @@ export const claim = internalMutation({
 
     const file = await ctx.db.system.get("_storage", storageId);
     if (file === null) return { ok: false, refusal: "image" };
-
-    const allowed = await maySend(ctx);
-    if (!allowed.ok) {
-      await ctx.storage.delete(storageId);
-      return allowed;
-    }
 
     const contentType = file.contentType ?? "";
     const isImage = (IMAGE_TYPES as readonly string[]).includes(contentType);
@@ -222,7 +283,7 @@ export const claim = internalMutation({
       storageId,
       ownerClerkId: allowed.profile.clerkId,
       status: "checking",
-      purpose: (purpose ?? "message") satisfies UploadPurpose,
+      purpose: reservation.purpose satisfies UploadPurpose,
       contentType,
       size: file.size,
       width,
@@ -359,6 +420,14 @@ export const sweep = internalMutation({
   args: { cursor: v.optional(v.string()), cutoff: v.optional(v.number()) },
   handler: async (ctx, { cursor, cutoff }) => {
     const before = cutoff ?? Date.now() - IMAGE_TTL_MS;
+
+    const expiredReservations = await ctx.db
+      .query("attachmentUploadReservations")
+      .withIndex("byExpiresAt", (q) => q.lt("expiresAt", Date.now()))
+      .take(BATCH);
+    for (const reservation of expiredReservations) {
+      await ctx.db.delete(reservation._id);
+    }
 
     const page = await ctx.db.system
       .query("_storage")
