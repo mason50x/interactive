@@ -1,7 +1,8 @@
+import { BOT_ID } from "./botConfig";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { RECENT_RING } from "../moderation/limits";
-import { prepare } from "../moderation/normalize";
+
 import type { RecentSend } from "../moderation/rules";
 
 /**
@@ -28,15 +29,7 @@ export async function profileFor(
     .unique();
 }
 
-/**
- * The current chat-owned picture and the fallback disc behind it.
- *
- * Storage URLs are resolved at read time because Convex owns their lifetime;
- * only the attachment id is persisted. A stale or manually removed attachment
- * falls back to the emoji/initials disc instead of returning a broken image.
- * Nothing here reads `users`, so a Clerk account picture can never leak into
- * chat by accident.
- */
+/** Account picture URLs are read directly from the existing users mirror. */
 export type AvatarAppearance = {
   avatarUrl?: string;
   avatarHue?: number;
@@ -48,18 +41,10 @@ export async function avatarAppearance(
   ctx: QueryCtx,
   profile: Doc<"chatProfiles">,
 ): Promise<AvatarAppearance> {
-  let avatarUrl: string | undefined;
-  if (profile.avatarAttachmentId !== undefined) {
-    const attachment = await ctx.db.get(profile.avatarAttachmentId);
-    if (
-      attachment !== null &&
-      attachment.ownerClerkId === profile.clerkId &&
-      attachment.status === "avatar" &&
-      attachment.purpose === "avatar"
-    ) {
-      avatarUrl = (await ctx.storage.getUrl(attachment.storageId)) ?? undefined;
-    }
-  }
+  const user = profile.avatarMode !== "custom"
+    ? await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", profile.clerkId)).unique()
+    : null;
+  const avatarUrl = user?.imageUrl;
 
   return {
     avatarUrl,
@@ -69,29 +54,12 @@ export async function avatarAppearance(
   };
 }
 
-/**
- * The longest a handle can be, as `vet` in `convex/chat/profiles.ts` has it.
- * Only the fold below needs it, and only as the bound `prepare` is given.
- */
-const HANDLE_FOLD_LENGTH = 20;
-
-/**
- * The profile a typed handle points at, or `null`.
- *
- * Looked up by the folded key rather than the handle itself, which is the
- * same fold `claimHandle` made the handle unique on — so `@al1ce` finds alice,
- * exactly as claiming `al1ce` would have collided with her. That is the kind
- * answer for a mention: somebody who typed a name slightly wrong has named a
- * person, not shared a contact detail, and the difference is a refusal.
- */
+/** Exact, case-insensitive Clerk username lookup; distinct usernames never fold together. */
 export async function profileByHandle(
   ctx: QueryCtx,
   handle: string,
 ): Promise<Doc<"chatProfiles"> | null> {
-  const prepared = prepare(handle, HANDLE_FOLD_LENGTH);
-  if (!prepared.ok) return null;
-  const key = prepared.forms.squashed;
-  if (key === "") return null;
+  const key = handle.toLowerCase();
   return await ctx.db
     .query("chatProfiles")
     .withIndex("byHandleKey", (q) => q.eq("handleKey", key))
@@ -379,11 +347,12 @@ export async function ensureGlobalRoom(
   });
 }
 
-/** Idempotent: joining the global room twice is joining it once. */
+/** Ensure both default conversations, including for existing accounts. */
 export async function ensureGlobalMembership(
   ctx: MutationCtx,
   clerkId: string,
 ): Promise<Id<"conversations">> {
+  await ensureDm(ctx, clerkId, BOT_ID);
   const conversationId = await ensureGlobalRoom(ctx, clerkId);
   const existing = await membership(ctx, conversationId, clerkId);
   if (existing !== null) {
@@ -445,6 +414,7 @@ export async function ensureDm(
     [clerkId, peerClerkId],
     [peerClerkId, clerkId],
   ]) {
+    if (who === BOT_ID) continue;
     const member = await membership(ctx, conversationId, who);
     if (member === null) {
       await ctx.db.insert("conversationMembers", {

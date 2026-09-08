@@ -1,3 +1,4 @@
+import { BOT_ID, BOT_HANDLE, BOT_NAME } from "./botConfig";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { MAX_TITLE } from "../moderation/limits";
@@ -12,6 +13,7 @@ import {
   blockedEitherWay,
   callerProfile,
   ensureDm,
+  dmKeyFor,
   friendship,
   membership,
   profileFor,
@@ -149,6 +151,15 @@ export const list = query({
       )
       .take(MAX_CONVERSATIONS);
 
+    // Always include the pinned bot even when the regular inbox hits its cap.
+    const botDm = await ctx.db.query("conversations")
+      .withIndex("byDmKey", q => q.eq("dmKey", dmKeyFor(profile.clerkId, BOT_ID)))
+      .unique();
+    if (botDm && !members.some(member => member.conversationId === botDm._id)) {
+      const botMember = await membership(ctx, botDm._id, profile.clerkId);
+      if (botMember?.status === "active") members.push(botMember);
+    }
+
     // For the mentions alone: a mention from somebody the caller has blocked
     // is not one. One read, and it only changes when the caller blocks.
     const blocked = await blockedBy(ctx, profile.clerkId);
@@ -198,8 +209,8 @@ export const list = query({
       let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
       if (member.dmPeer !== undefined) {
         const peer = await profileFor(ctx, member.dmPeer);
-        peerHandle = peer?.handle;
-        peerName = peer?.displayName;
+        peerHandle = member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle;
+        peerName = member.dmPeer === BOT_ID ? BOT_NAME : peer?.displayName;
         if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
       }
 
@@ -214,7 +225,7 @@ export const list = query({
         peerClerkId: member.dmPeer,
         peerHandle,
         peerName,
-        peerAvatarUrl: peerAvatar.avatarUrl,
+        peerAvatarUrl: member.dmPeer === BOT_ID ? "/chat/bot-avatar.webp" : peerAvatar.avatarUrl,
         peerAvatarHue: peerAvatar.avatarHue,
         peerAvatarEmoji: peerAvatar.avatarEmoji,
         peerAvatarInitials: peerAvatar.avatarInitials,
@@ -228,6 +239,8 @@ export const list = query({
     return summaries.sort((first, second) => {
       if (first.kind === "global") return -1;
       if (second.kind === "global") return 1;
+      if (first.peerClerkId === BOT_ID) return -1;
+      if (second.peerClerkId === BOT_ID) return 1;
       return (second.lastMessageAt ?? 0) - (first.lastMessageAt ?? 0);
     });
   },
@@ -265,6 +278,10 @@ export const openDm = mutation({
     if (profile === null) return { ok: false, reason: "no-profile" };
     if (peerClerkId === profile.clerkId)
       return { ok: false, reason: "unknown" };
+
+    if (peerClerkId === BOT_ID) {
+      return { ok: true, conversationId: await ensureDm(ctx, profile.clerkId, BOT_ID) };
+    }
 
     const peer = await profileFor(ctx, peerClerkId);
     if (peer === null) {
@@ -410,8 +427,8 @@ export const get = query({
     let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
     if (member.dmPeer !== undefined) {
       const peer = await profileFor(ctx, member.dmPeer);
-      peerHandle = peer?.handle;
-      peerName = peer?.displayName;
+      peerHandle = member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle;
+      peerName = member.dmPeer === BOT_ID ? BOT_NAME : peer?.displayName;
       if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
     }
 
@@ -424,7 +441,7 @@ export const get = query({
       peerClerkId: member.dmPeer,
       peerHandle,
       peerName,
-      peerAvatarUrl: peerAvatar.avatarUrl,
+      peerAvatarUrl: member.dmPeer === BOT_ID ? "/chat/bot-avatar.webp" : peerAvatar.avatarUrl,
       peerAvatarHue: peerAvatar.avatarHue,
       peerAvatarEmoji: peerAvatar.avatarEmoji,
       peerAvatarInitials: peerAvatar.avatarInitials,

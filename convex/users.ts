@@ -1,3 +1,4 @@
+import { syncAccountProfile } from "./chat/account";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import {
@@ -16,12 +17,18 @@ type ClerkUserJSON = {
   first_name?: string | null;
   last_name?: string | null;
   image_url?: string | null;
+  username?: string | null;
+  updated_at?: number;
 };
 
 type UserFields = {
   email?: string;
   name?: string;
   imageUrl?: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  clerkUpdatedAt?: number;
 };
 
 /**
@@ -34,11 +41,13 @@ async function upsertUser(
   fields: UserFields,
 ) {
   const existing = await userByClerkId(ctx, clerkId);
-  if (existing === null) {
-    return await ctx.db.insert("users", { clerkId, ...fields });
-  }
-  await ctx.db.patch(existing._id, fields);
-  return existing._id;
+  if (existing?.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt < existing.clerkUpdatedAt) return existing._id;
+  const id = existing === null
+    ? await ctx.db.insert("users", { clerkId, ...fields })
+    : existing._id;
+  if (existing !== null) await ctx.db.patch(id, fields);
+  if (fields.username) await syncAccountProfile(ctx, clerkId, fields.username, fields.firstName, fields.lastName);
+  return id;
 }
 
 async function userByClerkId(ctx: QueryCtx, clerkId: string) {
@@ -82,6 +91,8 @@ export const store = mutation({
     if (identity === null) {
       throw new Error("Called users.store without authentication");
     }
+    const existing = await userByClerkId(ctx, identity.subject);
+    if (existing !== null) return existing._id;
     return await upsertUser(ctx, identity.subject, {
       email: identity.email,
       name: identity.name,
@@ -106,6 +117,10 @@ export const upsertFromClerk = internalMutation({
       email: primary?.email_address ?? data.email_addresses?.[0]?.email_address,
       name: name === "" ? undefined : name,
       imageUrl: data.image_url ?? undefined,
+      username: data.username ?? undefined,
+      firstName: data.first_name ?? undefined,
+      lastName: data.last_name ?? undefined,
+      clerkUpdatedAt: data.updated_at,
     });
   },
 });

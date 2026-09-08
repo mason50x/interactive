@@ -55,7 +55,7 @@ export const navItems: NavItem[] = [
     icon: { outline: PuzzlePieceIcon, solid: PuzzlePieceIconSolid },
   },
   {
-    label: "Learning Simulator",
+    label: "Interactive Simulators",
     href: SIMULATOR_HREF,
     icon: { outline: CpuChipIcon, solid: CpuChipIconSolid },
   },

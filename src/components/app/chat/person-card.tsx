@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Monogram } from "@/components/app/chat/monogram";
 import { RowMenu } from "@/components/app/chat/people-rows";
-import { openDmError, personName } from "@/lib/chat";
+import { isBot, openDmError, personName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
@@ -62,6 +62,8 @@ export function PersonCard({
   align?: "start" | "center" | "end";
 }) {
   const [open, setOpen] = useState(false);
+
+  if (isBot(person.clerkId)) return <div className={cn(className, "cursor-default")}>{children}</div>;
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>

@@ -497,6 +497,22 @@ template change upstream stops the migration rather than quietly reintroducing
 the leak — or the name. Why the name matters is under
 [The asset origin](#the-asset-origin).
 
+The pass also removes the paired `antiClickjack` style and frame-busting script
+from Moto X3M Pool, Spooky, and Winter. That upstream block hides the body when
+framed and tries to navigate the top window; our sandbox correctly blocks the
+navigation, leaving a black screen. An unrecognized version of the block fails
+validation instead of being uploaded. The same pass restores the missing
+`content` container these Phaser bundles require for input and resume listeners.
+The sandbox stays unchanged.
+
+To repair these three existing bucket pages without staging every game, run
+`node --env-file=.env.local scripts/repair-moto-pages.mjs --dry-run`. It fetches
+the live pages and validates the patches without writing to R2. With `rclone`
+installed and the four `R2_*` migration credentials exported, omit `--dry-run`
+to upload just their `index.html` files. Purge those three URLs from Cloudflare's
+cache afterward and reload the games. An app deployment alone does not update
+the bucket. Regression checks: `npx vitest run scripts/tests/activity-html.test.ts`.
+
 **Where a bundle lands.** Not under its slug. Each catalogue entry carries a
 `path` — the slug reversed, so Crossy Road (`crossy`) is served from
 `activities/yssorc/index.html` — and that field, never the slug, is the bucket

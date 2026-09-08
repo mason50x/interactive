@@ -1,3 +1,4 @@
+import { botQuotaName } from "./botConfig";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
@@ -332,13 +333,13 @@ export const send = mutation({
       }),
     };
 
-    // Five immediately, then a use returns every 4.8 hours. This lives in the
+    // Rolling daily allowance: 50 for the verified admin, five for everyone else. This lives in the
     // rate-limiter component rather than growing a row-per-tag usage log.
     // Missing configuration is free so setup never burns a real allowance.
     const botReady = Boolean(process.env.GEMINI_API_KEY);
     const botLimit =
       named.bot && botReady
-        ? await botRateLimiter.limit(ctx, "botTags", { key: profile.clerkId })
+        ? await botRateLimiter.limit(ctx, botQuotaName(profile.clerkId), { key: profile.clerkId })
         : null;
     const botExhausted = botLimit?.ok === false;
 
@@ -396,7 +397,7 @@ type ResolvedMentions =
        * `@al1ce` resolves to alice, and it is `al1ce` the body says.
        */
       tokens: Set<string>;
-      /** `@bot` was said, in the one room he answers in. */
+      /** An Everyone tag or any message in the caller’s private bot DM. */
       bot: boolean;
     }
   | { ok: false; refusal: Refusal };
@@ -440,7 +441,7 @@ async function resolveMentions(
   const tokens = new Set<string>();
   const seen = new Set<string>();
   let everyone = false;
-  let bot = false;
+  let bot = member.kind === "dm" && member.dmPeer === BOT_ID;
 
   for (const token of findMentionTokens(body)) {
     if (tokens.has(token.handle)) continue;
@@ -451,7 +452,7 @@ async function resolveMentions(
     // put in `people` so the thread draws him as a chip; `send` knows not to
     // write him a mention row. See `convex/chat/bot.ts`.
     if (token.handle === BOT_HANDLE) {
-      if (member.kind !== "global") return { ok: false, refusal: "mention" };
+      if (member.kind !== "global" && member.dmPeer !== BOT_ID) return { ok: false, refusal: "mention" };
       bot = true;
       tokens.add(token.handle);
       if (!seen.has(BOT_ID)) {
@@ -554,12 +555,13 @@ async function replyOf(
           ? `${pictures} photos`
           : "Message";
 
+  const author = await profileFor(ctx, target.authorClerkId);
   return {
     messageId: target._id,
     unavailable: false,
     authorClerkId: target.authorClerkId,
-    authorHandle: target.authorHandle,
-    authorName: target.authorName,
+    authorHandle: author?.handle ?? target.authorHandle,
+    authorName: author ? author.displayName : target.authorName,
     preview,
   };
 }
@@ -631,7 +633,7 @@ export const list = query({
     );
     const appearances = new Map<
       string,
-      Awaited<ReturnType<typeof avatarAppearance>>
+      Awaited<ReturnType<typeof avatarAppearance>> & { handle?: string; displayName?: string }
     >();
     for (const message of result.page) {
       if (blocked.has(message.authorClerkId)) continue;
@@ -639,15 +641,15 @@ export const list = query({
       let avatar = appearances.get(message.authorClerkId);
       if (avatar === undefined) {
         const author = await profileFor(ctx, message.authorClerkId);
-        avatar = author === null ? {} : await avatarAppearance(ctx, author);
+        avatar = author === null ? {} : { ...(await avatarAppearance(ctx, author)), handle: author.handle, displayName: author.displayName };
         appearances.set(message.authorClerkId, avatar);
       }
       page.push({
         _id: message._id,
         _creationTime: message._creationTime,
         authorClerkId: message.authorClerkId,
-        authorHandle: message.authorHandle,
-        authorName: message.authorName,
+        authorHandle: avatar.handle ?? message.authorHandle,
+        authorName: avatar.handle === undefined ? message.authorName : avatar.displayName,
         authorAvatarUrl: avatar.avatarUrl,
         authorAvatarHue: avatar.avatarHue,
         authorAvatarEmoji: avatar.avatarEmoji,
@@ -947,7 +949,7 @@ export const search = query({
         _id: message._id,
         _creationTime: message._creationTime,
         conversationId: message.conversationId,
-        authorHandle: message.authorHandle,
+        authorHandle: (await profileFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
         body: message.body,
         ...named,
       });
@@ -976,7 +978,7 @@ async function nameFor(
   if (member.kind === "dm") {
     const peer =
       member.dmPeer === undefined ? null : await profileFor(ctx, member.dmPeer);
-    return { kind: "dm", peerHandle: peer?.handle };
+    return { kind: "dm", peerHandle: member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle };
   }
 
   if (member.kind === "group") {

@@ -1,27 +1,19 @@
 import { v } from "convex/values";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
-import { handleIsClean } from "../moderation/lexicon";
 import {
   AVATAR_EMOJI,
   AVATAR_HUES,
   GLOBAL_COOLDOWN_MS,
-  MAX_DISPLAY_NAME,
-  MAX_HANDLE_CHANGES,
   MAX_INITIALS,
 } from "../moderation/limits";
-import { prepare } from "../moderation/normalize";
-import type { Refusal } from "../moderation/rules";
-import { screenStatic } from "../moderation/verdict";
 import { mutation, query } from "../_generated/server";
 import {
   blockedEitherWay,
   avatarAppearance,
   callerId,
   callerProfile,
-  clearSender,
   dmKeyFor,
-  deleteAttachment,
   ensureGlobalMembership,
   friendship,
   hasBlocked,
@@ -31,151 +23,7 @@ import {
   senderState,
 } from "./shared";
 
-/**
- * Who you are in chat, which is a handle and a record and nothing else.
- *
- * ## The account is not the identity
- *
- * `users` holds a real first name and a real email address, because Clerk
- * collected both at signup. Neither of them appears anywhere in this directory.
- * A thirteen-year-old talking to strangers should be doing it under a name they
- * chose for the purpose, and the way to guarantee that is not to be careful
- * about which fields get returned — it is for the queries that serve chat to
- * have no path to the table those fields are in. They do not.
- *
- * ## Claimed once, changed twice
- *
- * There used to be no rename at all, and it bought two things. `authorHandle`
- * is stored on every message, so a page of messages needs no join and an
- * optimistic send can be built on the client. And somebody who has made
- * themselves unpleasant cannot shed the name people know them by.
- *
- * `renameHandle` gives back the first of those and keeps the second. Old
- * messages are not rewritten — they keep the handle they were sent under, which
- * is both what the denormalisation requires and the honest record — and the
- * allowance is two for the life of the account, counted in `handleChanges` and
- * never reset. Someone can fix a name they typed wrong. Nobody can keep moving.
- *
- * ## The disc is picked, not written
- *
- * `setAvatar` has no limit on it, because a colour and a face are not a name:
- * nothing points at them, nobody remembers you by them, and there is nothing to
- * escape by changing them. All of it is constrained — a fixed wheel, a fixed
- * sheet of emoji, and a two-character shape for the letters — so what is stored
- * is a choice from a set and never free text, which is the same rule a group's
- * face already follows and the reason neither needs anybody to review it.
- */
-
-const MIN_HANDLE = 3;
-const MAX_HANDLE = 20;
-
-/**
- * Shape only: lowercase, starts with a letter, no doubled or trailing
- * underscore. Duplicated as a shape check in `src/lib/chat.ts` so the field can
- * complain before a round trip — change one, change the other. The version
- * there is deliberately only the shape; everything below it is server-side.
- */
-const SHAPE = /^[a-z][a-z0-9_]{2,19}$/;
-
-/**
- * Names that would let somebody be mistaken for the system.
- *
- * Checked against the folded key rather than the typed handle, so `4dmin` and
- * `а_d_m_i_n` are refused by the same entry that refuses `admin`.
- */
-const RESERVED = new Set([
-  "admin",
-  "administrator",
-  "mod",
-  "mods",
-  "moderator",
-  "moderators",
-  "staff",
-  "team",
-  "system",
-  "official",
-  "support",
-  "help",
-  "helpdesk",
-  "root",
-  "owner",
-  "operator",
-  "security",
-  "billing",
-  "noreply",
-  "everyone",
-  "here",
-  "all",
-  "channel",
-  "announcement",
-  "announcements",
-  "bot",
-  "bots",
-  "null",
-  "undefined",
-  "anonymous",
-  "deleted",
-  "interactivelearning",
-  "interactive",
-  "learning",
-]);
-
-/**
- * The folded form a handle is unique on.
- *
- * `prepare` is the same pipeline every message goes through, so the fold is the
- * one the rest of the system already agrees with: confusables to ASCII, leet to
- * letters, separators dropped. That is what makes `adm1n`, `а𝖽min` and
- * `a_d_m_i_n` all collide with `admin` instead of sitting next to it.
- */
-function keyFor(handle: string): { key: string; clean: boolean } | null {
-  const prepared = prepare(handle, MAX_HANDLE);
-  if (!prepared.ok) return null;
-  return { key: prepared.forms.squashed, clean: handleIsClean(prepared.forms) };
-}
-
-/** Why a handle cannot be had. Shared by claiming one and changing one. */
-type HandleRefusal = "shape" | "reserved" | "language" | "taken";
-
-/**
- * Everything about a wanted handle that does not depend on who is asking.
- *
- * Pulled out of `claimHandle` when `renameHandle` arrived, because the two
- * checks drifting apart is the failure that matters here: a name refused at
- * signup and allowed at rename is a hole in the reserved list, not a
- * convenience.
- */
-async function vet(
-  ctx: Parameters<typeof profileFor>[0],
-  handle: string,
-): Promise<
-  | { ok: true; handle: string; key: string }
-  | { ok: false; reason: HandleRefusal }
-> {
-  const wanted = handle.trim().toLowerCase();
-  if (
-    wanted.length < MIN_HANDLE ||
-    wanted.length > MAX_HANDLE ||
-    !SHAPE.test(wanted) ||
-    wanted.includes("__") ||
-    wanted.endsWith("_")
-  ) {
-    return { ok: false, reason: "shape" };
-  }
-
-  const folded = keyFor(wanted);
-  if (folded === null) return { ok: false, reason: "shape" };
-  if (RESERVED.has(folded.key)) return { ok: false, reason: "reserved" };
-  if (!folded.clean) return { ok: false, reason: "language" };
-
-  const taken = await ctx.db
-    .query("chatProfiles")
-    .withIndex("byHandleKey", (q) => q.eq("handleKey", folded.key))
-    .first();
-  if (taken !== null) return { ok: false, reason: "taken" };
-
-  return { ok: true, handle: wanted, key: folded.key };
-}
+/** Chat identity is managed by Clerk; only avatar style and privacy are chat settings. */
 
 /** Everything the signed-in account is told about itself. */
 export type MyProfile = {
@@ -200,10 +48,11 @@ export type MyProfile = {
   discoverable: boolean;
   /** Renames spent. The allowance itself is `MAX_HANDLE_CHANGES`. */
   handleChanges: number;
+  avatarMode?: "account" | "custom";
   avatarHue?: number;
   avatarEmoji?: string;
   avatarInitials?: string;
-  /** Current Convex storage URL for the chat-owned profile picture. */
+  /** Direct Clerk account picture URL, when the account style is selected. */
   avatarUrl?: string;
   /**
    * How many messages this account has ever sent.
@@ -218,14 +67,7 @@ export type MyProfile = {
   messagesSent: number;
 };
 
-/**
- * Everything anybody else is told about you.
- *
- * The disc travels with the handle wherever a profile is read directly, which
- * is every list of people in the app. It does *not* travel onto messages: those
- * carry a denormalised `authorHandle` and nothing else, so a thread draws its
- * discs from the handle the way it always has. See the note at the top.
- */
+/** Public chat identity. Account emails and last names are never returned. */
 export type PublicProfile = {
   clerkId: string;
   handle: string;
@@ -236,120 +78,6 @@ export type PublicProfile = {
   avatarUrl?: string;
 };
 
-/** What the field is told while somebody is still typing. See `available`. */
-export type Availability = { ok: true } | { ok: false; reason: HandleRefusal };
-
-export type ClaimResult =
-  /** The hue the disc was given, so the screen that asked can show it. */
-  | { ok: true; hue: number }
-  | {
-      ok: false;
-      reason:
-        "shape" | "reserved" | "language" | "taken" | "already";
-    };
-
-/**
- * Take a handle, and with it the global room.
- *
- * Both in one transaction because a profile without a room to speak in is a
- * dead end the user has no way out of, and because the global room may not
- * exist yet — the first person to claim a handle is the one who creates it.
- *
- * Throws when signed out rather than returning a refusal: this is a form
- * somebody pressed a button on, and the only way to reach it signed out is a
- * tab that has been open since before a sign-out.
- */
-export const claimHandle = mutation({
-  args: { handle: v.string() },
-  handler: async (ctx, { handle }): Promise<ClaimResult> => {
-    const clerkId = await callerId(ctx);
-    if (clerkId === null) throw new Error("Not signed in");
-
-    const existing = await profileFor(ctx, clerkId);
-    if (existing !== null) return { ok: false, reason: "already" };
-
-    const vetted = await vet(ctx, handle);
-    if (!vetted.ok) return { ok: false, reason: vetted.reason };
-
-    const now = Date.now();
-
-    // `createdAt` and `messagesSent` start over on purpose. Both only ever feed
-    // the trust tier, and a new identity starting at `fresh` — the slowest rate
-    // limit and no shortcut past the global room's cooldown — is the strict
-    // reading, not the lenient one. `messagesSent` lives on the sender row now,
-    // so starting over is that row not existing; `eraseMine` is what takes it,
-    // and this clears it again because "already gone" is a claim about the one
-    // path that reaches here rather than about this one.
-    // A colour off the wheel, at random.
-    //
-    // The disc has always had one — `handleHue` in `src/lib/chat.ts` hashes the
-    // handle, which is stable everywhere and costs no storage. What it is not
-    // is a *choice*, and two people who picked adjacent handles get adjacent
-    // colours for a reason neither of them can see. This writes one instead, so
-    // the first thing an account owns about how it looks is not a function of
-    // the name it just typed. The hash stays exactly where it was: it is still
-    // what draws anybody who has no `avatarHue`, which is every profile written
-    // before this line existed.
-    //
-    // From the fixed wheel and not from 360, because `setAvatar` will only
-    // accept a value from that list — a random hue somebody could not have
-    // chosen themselves is one they could never get back after changing it.
-    const hue = AVATAR_HUES[Math.floor(Math.random() * AVATAR_HUES.length)];
-
-    await clearSender(ctx, clerkId);
-
-    await ctx.db.insert("chatProfiles", {
-      clerkId,
-      handle: vetted.handle,
-      handleKey: vetted.key,
-      createdAt: now,
-      avatarHue: hue,
-      dmPolicy: "friends",
-      discoverable: true,
-    });
-
-    await ensureGlobalMembership(ctx, clerkId);
-    return { ok: true, hue };
-  },
-});
-
-/**
- * Whether a handle could be claimed, asked while it is still being typed.
- *
- * The same `vet` the claim itself runs, which is the point: a field that says
- * "looks good" and a mutation that then refuses is worse than no field at all.
- * Nothing here writes, and nothing here reserves — two people typing the same
- * handle are both told yes, and the one who presses the button first gets it.
- * That race is the honest one and it is the same race a check-free form has.
- *
- * The reason is returned rather than a bare boolean because the caller already
- * learns it on refusal — `claimError` in `src/lib/chat.ts` has had the whole
- * list in it since the first version of this screen — so this discloses nothing
- * new. What it does not disclose is *why* a name is taken: a folded key
- * colliding with somebody else's handle comes back as `taken`, which is all
- * "taken" ever meant here, and never as the handle it collided with.
- *
- * `null` for a signed-out caller, which the field renders as no answer at all.
- * A public endpoint that says whether a handle exists is a way to enumerate
- * who is here, and this is only ever asked by somebody who is already in.
- */
-export const available = query({
-  args: { handle: v.string() },
-  handler: async (ctx, { handle }): Promise<Availability | null> => {
-    const clerkId = await callerId(ctx);
-    if (clerkId === null) return null;
-
-    const vetted = await vet(ctx, handle);
-    return vetted.ok ? { ok: true } : { ok: false, reason: vetted.reason };
-  },
-});
-
-/**
- * The caller's own profile.
- *
- * `null` covers signed out and no-handle-yet, which the client treats the same
- * way — both mean the handle screen, and giving them one shape saves a branch.
- */
 export const mine = query({
   args: {},
   handler: async (ctx): Promise<MyProfile | null> => {
@@ -365,6 +93,7 @@ export const mine = query({
       dmPolicy: profile.dmPolicy,
       discoverable: profile.discoverable,
       handleChanges: profile.handleChanges ?? 0,
+      avatarMode: profile.avatarMode,
       ...avatar,
       // The sender's own row, not the profile — see `chatSenders` in
       // `convex/schema.ts`. `senderState` falls back to the profile for an
@@ -509,103 +238,6 @@ export const card = query({
   },
 });
 
-export type RenameResult =
-  | { ok: true; left: number }
-  | {
-      ok: false;
-      reason: HandleRefusal | "limit" | "same" | "no-profile";
-      left?: number;
-    };
-
-/**
- * Change the name people know you by, twice in a lifetime.
- *
- * The allowance is spent on success only: a refused handle costs nothing, or
- * else a typo would be worth as much as a change of mind.
- *
- * `same` is separated from `taken` deliberately. Re-submitting the handle you
- * already have collides with your own row, and telling somebody their own name
- * is taken is the kind of answer that makes an app look broken — so it is
- * checked before the index is, and it costs nothing.
- */
-export const renameHandle = mutation({
-  args: { handle: v.string() },
-  handler: async (ctx, { handle }): Promise<RenameResult> => {
-    const profile = await callerProfile(ctx);
-    if (profile === null) return { ok: false, reason: "no-profile" };
-
-    const spent = profile.handleChanges ?? 0;
-    if (spent >= MAX_HANDLE_CHANGES) {
-      return { ok: false, reason: "limit", left: 0 };
-    }
-
-    const left = MAX_HANDLE_CHANGES - spent;
-    if (handle.trim().toLowerCase() === profile.handle) {
-      return { ok: false, reason: "same", left };
-    }
-
-    const vetted = await vet(ctx, handle);
-    if (!vetted.ok) return { ok: false, reason: vetted.reason, left };
-
-    await ctx.db.patch(profile._id, {
-      handle: vetted.handle,
-      handleKey: vetted.key,
-      handleChanges: spent + 1,
-    });
-
-    return { ok: true, left: left - 1 };
-  },
-});
-
-export type NameResult =
-  { ok: true } | { ok: false; reason: Refusal | "no-profile" };
-
-/**
- * The name shown over the handle, or nothing.
- *
- * Free text, so it is the one thing about a profile that goes through the
- * filter: `screenStatic`, the same pass a group's title gets, because a name
- * is read by everybody and said once. Not rationed the way the handle is — the
- * handle is what people search for and what a block or a report names, and
- * this is only what is printed above it. Old messages keep the name they were
- * sent under, exactly as they keep the handle.
- *
- * Sending nothing clears it, which puts the handle back on its own.
- */
-export const setDisplayName = mutation({
-  args: { name: v.string() },
-  handler: async (ctx, { name }): Promise<NameResult> => {
-    const profile = await callerProfile(ctx);
-    if (profile === null) return { ok: false, reason: "no-profile" };
-
-    if (name.trim() === "") {
-      await ctx.db.patch(profile._id, { displayName: undefined });
-      return { ok: true };
-    }
-
-    const screened = screenStatic(name, MAX_DISPLAY_NAME);
-    if (!screened.ok) return { ok: false, reason: screened.refusal };
-
-    await ctx.db.patch(profile._id, { displayName: screened.text });
-    return { ok: true };
-  },
-});
-
-/**
- * The chat profile picture: an uploaded, moderated image, or the fallback disc
- * made from a colour and either a face off the sheet or up to two letters.
- *
- * The whole disc every time, and any part cleared by sending nothing for it,
- * which puts that part back to what it was derived as. Taking the whole thing
- * is what lets the editor be a picker rather than a form: it holds the face it
- * is showing, swaps the part you touched, and sends the result — there is no
- * patch here that could land half of somebody's choice.
- *
- * The uploaded file is accepted only when it belongs to this chat profile and
- * has passed the same moderation action as a message image. Replacing or
- * clearing it deletes the previous bytes in the same transaction. The profile
- * stores no Clerk image URL and this mutation never writes to Clerk.
- */
 export type AvatarResult =
   { ok: true } | { ok: false; reason: "no-profile" | "image" };
 
@@ -614,36 +246,21 @@ export const setAvatar = mutation({
     hue: v.optional(v.number()),
     emoji: v.optional(v.string()),
     initials: v.optional(v.string()),
-    attachmentId: v.optional(v.id("attachments")),
+    mode: v.union(v.literal("account"), v.literal("custom")),
   },
   handler: async (
     ctx,
-    { hue, emoji, initials, attachmentId },
+    { hue, emoji, initials, mode },
   ): Promise<AvatarResult> => {
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
-
-    let picture: Doc<"attachments"> | null = null;
-    if (attachmentId !== undefined) {
-      picture = await ctx.db.get(attachmentId);
-      const alreadyMine = profile.avatarAttachmentId === attachmentId;
-      if (
-        picture === null ||
-        picture.ownerClerkId !== profile.clerkId ||
-        picture.purpose !== "avatar" ||
-        (picture.status !== "ready" &&
-          !(alreadyMine && picture.status === "avatar"))
-      ) {
-        return { ok: false, reason: "image" };
-      }
-    }
 
     const wheel: readonly number[] = AVATAR_HUES;
     const nextHue = hue !== undefined && wheel.includes(hue) ? hue : undefined;
 
     const faces: readonly string[] = AVATAR_EMOJI;
     const nextEmoji =
-      picture === null && emoji !== undefined && faces.includes(emoji)
+      mode === "custom" && emoji !== undefined && faces.includes(emoji)
         ? emoji
         : undefined;
 
@@ -652,7 +269,7 @@ export const setAvatar = mutation({
     // order, as a group's face.
     const wanted = (initials ?? "").trim();
     const nextInitials =
-      picture === null &&
+      mode === "custom" &&
       nextEmoji === undefined &&
       wanted.length >= 1 &&
       wanted.length <= MAX_INITIALS &&
@@ -660,22 +277,9 @@ export const setAvatar = mutation({
         ? wanted
         : undefined;
 
-    if (
-      profile.avatarAttachmentId !== undefined &&
-      profile.avatarAttachmentId !== attachmentId
-    ) {
-      const old = await ctx.db.get(profile.avatarAttachmentId);
-      if (old !== null && old.ownerClerkId === profile.clerkId) {
-        await deleteAttachment(ctx, old);
-      }
-    }
-
-    if (picture !== null && picture.status === "ready") {
-      await ctx.db.patch(picture._id, { status: "avatar" });
-    }
-
     await ctx.db.patch(profile._id, {
-      avatarAttachmentId: attachmentId,
+      avatarMode: mode,
+      avatarAttachmentId: undefined,
       avatarHue: nextHue,
       avatarEmoji: nextEmoji,
       avatarInitials: nextInitials,

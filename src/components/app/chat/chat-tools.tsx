@@ -1,5 +1,6 @@
 "use client";
 
+import { useClerk } from "@clerk/nextjs";
 import {
   ArrowLeftIcon,
   Cog6ToothIcon,
@@ -8,7 +9,7 @@ import {
   PlusIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/solid";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   FaceEditor,
   type Face,
-  type FaceUploadResult,
 } from "@/components/app/chat/face-editor";
-import { NameEditor } from "@/components/app/chat/name-editor";
 import { OptionTiles } from "@/components/app/chat/option-tiles";
 import {
   Empty,
@@ -29,21 +28,12 @@ import {
 import { SectionLabel } from "@/components/app/chat/section-label";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
-  MAX_DISPLAY_NAME,
-  MAX_HANDLE_CHANGES,
-  changesLeftLabel,
-  claimError,
-  displayNameError,
   groupNameError,
-  handleShapeError,
-  refusalMessage,
 } from "@/lib/chat";
-import { prepareImage } from "@/lib/images";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import type { Icon } from "@/lib/icons";
 import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
 
 /**
  * Everything that is not a conversation, folded into the top of the list.
@@ -588,7 +578,7 @@ function EraseChat({ open }: { open: boolean }) {
     "Your friends, everyone you have blocked, and every report you filed.",
   );
   lines.push(
-    `@${preview.handle} is released, and anybody may claim it.`,
+    "Your account username stays yours. Reconnecting chat uses your account identity.",
   );
 
   async function go() {
@@ -682,7 +672,7 @@ function EraseChat({ open }: { open: boolean }) {
       ) : (
         <div className="mt-1.5 flex items-center gap-3">
           <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-muted-foreground">
-            Delete your handle and everything you have ever said here. Nothing
+            Delete your chat profile and everything you have ever said here. Nothing
             about it can be undone.
           </p>
           <Button
@@ -717,190 +707,34 @@ function sentLabel(sent: number): string {
   return `${sent.toLocaleString()} messages sent`;
 }
 
-/**
- * Your disc, your name and your handle, which are the three things about you
- * that anybody else can see.
- *
- * One row, and everything about you is in it. Nothing here is a form. The
- * whole section is what somebody else sees when they come across you, and
- * every part of it is changed by pressing the thing itself — the disc opens
- * `FaceEditor`, the pencil beside each name opens `NameEditor`, and each of
- * those is a panel over the column rather than a control that moves
- * everything under it.
- *
- * They are set on different terms. The disc — a picked face or two letters,
- * on a picked colour — commits the instant you touch it and has no allowance
- * on it, because a colour and a picture are not a name: nothing points at
- * them and nobody remembers you by them. The display name keeps a Save
- * because it goes through the filter — it is read by everybody — but it is
- * not rationed: it is printed over the handle, never instead of it. The handle
- * keeps a Save and an allowance, because it is the one control that spends
- * something you cannot get back.
- *
- * The count is here and nowhere else. `messagesSent` has always been on the
- * profile, feeding the trust tier; it is on `MyProfile` and deliberately not on
- * `PublicProfile`, because how much somebody talks is not a fact strangers
- * should be able to read off them.
- *
- * What renaming does *not* do is rewrite what you have already said. Messages
- * carry the handle they were sent under (see `convex/chat/profiles.ts`), so old
- * ones keep the old name. That is the denormalisation the thread is built on,
- * and it is also the honest record.
- */
+/** Clerk controls identity; chat controls the avatar style. */
 function Me() {
-  const { profile, images } = useChat();
-  const rename = useMutation(api.chat.profiles.renameHandle);
-  const setDisplayName = useMutation(api.chat.profiles.setDisplayName);
+  const { profile } = useChat();
+  const { openUserProfile } = useClerk();
   const setAvatar = useMutation(api.chat.profiles.setAvatar);
-  const uploadUrl = useMutation(api.chat.attachments.uploadUrl);
-  const checkImage = useAction(api.chat.attachments.check);
-  const discard = useMutation(api.chat.attachments.discard);
-
-  const spent = profile?.handleChanges ?? 0;
-  const left = MAX_HANDLE_CHANGES - spent;
-  const current = profile?.handle ?? "";
-  const name = profile?.displayName ?? "";
-  const avatarHue = profile?.avatarHue;
-
-  // Held steady across renders: the editor debounces the letters against this
-  // callback, and a new function on every render — this component re-renders
-  // whenever the profile query does — would restart that timer each time and
-  // never reach the end of it.
-  const setFace = useCallback(
-    (face: Face) => void setAvatar(face),
-    [setAvatar],
-  );
-
-  const uploadPicture = useCallback(
-    async (file: File): Promise<FaceUploadResult> => {
-      const prepared = await prepareImage(file);
-      if (prepared === null) {
-        return { ok: false, message: "That picture could not be read." };
-      }
-
-      const previewUrl = URL.createObjectURL(prepared.blob);
-      try {
-        const slot = await uploadUrl({ purpose: "avatar" });
-        if (!slot.ok) {
-          URL.revokeObjectURL(previewUrl);
-          return { ok: false, message: refusalMessage(slot.refusal) };
-        }
-
-        const response = await fetch(slot.url, {
-          method: "POST",
-          headers: { "Content-Type": prepared.blob.type },
-          body: prepared.blob,
-        });
-        if (!response.ok) {
-          URL.revokeObjectURL(previewUrl);
-          return { ok: false, message: refusalMessage("image") };
-        }
-
-        const { storageId } = (await response.json()) as {
-          storageId: Id<"_storage">;
-        };
-        const verdict = await checkImage({
-          reservationId: slot.reservationId,
-          storageId,
-          width: prepared.width,
-          height: prepared.height,
-        });
-        if (!verdict.ok) {
-          URL.revokeObjectURL(previewUrl);
-          return { ok: false, message: refusalMessage(verdict.refusal) };
-        }
-
-        const changed = await setAvatar({
-          attachmentId: verdict.attachmentId,
-          hue: avatarHue,
-        });
-        if (!changed.ok) {
-          await discard({ attachmentId: verdict.attachmentId });
-          URL.revokeObjectURL(previewUrl);
-          return { ok: false, message: refusalMessage("image") };
-        }
-
-        return { ok: true, previewUrl };
-      } catch {
-        URL.revokeObjectURL(previewUrl);
-        return { ok: false, message: refusalMessage("image") };
-      }
-    },
-    [avatarHue, checkImage, discard, setAvatar, uploadUrl],
-  );
-
-  return (
-    <div className="mt-2">
-      <FaceEditor
-        name={current}
-        label="your picture"
-        face={{
-          emoji: profile?.avatarEmoji,
-          initials: profile?.avatarInitials,
-          hue: profile?.avatarHue,
-        }}
-        imageUrl={profile?.avatarUrl}
-        onUpload={images ? uploadPicture : undefined}
-        onChange={setFace}
-      >
-        <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-1">
-            <p className="min-w-0 truncate text-[0.9375rem] font-semibold">
-              {name === "" ? (
-                <span className="text-muted-foreground">Add a name</span>
-              ) : (
-                name
-              )}
-            </p>
-
-            <NameEditor
-              value={name}
-              label="display name"
-              title="Name"
-              maxLength={MAX_DISPLAY_NAME}
-              caption="Shown over your handle. Old messages keep the old one."
-              onSave={async (wanted) => {
-                const result = await setDisplayName({ name: wanted });
-                return result.ok ? null : displayNameError(result.reason);
-              }}
-            />
-          </div>
-
-          <div className="flex min-w-0 items-center gap-1">
-            {/* The `@` is faint and the handle is not, so the name reads as
-                the name rather than as an address. Both go together while the
-                profile is still in flight: a lone `@` with nothing after it is
-                not a shorter name, it is a broken one. */}
-            <p className="min-w-0 truncate text-[0.8125rem] text-muted-foreground">
-              {current === "" ? null : <span className="text-faint">@</span>}
-              {current}
-            </p>
-
-            <NameEditor
-              value={current}
-              prefix="@"
-              label="handle"
-              title="Handle"
-              maxLength={20}
-              caption={changesLeftLabel(spent)}
-              allowance={{ left, total: MAX_HANDLE_CHANGES }}
-              disabled={left === 0}
-              transform={(raw) => raw.toLowerCase()}
-              check={handleShapeError}
-              onSave={async (handle) => {
-                const result = await rename({ handle });
-                return result.ok ? null : claimError(result.reason);
-              }}
-            />
-          </div>
-
-          <p className="mt-0.5 truncate text-[0.75rem] text-faint">
-            {sentLabel(profile?.messagesSent ?? 0)}
-          </p>
-        </div>
-      </FaceEditor>
-    </div>
-  );
+  const [error, setError] = useState<string | null>(null);
+  const save = async (face: Face, mode: "account" | "custom") => {
+    try {
+      const result = await setAvatar({ ...face, mode });
+      setError(result.ok ? null : "Could not save your picture. Try again.");
+    } catch { setError("Could not save your picture. Try again."); }
+  };
+  return <div className="mt-2">
+    <FaceEditor name={profile?.handle ?? ""} label="your picture"
+      face={{ emoji: profile?.avatarEmoji, initials: profile?.avatarInitials, hue: profile?.avatarHue }}
+      imageUrl={profile?.avatarUrl}
+      account={{ selected: profile?.avatarMode !== "custom", onSelect: () => void save({}, "account") }}
+      onChange={face => void save(face, "custom")}>
+      <div className="min-w-0">
+        <p className="truncate text-[0.9375rem] font-semibold">{profile?.displayName || profile?.handle}</p>
+        <p className="truncate text-[0.8125rem] text-muted-foreground">@{profile?.handle}</p>
+        <p className="text-[0.75rem] text-faint">{sentLabel(profile?.messagesSent ?? 0)}</p>
+      </div>
+    </FaceEditor>
+    <Button variant="ghost" size="sm" className="mt-2" onClick={() => openUserProfile()}>Manage account</Button>
+    <p className="mt-1 text-xs text-muted-foreground">Your name and handle come from your account.</p>
+    {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
+  </div>;
 }
 
 type DmPolicy = "friends" | "anyone" | "nobody";

@@ -36,6 +36,8 @@ import {
   type Ref,
 } from "react";
 import { createPortal } from "react-dom";
+import { isChatAdmin } from "../../../../config/chat-admin";
+import { Tooltip as AdminTooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { CenteredSpinner, Spinner } from "@/components/ui/spinner";
 import {
@@ -625,6 +627,7 @@ function ConversationThread({
             key={message._id}
             message={message}
             previous={ordered[index - 1]}
+            next={ordered[index + 1]}
             mine={message.authorClerkId === userId}
             me={userId}
             canAct={profile !== null}
@@ -1084,6 +1087,7 @@ function replyFromMessage(
 function MessageRow({
   message,
   previous,
+  next,
   mine,
   me,
   canAct,
@@ -1092,6 +1096,7 @@ function MessageRow({
 }: {
   message: ChatMessage;
   previous: ChatMessage | undefined;
+  next?: ChatMessage;
   mine: boolean;
   /** The reader, for drawing a message that names them. */
   me: string | null | undefined;
@@ -1103,6 +1108,10 @@ function MessageRow({
   const report = useMutation(api.chat.reports.report);
   const block = useMutation(api.chat.blocks.block);
   const remove = useMutation(api.chat.messages.remove);
+  const adminRemove = useMutation(api.chat.admin.remove);
+  const { isAdmin } = useChat();
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminDeleting, setAdminDeleting] = useState(false);
 
   // Held rather than left to `:hover`, because the bar below is the menu's
   // anchor. Base UI measures the trigger to place the popup and keeps
@@ -1118,6 +1127,10 @@ function MessageRow({
     previous !== undefined &&
     previous.authorClerkId === message.authorClerkId &&
     message._creationTime - previous._creationTime < GROUP_WINDOW_MS;
+  const endsGroup =
+    next === undefined ||
+    next.authorClerkId !== message.authorClerkId ||
+    next._creationTime - message._creationTime >= GROUP_WINDOW_MS;
 
   const gone = message.status !== "visible";
   const bot = isBot(message.authorClerkId);
@@ -1142,7 +1155,7 @@ function MessageRow({
 
   // Replying to yourself adds no conversational context. Once the delete
   // window closes, an own message therefore has nothing left in its menu.
-  const choosable = !mine || deletable;
+  const choosable = isAdmin || !mine || deletable;
 
   const time = new Date(message._creationTime).toLocaleTimeString(undefined, {
     hour: "numeric",
@@ -1170,6 +1183,11 @@ function MessageRow({
     <div
       id={`message-${message._id}`}
       data-message-id={message._id}
+      onContextMenu={event => {
+        if (!canAct || !choosable || (gone && !isAdmin)) return;
+        event.preventDefault();
+        setChoosing(true);
+      }}
       className={cn(
         "group/message flex gap-2.5",
         // Yours on the right, everybody else's on the left — the side is the
@@ -1309,18 +1327,34 @@ function MessageRow({
             mine && "flex-row-reverse",
           )}
         >
-          {mine || grouped ? null : bot ? (
-            <span className="truncate text-[0.875rem] font-semibold">
+          {mine || !endsGroup ? null : bot ? (
+            <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
               {personName(author)}
             </span>
           ) : (
             <PersonCard
               person={author}
-              className="cursor-pointer truncate rounded text-[0.875rem] font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+              className="cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               {personName(author)}
             </PersonCard>
           )}
+
+          {!mine && endsGroup && isChatAdmin(message.authorClerkId) ? (
+            <TooltipProvider delay={250}>
+              <AdminTooltip>
+                <TooltipTrigger
+                  aria-label="Admin with elevated privileges"
+                  className="-ml-1 inline-flex shrink-0 items-center rounded-sm text-yellow-500 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
+                    <path d="M3.5 14 2 5.5 6.5 9 10 3l3.5 6L18 5.5 16.5 14h-13Zm0 1.5h13V17h-13v-1.5Z" />
+                  </svg>
+                </TooltipTrigger>
+                <TooltipContent>Admin with elevated privileges</TooltipContent>
+              </AdminTooltip>
+            </TooltipProvider>
+          ) : null}
 
           {/* Every message, not just the grouped ones. A column of times down
               the edge of the thread is a lot of ink for something nobody reads
@@ -1341,7 +1375,8 @@ function MessageRow({
             {time}
           </span>
 
-          {gone || !canAct ? null : (
+          {adminError ? <span role="alert" className="text-xs text-destructive">{adminError}</span> : null}
+          {(gone && !isAdmin) || !canAct ? null : (
             <div
               className={cn(
                 // `opacity` and not `display`: a `display: none` element has no
@@ -1401,7 +1436,7 @@ function MessageRow({
                       className="z-50 outline-none"
                     >
                       <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
-                        {mine ? null : (
+                        {mine || gone ? null : (
                           <Menu.Item
                             onClick={onReply}
                             className={cn(
@@ -1413,6 +1448,26 @@ function MessageRow({
                             Reply
                           </Menu.Item>
                         )}
+
+                        {isAdmin ? (
+                          <Menu.Item
+                            disabled={adminDeleting}
+                            onClick={async () => {
+                              setAdminError(null);
+                              setAdminDeleting(true);
+                              try {
+                                await adminRemove({ messageId: message._id });
+                              } catch {
+                                setAdminError("Could not delete this message. Please try again.");
+                              } finally {
+                                setAdminDeleting(false);
+                              }
+                            }}
+                            className={cn(menuItemClass, "text-destructive")}
+                          >
+                            Admin delete
+                          </Menu.Item>
+                        ) : null}
 
                         {mine ? (
                           deletable ? (

@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
 
 export default defineSchema({
@@ -18,6 +19,8 @@ export default defineSchema({
   }).index("by_clerkId_and_announcementId", ["clerkId", "announcementId"])
     .index("by_announcementId", ["announcementId"]),
 
+  htmlSimulatorEntries: defineTable(htmlFields)
+    .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"]),
   simulatorEntries: defineTable(entryFields)
     .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"])
     .index("by_ownerClerkId_and_lastOpenedAt", ["ownerClerkId", "lastOpenedAt"]),
@@ -31,6 +34,10 @@ export default defineSchema({
     email: v.optional(v.string()),
     name: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    username: v.optional(v.string()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    clerkUpdatedAt: v.optional(v.number()),
 
     /**
      * The daily streak, kept on the user row rather than in a table of visits.
@@ -303,54 +310,17 @@ export default defineSchema({
    */
   chatProfiles: defineTable({
     clerkId: v.string(),
-    /** What everyone sees. Claimed once, and changeable twice after that. */
+    /** Clerk username and first name, refreshed by account sync. */
     handle: v.string(),
-    /**
-     * The name shown over the handle, when one has been set.
-     *
-     * Free text, which is the one thing the handle is not — so it goes through
-     * `screenStatic` on the way in, the same as a group's title, and it is
-     * denormalised onto messages as `authorName` for the same reason the handle
-     * is. It is not unique and not searchable: the handle stays the address.
-     */
     displayName: v.optional(v.string()),
-    /** Folded, and the thing uniqueness is on. See above. */
+    displayNameKey: v.optional(v.string()),
+    /** Case-insensitive Clerk username; no confusable folding. */
     handleKey: v.string(),
-    /**
-     * Renames spent, of `MAX_HANDLE_CHANGES`. Absent on every profile made
-     * before renaming existed, which reads as zero — the correct answer for
-     * them, and cheaper than a migration.
-     */
+    /** Legacy fields retained for existing data; no new uploads or chat renames. */
     handleChanges: v.optional(v.number()),
-    /**
-     * The chat-owned profile picture, when one has been uploaded.
-     *
-     * This points at an `attachments` row in the `avatar` state. The bytes
-     * live in Convex storage and never pass through Clerk: Clerk authenticates
-     * the account, while chat owns everything other people see about it.
-     * Keeping the attachment row makes ownership, moderation and cleanup part
-     * of the same lifecycle as every other image in chat.
-     */
     avatarAttachmentId: v.optional(v.id("attachments")),
-    /**
-     * The fallback disc, when a profile picture has not been uploaded.
-     *
-     * All three optional and the hue independent of the other two: a hue with
-     * no face is your first letter on a colour you picked, a face with no hue
-     * is what you chose on the colour your handle hashes to. Absent means
-     * derived, which is what every profile started as — see `Monogram` in the
-     * app for the fallbacks.
-     *
-     * The uploaded picture, `avatarEmoji` and `avatarInitials` are alternatives
-     * rather than layers,
-     * exactly as they are on a conversation below: the disc has room for one
-     * thing, and `setAvatar` clears the letters when a face arrives.
-     *
-     * Every part is checked against a closed set on the way in — the hue
-     * against `AVATAR_HUES`, the emoji against `AVATAR_EMOJI`, the initials
-     * against a two-character shape — because a disc a person picks must not
-     * become a field a person writes in.
-     */
+    avatarMode: v.optional(v.union(v.literal("account"), v.literal("custom"))),
+    /** Emoji/text alternatives to the account picture. */
     avatarHue: v.optional(v.number()),
     avatarEmoji: v.optional(v.string()),
     avatarInitials: v.optional(v.string()),
@@ -389,6 +359,7 @@ export default defineSchema({
   })
     .index("byClerkId", ["clerkId"])
     .index("byHandleKey", ["handleKey"])
+    .index("byDisplayNameKey", ["displayNameKey"])
     // Convex allows one search field per index, which is the whole reason chat
     // identity is a handle and nothing else: there is no display name to search
     // as well, so one index is all this ever needed.

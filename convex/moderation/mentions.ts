@@ -35,7 +35,7 @@ export const EVERYONE = "everyone";
  * Case-insensitive because people type names with capitals; handles are
  * stored lowercase and matched that way.
  */
-const MENTION_PATTERN = /(^|[^a-z0-9_@])@([a-z0-9_]{3,20})(?![a-z0-9_])/gi;
+const MENTION_PATTERN = /(^|[^a-z0-9_@-])@([a-z0-9_-]{2,64})(?![a-z0-9_-])/gi;
 
 export type MentionToken = {
   /** Lowercased, without the `@`. */

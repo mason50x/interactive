@@ -134,6 +134,7 @@ export const uploadUrl = mutation({
     purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
   },
   handler: async (ctx, { purpose }): Promise<UploadResult> => {
+    if (purpose === "avatar") return { ok: false, refusal: "image" };
     const allowed = await maySend(ctx);
     if (!allowed.ok) return allowed;
 

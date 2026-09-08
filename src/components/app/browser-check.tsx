@@ -22,6 +22,10 @@ export function BrowserCheck() {
     // Defer to keep React Strict Mode's setup/cleanup replay from recording
     // a check that never appeared.
     let finishTimer: ReturnType<typeof setTimeout> | undefined;
+    const finishFade = (event: AnimationEvent) => {
+      if (event.target === dialog && !event.pseudoElement) dialog.close();
+    };
+    dialog.addEventListener("animationend", finishFade);
     const startTimer = setTimeout(() => {
       const today = localDay();
       let lastShown = lastShownInMemory;
@@ -32,6 +36,7 @@ export function BrowserCheck() {
       }
       if (lastShown === today) return;
 
+      dialog.classList.remove(styles.leaving);
       dialog.showModal();
       lastShownInMemory = today;
       try {
@@ -39,12 +44,13 @@ export function BrowserCheck() {
       } catch {
         // The in-memory marker still covers navigation in this session.
       }
-      finishTimer = setTimeout(() => dialog.close(), 6_000);
+      finishTimer = setTimeout(() => dialog.classList.add(styles.leaving), 6_000);
     }, 0);
 
     return () => {
       clearTimeout(startTimer);
       clearTimeout(finishTimer);
+      dialog.removeEventListener("animationend", finishFade);
       dialog.close();
     };
   }, []);

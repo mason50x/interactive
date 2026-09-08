@@ -1,4 +1,5 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
+import { isChatAdmin } from "../../config/chat-admin";
 import { components } from "../_generated/api";
 
 /** A synthetic id. No Clerk account or chat profile may use the reserved handle. */
@@ -15,6 +16,12 @@ export const BOT_TAGS_PER_DAY = 5;
  * usage records for this app to sweep.
  */
 export const botRateLimiter = new RateLimiter(components.rateLimiter, {
+  adminBotTags: {
+    kind: "token bucket",
+    rate: 50,
+    period: DAY,
+    capacity: 50,
+  },
   botTags: {
     kind: "token bucket",
     rate: BOT_TAGS_PER_DAY,
@@ -22,3 +29,7 @@ export const botRateLimiter = new RateLimiter(components.rateLimiter, {
     capacity: BOT_TAGS_PER_DAY,
   },
 });
+
+export function botQuotaName(clerkId: string) {
+  return isChatAdmin(clerkId) ? "adminBotTags" : "botTags";
+}

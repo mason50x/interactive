@@ -5,6 +5,9 @@ export const purgeOwner = internalMutation({
   args: { clerkId: v.string() },
   returns: v.null(),
   handler: async (ctx, { clerkId }) => {
+    const html = await ctx.db.query("htmlSimulatorEntries")
+      .withIndex("by_ownerClerkId_and_contentHash", q => q.eq("ownerClerkId", clerkId)).take(20);
+    for (const entry of html) await ctx.db.delete(entry._id);
     const saves = await ctx.db
       .query("simulatorSaves")
       .withIndex("by_ownerClerkId", (q) => q.eq("ownerClerkId", clerkId))

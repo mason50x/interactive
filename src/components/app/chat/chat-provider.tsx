@@ -41,6 +41,7 @@ export type Chat = {
    * is off.
    */
   images: boolean;
+  isAdmin: boolean;
 };
 
 const EMPTY: Chat = {
@@ -51,6 +52,7 @@ const EMPTY: Chat = {
   hasUnread: false,
   waiting: 0,
   images: false,
+  isAdmin: false,
 };
 
 const ChatContext = createContext<Chat>(EMPTY);
@@ -72,6 +74,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     api.chat.groups.invitations,
     isAuthenticated ? {} : "skip",
   );
+  const isAdmin = useQuery(api.chat.admin.mine, isAuthenticated ? {} : "skip");
   const features = useQuery(api.features.get, isAuthenticated ? {} : "skip");
 
   // Puts the account back in the global room. Idempotent, and it exists for the
@@ -111,6 +114,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     hasUnread,
     waiting,
     images: features?.images ?? false,
+    isAdmin: isAuthenticated && isAdmin === true,
   };
 
   return <ChatContext value={value}>{children}</ChatContext>;

@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as accountSync from "../accountSync.js";
 import type * as announcements from "../announcements.js";
+import type * as chat_account from "../chat/account.js";
+import type * as chat_admin from "../chat/admin.js";
 import type * as chat_attachments from "../chat/attachments.js";
 import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_bot from "../chat/bot.js";
@@ -42,6 +45,8 @@ import type * as moderation_rules from "../moderation/rules.js";
 import type * as moderation_verdict from "../moderation/verdict.js";
 import type * as preferences from "../preferences.js";
 import type * as simulator_cleanup from "../simulator/cleanup.js";
+import type * as simulator_html from "../simulator/html.js";
+import type * as simulator_htmlModel from "../simulator/htmlModel.js";
 import type * as simulator_library from "../simulator/library.js";
 import type * as simulator_limits from "../simulator/limits.js";
 import type * as simulator_model from "../simulator/model.js";
@@ -58,7 +63,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountSync: typeof accountSync;
   announcements: typeof announcements;
+  "chat/account": typeof chat_account;
+  "chat/admin": typeof chat_admin;
   "chat/attachments": typeof chat_attachments;
   "chat/blocks": typeof chat_blocks;
   "chat/bot": typeof chat_bot;
@@ -92,6 +100,8 @@ declare const fullApi: ApiFromModules<{
   "moderation/verdict": typeof moderation_verdict;
   preferences: typeof preferences;
   "simulator/cleanup": typeof simulator_cleanup;
+  "simulator/html": typeof simulator_html;
+  "simulator/htmlModel": typeof simulator_htmlModel;
   "simulator/library": typeof simulator_library;
   "simulator/limits": typeof simulator_limits;
   "simulator/model": typeof simulator_model;

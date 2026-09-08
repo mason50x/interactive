@@ -3,9 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowUpTrayIcon,
-} from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import { api } from "../../../convex/_generated/api";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -17,11 +14,10 @@ import {
   removeLocal,
 } from "@/lib/simulator/local-store";
 import { useSimulatorSession } from "./session-provider";
-import styles from "./library.module.css";
-import { Spinner } from "@/components/ui/spinner";
+import { ImportPanel, ProgressSection } from "./library-parts";
 import { PixelController } from "./pixel-controller";
 const ROOT = "/dashboard/learning-simulator";
-export function SimulatorLibrary() {
+export function GameBoyLibrary() {
   const { userId } = useAuth(),
     { isAuthenticated } = useConvexAuth();
   const router = useRouter();
@@ -80,23 +76,13 @@ export function SimulatorLibrary() {
   }
   return (
     <div
-      className="mx-auto w-full max-w-6xl space-y-10 px-6 py-8 sm:px-8 lg:px-10"
+      className="space-y-10"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
         if (e.dataTransfer.files[0]) void select(e.dataTransfer.files[0]);
       }}
     >
-      <header className="flex flex-wrap items-center justify-between gap-5">
-        <div>
-          <h1 className="text-display text-display-title text-3xl sm:text-4xl">
-            Learning Simulator
-          </h1>
-        </div>
-        <Button size="lg" disabled={busy} onClick={() => file.current?.click()}>
-          {busy ? <Spinner /> : "Open file"}
-        </Button>
-      </header>
       <input
         ref={file}
         type="file"
@@ -117,88 +103,65 @@ export function SimulatorLibrary() {
           {error}
         </p>
       )}
-      <section>
-        <div className={`${styles.uploadPanel} flex flex-col items-start justify-center rounded-2xl p-8`}>
-          <ArrowUpTrayIcon className="mb-5 size-7 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">Bring your own file</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Drop a .gb or .gbc file here, or choose one from your device.
-          </p>
+      <ImportPanel busy={busy} choose={() => file.current?.click()} />
+      <ProgressSection
+        search={search}
+        setSearch={setSearch}
+        actions={
           <Button
-            className="mt-6"
-            variant="outline"
-            onClick={() => file.current?.click()}
-            disabled={busy}
-          >
-            Choose file
-          </Button>
-        </div>
-      </section>
-      <section>
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold">Your progress</h2>
-          <div className="flex min-w-0 items-center gap-3">
-            <Button
-              variant="ghost"
-              aria-label={
-                confirmClear
-                  ? "Confirm clear all progress"
-                  : "Clear all progress"
+            variant="ghost"
+            aria-label={
+              confirmClear ? "Confirm clear all progress" : "Clear all progress"
+            }
+            title="Clear all saved progress from this device and your account."
+            disabled={clearing || !userId || entries === undefined}
+            onBlur={() => setConfirmClear(false)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setConfirmClear(false);
+            }}
+            onClick={async () => {
+              if (!confirmClear) {
+                setConfirmClear(true);
+                return;
               }
-              title="Clear all saved progress from this device and your account."
-              disabled={clearing || !userId || entries === undefined}
-              onBlur={() => setConfirmClear(false)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setConfirmClear(false);
-              }}
-              onClick={async () => {
-                if (!confirmClear) {
-                  setConfirmClear(true);
-                  return;
+              if (!userId || clearing) return;
+              setClearing(true);
+              try {
+                for (const entry of entries ?? []) {
+                  await remove({ entryId: entry._id });
                 }
-                if (!userId || clearing) return;
-                setClearing(true);
-                try {
-                  for (const entry of entries ?? []) {
-                    await remove({ entryId: entry._id });
-                  }
-                  await clearLocal(userId);
-                  await setProgram(null);
-                  setLocal([]);
-                } catch {
-                  setError(
-                    "Could not clear all progress. Please try again to finish clearing the remaining saves.",
-                  );
-                } finally {
-                  setClearing(false);
-                  setConfirmClear(false);
-                }
-              }}
-              className={`relative h-9 gap-0 overflow-hidden px-2.5 transition-[width,color,background-color] duration-300 ease-in-out motion-reduce:transition-none ${confirmClear ? "w-28 text-destructive" : "w-9 text-muted-foreground"}`}
+                await clearLocal(userId);
+                await setProgram(null);
+                setLocal([]);
+              } catch {
+                setError(
+                  "Could not clear all progress. Please try again to finish clearing the remaining saves.",
+                );
+              } finally {
+                setClearing(false);
+                setConfirmClear(false);
+              }
+            }}
+            className={`relative h-9 gap-0 overflow-hidden px-2.5 transition-[width,color,background-color] duration-300 ease-in-out motion-reduce:transition-none ${confirmClear ? "w-28 text-destructive" : "w-9 text-muted-foreground"}`}
+          >
+            <TrashIcon className="absolute left-2.5 size-4" />
+            <span
+              aria-hidden="true"
+              className={`ml-6 whitespace-nowrap transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none ${confirmClear ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0"}`}
             >
-              <TrashIcon className="absolute left-2.5 size-4" />
-              <span
-                aria-hidden="true"
-                className={`ml-6 whitespace-nowrap transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none ${confirmClear ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0"}`}
-              >
-                Confirm?
-              </span>
-            </Button>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Find a simulation"
-              aria-label="Find a simulation"
-              className="h-9 w-full max-w-64 rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-        </div>
+              Confirm?
+            </span>
+          </Button>
+        }
+      >
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-border px-6 py-10 text-center text-sm text-muted-foreground">
             {!search && <PixelController />}
-            <p>{search
-              ? "No matching simulations."
-              : "Saved simulations will appear here. Open a file to begin."}</p>
+            <p>
+              {search
+                ? "No matching simulations."
+                : "Saved simulations will appear here. Open a file to begin."}
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border rounded-xl border border-border bg-background">
@@ -217,7 +180,6 @@ export function SimulatorLibrary() {
                       hour: "numeric",
                       minute: "2-digit",
                     })}
-                    
                   </p>
                 </div>
                 <ButtonLink variant="outline" href={`${ROOT}/${row.hash}`}>
@@ -265,7 +227,7 @@ export function SimulatorLibrary() {
             ))}
           </div>
         )}
-      </section>
+      </ProgressSection>
     </div>
   );
 }

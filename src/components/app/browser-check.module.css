@@ -1,3 +1,13 @@
+.leaving,
+.leaving::backdrop {
+  animation: fade-away 650ms ease-in-out forwards;
+}
+
+@keyframes fade-away {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 .trace {
   fill: currentColor;
   fill-opacity: 0;
@@ -30,6 +40,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .leaving,
+  .leaving::backdrop {
+    animation-duration: 1ms;
+  }
+
   .trace {
     animation: none;
     stroke-dashoffset: 0;

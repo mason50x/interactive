@@ -19,13 +19,13 @@
 export const EVERYONE = "everyone";
 
 /** `@` then three to twenty handle characters, standing on its own. */
-const MENTION_PATTERN = /(^|[^a-z0-9_@])@([a-z0-9_]{3,20})(?![a-z0-9_])/gi;
+const MENTION_PATTERN = /(^|[^a-z0-9_@-])@([a-z0-9_-]{2,64})(?![a-z0-9_-])/gi;
 
 /**
  * The same shape, cut off at the caret: `@`, then whatever has been typed of
  * the handle so far, which may be nothing. This is what opens the picker.
  */
-const MENTION_AT_END = /(^|[^a-z0-9_@])@([a-z0-9_]{0,20})$/i;
+const MENTION_AT_END = /(^|[^a-z0-9_@-])@([a-z0-9_-]{0,64})$/i;
 
 export type MentionToken = {
   /** Lowercased, without the `@`. */
@@ -61,7 +61,7 @@ export function mentionQueryAt(
 ): { start: number; query: string } | null {
   const match = MENTION_AT_END.exec(text.slice(0, caret));
   if (match === null) return null;
-  if (/[a-z0-9_]/i.test(text.charAt(caret))) return null;
+  if (/[a-z0-9_-]/i.test(text.charAt(caret))) return null;
   return { start: match.index + match[1].length, query: match[2].toLowerCase() };
 }
 

@@ -247,7 +247,15 @@ export function patchGameHtml(html) {
     .replace(/<script>\s*window\.dataLayer[\s\S]*?<\/script>/gi, "");
   const removedAnalytics = deanalysed !== html;
 
-  const patched = deanalysed
+  let patched = deanalysed
+    // Moto X3M Pool/Winter/Spooky append this frame-buster. In our sandbox
+    // its top navigation is blocked, leaving body hidden forever. Remove
+    // the paired style and script together, never relax the iframe sandbox.
+    // Fail closed below if upstream changes this known block.
+    .replace(
+      /<style\s+id=["']antiClickjack["']\s*>\s*body\s*\{\s*display\s*:\s*none\s*!important;?\s*\}\s*<\/style>\s*(?:<br\s*\/?>\s*)?<script\s+type=["']text\/javascript["']\s*>\s*if\s*\(self === top\)\s*\{\s*var antiClickjack = document\.getElementById\(["']antiClickjack["']\);\s*antiClickjack\.parentNode\.removeChild\(antiClickjack\);\s*\}\s*else\s*\{\s*top\.location = self\.location;\s*\}\s*<\/script>/gi,
+      "",
+    )
     .replace(/<script[^>]*cloak\.js[^>]*>\s*<\/script>/gi, "")
     .replace(
       /(['"])https:\/\/unpkg\.com\/@ruffle-rs\/ruffle\1/g,
@@ -261,6 +269,14 @@ export function patchGameHtml(html) {
     .replace(/(<h2>[^<]*?)\s+on seraph\s*(<\/h2>)/gi, "$1$2")
     // Upstream's favicon, under a directory we never upload.
     .replace(/<link[^>]*images\/ico\.ico[^>]*>/gi, "");
+
+  // These Phaser bundles name "content" as their parent and attach input /
+  // SDK resume listeners to it. Upstream omitted the container, so the canvas
+  // falls back to body but listener setup throws. Create it before startup.
+  if (/<script\b[^>]*\bsrc=["']motox3m\.min\.js["']/i.test(patched) &&
+      !/\bid\s*=\s*["']content["']/i.test(patched)) {
+    patched = patched.replace(/<body\b[^>]*>/i, '$&<div id="content"></div>');
+  }
 
   // Removing the definitions can strand a call. `basketbrosio` carries two
   // analytics blocks — Seraph's and the game author's original — and its own
@@ -304,9 +320,10 @@ const FORBIDDEN = [
   "| seraph",
   "on seraph",
   "images/ico.ico",
+  "anticlickjack",
 ];
 
-function assertPatched(path, html) {
+export function assertPatched(path, html) {
   const lowered = html.toLowerCase();
   const found = FORBIDDEN.filter((token) => lowered.includes(token));
   if (found.length > 0) {

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findBuiltin } from "@/lib/simulator/catalogue";
 import { PlayerLoader } from "@/components/simulator/player-loader";
-export const metadata: Metadata = { title: "Learning Simulator" };
+export const metadata: Metadata = { title: "Interactive Simulators" };
 export default async function Page({
   params,
 }: {
