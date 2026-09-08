@@ -479,7 +479,12 @@ function ConversationThread({
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-1 flex-col"
+      // `min-w-0`: this is a flex item, and without it the pane is as wide as
+      // the widest line anywhere inside it — a quoted reply that cannot wrap
+      // was enough to push the whole thread past its column and put a
+      // sideways scroll on the page. The width comes from the frame, never
+      // from the words.
+      className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col"
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -1528,7 +1533,10 @@ function ReplyPreview({
       <span className="block truncate text-[0.75rem] font-semibold text-primary">
         {name}
       </span>
-      <span className="block truncate text-[0.8125rem] text-muted-foreground">
+      {/* Two lines and then a cut, rather than one line and an ellipsis: a
+          long message quoted in one unbreakable line was what set the
+          bubble's width, and long messages are the ones worth quoting. */}
+      <span className="line-clamp-2 text-[0.8125rem] break-words text-muted-foreground">
         {reply.preview}
       </span>
     </button>
@@ -2292,7 +2300,7 @@ function Composer({
                   displayName: replyingTo.authorName,
                 })}
               </p>
-              <p className="truncate text-[0.8125rem] text-muted-foreground">
+              <p className="line-clamp-2 text-[0.8125rem] break-words text-muted-foreground">
                 {replyFromMessage(replyingTo).preview}
               </p>
             </div>
