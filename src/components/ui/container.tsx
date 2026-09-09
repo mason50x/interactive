@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 const widths = {
-  default: "max-w-[1400px]",
+  default: "max-w-[1200px]",
+  wide: "max-w-[1400px]",
   narrow: "max-w-4xl",
   prose: "max-w-2xl",
 } as const;
@@ -16,7 +18,9 @@ export function Container({
   className?: string;
 }) {
   return (
-    <div className={`mx-auto w-full ${widths[width]} px-6 lg:px-10 ${className}`}>
+    <div
+      className={cn("mx-auto w-full px-5 sm:px-8 lg:px-10", widths[width], className)}
+    >
       {children}
     </div>
   );

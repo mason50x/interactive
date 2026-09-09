@@ -17,9 +17,12 @@ const inter = Inter({
   display: "swap",
 });
 
+// Both styles: the marketing headlines set one word in the italic, and the
+// legal titles use the roman.
 const displaySerif = Instrument_Serif({
   variable: "--font-display-serif",
   weight: "400",
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 

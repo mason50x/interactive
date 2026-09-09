@@ -145,7 +145,7 @@ function SketchVisual() {
       <text x="38" y="108" fontSize="9" fill={muted}>
         your sketch
       </text>
-      <path d="M150 66 H176" stroke={accent} strokeWidth="1.5" markerEnd="" />
+      <path d="M150 66 H176" stroke={accent} strokeWidth="1.5" />
       <path d="M170 60 L178 66 L170 72" fill="none" stroke={accent} strokeWidth="1.5" />
       <rect x="186" y="18" width="120" height="96" rx="12" fill="var(--surface)" stroke={accent} />
       <path

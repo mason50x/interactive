@@ -1,8 +1,8 @@
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import { CheckIcon } from "@heroicons/react/16/solid";
 import { educators } from "@/lib/content";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { Eyebrow } from "@/components/ui/section";
+import { Section, SectionHeading } from "@/components/ui/section";
 
 /** Cohort heatmap: rows are students, columns are concepts. */
 function CohortHeatmap() {
@@ -15,19 +15,22 @@ function CohortHeatmap() {
     [2, 3, 1, 1, 0, 0],
     [3, 3, 2, 1, 1, 2],
     [3, 2, 3, 0, 0, 1],
+    [2, 2, 2, 1, 0, 0],
   ];
   const fills = [
-    "var(--surface-muted)",
-    "color-mix(in oklab, var(--primary) 22%, transparent)",
-    "color-mix(in oklab, var(--primary) 55%, transparent)",
+    "var(--panel-border)",
+    "color-mix(in oklab, var(--primary) 30%, transparent)",
+    "color-mix(in oklab, var(--primary) 62%, transparent)",
     "var(--primary)",
   ];
 
   return (
-    <div className="rounded-[1.5rem] border border-border bg-surface p-7">
+    <div className="rounded-[1.25rem] border border-panel-border bg-panel-elevated p-6 sm:p-7">
       <div className="flex items-baseline justify-between">
-        <p className="text-sm font-medium text-foreground">BIO 201 · Section 4</p>
-        <p className="text-xs text-faint">28 students</p>
+        <p className="text-[0.9375rem] font-medium text-panel-foreground">
+          Biology 201 · Section 4
+        </p>
+        <p className="text-[0.8125rem] text-panel-muted">28 students</p>
       </div>
 
       <div className="mt-6 grid grid-cols-6 gap-1.5">
@@ -35,7 +38,7 @@ function CohortHeatmap() {
           row.map((v, c) => (
             <span
               key={`${r}-${c}`}
-              className="aspect-square rounded-[5px]"
+              className="aspect-[2/1] rounded-[5px]"
               style={{ background: fills[v] }}
             />
           )),
@@ -46,7 +49,7 @@ function CohortHeatmap() {
         {concepts.map((c) => (
           <span
             key={c}
-            className="truncate text-center text-[0.625rem] text-faint"
+            className="truncate text-center text-[0.6875rem] text-panel-muted"
             title={c}
           >
             {c}
@@ -54,11 +57,11 @@ function CohortHeatmap() {
         ))}
       </div>
 
-      <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
-        <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
-        <p className="text-[0.8125rem] text-muted-foreground">
-          <span className="text-foreground">Electron transport chain</span> is
-          unconnected for 19 of 28 students.
+      <div className="mt-6 flex items-center gap-3 border-t border-panel-border pt-5">
+        <span className="size-2 shrink-0 rounded-full bg-primary" />
+        <p className="text-[0.875rem] text-panel-muted">
+          <span className="text-panel-foreground">Electron transport chain</span>{" "}
+          is unconnected for 19 of 28 students.
         </p>
       </div>
     </div>
@@ -67,26 +70,30 @@ function CohortHeatmap() {
 
 export function Educators() {
   return (
-    <section id="educators" className="border-t border-border bg-surface-muted py-20 sm:py-28 lg:py-36">
+    <Section id="educators" className="bg-panel text-panel-foreground">
       <Container>
-        <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-          <div className="flex flex-col items-start gap-5">
-            <Eyebrow>{educators.eyebrow}</Eyebrow>
-            <h2 className="text-display text-[2.25rem] sm:text-[3rem] lg:text-[3.5rem]">
-              {educators.heading}
-            </h2>
-            <p className="max-w-lg text-[1.0625rem] leading-relaxed text-muted-foreground">
-              {educators.body}
-            </p>
-            <ul className="mt-2 flex flex-col gap-3">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+          <div className="flex flex-col items-start gap-6">
+            <SectionHeading
+              tone="inverted"
+              eyebrow={educators.eyebrow}
+              title={educators.heading}
+              body={educators.body}
+            />
+            <ul className="flex flex-col gap-3">
               {educators.bullets.map((b) => (
-                <li key={b} className="flex items-start gap-3 text-[0.9375rem] text-foreground/80">
-                  <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                <li
+                  key={b}
+                  className="flex items-start gap-3 text-[0.9375rem] text-panel-foreground/85"
+                >
+                  <span className="mt-1 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <CheckIcon className="size-3" />
+                  </span>
                   {b}
                 </li>
               ))}
             </ul>
-            <ButtonLink href="#pricing" variant="secondary" size="xl" className="mt-4">
+            <ButtonLink href="/contact" variant="inverted" size="md" className="mt-2">
               {educators.cta}
             </ButtonLink>
           </div>
@@ -94,6 +101,6 @@ export function Educators() {
           <CohortHeatmap />
         </div>
       </Container>
-    </section>
+    </Section>
   );
 }

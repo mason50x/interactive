@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal/legal-document";
-import { terms } from "@/lib/legal";
+import { privacy, terms } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: terms.title,
@@ -9,5 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
-  return <LegalDocument doc={terms} />;
+  return (
+    <LegalDocument doc={terms} sibling={{ title: privacy.title, href: "/pp" }} />
+  );
 }

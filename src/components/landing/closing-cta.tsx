@@ -1,17 +1,17 @@
 import { closingCta } from "@/lib/content";
-import { AuthButton } from "@/components/auth-button";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 
 export function ClosingCta() {
   return (
-    <section className="border-t border-border py-20 sm:py-28">
+    <section className="border-t border-border py-20 sm:py-24">
       <Container>
-        <div className="relative overflow-hidden rounded-[2rem] bg-panel px-6 py-20 text-center sm:px-12 sm:py-28">
+        <div className="relative overflow-hidden rounded-[1.5rem] bg-panel px-6 py-16 text-center sm:px-12 sm:py-24">
           {/* Faint map echo behind the copy. */}
           <svg
             viewBox="0 0 800 300"
-            className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.13]"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.16]"
             aria-hidden
           >
             <g fill="none" stroke="var(--primary)" strokeWidth="1.5">
@@ -26,27 +26,23 @@ export function ClosingCta() {
                 [580, 230],
                 [760, 140],
               ].map(([x, y]) => (
-                <circle key={`${x}`} cx={x} cy={y} r="7" />
+                <circle key={`${x}`} cx={x} cy={y} r="6" />
               ))}
             </g>
           </svg>
 
           <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-6">
-            <h2 className="text-serif-display text-[2.5rem] text-panel-foreground sm:text-[3.75rem]">
-              {closingCta.heading.split("\n").map((line) => (
-                <span key={line} className="block">
-                  {line}
-                </span>
-              ))}
+            <h2 className="text-display text-[2.25rem] text-balance text-panel-foreground sm:text-[3rem] lg:text-[3.5rem]">
+              {closingCta.heading}
             </h2>
             <p className="max-w-lg text-[1.0625rem] leading-relaxed text-panel-muted">
               {closingCta.body}
             </p>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-              <AuthButton variant="inverted" size="xl">
+            <div className="mt-2 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <ButtonLink href="/auth/sign-up" variant="inverted" size="xl">
                 {closingCta.primary}
-              </AuthButton>
-              <ButtonLink href="#educators" variant="inverted-outline" size="xl">
+              </ButtonLink>
+              <ButtonLink href="/contact" variant="inverted-outline" size="xl">
                 {closingCta.secondary}
               </ButtonLink>
             </div>

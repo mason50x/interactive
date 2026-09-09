@@ -234,6 +234,10 @@
      lighter one on black. */
   --fire: #ff6a00;
   --fire-ink: #b8430b;
+
+  /* The brand blue as it reads on the inverted panel: a step lighter, so a
+     label or a link set in it clears the dark ground. */
+  --primary-soft: #9cc0fb;
 }
 
 /*
@@ -309,6 +313,8 @@
 
   --fire: #ff6a00;
   --fire-ink: #ffa457;
+
+  --primary-soft: #9cc0fb;
 }
 
 @theme inline {
@@ -360,6 +366,7 @@
   --color-panel-border: var(--panel-border);
   --color-fire: var(--fire);
   --color-fire-ink: var(--fire-ink);
+  --color-primary-soft: var(--primary-soft);
 
   /* `shadow-card` / `shadow-card-hover`. Named off the raw tokens rather than
      declared here, so both themes can answer the same utility differently. */
@@ -1977,3 +1984,41 @@
   .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
 }
 
+
+/*
+ * The public site's grounds.
+ *
+ * `.bg-dots` is the faint dot lattice under the hero and behind the product
+ * mock's canvas: a hint of graph paper, drawn in the strong border colour so
+ * it follows the theme. `.bg-glow` is the one soft wash of brand colour on
+ * the site, masked so it fades to nothing well before the edges of its box.
+ */
+@layer utilities {
+  .bg-dots {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      var(--border-strong) 1px,
+      transparent 0
+    );
+    background-size: 24px 24px;
+  }
+
+  .bg-glow {
+    background-image: radial-gradient(
+      60% 55% at 50% 0%,
+      color-mix(in oklab, var(--primary) 18%, transparent),
+      transparent 70%
+    );
+  }
+
+  /* The serif set as an accent inside a sans headline. Sized up a touch,
+     because Instrument Serif's x-height sits below Inter's at the same
+     nominal size and the word would otherwise read as smaller. */
+  .serif-accent {
+    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.08em;
+    line-height: 0.9;
+  }
+}
