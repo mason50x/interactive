@@ -14,6 +14,7 @@ import {
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { ArrowUpTrayIcon } from "@heroicons/react/16/solid";
 import { MicrophoneIcon } from "@heroicons/react/24/solid";
 import {
   useAction,
@@ -40,10 +41,6 @@ import { isChatAdmin } from "../../../../config/chat-admin";
 import { Tooltip as AdminTooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { CenteredSpinner, Spinner } from "@/components/ui/spinner";
-import {
-  GlobalUnlock,
-  useRemaining,
-} from "@/components/app/chat/global-unlock";
 import { GroupPanel } from "@/components/app/chat/group-panel";
 import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import {
@@ -67,6 +64,8 @@ import {
 import { Waveform } from "@/components/app/chat/waveform";
 import { useChat } from "@/components/app/chat/chat-provider";
 import {
+  BOT_HANDLE,
+  BOT_TAGS_PER_DAY,
   DELETE_WINDOW_MS,
   REACTIONS,
   conversationName,
@@ -186,26 +185,12 @@ function ConversationThread({
   );
 
   const markRead = useMutation(api.chat.conversations.markRead);
+  const welcomeBot = useMutation(api.chat.bot.welcome);
   const send = useMutation(api.chat.messages.send);
   const newest = results[0]?._id;
 
   /** Who else is writing in here. See `typing.tsx`. */
   const typists = useTypists(conversationId);
-
-  // The wait a new account serves before the global room will take anything —
-  // shown as a ring rather than sprung as a refusal. See `global-unlock.tsx`.
-  const unlockAt =
-    detail !== undefined &&
-    detail !== null &&
-    detail.kind === "global" &&
-    profile !== null
-      ? profile.globalUnlockAt
-      : null;
-
-  const left = useRemaining(unlockAt);
-  const cooling = left !== null && left > 0 ? left : null;
-  const cooldown =
-    profile === null ? 0 : profile.globalUnlockAt - profile.createdAt;
 
   /** The message on screen that the server has not confirmed yet. */
   const [pending, setPending] = useState<ChatMessage | null>(null);
@@ -313,7 +298,6 @@ function ConversationThread({
     const archived = detail?.kind === "global" && daysAgo > 0;
     return (
       pictures &&
-      cooling === null &&
       !archived &&
       event.dataTransfer.types.includes("Files")
     );
@@ -363,6 +347,13 @@ function ConversationThread({
    */
   const summary = conversations.find((row) => row._id === conversationId);
   const unread = summary === undefined || summary.unread > 0;
+  const isBotDm = detail?.kind === "dm" && detail.peerClerkId === "bot";
+  const emptyBotDm = isBotDm && status === "Exhausted" && results.length === 0;
+
+  useEffect(() => {
+    if (emptyBotDm) void welcomeBot({ conversationId });
+  }, [conversationId, emptyBotDm, welcomeBot]);
+
 
   useEffect(() => {
     if (!unread || daysAgo > 0) return;
@@ -618,7 +609,7 @@ function ConversationThread({
           </div>
         ) : null}
 
-        {status === "Exhausted" && results.length === 0 ? (
+        {status === "Exhausted" && results.length === 0 && !isBotDm && typists.length === 0 ? (
           <Quiet archived={!live} />
         ) : null}
 
@@ -668,16 +659,11 @@ function ConversationThread({
           — cost the last message of every conversation, which sat half
           behind it until you scrolled. A footer is a footer. */}
       <div className="shrink-0">
-        {!live || cooling === null ? null : (
-          <GlobalUnlock remaining={cooling} total={cooldown} />
-        )}
-
         {live ? (
           <Composer
             ref={composer}
             onSubmit={submit}
             pictures={pictures}
-            lock={cooling !== null ? "new" : null}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
             conversationId={conversationId}
@@ -1700,18 +1686,6 @@ const REPORT_REASONS = [
   ["other", "Something else"],
 ] as const;
 
-/**
- * Why the composer is shut, when it is.
- *
- * A new account's global-room wait is represented as a reason rather than a
- * boolean so the composer can show useful copy.
- */
-type Lock = "new" | null;
-
-const PLACEHOLDER: Record<"new", string> = {
-  new: "You can post here when the ring fills",
-};
-
 /** The textarea's own cap, which the server enforces again. */
 const MAX_BODY = 2000;
 
@@ -1770,7 +1744,6 @@ function Composer({
   ref,
   onSubmit,
   pictures,
-  lock,
   replyingTo,
   onCancelReply,
   conversationId,
@@ -1794,7 +1767,6 @@ function Composer({
    * box is the box it was before pictures existed.
    */
   pictures: boolean;
-  lock: Lock;
   replyingTo: ChatMessage | null;
   onCancelReply: () => void;
   /** For the mention picker. See `useMentionPeople`. */
@@ -1804,14 +1776,17 @@ function Composer({
   authors: MentionPerson[];
   me: string | null | undefined;
 }) {
-  const shut = lock !== null;
   const [body, setBody] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
 
-  // Tells everybody else there are words in here. Off while the box is shut by
-  // the new-account global-room wait.
-  useTypingBeat(conversationId, body, !shut);
+  // Tells everybody else there are words in here.
+  useTypingBeat(conversationId, body, true);
+
+  // The `@bot` allowance, for the plus menu. Subscribed here rather than in
+  // the popup so the bar is already right the moment the menu opens, instead
+  // of arriving a beat after it.
+  const quota = useQuery(api.chat.bot.quota, pictures ? {} : "skip");
 
   /**
    * Where the caret is, for the picker.
@@ -1873,7 +1848,7 @@ function Composer({
    * asked for only while it is open, which is what keeps a group's member
    * list off the thread's subscriptions — see `useMentionPeople`.
    */
-  const mention = shut ? null : mentionQueryAt(shown, caret);
+  const mention = mentionQueryAt(shown, caret);
   const picking = mention !== null && dismissed !== mention.start;
   const people = useMentionPeople({
     conversationId,
@@ -1923,12 +1898,6 @@ function Composer({
     setActive(0);
     field.current?.focus();
   }
-
-  // A lock landing mid-sentence takes the microphone with it.
-  const { abort } = dictation;
-  useEffect(() => {
-    if (shut) abort();
-  }, [shut, abort]);
 
   // Keep the newest words in view once the box has hit its height.
   useEffect(() => {
@@ -2151,7 +2120,7 @@ function Composer({
    * a paste of a spreadsheet cell has a file in it that nobody meant to send.
    */
   function addFiles(files: File[]) {
-    if (!pictures || shut) return;
+    if (!pictures) return;
     const images = files.filter(isImageFile);
     if (images.length === 0) return;
 
@@ -2197,7 +2166,7 @@ function Composer({
   const ready = attached.filter((entry) => entry.state === "ready");
   const waiting = ready.length !== attached.length;
   const canSend =
-    !shut && !waiting && (shown.trim() !== "" || ready.length > 0);
+    !waiting && (shown.trim() !== "" || ready.length > 0);
 
   async function submit() {
     if (!canSend) return;
@@ -2343,7 +2312,7 @@ function Composer({
           between `rounded-full` and this, and animating a radius from nine
           thousand pixels to twenty-five is a shape doing something strange
           on the way. */}
-      <div className="flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
+      <div className="composer flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] has-[textarea:focus]:border-primary has-[textarea:focus]:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
         {replyingTo === null ? null : (
           <div className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] px-3 py-2.5">
             <ArrowUturnLeftIcon className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -2409,20 +2378,53 @@ function Composer({
             pictures ? "pl-1.5" : "pl-4",
           )}
         >
-          {/* The plus on the left, where every chat puts it. It opens the
-              picker; pasting and dropping reach the same `addFiles`. */}
+          {/* The plus on the left, where every chat puts it. It opens a
+              small menu: how many `@bot` tags are left today, then the
+              picker. Pasting and dropping reach the same `addFiles`. */}
           {pictures ? (
             <>
-              <Button
-                variant="ghost"
-                size="icon-lg"
-                onClick={() => picker.current?.click()}
-                disabled={shut || attached.length >= MAX_IMAGES_PER_MESSAGE}
-                aria-label="Add a picture"
-                className="rounded-full text-faint hover:text-foreground"
-              >
-                <PlusIcon strokeWidth={2} className="size-5" />
-              </Button>
+              <Menu.Root>
+                <Menu.Trigger
+                  aria-label="More"
+                  className="group flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-faint transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:bg-muted data-popup-open:text-foreground dark:text-muted-foreground dark:hover:bg-muted/50 dark:data-popup-open:bg-muted/50"
+                >
+                  {/* A plus that turns into a cross while the menu is open:
+                      the same glyph, a quarter turn on, is the one that puts
+                      it away. */}
+                  <PlusIcon
+                    strokeWidth={2}
+                    className="size-5 transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-45 motion-reduce:transition-none"
+                  />
+                </Menu.Trigger>
+                <Menu.Portal>
+                  <Menu.Positioner
+                    side="top"
+                    align="start"
+                    sideOffset={14}
+                    className="z-50 outline-none"
+                  >
+                    {/* Dressed as the composer it comes out of — the same
+                        surface, border, corner and lift, and `.composer-skin`
+                        for the dark theme's step up without the composer's
+                        blue focus ring, since an open menu holds focus. */}
+                    <Menu.Popup className="composer-skin popup-slide flex w-[16.5rem] flex-col rounded-[20px] border border-border bg-surface p-1.5 text-foreground shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] outline-none">
+                      <BotQuota quota={quota} />
+                      <Menu.Separator className="mx-1 my-1 h-px bg-border" />
+                      <Menu.Item
+                        onClick={() => picker.current?.click()}
+                        disabled={attached.length >= MAX_IMAGES_PER_MESSAGE}
+                        className={cn(
+                          menuItemClass,
+                          "flex items-center gap-2.5 data-disabled:pointer-events-none data-disabled:opacity-50",
+                        )}
+                      >
+                        <ArrowUpTrayIcon className="size-[1.125rem]" />
+                        Upload a picture
+                      </Menu.Item>
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
               <input
                 ref={picker}
                 type="file"
@@ -2502,7 +2504,6 @@ function Composer({
               onKeyDown={onKeyDown}
               onPaste={onPaste}
               rows={1}
-              disabled={shut}
               maxLength={MAX_BODY}
               aria-label="Message"
               aria-autocomplete="list"
@@ -2513,9 +2514,7 @@ function Composer({
                   : undefined
               }
               placeholder={
-                lock !== null
-                  ? PLACEHOLDER[lock]
-                  : live
+                live
                     ? "Listening…"
                     : attached.length > 0
                       ? "Add a caption, or just send"
@@ -2525,7 +2524,7 @@ function Composer({
               // the layer behind. No scrollbar, so the field and that layer
               // wrap at the same width — the box is eight lines at most and
               // still scrolls under the wheel and the arrows.
-              className="relative block w-full resize-none overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed text-transparent caret-foreground outline-none transition-[height] duration-150 ease-out [scrollbar-width:none] placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none [&::-webkit-scrollbar]:hidden"
+              className="relative block w-full resize-none overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed text-transparent caret-foreground outline-none transition-[height] duration-150 ease-out [scrollbar-width:none] placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none dark:placeholder:text-muted-foreground [&::-webkit-scrollbar]:hidden"
             />
           </div>
           {/* Absent where the browser has no recogniser (Firefox) and on the
@@ -2537,14 +2536,13 @@ function Composer({
               variant="ghost"
               size="icon-lg"
               onClick={toggleDictation}
-              disabled={shut}
               aria-pressed={live}
               aria-label={live ? "Stop dictation" : "Start dictation"}
               className={cn(
                 "rounded-full",
                 live
                   ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  : "text-faint hover:text-foreground",
+                  : "text-faint hover:text-foreground dark:text-muted-foreground",
               )}
             >
               {dictation.state === "listening" ? (
@@ -2571,6 +2569,113 @@ function Composer({
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+type BotQuotaState = {
+  value: number;
+  ts: number;
+  rate: number;
+  period: number;
+  capacity: number;
+};
+
+/**
+ * The bucket as it stands at `now`.
+ *
+ * `value` is what the server had at `ts`; tokens have been coming back at
+ * `rate` per `period` since, up to `capacity`. Returned whole and fractional
+ * both: the bar wants the fraction, the count wants the floor, and the
+ * countdown wants how far the next whole one is.
+ */
+function botQuota(state: BotQuotaState, now: number) {
+  const refilled =
+    state.value + (Math.max(0, now - state.ts) * state.rate) / state.period;
+  const value = Math.min(state.capacity, Math.max(0, refilled));
+  const whole = Math.floor(value + 1e-9);
+  const nextIn =
+    value >= state.capacity
+      ? 0
+      : ((whole + 1 - value) * state.period) / state.rate;
+  return { value, whole, nextIn };
+}
+
+/** "2h 10m", "35m", "under a minute". */
+function untilLabel(ms: number): string {
+  const minutes = Math.ceil(ms / 60_000);
+  if (minutes < 1) return "under a minute";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+/**
+ * The top of the plus menu: how many `@bot` tags are left, as a bar and a
+ * count, and when the next one is back.
+ *
+ * Ticks once a minute while it is mounted — which is only while the popup is
+ * open — so a countdown that says "3m" is still true when it says it. The
+ * bar's own motion is `.quota-fill` in `globals.css`.
+ */
+function BotQuota({ quota }: { quota: BotQuotaState | null | undefined }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const state = quota == null ? null : botQuota(quota, now);
+  const capacity = quota?.capacity ?? BOT_TAGS_PER_DAY;
+  // Whole tags, like the count beside it: a bar at 94% over "4 of 5" reads
+  // as a bar that is wrong, not as a fifth token on its way back.
+  const fraction = state === null ? 0 : state.whole / capacity;
+
+  return (
+    <div className="px-2.5 pt-2 pb-1.5" aria-live="polite">
+      <div className="flex items-baseline justify-between gap-3 text-[0.8125rem]">
+        <span className="flex items-center gap-2 font-medium text-foreground">
+          <Monogram handle={BOT_HANDLE} className="size-5 text-[0.5rem]" />
+          Bot Usage
+        </span>
+        <span className="text-muted-foreground tabular-nums">
+          {state === null ? "…" : `${state.whole} of ${capacity} left`}
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Bot replies left today"
+        aria-valuemin={0}
+        aria-valuemax={capacity}
+        aria-valuenow={state?.whole}
+        className="mt-2 h-3 overflow-hidden rounded-full bg-foreground/[0.08]"
+      >
+        {/* Green, then amber, then red as it runs down: a fuel gauge, not
+            the accent. Of five: four or more green, three amber, two or
+            fewer red. */}
+        <div
+          className={cn(
+            "quota-fill h-full rounded-full",
+            fraction > 0.6
+              ? "bg-[#22c55e]"
+              : fraction > 0.4
+                ? "bg-[#eab308]"
+                : "bg-[#ef4444]",
+          )}
+          style={{ width: `${fraction * 100}%` }}
+        />
+      </div>
+      {/* Nothing to say while the allowance is full; the bar says it. */}
+      {state !== null && state.nextIn === 0 ? null : (
+        <p className="mt-1.5 text-center text-[0.75rem] text-muted-foreground">
+          {state === null
+            ? "Checking…"
+            : state.whole === 0
+              ? `Next one back in ${untilLabel(state.nextIn)}`
+              : `One more in ${untilLabel(state.nextIn)}`}
+        </p>
+      )}
     </div>
   );
 }

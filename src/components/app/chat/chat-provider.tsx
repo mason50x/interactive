@@ -32,6 +32,11 @@ export type Chat = {
   unread: number;
   /** Anything at all, the room's dot included. */
   hasUnread: boolean;
+  /**
+   * Whether something unread names the caller — by handle, or `@everyone`
+   * in a group. The rail says "Mentioned" instead of "Unread" when it does.
+   */
+  mentioned: boolean;
   /** Friend requests waiting on you, plus group invitations. */
   waiting: number;
   /**
@@ -50,6 +55,7 @@ const EMPTY: Chat = {
   conversations: [],
   unread: 0,
   hasUnread: false,
+  mentioned: false,
   waiting: 0,
   images: false,
   isAdmin: false,
@@ -101,6 +107,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     0,
   );
   const hasUnread = list.some((row) => row.unread > 0);
+  const mentioned = list.some((row) => row.mentioned);
 
   const waiting =
     (pending ?? []).filter((request) => !request.outgoing).length +
@@ -112,6 +119,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     conversations: list,
     unread,
     hasUnread,
+    mentioned,
     waiting,
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,

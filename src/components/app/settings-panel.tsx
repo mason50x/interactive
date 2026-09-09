@@ -11,12 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import {
   accents,
@@ -31,14 +25,22 @@ import { tabMaskAssets, tabMasks, type TabMaskId } from "@/lib/tab-mask";
 import { cn } from "@/lib/utils";
 
 /**
- * Everything about this site that is a matter of taste, in one panel.
+ * Everything about this site that is a matter of taste, in one page.
  *
- * A sheet rather than a settings page: none of it is worth losing your place
- * over, and every control here changes the page *behind* the panel — the
- * accent repaints the rail, the constellation stops drifting — which only
- * reads as cause and effect if you can still see it happening.
+ * The page is Clerk's: this is the first entry in the account modal, ahead of
+ * the Account and Security pages Clerk draws itself, and it is portalled into
+ * the slot Clerk hands over for a custom page. See `useAccountModal`, which
+ * owns the slot; this component owns nothing but the rows.
  *
- * The panel is a list of labelled rows and nothing else. No section headings,
+ * It used to be a sheet of its own, beside the account modal rather than
+ * inside it, on the argument that every control here changes the page
+ * *behind* the panel — the accent repaints the rail, the constellation stops
+ * drifting — and a modal hides that. The argument lost to the one it was up
+ * against: two doors in the same menu, "Account" and "Settings", for what
+ * anyone else would call one thing. The controls still write as they are
+ * touched, and the rail is still visible past the modal's edge.
+ *
+ * The page is a list of labelled rows and nothing else. No section headings,
  * no explanatory paragraphs: a control that needs a paragraph to be understood
  * is the wrong control, and a heading over two rows is a title for its own
  * sake. What is left of the prose lives where it is load-bearing — the warning
@@ -48,84 +50,80 @@ import { cn } from "@/lib/utils";
  * subscription in `PreferencesProvider`, so there is no Save button to leave
  * unpressed and no state in here that could disagree with the row.
  */
-export function SettingsSheet({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+export function SettingsPanel() {
   const { preferences, update } = usePreferences();
   const mask = tabMaskAssets(preferences.tabMask);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-[22rem] max-w-[calc(100vw-1.5rem)] gap-0 overflow-y-auto"
-      >
-        <SheetHeader className="px-5 pt-5 pb-2">
-          <SheetTitle className="text-[1.0625rem]">Settings</SheetTitle>
-        </SheetHeader>
+    <div className="text-foreground">
+      {/* The same header Clerk puts on its own pages — a title and a line
+          under it — so this page reads as a sibling of Account and Security
+          rather than a foreign panel that has been let in. Clerk draws nothing
+          above a custom page's content; this is the page drawing it itself. */}
+      <div className="border-b border-border pb-4">
+        <h1 className="text-[1.0625rem] leading-6 font-bold">Settings</h1>
+        <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+          How the site looks and behaves for you.
+        </p>
+      </div>
 
-        <div className="divide-y divide-border">
-          <Row label="Accent">
-            <AccentPicker
-              value={preferences.accent}
-              onChange={(accent) => update({ accent })}
-            />
-          </Row>
+      <div className="divide-y divide-border">
+        <Row label="Accent">
+          <AccentPicker
+            value={preferences.accent}
+            onChange={(accent) => update({ accent })}
+          />
+        </Row>
 
-          <Row label="Constellation">
-            <Switch
-              checked={preferences.constellation}
-              onCheckedChange={(constellation) => update({ constellation })}
-            />
-          </Row>
+        <Row label="Constellation">
+          <Switch
+            checked={preferences.constellation}
+            onCheckedChange={(constellation) => update({ constellation })}
+          />
+        </Row>
 
-          <Row
-            label="Tab disguise"
-            // The half a logo cannot show. The mark is what the tab *looks*
-            // like and the title is what it *says*, and only the first of
-            // those fits in the control; without this line the text of the
-            // disguise would be discovered by glancing up at the tab strip.
-            note={mask && `Tabs will read “${mask.title}”.`}
-          >
-            <TabMaskPicker
-              value={preferences.tabMask}
-              onChange={(tabMask) => update({ tabMask })}
-            />
-          </Row>
+        <Row
+          label="Tab disguise"
+          // The half a logo cannot show. The mark is what the tab *looks*
+          // like and the title is what it *says*, and only the first of
+          // those fits in the control; without this line the text of the
+          // disguise would be discovered by glancing up at the tab strip.
+          note={mask && `Tabs will read “${mask.title}”.`}
+        >
+          <TabMaskPicker
+            value={preferences.tabMask}
+            onChange={(tabMask) => update({ tabMask })}
+          />
+        </Row>
 
-          <Row label="Panic key">
-            <Switch
-              checked={preferences.panicEnabled}
-              onCheckedChange={(panicEnabled) => update({ panicEnabled })}
-            />
-          </Row>
+        <Row label="Panic key">
+          <Switch
+            checked={preferences.panicEnabled}
+            onCheckedChange={(panicEnabled) => update({ panicEnabled })}
+          />
+        </Row>
 
-          {/* The key and its destination only matter once the key is armed,
-              and unmounting them is what keeps this panel short by default. */}
-          {preferences.panicEnabled && (
-            <>
-              <Row label="Key">
-                <ComboRecorder
-                  value={preferences.panicKey}
-                  onChange={(panicKey) => update({ panicKey })}
-                />
-              </Row>
+        {/* The key and its destination only matter once the key is armed,
+            and unmounting them is what keeps this page short by default. */}
+        {preferences.panicEnabled && (
+          <>
+            <Row label="Key">
+              <ComboRecorder
+                value={preferences.panicKey}
+                onChange={(panicKey) => update({ panicKey })}
+              />
+            </Row>
 
-              <Row label="Escape to">
-                <DestinationPicker
-                  value={preferences.panicUrl}
-                  onChange={(panicUrl) => update({ panicUrl })}
-                />
-              </Row>
-            </>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+            <Row label="Escape to">
+              <DestinationPicker
+                value={preferences.panicUrl}
+                onChange={(panicUrl) => update({ panicUrl })}
+              />
+            </Row>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -136,9 +134,11 @@ export function SettingsSheet({
  * consequence under both.
  *
  * Every control in this panel now fits on the label's line, which is what lets
- * the whole sheet be one shape instead of two. The control column may shrink
+ * the whole page be one shape instead of two. The control column may shrink
  * (`min-w-0`, so a dropdown narrows rather than pushing its label off the
- * edge on a phone-width sheet); the label may not.
+ * edge on a phone-width modal); the label may not. No horizontal padding of
+ * its own: Clerk's page supplies the gutter, and a second one inside it would
+ * put these rows a step in from the Account page's.
  */
 function Row({
   label,
@@ -150,7 +150,7 @@ function Row({
   children: ReactNode;
 }) {
   return (
-    <div className="px-5 py-3.5">
+    <div className="py-3.5">
       <div className="flex items-center justify-between gap-4">
         <p className="shrink-0 text-[0.875rem] font-medium text-foreground">
           {label}
@@ -166,7 +166,7 @@ function Row({
  * The line under a row, which grows and collapses rather than appearing.
  *
  * A note that pops in shoves the rest of the panel down a line in a single
- * frame, and in a sheet where every other change is a transition that is the
+ * frame, and in a page where every other change is a transition that is the
  * one movement that reads as a glitch. The measurement problem — you cannot
  * transition to `height: auto` — is solved with a collapsed grid row:
  * `0fr` to `1fr` is two numbers CSS will interpolate, and the child clips
@@ -247,7 +247,7 @@ function AccentPicker({
  * cannot express a modifier at all without becoming three controls.
  *
  * While it is armed it takes every key in the capture phase, which is what
- * lets it record Escape and Tab: those would otherwise close the sheet and
+ * lets it record Escape and Tab: those would otherwise close the modal and
  * move focus before this ever saw them.
  */
 function ComboRecorder({
@@ -369,7 +369,7 @@ function DestinationPicker({
  * is drawn from the same folder. Someone who has already chosen Google Docs to
  * flee to should recognise this control before reading its label.
  *
- * What the disguise reads as in words is the row's note, in `SettingsSheet`.
+ * What the disguise reads as in words is the row's note, in `SettingsPanel`.
  */
 function TabMaskPicker({
   value,
@@ -400,8 +400,8 @@ function TabMaskPicker({
  *
  * A dropdown rather than the grid of tiles this used to be. The grid showed
  * all six at once, which sounds like the better trade until you count what it
- * cost: three rows of tiles under each of two labels, in a sheet whose other
- * four controls are single lines, so arming the panic key doubled the panel's
+ * cost: three rows of tiles under each of two labels, in a page whose other
+ * four controls are single lines, so arming the panic key doubled the page's
  * height and the two rarest settings were the two loudest things in it. A
  * closed row states the current answer — which is the only part that is true
  * at rest — and the six live one click behind it.

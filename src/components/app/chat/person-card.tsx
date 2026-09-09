@@ -296,9 +296,7 @@ function Body({
             !card.blocked &&
             card.conversationId === null ? (
             <p className="mt-2 text-[0.8125rem] leading-snug text-muted-foreground">
-              {card.standing === "friends"
-                ? "They are not taking messages right now."
-                : "They only take messages from friends."}
+              They only take messages from friends.
             </p>
           ) : null}
         </>

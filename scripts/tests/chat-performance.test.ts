@@ -18,7 +18,7 @@ for (const inPage of [true, false]) {
       });
       await ctx.db.insert("chatProfiles", {
         clerkId: "alice", handle: "alice", handleKey: "alice",
-        createdAt: Date.now(), dmPolicy: "anyone", discoverable: true,
+        createdAt: Date.now(),
       });
       await ctx.db.insert("conversationMembers", {
         conversationId: room, clerkId: "alice", kind: "global", role: "member",

@@ -19,7 +19,7 @@ import { navItems } from "@/lib/nav";
  * each other: the activity catalogue is a generated JSON file behind a
  * `server-only` import, chat messages are rows in Convex behind a full-text
  * index and a permission check, the settings are React controls inside a
- * sheet, and the destinations are a list in `src/lib/nav.ts`. None of them can
+ * modal, and the destinations are a list in `src/lib/nav.ts`. None of them can
  * be put in one table — a search that needed that would be a search that
  * needed a crawler and a copy of everything.
  *
@@ -30,7 +30,7 @@ import { navItems } from "@/lib/nav";
  * `RailSearch` is what asks all four and interleaves the answers.
  *
  * The two written down here are the ones with no data behind them at all. A
- * setting is a control in `SettingsSheet`, not a record; the only way to find
+ * setting is a control in `SettingsPanel`, not a record; the only way to find
  * "the drifting web behind the sidebar" by typing "background" is for someone
  * to have said so, which is what `keywords` is for. When a control is added
  * there, its entry is added here — nothing derives one from the other, and
@@ -42,11 +42,11 @@ import { navItems } from "@/lib/nav";
  * Which source a result came from.
  *
  * `account` is one entry rather than a source with a list behind it, and it
- * gets its own name anyway because the app already draws that line: the
- * account menu keeps "Account" and "Settings" as separate rows on purpose —
- * one is about you and the other is about the site — and a search that filed
- * your password under the site's appearance options would be undoing a
- * distinction somebody made deliberately.
+ * gets its own name anyway because the modal it opens draws that line: the
+ * site's settings are one page and Clerk's account pages are the ones after
+ * it — one is about the site and the others are about you — and a search that
+ * filed your password under the site's appearance options would be undoing a
+ * distinction the modal's own navigation makes.
  */
 export type HitSource =
   | "page"
@@ -62,7 +62,7 @@ export type HitSource =
  * something, and there is nothing in this app that sensibly does both. The
  * action is a name rather than a function because these entries are module
  * constants — a closure here would have to have captured the router, the theme
- * setter and the settings sheet at import time, none of which exist then. See
+ * setter and the settings page at import time, none of which exist then. See
  * `runAction` in `RailSearch`, which is where the names become behaviour.
  */
 export type Hit = {
@@ -216,7 +216,7 @@ const pages: readonly Entry[] = navItems.map((item) => ({
 /**
  * The settings, as results.
  *
- * Every one of these opens the sheet rather than changing anything, with the
+ * Every one of these opens the settings page rather than changing anything, with the
  * exception of the three themes — those are a single value with three possible
  * states, so a result that says "Dark" and then makes you find a menu to pick
  * it is a worse answer than one that just does it. Everything else is a
@@ -227,8 +227,8 @@ const pages: readonly Entry[] = navItems.map((item) => ({
  * The account, as a result.
  *
  * Opens the hosted account UI — profile, email addresses, password, connected
- * devices — which is the same thing the "Account" row in the menu opens and is
- * not ours to rebuild. None of that is a page in this app, so this is an
+ * devices — on its own page of the modal the menu's "Settings" row opens, one
+ * past the settings. None of it is ours to rebuild. None of that is a page in this app, so this is an
  * action rather than an `href`.
  *
  * The keywords are what make it findable, because the one word on the row is
@@ -357,7 +357,7 @@ export function searchEntries(needle: string, limit: number): Hit[] {
     scored.push({
       hit: {
         // Keyed on the title and not on the action. Four of the settings
-        // below open the same sheet, so an id built from what a result *does*
+        // below open the same page, so an id built from what a result *does*
         // gave all four of them `setting:settings` — one React key for four
         // rows, and one row's hover moving the selection to another's. A
         // destination's href is unique by definition and a setting's title is

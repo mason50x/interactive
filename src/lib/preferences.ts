@@ -1,5 +1,5 @@
 /**
- * The settings behind the account menu's sheet: what they are, and how a
+ * The settings on the account modal's first page: what they are, and how a
  * stored row becomes something the page can use.
  *
  * Convex is the store — a live subscription, so a change made in one tab is on
@@ -237,7 +237,7 @@ export function applyAccent(id: AccentId): void {
  *
  * A cache of the server's answer, not a place a setting is ever *made*: it is
  * written from a row that came back from Convex and read only while no such
- * row has arrived yet. The sheet still writes to Convex and nowhere else, so
+ * row has arrived yet. The page still writes to Convex and nowhere else, so
  * the two cannot disagree about anything except how old they are — and the
  * moment the subscription lands, this one is overwritten.
  *
@@ -510,7 +510,7 @@ export function comboParts(combo: string): string[] {
 
 /**
  * A bare letter or digit is a combo that fires while you are typing. The
- * recorder still takes it — it is the user's key — but this is what the sheet
+ * recorder still takes it — it is the user's key — but this is what the page
  * warns on.
  */
 export function isRiskyCombo(combo: string): boolean {
@@ -523,7 +523,7 @@ export function isRiskyCombo(combo: string): boolean {
  * `javascript:` and `data:` are the ones that matter — this string is handed
  * to `location.replace` from the app's own origin, which would run them as us.
  * The server checks this too, in `convex/preferences.ts`; this is the copy
- * that keeps the sheet from accepting something it would then have to explain.
+ * that keeps the page from accepting something it would then have to explain.
  *
  * `about:blank` is the one exception, and it is allowed by string equality
  * rather than by its scheme: the whole `about:` family is not being opened up
@@ -545,27 +545,37 @@ export function safePanicUrl(url: string): string | null {
 }
 
 /**
- * How anything gets the settings sheet open without owning it.
+ * How anything gets the account modal open without owning it.
  *
- * The sheet is mounted by `UserMenu`, at the very bottom of the rail, because
- * that is where the gear that opens it lives. The rail's search is at the top
- * of the same column and has no way to reach that state — and threading a
- * provider through the layout for one boolean would be a context whose only
- * two participants are eight inches apart on the same screen.
+ * The modal's pages are registered by `UserMenu`, at the very bottom of the
+ * rail, because that is where the row that opens it lives. The rail's search
+ * is at the top of the same column and has no way to reach that — and
+ * threading a provider through the layout for one function would be a context
+ * whose only two participants are eight inches apart on the same screen.
  *
- * A window event lets callers depend only on this module, and
- * the menu listens and opens itself.
+ * A window event lets callers depend only on this module, and the menu
+ * listens and opens itself. See `useAccountModal`.
  */
 const SETTINGS_EVENT = "50x:settings-request";
 
-/** Ask the settings sheet to open. Nothing happens if the rail is not
- *  mounted, which is every page outside `/dashboard`. */
-export function requestSettings() {
-  window.dispatchEvent(new Event(SETTINGS_EVENT));
+/**
+ * The two pages a caller can ask for by name: the site's settings, which
+ * is the modal's first page, and Clerk's own account page behind it. Security
+ * is one click from either and nothing searches for it.
+ */
+export type SettingsPage = "settings" | "account";
+
+/** Ask the account modal to open, on the settings page unless told
+ *  otherwise. Nothing happens if the rail is not mounted, which is every page
+ *  outside `/dashboard`. */
+export function requestSettings(page: SettingsPage = "settings") {
+  window.dispatchEvent(new CustomEvent(SETTINGS_EVENT, { detail: page }));
 }
 
 /** The menu's side of it. Returns the unsubscribe, for an effect's cleanup. */
-export function onSettingsRequest(handler: () => void) {
-  window.addEventListener(SETTINGS_EVENT, handler);
-  return () => window.removeEventListener(SETTINGS_EVENT, handler);
+export function onSettingsRequest(handler: (page: SettingsPage) => void) {
+  const listen = (event: Event) =>
+    handler((event as CustomEvent<SettingsPage>).detail ?? "settings");
+  window.addEventListener(SETTINGS_EVENT, listen);
+  return () => window.removeEventListener(SETTINGS_EVENT, listen);
 }

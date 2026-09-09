@@ -420,14 +420,12 @@ function AddView({
             const rows = found.filter(
               (person) => !alreadyIn.has(person.clerkId),
             );
-            // Nobody is discoverable by accident — see `discoverable` on the
-            // profile — so a search finding nothing here is as likely to be
-            // somebody who has turned themselves off as a handle typed wrong,
-            // and saying so saves a person trying it four more times.
+            // Everybody can be found by handle, so nothing here is a handle
+            // typed wrong or somebody already in the group — and saying so
+            // saves a person trying it four more times.
             return rows.length === 0 ? (
               <FoundNobody>
-                Nobody by that handle, or they are not letting themselves be
-                found.
+                Nobody by that handle, or they are already in the group.
               </FoundNobody>
             ) : (
               <ul className="mt-1 flex flex-col">

@@ -1,4 +1,4 @@
-import { GLOBAL_COOLDOWN_MS, MAX_BODY, type Surface } from "./limits";
+import { MAX_BODY, type Surface } from "./limits";
 import { scan, type Match } from "./lexicon";
 import { maskMentions } from "./mentions";
 import { buildForms, prepare } from "./normalize";
@@ -108,13 +108,6 @@ function worst(matches: Match[]): Match | null {
 }
 
 export function screen(raw: string, context: SendContext): Verdict {
-  if (
-    context.surface === "global" &&
-    context.now - context.createdAt < GLOBAL_COOLDOWN_MS
-  ) {
-    return refuse("too-new");
-  }
-
   const tier = tierFor(context.createdAt, context.messagesSent, context.now);
   if (overRate(context.recent, tier, context.now)) {
     return refuse("too-fast");

@@ -171,27 +171,25 @@ export const pruneMemberships = internalMutation({
 /**
  * Take an account's chat out of the system, one bite at a time.
  *
- * Two callers reach this and one argument is the whole difference between them.
- * `users.deleteFromClerk` calls it in `account` mode, while
- * `chat.erase.eraseMine` calls it in `chat` mode.
- *
- * The other difference is what becomes of a group they own. An account leaving
- * Clerk hands its groups on, because a group is other people's and nobody asked
- * for it to close. Somebody clearing their own chat has asked for exactly that,
- * and is shown how many groups it is before they press it.
+ * One caller: `users.deleteFromClerk`, when the account itself is deleted.
+ * There used to be a second — a "clear chat" button that erased the chat
+ * identity and kept the account — and it is gone, along with the mode switch
+ * that told the two apart here. A group the account owns is handed on rather
+ * than closed, because a group is other people's and nobody asked for it to
+ * close.
  *
  * `before` is the instant the erasure was asked for, and nothing made after it
- * is touched. Deleting the profile is what ends the ability to send and it
- * happens in the caller rather than here, so between that moment and this one a
- * new handle can be claimed — and the messages sent under it are not the ones
- * this was asked to delete. Without the cutoff this would follow the same Clerk
- * id straight into the new identity and start deleting from it.
+ * is touched. Deleting the profile is what ends the ability to send, so
+ * between that moment and this one a new handle can be claimed — and the
+ * messages sent under it are not the ones this was asked to delete. Without
+ * the cutoff this would follow the same Clerk id straight into the new
+ * identity and start deleting from it.
  *
- * Scheduled rather than run inline by either caller. The webhook is a request
- * with a timeout on it, the button is a click waiting on a spinner, and this is
- * unbounded work either way — an account that talked a lot has an unbounded
- * number of messages. Convex guarantees a scheduled mutation runs exactly once,
- * so booking it is not a weaker guarantee than doing it, only a later one.
+ * Scheduled rather than run inline by the webhook. That is a request with a
+ * timeout on it, and this is unbounded work — an account that talked a lot has
+ * an unbounded number of messages. Convex guarantees a scheduled mutation runs
+ * exactly once, so booking it is not a weaker guarantee than doing it, only a
+ * later one.
  *
  * Messages first and in batches, because that is the only part that has no
  * ceiling. Everything after it is bounded by the number of conversations
@@ -201,16 +199,13 @@ export const pruneMemberships = internalMutation({
 export const purgeAuthor = internalMutation({
   args: {
     clerkId: v.string(),
-    /** Absent reads as `account`, which is what the Clerk webhook wants. */
-    mode: v.optional(v.union(v.literal("account"), v.literal("chat"))),
-    /** Absent reads as no cutoff, for the same reason. */
+    /** Absent reads as no cutoff, which is what the Clerk webhook wants. */
     before: v.optional(v.number()),
   },
-  handler: async (ctx, { clerkId, mode, before }) => {
-    const scope = mode ?? "account";
+  handler: async (ctx, { clerkId, before }) => {
     const cutoff = before ?? Number.MAX_SAFE_INTEGER;
     /** The same arguments again, for whatever this pass does not finish. */
-    const again = { clerkId, mode, before };
+    const again = { clerkId, before };
 
     const messages = await ctx.db
       .query("messages")
@@ -272,20 +267,6 @@ export const purgeAuthor = internalMutation({
       }
 
       if (member.kind === "group" && member.role === "owner") {
-        // Asked for, in so many words, and counted on screen first. See the
-        // note above this mutation.
-        if (scope === "chat") {
-          await ctx.db.delete(member._id);
-          await ctx.scheduler.runAfter(
-            0,
-            internal.chat.sweep.purgeConversation,
-            {
-              conversationId: member.conversationId,
-            },
-          );
-          continue;
-        }
-
         // A group whose owner leaves this way still needs an owner, or it is a
         // room nobody can ever administer again. Oldest admin, then oldest
         // member — the same order `groups.leave` uses. With nobody left to take
@@ -402,19 +383,17 @@ export const purgeAuthor = internalMutation({
       await ctx.db.patch(room._id, { createdBy: "" });
     }
 
-    // `eraseMine` already dealt with the profile in `chat` mode. Account mode
-    // reaches this directly from the Clerk deletion webhook and removes it here.
-    if (scope === "account") {
-      const profile = await ctx.db
-        .query("chatProfiles")
-        .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-        .unique();
-      if (profile !== null) await ctx.db.delete(profile._id);
+    // The profile itself, last. This is reached from the Clerk deletion
+    // webhook, so nothing before this point had a reason to touch it.
+    const profile = await ctx.db
+      .query("chatProfiles")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .unique();
+    if (profile !== null) await ctx.db.delete(profile._id);
 
-      // The sender row goes with the profile wherever the profile goes. See
-      // `chatSenders` in `convex/schema.ts`.
-      await clearSender(ctx, clerkId);
-    }
+    // The sender row goes with the profile wherever the profile goes. See
+    // `chatSenders` in `convex/schema.ts`.
+    await clearSender(ctx, clerkId);
 
     return { stage: "done" as const, deleted: messages.length };
   },

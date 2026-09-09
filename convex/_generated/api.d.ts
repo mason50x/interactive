@@ -9,7 +9,6 @@
  */
 
 import type * as accountSync from "../accountSync.js";
-import type * as announcements from "../announcements.js";
 import type * as chat_account from "../chat/account.js";
 import type * as chat_admin from "../chat/admin.js";
 import type * as chat_attachments from "../chat/attachments.js";
@@ -17,7 +16,6 @@ import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_bot from "../chat/bot.js";
 import type * as chat_botConfig from "../chat/botConfig.js";
 import type * as chat_conversations from "../chat/conversations.js";
-import type * as chat_erase from "../chat/erase.js";
 import type * as chat_friends from "../chat/friends.js";
 import type * as chat_groups from "../chat/groups.js";
 import type * as chat_messages from "../chat/messages.js";
@@ -64,7 +62,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accountSync: typeof accountSync;
-  announcements: typeof announcements;
   "chat/account": typeof chat_account;
   "chat/admin": typeof chat_admin;
   "chat/attachments": typeof chat_attachments;
@@ -72,7 +69,6 @@ declare const fullApi: ApiFromModules<{
   "chat/bot": typeof chat_bot;
   "chat/botConfig": typeof chat_botConfig;
   "chat/conversations": typeof chat_conversations;
-  "chat/erase": typeof chat_erase;
   "chat/friends": typeof chat_friends;
   "chat/groups": typeof chat_groups;
   "chat/messages": typeof chat_messages;

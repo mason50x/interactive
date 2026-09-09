@@ -1,0 +1,18 @@
+{
+  "$comment": "Every site the experience will fetch. The Worker in experience/src/worker.js enforces `host` (exact match or any subdomain) and, when `paths` is present, only URLs under one of those path prefixes. Entries that also carry `id`, `label` and `start` are the apps listed on /dashboard/experience; the rest are dependencies, enforced but not shown. Edit here, then redeploy both: `npm run deploy` in experience/ and the app.",
+  "sites": [
+    { "host": "wikipedia.org", "label": null, "start": null },
+    { "host": "wikimedia.org", "label": null, "start": null },
+    { "host": "developer.mozilla.org", "label": null, "start": null },
+    { "host": "phet.colorado.edu", "label": null, "start": null },
+    { "host": "youtube.com", "id": "youtube", "label": "YouTube", "start": "https://www.youtube.com/" },
+    { "host": "youtu.be", "label": null, "start": null },
+    { "host": "ytimg.com", "label": null, "start": null },
+    { "host": "googlevideo.com", "label": null, "start": null },
+    { "host": "ggpht.com", "label": null, "start": null },
+    { "host": "youtube-nocookie.com", "label": null, "start": null },
+    { "host": "gstatic.com", "label": null, "start": null },
+    { "host": "fonts.googleapis.com", "label": null, "start": null },
+    { "host": "www.google.com", "label": null, "start": null, "paths": ["/js/th/", "/recaptcha/", "/sorry/"] }
+  ]
+}

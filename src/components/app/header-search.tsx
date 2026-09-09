@@ -2,7 +2,6 @@
 
 import { Spinner } from "@/components/ui/spinner";
 
-import { useClerk } from "@clerk/nextjs";
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
@@ -64,7 +63,6 @@ export function HeaderSearch() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const { setPreference } = useTheme();
-  const { openUserProfile } = useClerk();
   const { isAuthenticated } = useConvexAuth();
 
   const [open, setOpen] = useState(false);
@@ -166,19 +164,16 @@ export function HeaderSearch() {
 
   const runAction = useCallback(
     (action: SearchAction) => {
-      if (action === "settings") {
-        requestSettings();
-        return;
-      }
-      if (action === "account") {
-        openUserProfile();
+      // Both open the account modal; they differ in which page it lands on.
+      if (action === "settings" || action === "account") {
+        requestSettings(action);
         return;
       }
       setPreference(
         action.slice("theme:".length) as "system" | "light" | "dark",
       );
     },
-    [openUserProfile, setPreference],
+    [setPreference],
   );
 
   const choose = useCallback(

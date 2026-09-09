@@ -250,7 +250,7 @@ export type OpenResult =
   | { ok: true; conversationId: Id<"conversations"> }
   | {
       ok: false;
-      reason: "no-profile" | "unknown" | "blocked" | "not-friends" | "closed";
+      reason: "no-profile" | "unknown" | "blocked" | "not-friends";
     };
 
 /**
@@ -260,16 +260,17 @@ export type OpenResult =
  * gate rather than the construction. What is left here is the set of bars a
  * pair has to clear before a thread between them is allowed to exist at all.
  *
- * The default policy is `friends`, and this is where that becomes real: a
+ * Friends only, for everybody, and this is where that becomes real: a
  * stranger cannot open a thread with you at all, so the friend request is the
- * gate rather than a formality that a determined person can walk around.
+ * gate rather than a formality that a determined person can walk around. It
+ * used to be a per-account policy with an open and a shut setting either side
+ * of this one; both are gone, and the rule is written here rather than read
+ * off the profile.
  *
  * Called from the person card — the one that opens when a name is pressed in a
- * thread, in search, or in the friends list — and it is where
- * `dmPolicy: "anyone"` becomes real: somebody who has opened their door can be
- * written to by a stranger, and somebody who has not gets a friend request
- * instead. Accepting a request builds the same thread — see `linkDm` in
- * `convex/chat/friends.ts` — so for friends this is nearly always a lookup.
+ * thread, in search, or in the friends list. Accepting a request builds the
+ * same thread — see `linkDm` in `convex/chat/friends.ts` — so for friends this
+ * is nearly always a lookup.
  */
 export const openDm = mutation({
   args: { peerClerkId: v.string() },
@@ -291,12 +292,9 @@ export const openDm = mutation({
       return { ok: false, reason: "blocked" };
     }
 
-    if (peer.dmPolicy === "nobody") return { ok: false, reason: "closed" };
-    if (peer.dmPolicy === "friends") {
-      const friends = await friendship(ctx, profile.clerkId, peerClerkId);
-      if (friends === null || friends.status !== "accepted") {
-        return { ok: false, reason: "not-friends" };
-      }
+    const friends = await friendship(ctx, profile.clerkId, peerClerkId);
+    if (friends === null || friends.status !== "accepted") {
+      return { ok: false, reason: "not-friends" };
     }
 
     // Usually already there: accepting a friend request builds the thread, so

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Experience</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: light dark; }
+  html, body { margin: 0; height: 100%; background: #fff; font: 14px/1.5 system-ui, sans-serif; }
+  @media (prefers-color-scheme: dark) { html, body { background: #111; color: #eee; } }
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+  .notice { box-sizing: border-box; max-width: 32rem; margin: 0 auto; padding: 3rem 1.5rem; }
+  .notice p { margin: 0 0 0.75rem; }
+  code { font-size: 0.9em; }
+</style>
+</head>
+<body>
+<!--
+  The experience frontend, in one page.
+
+  The app frames this page with the destination in `?u=`. It registers the
+  rewriting engine's service worker over /service/, points the transport at the Bare
+  server on this same origin (/v3/), and frames the rewritten page. There is no
+  address bar and no navigation UI on purpose: the app decides what is opened,
+  and the Worker decides what is fetched. Editing this page cannot widen the
+  allowlist, because the allowlist is enforced server-side in src/worker.js.
+-->
+<script src="/bridge/index.js"></script>
+<script src="/engine/bundle.js"></script>
+<script src="/engine/config.js"></script>
+<script>
+  (async () => {
+    const target = new URLSearchParams(location.search).get("u");
+    const show = (html) => { document.body.innerHTML = `<div class="notice">${html}</div>`; };
+
+    if (!target) {
+      show("<p>Nothing to open.</p><p>This page expects a destination in <code>?u=</code>.</p>");
+      return;
+    }
+    if (!("serviceWorker" in navigator)) {
+      show("<p>This browser cannot run the experience.</p><p>It needs service workers, which are off in private windows in some browsers.</p>");
+      return;
+    }
+
+    try {
+      // Wait for *this* registration to activate. `serviceWorker.ready` would
+      // never resolve here: it waits for a worker whose scope covers this page,
+      // and ours covers /service/ only.
+      const registration = await navigator.serviceWorker.register("/sw.js", { scope: __uv$config.prefix });
+      await new Promise((resolve) => {
+        if (registration.active) return resolve();
+        const worker = registration.installing || registration.waiting;
+        worker.addEventListener("statechange", () => worker.state === "activated" && resolve());
+      });
+
+      const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+      await connection.setTransport("/transport/index.mjs", [location.origin + "/"]);
+
+      const frame = document.createElement("iframe");
+      frame.title = "Experience";
+      frame.src = __uv$config.prefix + __uv$config.encodeUrl(target);
+      document.body.replaceChildren(frame);
+    } catch (error) {
+      show(`<p>The experience could not start.</p><p><code>${String(error && error.message || error)}</code></p>`);
+    }
+  })();
+</script>
+</body>
+</html>

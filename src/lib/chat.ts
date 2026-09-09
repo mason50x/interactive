@@ -78,7 +78,6 @@ const REFUSALS: Record<string, string> = {
   // the composer and the composer is shut until it closes, so the only way here
   // is a browser clock running ahead of the server's. Worded as the near miss
   // it is rather than as a rule somebody has run into.
-  "too-new": "Not quite yet — the ring above has a moment left on it.",
 
   // Pictures. `sexual` and `self-harm` above already read correctly for a
   // picture, and are what one comes back with — see
@@ -324,18 +323,16 @@ export function groupNameError(
 /**
  * Why a direct message did not open, in the words the card says it in.
  *
- * `not-friends` is the one worth getting right: it is the default policy, so
- * it is the refusal nearly everybody meets first, and it is not a refusal at
- * all so much as the next thing to press.
+ * `not-friends` is the one worth getting right: it is the rule for everybody,
+ * so it is the refusal nearly everybody meets first, and it is not a refusal
+ * at all so much as the next thing to press.
  */
 export function openDmError(
-  reason: "no-profile" | "unknown" | "blocked" | "not-friends" | "closed",
+  reason: "no-profile" | "unknown" | "blocked" | "not-friends",
 ): string {
   switch (reason) {
     case "not-friends":
       return "They only take messages from friends. Add them first.";
-    case "closed":
-      return "They are not taking messages right now.";
     case "blocked":
       return "You cannot message this person.";
     case "unknown":

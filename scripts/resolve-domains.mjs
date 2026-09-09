@@ -91,6 +91,16 @@ export function resolveDomains(env = { ...readEnvFile(), ...process.env }) {
         }
       : { url: null, from: null };
 
+  // Same shape and same rule as the asset origin; see `src/lib/experience.ts`.
+  const experience = usable(env.EXPERIENCE_ORIGIN)
+    ? { url: usable(env.EXPERIENCE_ORIGIN), from: "EXPERIENCE_ORIGIN" }
+    : usable(env.NEXT_PUBLIC_EXPERIENCE_ORIGIN)
+      ? {
+          url: usable(env.NEXT_PUBLIC_EXPERIENCE_ORIGIN),
+          from: "NEXT_PUBLIC_EXPERIENCE_ORIGIN",
+        }
+      : { url: null, from: null };
+
   // Mirrors `resolveDomain` in `src/lib/brand.ts`, deployment-host rule and
   // all: role addresses live on the brand's domain or on the committed
   // fallback, never on whatever host happens to be serving the page.
@@ -107,7 +117,7 @@ export function resolveDomains(env = { ...readEnvFile(), ...process.env }) {
       ? { host: hostOf(defaults.site), from: "config/domains.json" }
       : { host: siteHost, from: `derived from ${site.from}` };
 
-  return { site, asset, mail };
+  return { site, asset, experience, mail };
 }
 
 /** A host that is a deployment rather than a brand — see the note of the same

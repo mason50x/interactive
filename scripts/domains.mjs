@@ -27,11 +27,12 @@ const bold = (text) => `\u001b[1m${text}\u001b[0m`;
 const warn = (text) => `\u001b[33m${text}\u001b[0m`;
 const good = (text) => `\u001b[32m${text}\u001b[0m`;
 
-const { site, asset, mail } = resolveDomains();
+const { site, asset, experience, mail } = resolveDomains();
 
 const rows = [
   ["Site", site.url, site.from],
   ["Assets", asset.url, asset.from],
+  ["Experience", experience.url, experience.from ? `${experience.from} (dev only)` : null],
   ["Mail", `@${mail.host}`, mail.from],
 ];
 
@@ -39,10 +40,10 @@ const lines = ["", bold("  Resolved domains"), ""];
 
 for (const [label, value, from] of rows) {
   if (!value) {
-    lines.push(`  ${label.padEnd(8)}${warn("unset")}`);
+    lines.push(`  ${label.padEnd(12)}${warn("unset")}`);
     continue;
   }
-  lines.push(`  ${label.padEnd(8)}${value}  ${dim(from ?? "")}`);
+  lines.push(`  ${label.padEnd(12)}${value}  ${dim(from ?? "")}`);
 }
 
 if (!asset.url) {

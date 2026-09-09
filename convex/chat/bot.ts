@@ -1,5 +1,5 @@
 import { botQuotaName } from "./botConfig";
-import { dmKeyFor, membership } from "./shared";
+import { callerId, callerProfile, dmKeyFor, membership } from "./shared";
 import type { QueryCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import { Agent } from "@convex-dev/agent";
@@ -7,9 +7,11 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { v } from "convex/values";
 import { components, internal } from "../_generated/api";
 import {
+  mutation,
   internalAction,
   internalMutation,
   internalQuery,
+  query,
 } from "../_generated/server";
 import { screen } from "../moderation/verdict";
 import {
@@ -18,6 +20,37 @@ import {
   BOT_NAME,
   botRateLimiter,
 } from "./botConfig";
+
+/**
+ * How many of the caller's `@bot` tags are left, for the composer's plus menu.
+ *
+ * The bucket is returned as the component stores it — the tokens it held at
+ * the moment it was last written, with the rate they come back at — rather
+ * than as a number, because a number is only right at the instant the query
+ * ran and a subscription re-runs only when the row changes. The client does
+ * the projection to "now", which is what lets the bar and the countdown move
+ * while the popup is open without asking the server again. See `botQuota`
+ * in `src/components/app/chat/thread.tsx`.
+ *
+ * Reads nothing and spends nothing: `getValue` is a look, not a `limit`.
+ */
+export const quota = query({
+  args: {},
+  handler: async (ctx) => {
+    const clerkId = await callerId(ctx);
+    if (clerkId === null) return null;
+    const state = await botRateLimiter.getValue(ctx, botQuotaName(clerkId), {
+      key: clerkId,
+    });
+    return {
+      value: state.value,
+      ts: state.ts,
+      rate: state.config.rate,
+      period: state.config.period,
+      capacity: state.config.capacity ?? state.config.rate,
+    };
+  },
+});
 
 /** Enough room context to follow a conversation without shipping the room. */
 const CONTEXT_MESSAGES = 10;
@@ -469,6 +502,56 @@ export const ask = internalAction({
         messageId: args.messageId,
       });
     }
+    return null;
+  },
+});
+
+/** A fixed welcome, delayed so an empty DM opens with the bot typing. */
+export const welcome = mutation({
+  args: { conversationId: v.id("conversations") },
+  returns: v.null(),
+  handler: async (ctx, { conversationId }) => {
+    const profile = await callerProfile(ctx);
+    const conversation = await ctx.db.get(conversationId);
+    if (!profile || conversation?.kind !== "dm" ||
+        !(await canAnswer(ctx, conversation, profile.clerkId))) return null;
+    const message = await ctx.db.query("messages")
+      .withIndex("byConversation", q => q.eq("conversationId", conversationId)).first();
+    if (message) return null;
+    const typing = await ctx.db.query("typing")
+      .withIndex("byConversationUser", q => q.eq("conversationId", conversationId).eq("clerkId", BOT_ID)).unique();
+    if (typing && typing.until > Date.now()) return null;
+    if (typing) await ctx.db.delete(typing._id);
+    const typingId = await ctx.db.insert("typing", {
+      conversationId, clerkId: BOT_ID, handle: BOT_HANDLE,
+      displayName: BOT_NAME, until: Date.now() + 8_000,
+    });
+    await ctx.scheduler.runAfter(3_000, internal.chat.bot.finishWelcome, {
+      conversationId, typingId, name: profile.displayName || profile.handle,
+    });
+    return null;
+  },
+});
+
+export const finishWelcome = internalMutation({
+  args: { conversationId: v.id("conversations"), typingId: v.id("typing"), name: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { conversationId, typingId, name }) => {
+    const typing = await ctx.db.get(typingId);
+    // Ignore obsolete jobs and never clear a real reply's typing indicator.
+    if (!typing || typing.token) return null;
+    await ctx.db.delete(typingId);
+    const conversation = await ctx.db.get(conversationId);
+    if (conversation?.kind !== "dm") return null;
+    const message = await ctx.db.query("messages")
+      .withIndex("byConversation", q => q.eq("conversationId", conversationId)).first();
+    if (message) return null;
+    await ctx.db.insert("messages", {
+      conversationId, authorClerkId: BOT_ID, authorHandle: BOT_HANDLE,
+      authorName: BOT_NAME, status: "visible", flags: [],
+      body: `Hello, ${name}! I'm your bot, with a little old-fashioned charm. Ask me a question, bring me a puzzle, or just say hello. What's on your mind?`,
+    });
+    await ctx.db.patch(conversationId, { lastMessageAt: Date.now() });
     return null;
   },
 });

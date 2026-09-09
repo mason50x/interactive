@@ -66,7 +66,6 @@ export async function syncAccountProfile(
   } else {
     await ctx.db.insert("chatProfiles", {
       clerkId, ...identity, avatarMode: "account", createdAt: Date.now(),
-      dmPolicy: "friends", discoverable: true,
     });
   }
   // Existing and new accounts enter Everyone automatically, including after leaving.

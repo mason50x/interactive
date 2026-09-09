@@ -1,0 +1,29 @@
+# The allowlisted experience, as one Worker.
+#
+# Two things share this deployment and this hostname:
+#
+#   /v3/          the Bare v3 server (src/worker.js) — the only code that runs
+#   everything    static files: the experience frontend, built into site/dist
+#                 by scripts/build-site.mjs
+#
+# Static asset requests are free and do not count toward the Workers Free
+# plan's 100,000 requests a day; only /v3/ does. Same origin for both also
+# means no CORS between the page and its Bare server.
+name = "il-experience"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+# Custom hostname on the content zone. `custom_domain` makes wrangler create the
+# DNS record and certificate; the workers.dev URL keeps working alongside it.
+routes = [
+  { pattern = "experience.interactivelearning-content-net.work", custom_domain = true }
+]
+
+[assets]
+directory = "./site/dist"
+binding = "ASSETS"
+# Everything else is answered by the asset layer before the Worker is invoked.
+run_worker_first = ["/v3", "/v3/*"]
+
+[observability]
+enabled = true

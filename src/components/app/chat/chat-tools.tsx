@@ -4,8 +4,6 @@ import { useClerk } from "@clerk/nextjs";
 import {
   ArrowLeftIcon,
   Cog6ToothIcon,
-  GlobeAltIcon,
-  NoSymbolIcon,
   PlusIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/solid";
@@ -13,12 +11,10 @@ import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
   FaceEditor,
   type Face,
 } from "@/components/app/chat/face-editor";
-import { OptionTiles } from "@/components/app/chat/option-tiles";
 import {
   Empty,
   Group,
@@ -39,7 +35,7 @@ import { api } from "../../../../convex/_generated/api";
  * Everything that is not a conversation, folded into the top of the list.
  *
  * This was a page — `/dashboard/chat/people` — and being a page was the
- * problem. Changing who may reach you and starting a group are things you do
+ * problem. Tidying your friends and starting a group are things you do
  * *while* looking at your conversations, and each of them took the list away
  * to do it. So they open here instead, in the same gesture the rail's invite
  * cards use: the surface grows, the thing you came for is inside
@@ -332,88 +328,33 @@ function Tool({
 }
 
 /**
- * Who can see you, who can reach you, and who you have shut out.
+ * You, your friends, and who you have shut out.
  *
- * `friends` is the default and it is the load-bearing default of the whole
- * feature: a stranger who finds your handle cannot open a conversation with
- * you, only ask. `anyone` is the door open, and it is real now — see `openDm`
- * in `convex/chat/conversations.ts`, which the person card calls. It commits
- * on click — there is no Save, the way there is none on anything else in this
- * app's chrome.
- *
- * The three are not a list of three equal things, so they are not drawn as
- * one. `friends` is where nearly everybody is and where nearly everybody
- * stays, so it gets the full width and the sentence explaining itself; the two
- * ways of leaving it share the row above and go by their names alone, which in
- * a section headed "Who can reach you" is the whole of what they mean. It sits
- * under them rather than over them because it is the floor of the section: the
- * thing you come back down to.
+ * There used to be two questions above the friends list — who may reach you,
+ * with three answers, and whether search may find you, with two — and both
+ * are gone because both now have one answer. Direct messages are friends
+ * only, for everybody: a stranger who finds your handle cannot open a
+ * conversation with you, only ask. See `openDm` in
+ * `convex/chat/conversations.ts`. And everybody can be found by handle. A
+ * control with one position is a sentence, so that is what is drawn: one
+ * line under your own row saying how it works, and no switch to look for.
  */
 function SettingsPanel({ open }: { open: boolean }) {
-  const { profile } = useChat();
   const blocked = useHeld(useQuery(api.chat.blocks.list, open ? {} : "skip"));
-  const setDmPolicy = useMutation(api.chat.profiles.setDmPolicy);
-  const setDiscoverable = useMutation(api.chat.profiles.setDiscoverable);
   const unblock = useMutation(api.chat.blocks.unblock);
-
-  const setPolicy = useCallback(
-    (policy: DmPolicy) => void setDmPolicy({ policy }),
-    [setDmPolicy],
-  );
-
-  const policy = profile?.dmPolicy;
 
   return (
     <div className="pt-3">
       <SectionLabel>Me</SectionLabel>
       <Me />
 
-      <div className="mt-7">
-        <SectionLabel>Who can reach you</SectionLabel>
+      <div className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-foreground/[0.03] px-3 py-2.5">
+        <UserGroupIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <p className="min-w-0 text-[0.8125rem] leading-snug text-muted-foreground">
+          Only friends can message you. Anyone can find you by handle and ask
+          to be one.
+        </p>
       </div>
-
-      <OptionTiles
-        value={policy}
-        onPick={setPolicy}
-        className="mt-1.5 grid grid-cols-2 gap-1"
-        options={[
-          { value: "anyone", label: "Anyone", icon: GlobeAltIcon },
-          { value: "nobody", label: "Nobody", icon: NoSymbolIcon },
-          {
-            // The detail line is the only difference between the wide one and
-            // the narrow pair — half of a 288px column will not wrap "Strangers
-            // have to ask first." into fewer than four lines, and under a
-            // heading that already says who this is about, "Anyone" and
-            // "Nobody" need no gloss.
-            value: "friends",
-            label: "Friends only",
-            detail: "Strangers have to ask first.",
-            icon: UserGroupIcon,
-            className: "col-span-2",
-          },
-        ]}
-      />
-
-      <div className="mt-7">
-        <SectionLabel>Who can find you</SectionLabel>
-      </div>
-
-      <label className="mt-1.5 flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-foreground/[0.04]">
-        <span className="min-w-0 flex-1">
-          <span className="block text-[0.875rem] font-medium">
-            Findable by handle
-          </span>
-          <span className="block text-[0.8125rem] leading-snug text-muted-foreground">
-            Off, and only people who already know you can find you.
-          </span>
-        </span>
-        <Switch
-          checked={profile?.discoverable ?? true}
-          onCheckedChange={(checked) =>
-            void setDiscoverable({ discoverable: checked })
-          }
-        />
-      </label>
 
       <Friends open={open} />
 
@@ -434,8 +375,6 @@ function SettingsPanel({ open }: { open: boolean }) {
           </Group>
         </div>
       ) : null}
-
-      <EraseChat open={open} />
     </div>
   );
 }
@@ -504,196 +443,6 @@ function Friends({ open }: { open: boolean }) {
 }
 
 /**
- * The way out of chat that is not the way out of the account.
- *
- * It lives at the bottom of the panel that holds the handle, the blocks and who
- * may reach you, because it is the last item on that same list: this is the
- * screen for everything about who you are in here, and leaving is the end of
- * it. Deleting the Clerk account is a different button in a different place and
- * always was — somebody who wants their messages gone should not have to close
- * the account they use for the rest of the site to get it.
- *
- * ## It arms before it fires
- *
- * The closed state is a sentence and a button. The open state is the list of
- * what will actually happen, counted from the server rather than described, and
- * a field that wants the handle typed back. Counting is the part that matters:
- * "delete everything" is a phrase anybody can agree to without picturing any of
- * it, and "the 3 groups you own, and everything anybody said in them" is a
- * number somebody can recognise as wrong while there is still time.
- *
- * The typed handle is checked here and again in `chat.erase.eraseMine`, for the
- * usual reason — this is a browser, and the mutation can be called without it.
- *
- * Nothing here navigates on success. The profile is deleted, so the
- * subscription behind `useChat` drops it and `ChatFrame` swaps the whole pane
- * for the handle screen, which is exactly where somebody who has just erased
- * themselves should be. See `handle-gate.tsx`.
- */
-function EraseChat({ open }: { open: boolean }) {
-  const preview = useHeld(useQuery(api.chat.erase.preview, open ? {} : "skip"));
-  const erase = useMutation(api.chat.erase.eraseMine);
-
-  const field = useRef<HTMLInputElement>(null);
-  const [armed, setArmed] = useState(false);
-  const [confirm, setConfirm] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (armed) field.current?.focus();
-  }, [armed]);
-
-  // Undefined is the query in flight and null is an account with no handle,
-  // which cannot see this panel at all. Neither has anything to draw.
-  if (preview === undefined || preview === null) return null;
-
-  const ready = confirm.trim().toLowerCase() === preview.handle && !busy;
-
-  const lines = ["Every message you have sent, in every conversation."];
-
-  if (preview.owned > 0) {
-    lines.push(
-      preview.owned === 1
-        ? "The group you own, and everything anybody said in it."
-        : `The ${preview.owned} groups you own, and everything anybody said in them.`,
-    );
-  }
-  if (preview.groups > 0) {
-    lines.push(
-      preview.groups === 1
-        ? "You leave the other group you are in."
-        : `You leave the other ${preview.groups} groups you are in.`,
-    );
-  }
-  if (preview.dms > 0) {
-    lines.push(
-      preview.dms === 1
-        ? "Your direct message, deleted for both of you."
-        : `All ${preview.dms} direct messages, deleted for both of you.`,
-    );
-  }
-
-  lines.push(
-    "Your friends, everyone you have blocked, and every report you filed.",
-  );
-  lines.push(
-    "Your account username stays yours. Reconnecting chat uses your account identity.",
-  );
-
-  async function go() {
-    if (!ready) return;
-    setBusy(true);
-    setError(null);
-    const result = await erase({ confirm });
-    setBusy(false);
-
-    if (!result.ok) {
-      setError(
-        result.reason === "handle"
-          ? "That is not your handle."
-          : "There is nothing here to clear.",
-      );
-      return;
-    }
-    setArmed(false);
-    setConfirm("");
-  }
-
-  return (
-    <div className="mt-7">
-      <SectionLabel>Clearing out</SectionLabel>
-
-      {armed ? (
-        <div className="mt-2 rounded-xl border border-destructive/30 bg-destructive/[0.04] p-3">
-          <ul className="flex flex-col gap-1.5">
-            {lines.map((line) => (
-              <li
-                key={line}
-                className="flex gap-2 text-[0.8125rem] leading-snug text-foreground"
-              >
-                <span
-                  aria-hidden
-                  className="mt-[0.4375rem] size-1 shrink-0 rounded-full bg-destructive"
-                />
-                <span className="min-w-0">{line}</span>
-              </li>
-            ))}
-          </ul>
-
-          <label className="mt-3 block text-[0.8125rem] text-muted-foreground">
-            Type {preview.handle} to confirm
-            <input
-              ref={field}
-              value={confirm}
-              onChange={(event) => {
-                setConfirm(event.target.value);
-                setError(null);
-              }}
-              spellCheck={false}
-              autoComplete="off"
-              maxLength={20}
-              className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-[0.875rem] text-foreground transition-[border-color,box-shadow] outline-none focus-visible:border-destructive focus-visible:ring-1 focus-visible:ring-destructive"
-            />
-          </label>
-
-          <div className="mt-2.5 flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="lg"
-              className="flex-1"
-              onClick={() => {
-                setArmed(false);
-                setConfirm("");
-                setError(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="lg"
-              disabled={!ready}
-              onClick={() => void go()}
-              className="flex-1 shadow-none hover:shadow-none"
-            >
-              {busy ? "…" : "Delete everything"}
-            </Button>
-          </div>
-
-          {error === null ? null : (
-            <p role="status" className="mt-2 text-[0.8125rem] text-destructive">
-              {error}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="mt-1.5 flex items-center gap-3">
-          <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-muted-foreground">
-            Delete your chat profile and everything you have ever said here. Nothing
-            about it can be undone.
-          </p>
-          <Button
-            type="button"
-            variant="destructive"
-            size="lg"
-            className="shrink-0 shadow-none hover:shadow-none"
-            onClick={() => {
-              setArmed(true);
-              setError(null);
-            }}
-          >
-            Clear chat
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
  * How many messages this account has ever sent, said in words.
  *
  * Grouped by locale, because the number is the point of the line and `1284` is
@@ -736,8 +485,6 @@ function Me() {
     {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
   </div>;
 }
-
-type DmPolicy = "friends" | "anyone" | "nobody";
 
 /** A name and a button. Everything else about a group is set from inside it. */
 function NewGroupPanel({

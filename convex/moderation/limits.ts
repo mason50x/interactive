@@ -60,9 +60,6 @@ export const REPORTS_TO_HIDE = 3;
 /** The most reports one account's opinion is worth in a day. */
 export const MAX_REPORTS_PER_DAY = 10;
 
-/** How long a new account waits before it may speak to the whole room. */
-export const GLOBAL_COOLDOWN_MS = 15 * 60 * 1000;
-
 /**
  * How long after sending a message may still be deleted outright.
  *

@@ -8,12 +8,13 @@ repo a domain is spelled out. Nothing else hard-codes one.
 Run `npm run domains` to see what the current environment resolves to, and
 what has to change outside the repo for each move.
 
-## The two domains
+## The three domains
 
 | What | Variable | Fallback | Cost of a move |
 | --- | --- | --- | --- |
 | Assets (R2 bucket) | `ASSET_ORIGIN`, or `NEXT_PUBLIC_ASSET_ORIGIN` | none — hosted activities disappear | one variable |
 | Site (root) | `NEXT_PUBLIC_SITE_URL` | `config/domains.json` | one variable, plus the identity providers below |
+| Experience (Worker, dev only) | `EXPERIENCE_ORIGIN`, or `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | none — `/dashboard/experience` reports it; the route exists only under `next dev` | one variable, plus the `frame-ancestors` list in `experience/site/_headers` if the site moves |
 
 The asset origin has **no fallback on purpose**. A stale default would
 silently keep serving the old bucket, and it fails quietly: hosted activities

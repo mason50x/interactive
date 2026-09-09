@@ -1,10 +1,8 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { internal } from "../_generated/api";
 import {
   AVATAR_EMOJI,
   AVATAR_HUES,
-  GLOBAL_COOLDOWN_MS,
   MAX_INITIALS,
 } from "../moderation/limits";
 import { mutation, query } from "../_generated/server";
@@ -23,29 +21,13 @@ import {
   senderState,
 } from "./shared";
 
-/** Chat identity is managed by Clerk; only avatar style and privacy are chat settings. */
+/** Chat identity is managed by Clerk; the avatar style is the one chat setting. */
 
 /** Everything the signed-in account is told about itself. */
 export type MyProfile = {
   handle: string;
   displayName?: string;
   createdAt: number;
-  /**
-   * The instant this account may first speak in the global room.
-   *
-   * Sent as a timestamp rather than as a duration, and always — including long
-   * after it has passed — because the client counts down to it against its own
-   * clock. A field that went `undefined` once elapsed would only clear when
-   * something else made this query re-run, and the one moment it has to be
-   * right is the one where nothing else is happening.
-   *
-   * The length of the wait is not sent, because it does not need to be: it is
-   * this minus `createdAt`, which is already here. So the rule stays in
-   * `convex/moderation/limits.ts` and the client is handed an instant.
-   */
-  globalUnlockAt: number;
-  dmPolicy: "friends" | "anyone" | "nobody";
-  discoverable: boolean;
   /** Renames spent. The allowance itself is `MAX_HANDLE_CHANGES`. */
   handleChanges: number;
   avatarMode?: "account" | "custom";
@@ -89,9 +71,6 @@ export const mine = query({
       handle: profile.handle,
       displayName: profile.displayName,
       createdAt: profile.createdAt,
-      globalUnlockAt: profile.createdAt + GLOBAL_COOLDOWN_MS,
-      dmPolicy: profile.dmPolicy,
-      discoverable: profile.discoverable,
       handleChanges: profile.handleChanges ?? 0,
       avatarMode: profile.avatarMode,
       ...avatar,
@@ -112,9 +91,11 @@ export const mine = query({
  * from here, because there is nothing to match against but a handle somebody
  * already has to be most of the way through typing.
  *
- * Filtered afterwards rather than in the index: `discoverable` and the block
- * list are both small reads and the alternative is declaring filter fields for
- * a query that returns at most a dozen rows.
+ * Everybody with a handle can be found by it. The only people left out are
+ * the caller and anybody on either side of a block, and that is filtered
+ * afterwards rather than in the index: the block list is a small read and the
+ * alternative is declaring filter fields for a query that returns at most a
+ * dozen rows.
  */
 export const search = query({
   args: { term: v.string() },
@@ -133,7 +114,6 @@ export const search = query({
     const results: PublicProfile[] = [];
     for (const hit of hits) {
       if (hit.clerkId === clerkId) continue;
-      if (!hit.discoverable) continue;
       if (await blockedEitherWay(ctx, clerkId, hit.clerkId)) continue;
       results.push({
         clerkId: hit.clerkId,
@@ -220,10 +200,8 @@ export const card = query({
         conversationId = thread._id;
     }
 
-    const canMessage =
-      !blocked &&
-      theirs.dmPolicy !== "nobody" &&
-      (theirs.dmPolicy === "anyone" || standing === "friends");
+    // Friends only, for everybody. See `openDm`.
+    const canMessage = !blocked && standing === "friends";
 
     return {
       clerkId,
@@ -285,51 +263,6 @@ export const setAvatar = mutation({
       avatarInitials: nextInitials,
     });
     return { ok: true };
-  },
-});
-
-/**
- * Who may open a direct message with you.
- *
- * `nobody` is the only one of the three that changes what exists rather than
- * only what is allowed, because it is the one thing that stops a friendship
- * from opening a thread — see `linkDm` in `convex/chat/friends.ts`. Turning it
- * back off therefore has arrears to settle: every friend made while it was on
- * has no thread, and there is nothing anywhere for them to press to get one. So
- * the threads are booked here, immediately and out of line, because the number
- * of them is the number of friends and that is not a number a click should wait
- * on.
- */
-export const setDmPolicy = mutation({
-  args: {
-    policy: v.union(
-      v.literal("friends"),
-      v.literal("anyone"),
-      v.literal("nobody"),
-    ),
-  },
-  handler: async (ctx, { policy }) => {
-    const profile = await callerProfile(ctx);
-    if (profile === null) return;
-
-    const reopening = profile.dmPolicy === "nobody" && policy !== "nobody";
-    await ctx.db.patch(profile._id, { dmPolicy: policy });
-
-    if (reopening) {
-      await ctx.scheduler.runAfter(0, internal.chat.friends.linkDms, {
-        clerkId: profile.clerkId,
-      });
-    }
-  },
-});
-
-/** Whether handle search returns you at all. */
-export const setDiscoverable = mutation({
-  args: { discoverable: v.boolean() },
-  handler: async (ctx, { discoverable }) => {
-    const profile = await callerProfile(ctx);
-    if (profile === null) return;
-    await ctx.db.patch(profile._id, { discoverable });
   },
 });
 

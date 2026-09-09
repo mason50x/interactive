@@ -11,10 +11,9 @@ export function Searching() {
 /**
  * What a search that found nobody says, in the same block the spinner was in.
  *
- * Nobody is discoverable by accident — see `discoverable` on the profile — so a
- * search finding nothing is as likely to be somebody who has turned themselves
- * off as a handle typed wrong. Where that matters the caller says so; where it
- * does not, `Nobody found.` is the whole of it.
+ * Everybody with a handle can be found by it, so a search finding nothing is
+ * a handle typed wrong or an account that is gone. Where the caller has more
+ * to say it says it; where it does not, `Nobody found.` is the whole of it.
  */
 export function FoundNobody({ children }: { children?: React.ReactNode }) {
   return (

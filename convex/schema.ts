@@ -5,20 +5,6 @@ import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
 
 export default defineSchema({
-  // Manage posts directly in the Convex dashboard. Only published posts appear.
-  announcements: defineTable({
-    title: v.string(),
-    body: v.string(),
-    // First option seeds the dashboard's new-document template.
-    status: v.union(v.literal("published"), v.literal("draft"), v.literal("archived")),
-  }).index("by_status", ["status"]),
-  announcementReads: defineTable({
-    clerkId: v.string(),
-    announcementId: v.id("announcements"),
-    readAt: v.number(),
-  }).index("by_clerkId_and_announcementId", ["clerkId", "announcementId"])
-    .index("by_announcementId", ["announcementId"]),
-
   htmlSimulatorEntries: defineTable(htmlFields)
     .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"]),
   simulatorEntries: defineTable(entryFields)
@@ -303,10 +289,19 @@ export default defineSchema({
    * and a row that a message rewrites is a row no other query can afford to
    * join — which this one is joined by nearly all of them, for a handle.
    *
-   * What is left is written when somebody renames themselves, picks a disc, or
-   * changes who may reach them. So a profile read is a read of something that
-   * mostly does not change, and the subscriptions that join one stop being
-   * recomputed by other people talking.
+   * What is left is written when somebody renames themselves or picks a disc.
+   * So a profile read is a read of something that mostly does not change, and
+   * the subscriptions that join one stop being recomputed by other people
+   * talking.
+   *
+   * ## What is not a setting any more
+   *
+   * Who may open a direct message is friends, for everybody, and everybody can
+   * be found by handle. Both used to be fields here and both are gone: a
+   * policy with one value is not a policy, it is the rule in `openDm` and
+   * `friends.linkDm`, and a flag that is always on is a row-per-account copy
+   * of `true`. A one-off migration cleared both columns off every row that
+   * had them, in every deployment, before the declarations came out.
    */
   chatProfiles: defineTable({
     clerkId: v.string(),
@@ -325,18 +320,6 @@ export default defineSchema({
     avatarEmoji: v.optional(v.string()),
     avatarInitials: v.optional(v.string()),
     createdAt: v.number(),
-    /**
-     * Who may open a direct message. Defaults to `friends`, which is what makes
-     * a friend request a gate rather than a formality: a stranger cannot reach
-     * you until you have said they may.
-     */
-    dmPolicy: v.union(
-      v.literal("friends"),
-      v.literal("anyone"),
-      v.literal("nobody"),
-    ),
-    /** Whether handle search returns you. */
-    discoverable: v.boolean(),
     /**
      * Where the send counter and the ring used to live. Both moved to
      * `chatSenders`; see the note there. They stay declared, and optional,
@@ -400,8 +383,8 @@ export default defineSchema({
    * copies of everything everyone said, kept forever, is a different product
    * than this one.
    *
-   * It is deleted with the profile, never separately — see `eraseMine` in
-   * `convex/chat/erase.ts`. A ring that outlived the identity it belongs to
+   * It is deleted with the profile, never separately — see `purgeAuthor` in
+   * `convex/chat/sweep.ts`. A ring that outlived the identity it belongs to
    * would be a rate limit on a stranger, and a `messagesSent` that outlived one
    * would hand a new handle the trust tier the old one earned.
    */

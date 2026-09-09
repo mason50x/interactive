@@ -12,7 +12,7 @@ async function setup() {
   for (const name of ["alice", "bob"]) {
     await t.run(ctx => ctx.db.insert("chatProfiles", {
       clerkId: name, handle: name, handleKey: name, createdAt: 0,
-      messagesSent: 100, dmPolicy: "nobody", discoverable: false,
+      messagesSent: 100,
     }));
     await t.withIdentity({ subject: name }).mutation(api.chat.profiles.joinGlobal, {});
   }
@@ -68,4 +68,72 @@ test("plain DMs share the global quota and preserve private context, typing and 
     vi.useRealTimers();
     vi.unstubAllEnvs();
   }
+});
+
+test("empty bot DMs get one delayed personalized welcome without generation", async () => {
+  vi.useFakeTimers();
+  try {
+    const { t, alice, dm } = await setup();
+    await t.withIdentity({ subject: "bob" }).mutation(api.chat.bot.welcome, { conversationId: dm });
+    expect(await t.run(ctx => ctx.db.query("typing").take(10))).toHaveLength(0);
+    await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+    await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+    expect(await t.run(ctx => ctx.db.query("typing").take(10))).toHaveLength(1);
+    expect(await t.run(ctx => ctx.db.query("messages").take(10))).toHaveLength(0);
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+    const messages = await t.run(ctx => ctx.db.query("messages").take(10));
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({ authorClerkId: "bot", body: expect.stringContaining("Hello, alice!") });
+    expect(await t.run(ctx => ctx.db.query("typing").take(10))).toHaveLength(0);
+  } finally { vi.useRealTimers(); }
+});
+
+test("a message arriving during the welcome delay cancels the welcome", async () => {
+  vi.useFakeTimers();
+  try {
+    const { t, alice, dm } = await setup();
+    await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+    await t.run(ctx => ctx.db.insert("messages", {
+      conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
+      body: "Hello there", status: "visible", flags: [],
+    }));
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(await t.run(ctx => ctx.db.query("messages").take(10))).toHaveLength(1);
+    expect(await t.run(ctx => ctx.db.query("typing").take(10))).toHaveLength(0);
+  } finally { vi.useRealTimers(); }
+});
+
+test("expired typing recovers and obsolete welcome jobs cannot deliver early", async () => {
+  vi.useFakeTimers();
+  try {
+    const { t, alice, dm } = await setup();
+    await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+    const oldTyping = (await t.run(ctx => ctx.db.query("typing").take(10)))[0];
+    vi.setSystemTime(Date.now() + 9_000);
+    await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+    await t.mutation(internal.chat.bot.finishWelcome, { conversationId: dm, typingId: oldTyping._id, name: "alice" });
+    expect(await t.run(ctx => ctx.db.query("messages").take(10))).toHaveLength(0);
+    expect(await t.run(ctx => ctx.db.query("typing").take(10))).toHaveLength(1);
+    await t.finishAllScheduledFunctions(() => vi.runAllTimers());
+    expect(await t.run(ctx => ctx.db.query("messages").take(10))).toHaveLength(1);
+  } finally { vi.useRealTimers(); }
+});
+
+test("welcome waits three seconds and can restart after the DM is emptied", async () => {
+  vi.useFakeTimers();
+  try {
+    const { t, alice, dm } = await setup();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+      await vi.advanceTimersByTimeAsync(2_999);
+      await t.finishInProgressScheduledFunctions();
+      expect(await t.run(ctx => ctx.db.query("messages").take(10))).toHaveLength(0);
+      await vi.advanceTimersByTimeAsync(1);
+      await t.finishInProgressScheduledFunctions();
+      const messages = await t.run(ctx => ctx.db.query("messages").take(10));
+      expect(messages).toHaveLength(1);
+      await t.run(ctx => ctx.db.delete(messages[0]._id));
+    }
+  } finally { vi.useRealTimers(); }
 });

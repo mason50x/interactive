@@ -6,16 +6,15 @@ import {
   CheckIcon,
   ChevronRightIcon,
   ChevronUpIcon,
-  Cog6ToothIcon,
   ComputerDesktopIcon,
+  ExclamationTriangleIcon,
   MoonIcon,
   SunIcon,
 } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { useAccountModal } from "@/components/app/account-modal";
 import { useRail } from "@/components/app/rail-context";
-import { SettingsSheet } from "@/components/app/settings-sheet";
-import { StreakBadge } from "@/components/app/streak-badge";
 import { useTheme } from "@/components/theme-provider";
 import type { Icon } from "@/lib/icons";
 import { onSettingsRequest } from "@/lib/preferences";
@@ -115,25 +114,25 @@ function Avatar({
  * This replaces Clerk's `<UserButton />` rather than restyling it. The stock
  * component is an avatar and a menu we do not control the contents of, and
  * the theme switch has to live *in* that menu — there is nowhere else in this
- * layout for it to go. What is left of Clerk here is the data (`useUser`) and
- * the one action it owns (`signOut`).
+ * layout for it to go. What is left of Clerk here is the data (`useUser`),
+ * the modal behind the Settings row (`useAccountModal`) and the one action it
+ * owns (`signOut`).
  *
  * Collapsed, below `lg`, it is the avatar alone; the name and the affordance
  * appear with the rail.
  */
 export function UserMenu() {
   const { isLoaded, user } = useUser();
-  const { openUserProfile, signOut } = useClerk();
+  const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { open: openAccount, pages: accountPages } = useAccountModal();
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const signOutRef = useRef<HTMLElement>(null);
 
-  // The rail's search can name a setting — "constellation", "panic key" — and
-  // what it does with one is open this. It always opens and never toggles: a
-  // result that was clicked means "show me that", and there is no reading of
-  // it under which the answer is to close the panel. See `requestSettings`.
-  useEffect(() => onSettingsRequest(() => setSettingsOpen(true)), []);
+  // The rail's search can name a setting — "constellation", "panic key" — or
+  // the account, and what it does with either is open the modal on that page.
+  // See `requestSettings`.
+  useEffect(() => onSettingsRequest(openAccount), [openAccount]);
 
   // A press on anything but the sign-out row puts it back. This listens on the
   // document rather than on the popup because the theme submenu is portalled
@@ -190,7 +189,6 @@ export function UserMenu() {
             <span className="block truncate text-[0.9375rem] leading-tight">
               {user.fullName ?? name}
             </span>
-            <StreakBadge />
           </span>
           {/* Points at the popup: up while it is closed because that is where
               it will appear, and flipped once it is open because from there
@@ -221,37 +219,26 @@ export function UserMenu() {
                 rail === "open" && "lg:w-[var(--anchor-width)]",
               )}
             >
-              {/* Clerk's own account UI — profile, email addresses, password,
-                connected accounts, devices — behind one row. None of it is
-                worth rebuilding here.
+              {/* One door. Behind it is Clerk's account modal with the site's
+                settings as its first page and Clerk's own — profile, email
+                addresses, password, connected accounts, devices — after it;
+                see `useAccountModal`. This used to be two rows, "Account" and
+                "Settings", and the line between them was one only the code
+                could see.
 
-                It is a row and not a portrait: the trigger below already says
-                whose account this is, so repeating the avatar, the name and the
-                address inside the popup was three restatements of a question
-                nobody had. `Menu.Item` closes the menu on click, which is what
+                The avatar leads the row rather than a gear: the row is the
+                door to your account as much as to the site's settings, and
+                the face is what says so. It is a row and not a portrait: the
+                trigger below already says whose account this is, so repeating
+                the name and the address inside the popup as well was three
+                restatements of a question nobody had. `Menu.Item` closes the menu on click, which is what
                 keeps it from sitting open behind the modal it launches. */}
               <Menu.Item
-                onClick={() => openUserProfile()}
+                onClick={() => openAccount("settings")}
                 className={cn(itemClass, "justify-between")}
               >
                 <span className="flex items-center gap-2.5">
                   <Avatar src={user.imageUrl} name={name} size={16} />
-                  Account
-                </span>
-                <ChevronRightIcon className="size-4 shrink-0 text-faint" />
-              </Menu.Item>
-
-              {/* Everything about the site that is a matter of taste, as opposed
-                to everything about the account, which is the row above. The
-                sheet is a sibling of this menu rather than a child: `Menu.Item`
-                closes its own menu on click, which would unmount a panel
-                nested inside it before it could ever be seen. */}
-              <Menu.Item
-                onClick={() => setSettingsOpen(true)}
-                className={cn(itemClass, "justify-between")}
-              >
-                <span className="flex items-center gap-2.5">
-                  <Cog6ToothIcon className="size-4 shrink-0" />
                   Settings
                 </span>
                 <ChevronRightIcon className="size-4 shrink-0 text-faint" />
@@ -341,10 +328,17 @@ export function UserMenu() {
                 // hidden one too.
                 label="Sign out"
                 closeOnClick={confirmingSignOut}
+                // Armed, the row fills red with white on it and holds that
+                // under the highlight: the warning is the row's own state,
+                // not a hover effect, and it should not flicker back to grey
+                // when the pointer leaves. Unarmed it is a row like the
+                // others. The fill is transitioned on the face's clock so it
+                // arrives with the words rather than a frame before them.
                 className={cn(
                   itemClass,
-                  "data-highlighted:text-destructive",
-                  confirmingSignOut && "text-destructive",
+                  "transition-colors duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  confirmingSignOut &&
+                    "bg-destructive text-destructive-foreground data-highlighted:bg-destructive data-highlighted:text-destructive-foreground",
                 )}
                 onClick={() => {
                   if (!confirmingSignOut) {
@@ -377,12 +371,18 @@ export function UserMenu() {
                         : "scale-[1.08] opacity-0 blur-[3px]",
                     )}
                   >
-                    {/* Filled and already checked: the box is the answer, not
-                      a thing to tick. It reuses the menu's own check so the
-                      mark matches the theme rows above it. */}
-                    <span className="flex size-4 shrink-0 items-center justify-center rounded-sm bg-destructive">
-                      <CheckIcon className="size-3 text-destructive-foreground" />
-                    </span>
+                    {/* The warning arrives on its own scale, bigger than the
+                      face's: it springs up from small with an overshoot a
+                      beat after the words settle, so the eye lands on it.
+                      Disarmed it shrinks back ahead of the face fading. */}
+                    <ExclamationTriangleIcon
+                      className={cn(
+                        "size-4 shrink-0 transition-[scale] duration-[320ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+                        confirmingSignOut
+                          ? "scale-100 delay-[60ms]"
+                          : "scale-[0.4] delay-0 duration-[160ms] ease-in",
+                      )}
+                    />
                     Confirm?
                   </span>
                 </span>
@@ -392,7 +392,9 @@ export function UserMenu() {
         </Menu.Portal>
       </Menu.Root>
 
-      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
+      {/* The settings page and its nav icon, portalled into the modal while
+        it is open and nothing at all while it is not. */}
+      {accountPages}
     </>
   );
 }

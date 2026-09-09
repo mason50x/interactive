@@ -519,6 +519,14 @@
    * of the gradient are the same faint grey, so what moves is a highlight and
    * not an edge.
    */
+  /* Registered so `.text-shimmer-periodic` can transition its base colour
+     with the row it sits in; an unregistered custom property snaps. */
+  @property --shimmer-base {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+
   @keyframes text-shimmer {
     from {
       background-position: 150% 0;
@@ -550,9 +558,50 @@
     animation: text-shimmer 1.5s linear infinite;
   }
 
+  /* The same idea as `.text-shimmer`, passed once and then rested: the sweep
+     takes the first third of the cycle and the rest is the word sitting
+     still in its base colour. For something that wants to be noticed now and
+     then, not watched — the rail's unread row. The band is wider than the
+     loop's and the pass slower, since a glint that is over in a frame on a
+     word this short is a flicker, and the crest is the brand colour rather
+     than the foreground so the pass reads as a signal and not a highlight.
+     The base is left to the caller: it has to be whatever the word's own
+     ink is where it sits. */
+  @keyframes text-shimmer-periodic {
+    0% {
+      background-position: 150% 0;
+    }
+    36%,
+    100% {
+      background-position: -50% 0;
+    }
+  }
+
+  .text-shimmer-periodic {
+    --shimmer-crest: var(--primary);
+    background-image: linear-gradient(
+      100deg,
+      var(--shimmer-base) 0%,
+      var(--shimmer-base) 28%,
+      var(--shimmer-crest) 46%,
+      var(--shimmer-crest) 54%,
+      var(--shimmer-base) 72%,
+      var(--shimmer-base) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    /* The base is a custom property, so the row's hover has to be told it
+       can fade — see the `@property` above. */
+    transition: --shimmer-base 150ms;
+    animation: text-shimmer-periodic 5s linear infinite;
+  }
+
   /* Still a word, just no longer a moving one. */
   @media (prefers-reduced-motion: reduce) {
-    .text-shimmer {
+    .text-shimmer,
+    .text-shimmer-periodic {
       animation: none;
       background-image: none;
       color: var(--shimmer-base);
@@ -738,12 +787,17 @@
    * pill with three words of placeholder in it — the field read as a slightly
    * different black, and the eye could not find the edge to click.
    */
-  :root[data-theme="dark"] .composer {
+  :root[data-theme="dark"] .composer,
+  :root[data-theme="dark"] .composer-skin {
     background-color: var(--surface-muted);
     border-color: var(--border-strong);
+    box-shadow: var(--elevation-card);
   }
 
-  :root[data-theme="dark"] .composer:focus-within {
+  /* Lit by the field alone: the plus, the microphone and Send take focus
+     too, and the box turning blue for a menu opening reads as the wrong
+     thing being pressed. */
+  :root[data-theme="dark"] .composer:has(textarea:focus) {
     border-color: var(--primary);
   }
 
@@ -797,6 +851,60 @@
   .popup-drop[data-ending-style] {
     opacity: 0;
     transform: translateY(-0.625rem);
+  }
+
+  /*
+   * The bot allowance bar in the composer's plus menu.
+   *
+   * It grows from the left to where it stands on the popup's way in, and
+   * glides between values after that — a tag spent while the menu is open is
+   * a bar getting shorter, not a bar being swapped for a shorter one. Scaled
+   * rather than resized so the compositor can carry it on the same frames as
+   * the popup's slide. `@starting-style` is the entrance: the popup unmounts
+   * on close, so every opening starts from empty again.
+   */
+  .quota-fill {
+    position: relative;
+    overflow: hidden;
+    transition:
+      width 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 400ms ease-out;
+    @starting-style {
+      width: 0;
+    }
+  }
+
+  /* A dot-matrix grid drifting through the fill. The dots are a tile of the
+     bar's own size and the animation moves exactly one tile, so the loop has
+     no seam. Width-based rather than scaled so the dots stay round while the
+     bar changes length. */
+  .quota-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle,
+      rgb(255 255 255 / 0.55) 1px,
+      transparent 1.6px
+    );
+    background-size: 6px 6px;
+    background-position: 0 0;
+    animation: quota-flow 900ms linear infinite;
+  }
+
+  @keyframes quota-flow {
+    to {
+      background-position: 6px 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quota-fill {
+      transition: none;
+    }
+    .quota-fill::after {
+      animation: none;
+    }
   }
 
   .label-small {
@@ -1121,6 +1229,308 @@
 
 .animate-handle-resolve {
   animation: handle-resolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Rail icon microanimations.
+
+   Each of the rail's icons does one small thing on hover, and the thing is
+   its own: the roof lifts off the house, the controller's buttons press, the
+   bubbles take turns, the globe rolls, the chip's pins seat and its die
+   blinks, the brain thinks a side at a time. Nothing spins or bounces as a
+   whole — a glyph that turns on hover could be any glyph — and everything
+   lands back exactly where it started, so a hover that ends mid-way snaps to
+   a frame the eye has already seen.
+
+   The parts are drawn in `nav-icons.tsx`. Every animation here is keyed off
+   `.nav-row:hover` (the toggle has its own scope), fires once, and lasts
+   under a second; the reduced-motion rule at the foot of this file collapses
+   all of them to nothing. Guarded by `(hover: hover)` for the reason
+   Tailwind's own `hover:` is — a touch that lands as a hover is a tap, and
+   the icon should not twitch on the way to a page.
+
+   Every moving piece uses `fill-box` so its origin is its own centre (or its
+   own edge) and not the icon's; the globe's meridians are the exception, and
+   say so. */
+
+@keyframes ni-home-lift {
+  0% {
+    transform: translateY(0);
+  }
+  38% {
+    transform: translateY(-1.1px);
+  }
+  70% {
+    transform: translateY(0.2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* A press is a hole getting smaller: the button sinks into the body. */
+@keyframes ni-press {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.5);
+  }
+}
+
+@keyframes ni-pad-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(-0.6px);
+  }
+  60% {
+    transform: translateX(0.15px);
+  }
+}
+
+/* Rumble: sub-pixel and quick, so the body shivers rather than moves. */
+@keyframes ni-rumble {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-0.35px);
+  }
+  40% {
+    transform: translateX(0.35px);
+  }
+  60% {
+    transform: translateX(-0.25px);
+  }
+  80% {
+    transform: translateX(0.2px);
+  }
+}
+
+@keyframes ni-chat-back {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  40% {
+    transform: translate(-0.5px, -0.7px);
+  }
+}
+
+/* The front bubble grows from its tail, the way a reply arrives. */
+@keyframes ni-chat-front {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(0.4px, 0.5px) scale(1.07);
+  }
+}
+
+/* A meridian at longitude θ projects to the pole-to-pole arc scaled in x by
+   sin θ. Each one carries its own three stops as custom properties — where
+   it is, where it is half-way, where it ends up — so this one set of frames
+   rolls all five; the two crossing the limb also carry an opacity, since a
+   meridian past 90° is on the far side and has to go. `--k1` is the sine of
+   the half-way longitude and not the average of the ends, which is what
+   keeps the roll from looking linear. */
+@keyframes ni-globe-roll {
+  0% {
+    transform: scaleX(var(--k0));
+    opacity: var(--o0, 1);
+  }
+  50% {
+    transform: scaleX(var(--k1));
+    opacity: var(--o1, 1);
+  }
+  100% {
+    transform: scaleX(var(--k2));
+    opacity: var(--o2, 1);
+  }
+}
+
+@keyframes ni-pin-seat {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  40% {
+    transform: translate(var(--dx, 0), var(--dy, 0));
+  }
+}
+
+@keyframes ni-die-blink {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.72);
+  }
+  70% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes ni-think {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.09);
+  }
+}
+
+.ni-home-roof,
+.ni-pad,
+.ni-btn-a,
+.ni-btn-b,
+.ni-chat-back,
+.ni-chat-front,
+.ni-die,
+.ni-pins-t,
+.ni-pins-r,
+.ni-pins-b,
+.ni-pins-l,
+.ni-brain-l,
+.ni-brain-r,
+.ni-rail-pane {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ni-chat-front {
+  /* Its tail. */
+  transform-origin: 100% 100%;
+}
+.ni-brain-l {
+  transform-origin: 100% 50%;
+}
+.ni-brain-r {
+  transform-origin: 0% 50%;
+}
+
+/* The meridians scale about the globe's own centre, not their own box — a
+   pole-to-pole arc scaled about itself would drift off the poles. `view-box`
+   makes 50% the middle of the 24-unit grid. Longitudes, front to back:
+   -67.5°, -22.5°, 22.5°, 67.5°, and a fifth waiting at -112.5° to come round.
+   Never exactly zero: a singular transform is not drawn at all. */
+.ni-globe-m {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transform: scaleX(var(--k0));
+  opacity: var(--o0, 1);
+}
+.ni-globe-m1 {
+  --k0: -0.924;
+  --k1: -0.707;
+  --k2: -0.383;
+}
+.ni-globe-m2 {
+  --k0: -0.383;
+  --k1: 0.02;
+  --k2: 0.383;
+}
+.ni-globe-m3 {
+  --k0: 0.383;
+  --k1: 0.707;
+  --k2: 0.924;
+}
+.ni-globe-m4 {
+  --k0: 0.924;
+  --k1: 1;
+  --k2: 0.924;
+  --o0: 1;
+  --o1: 1;
+  --o2: 0;
+}
+.ni-globe-m5 {
+  --k0: -0.924;
+  --k1: -1;
+  --k2: -0.924;
+  --o0: 0;
+  --o1: 0;
+  --o2: 1;
+}
+
+/* The pane's left edge moves the way the rail is about to: out over the
+   column when it is closing, back when it is opening. Scaled about its right
+   edge so the frame on that side stays the width it is. Transitioned rather
+   than keyed, because here the hover state is a different picture — the
+   column already narrower — and should hold while the pointer does. */
+.ni-rail-pane {
+  transform-origin: 100% 50%;
+  transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (hover: hover) {
+  .nav-row:hover .ni-home-roof {
+    animation: ni-home-lift 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .nav-row:hover .ni-pad {
+    animation: ni-pad-nudge 0.5s ease-out;
+  }
+  .nav-row:hover .ni-btn-a {
+    animation: ni-press 0.32s ease-in-out 0.12s;
+  }
+  .nav-row:hover .ni-btn-b {
+    animation: ni-press 0.32s ease-in-out 0.3s;
+  }
+  .nav-row:hover .ni-controller {
+    animation: ni-rumble 0.45s linear 0.12s;
+  }
+
+  .nav-row:hover .ni-chat-back {
+    animation: ni-chat-back 0.5s ease-out;
+  }
+  .nav-row:hover .ni-chat-front {
+    animation: ni-chat-front 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.16s;
+  }
+
+  .nav-row:hover .ni-globe-m {
+    animation: ni-globe-roll 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-row:hover .ni-pins-t {
+    --dy: -0.6px;
+    animation: ni-pin-seat 0.45s ease-out;
+  }
+  .nav-row:hover .ni-pins-r {
+    --dx: 0.6px;
+    animation: ni-pin-seat 0.45s ease-out 0.07s;
+  }
+  .nav-row:hover .ni-pins-b {
+    --dy: 0.6px;
+    animation: ni-pin-seat 0.45s ease-out 0.14s;
+  }
+  .nav-row:hover .ni-pins-l {
+    --dx: -0.6px;
+    animation: ni-pin-seat 0.45s ease-out 0.21s;
+  }
+  .nav-row:hover .ni-die {
+    animation: ni-die-blink 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+  }
+
+  .nav-row:hover .ni-brain-l {
+    animation: ni-think 0.55s ease-in-out;
+  }
+  .nav-row:hover .ni-brain-r {
+    animation: ni-think 0.55s ease-in-out 0.14s;
+  }
+
+  .rail-toggle[data-to="closed"]:hover .ni-rail-pane {
+    transform: scaleX(1.14);
+  }
+  .rail-toggle[data-to="open"]:hover .ni-rail-pane {
+    transform: scaleX(0.86);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1497,21 +1907,35 @@
   0%, 100% { border-radius: 24px 38px 26px 42px; transform: scale(1); }
   50% { border-radius: 42px 24px 38px 26px; transform: scale(.99); }
 }
-@keyframes packet-light-travel {
-  to { --packet-light-angle: 360deg; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
+/* The wavy rule in the release sheet, drawn from left to right as the sheet
+   arrives. Starts a beat after the panel so the line is seen being drawn on
+   a page that is already there. */
+@keyframes squiggle-draw {
+  to { stroke-dashoffset: 0; }
 }
 
-/* A thin comet of light follows the unread announcement card's outline. */
-@property --announcement-rim-angle {
+.squiggle-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: squiggle-draw 6000ms cubic-bezier(0.45, 0, 0.25, 1) 200ms forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .squiggle-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* A thin comet of light follows the outline of the version card while its
+   release has not been opened here. */
+@property --release-rim-angle {
   syntax: "<angle>";
   initial-value: 0deg;
   inherits: false;
 }
 
-.announcement-unread-glow::after {
+.release-unread-glow::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1520,7 +1944,7 @@
   padding: 1.5px;
   pointer-events: none;
   background: conic-gradient(
-    from var(--announcement-rim-angle),
+    from var(--release-rim-angle),
     transparent 0deg 215deg,
     color-mix(in oklch, var(--primary) 8%, transparent) 255deg,
     color-mix(in oklch, var(--primary) 40%, transparent) 300deg,
@@ -1532,16 +1956,24 @@
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   filter: drop-shadow(0 0 3px color-mix(in oklch, var(--primary) 45%, transparent));
-  animation: announcement-rim-travel 5s linear infinite;
+  animation: release-rim-travel 5s linear infinite;
 }
 
-@keyframes announcement-rim-travel {
-  to { --announcement-rim-angle: 360deg; }
+@keyframes release-rim-travel {
+  to { --release-rim-angle: 360deg; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .announcement-unread-glow::after {
+  .release-unread-glow::after {
     animation: none;
-    --announcement-rim-angle: 35deg;
+    --release-rim-angle: 35deg;
   }
 }
+
+@keyframes packet-light-travel {
+  to { --packet-light-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
+}
+

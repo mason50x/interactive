@@ -1,17 +1,10 @@
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import {
-  internalMutation,
-  mutation,
-  query,
-  type MutationCtx,
-} from "../_generated/server";
+import { mutation, query, type MutationCtx } from "../_generated/server";
 import {
   avatarAppearance,
   blockedEitherWay,
   callerProfile,
-  dmKeyFor,
   ensureDm,
   friendship,
   pairOf,
@@ -22,11 +15,11 @@ import {
  * Asking somebody if you may talk to them.
  *
  * This is the approval half of the feature, and on a site full of teenagers it
- * is doing more work than the friend lists it resembles. The default DM policy
- * is `friends`, so an accepted request is what turns a handle somebody found in
- * search into a private conversation — which means the answer to "can a
- * stranger message my child" is no, and it is no by default rather than after a
- * setting is found and changed.
+ * is doing more work than the friend lists it resembles. Direct messages are
+ * friends only, for everybody, so an accepted request is what turns a handle
+ * somebody found in search into a private conversation — which means the
+ * answer to "can a stranger message my child" is no, and there is no setting
+ * anywhere that makes it yes.
  *
  * One row per pair, with `userA` the smaller Clerk id. See `friendships` in
  * `convex/schema.ts` for why that is one row and not two.
@@ -67,19 +60,12 @@ export type FriendRequest = {
  * Two of these can run for the same pair — both halves of a mutual request, say
  * — and `ensureDm` is idempotent for exactly that reason. It is the same thread
  * a press on "Message" would open, so the two never disagree.
- *
- * `nobody` is the one policy this answers by doing nothing. Shutting the door
- * is a decision, and becoming friends is not a key to it: a thread neither
- * person may send in has no business sitting in either list. They still have
- * each other in Friends, and opening the door again is what `linkDms` below is
- * for.
  */
 async function linkDm(
   ctx: MutationCtx,
   mine: Doc<"chatProfiles">,
   theirs: Doc<"chatProfiles">,
 ): Promise<void> {
-  if (mine.dmPolicy === "nobody" || theirs.dmPolicy === "nobody") return;
   await ensureDm(ctx, mine.clerkId, theirs.clerkId);
 }
 
@@ -265,67 +251,5 @@ export const pending = query({
     return requests.sort(
       (first, second) => second.requestedAt - first.requestedAt,
     );
-  },
-});
-
-/** How many threads one backfill pass will make. */
-const LINK_BATCH = 20;
-
-/**
- * Give an account the threads its friendships already imply.
- *
- * One caller: `profiles.setDmPolicy`, when somebody turns `nobody` back off.
- * Every friendship made while the door was shut skipped `linkDm`, so without
- * this the friends collected during that time would sit in the Friends list
- * with no thread and no way to ask for one — the door would be open and the
- * room still gone.
- *
- * It terminates without a cursor, which is why it is written as "make some,
- * then look again" rather than as a page walk. Every pass either makes a thread
- * or reaches the end, and a thread made is one the next pass finds already
- * there — so the work left strictly shrinks and a pass that makes nothing books
- * nothing. The policy is re-read at the top of each pass for the same reason
- * `linkDm` checks it at all: it can be turned back off while this is running,
- * and the passes after that should stop.
- */
-export const linkDms = internalMutation({
-  args: { clerkId: v.string() },
-  handler: async (ctx, { clerkId }) => {
-    const mine = await profileFor(ctx, clerkId);
-    if (mine === null) return { linked: 0 };
-    if (mine.dmPolicy === "nobody") return { linked: 0 };
-
-    const partners = await partnersOf(ctx, clerkId, "accepted");
-    let linked = 0;
-
-    for (const partner of partners) {
-      if (linked === LINK_BATCH) {
-        await ctx.scheduler.runAfter(0, internal.chat.friends.linkDms, {
-          clerkId,
-        });
-        break;
-      }
-
-      const existing = await ctx.db
-        .query("conversations")
-        .withIndex("byDmKey", (q) =>
-          q.eq("dmKey", dmKeyFor(clerkId, partner.other)),
-        )
-        .unique();
-      if (existing !== null) continue;
-
-      // The same bars `linkDm` clears on the way in. A friendship can outlive
-      // neither side of a block, but this is the one path that reaches a row
-      // made at some other time under some other conditions.
-      const theirs = await profileFor(ctx, partner.other);
-      if (theirs === null) continue;
-      if (theirs.dmPolicy === "nobody") continue;
-      if (await blockedEitherWay(ctx, clerkId, partner.other)) continue;
-
-      await ensureDm(ctx, clerkId, partner.other);
-      linked += 1;
-    }
-
-    return { linked };
   },
 });

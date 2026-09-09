@@ -43,7 +43,6 @@ export type Refusal =
   // `resolveMentions` in `convex/chat/messages.ts`.
   | "mention"
   | "mention-everyone"
-  | "too-new"
   // Pictures. `sexual`, `self-harm` and `exploitation` above are shared with
   // them — a picture of a thing is refused under the same name as a sentence
   // about it. The three below are theirs alone: `graphic` is gore, which a

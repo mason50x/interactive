@@ -1,0 +1,11 @@
+# Static-asset headers for the experience origin. These cover the frontend files
+# only; pages under /service/ are produced by the service worker, whose
+# responses carry what the rewriting engine gives them.
+
+/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  # Only a developer's app may frame this page. The route that frames it is
+  # development only, so no deployed origin is listed here on purpose.
+  Content-Security-Policy: frame-ancestors 'self' http://localhost:3000

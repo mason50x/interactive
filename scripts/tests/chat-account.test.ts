@@ -10,14 +10,14 @@ test("Clerk cutover preserves profile identity, history and privacy; repeat sync
   const t = convexTest(schema, modules);
   const id = await t.run(ctx => ctx.db.insert("chatProfiles", {
     clerkId: "account", handle: "old_handle", handleKey: "oldhandle", displayName: "Old Name",
-    createdAt: 123, messagesSent: 42, dmPolicy: "nobody", discoverable: false, avatarEmoji: "🐱",
+    createdAt: 123, messagesSent: 42, avatarEmoji: "🐱",
   }));
   const data = { id: "account", username: "Real-Username", first_name: "First", last_name: "Private", image_url: "https://img.clerk.com/example", updated_at: 10 };
   await t.mutation(internal.users.upsertFromClerk, { data });
   const mine = t.withIdentity({ subject: "account" });
   expect(await mine.query(api.chat.profiles.mine, {})).toMatchObject({
     handle: "Real-Username", displayName: "First", avatarUrl: data.image_url, avatarMode: "account", createdAt: 123,
-    messagesSent: 42, dmPolicy: "nobody", discoverable: false,
+    messagesSent: 42,
   });
   expect(await t.run(ctx => profileByHandle(ctx, "real-username"))).toMatchObject({ _id: id });
   expect(await t.run(ctx => profileByHandle(ctx, "old_handle"))).toBeNull();

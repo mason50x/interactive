@@ -8,7 +8,3 @@ export function BrainIcon(props: ComponentProps<"svg">) {
     </svg>
   );
 }
-
-export function BrainIconSolid(props: ComponentProps<"svg">) {
-  return <BrainIcon {...props} fill="currentColor" fillOpacity={0.2} strokeWidth={1.8} />;
-}

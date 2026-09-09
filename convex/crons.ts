@@ -57,11 +57,4 @@ crons.interval(
   {},
 );
 
-crons.interval(
-  "keep the latest three announcements",
-  { minutes: 1 },
-  internal.announcements.trim,
-  {},
-);
-
 export default crons;

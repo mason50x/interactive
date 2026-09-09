@@ -139,6 +139,26 @@ const ALPHA_STEPS = 10;
  */
 const HEM = 0.05;
 
+/**
+ * The `scatter`: how long the field takes to fly apart, and how far.
+ *
+ * Every point is thrown outward from the centre with its own speed and a
+ * little sideways noise, so the web does not simply scale up — pairs part at
+ * different rates, their lines snap as they pass `LINK`, and what is left is
+ * loose particles. Eased out, so the throw is sharp and the drift after it
+ * long. The distance is a fraction of the box's longer side, enough to carry
+ * the outer points off the edge.
+ */
+const SCATTER_MS = 900;
+const SCATTER_DISTANCE = 0.55;
+const SCATTER_NOISE = 0.45;
+/**
+ * The scatter runs at full rate. It is the one thing here that moves fast
+ * enough to alias at 30fps — a point crosses a third of the screen in under
+ * a second — and it is over before the cost of the extra frames matters.
+ */
+const SCATTER_FRAME_MS = 1000 / 60;
+
 type Point = {
   /** Where the drift has got to, before the pointer has any say. */
   x: number;
@@ -151,6 +171,9 @@ type Point = {
   dy: number;
   tx: number;
   ty: number;
+  /** Where the scatter throws this point, at full extent. */
+  sx: number;
+  sy: number;
   /** `x + dx`, `y + dy` — held here so a frame allocates nothing. */
   px: number;
   py: number;
@@ -172,12 +195,27 @@ export function RailConstellation({
   areaPerPoint = AREA_PER_POINT,
   maxPoints = MAX_POINTS,
   quiet = false,
+  scatter = false,
+  vignette = false,
 }: {
   className?: string;
   areaPerPoint?: number;
   maxPoints?: number;
   /** Dim and slow the web while something beside it needs the machine. */
   quiet?: boolean;
+  /**
+   * Blow the field apart. On the turn to `true` every point is thrown
+   * outward from the centre over `SCATTER_MS`, the web breaking into
+   * particles as they part — for a page that is about to leave. One-way:
+   * the field does not come back together. Skipped under reduced motion.
+   */
+  scatter?: boolean;
+  /**
+   * Fade the web out towards every edge, not only the top and bottom hem —
+   * for a field behind a whole page, where the eye should be held at the
+   * centre and the corners should not read as a hard box.
+   */
+  vignette?: boolean;
 } = {}) {
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -188,11 +226,16 @@ export function RailConstellation({
   // that had settled and stopped — under reduced motion, or with nothing left
   // to move — so the easing towards the new setting actually gets drawn.
   const quietRef = useRef(quiet);
+  const scatterRef = useRef(scatter);
   const wake = useRef<() => void>(null);
   useEffect(() => {
     quietRef.current = quiet;
     wake.current?.();
   }, [quiet]);
+  useEffect(() => {
+    scatterRef.current = scatter;
+    wake.current?.();
+  }, [scatter]);
 
   useEffect(() => {
     const element = canvas.current;
@@ -213,6 +256,32 @@ export function RailConstellation({
     // How far into the quiet setting the web has eased: 0 is the full web, 1
     // is fully dimmed and slowed. Chases `quietRef` a step per frame.
     let calm = quietRef.current ? 1 : 0;
+    // How far the scatter has flown: 0 is the field at rest, 1 is every point
+    // at the end of its throw. Run off the clock rather than per frame so a
+    // dropped frame does not slow the release. `scatterStart` is 0 until the
+    // throw begins.
+    let flung = 0;
+    let scatterStart = 0;
+    // The scatter's own fade, drawn into the alphas. The page fades with it,
+    // but it must not fade *through* this canvas: an `opacity` on a layer
+    // that is dirty every frame is a full-screen texture per frame.
+    let gone = 0;
+
+    // Aim every point's throw: outward from the centre, with its own speed
+    // and enough sideways noise that the web tears rather than scales.
+    const aim = () => {
+      const cx = width / 2;
+      const cy = height / 2;
+      const reach = Math.max(width, height) * SCATTER_DISTANCE;
+      for (const point of points) {
+        const ax = point.x - cx;
+        const ay = point.y - cy;
+        const distance = Math.hypot(ax, ay) || 1;
+        const speed = reach * random(0.6, 1.4);
+        point.sx = (ax / distance + random(-SCATTER_NOISE, SCATTER_NOISE)) * speed;
+        point.sy = (ay / distance + random(-SCATTER_NOISE, SCATTER_NOISE)) * speed;
+      }
+    };
     // The two halves of "is anyone actually looking at this", and their
     // conjunction. Only `onscreen` gates the loop; see `settle`.
     let visible = !document.hidden;
@@ -233,6 +302,10 @@ export function RailConstellation({
     // as a multiplier on the alphas instead.
     let ink = "0, 0, 0";
     let themeFade = 0.8;
+    // The vignette, built once per size in `measure`: clear at the centre,
+    // gone by the corners. The radius reaches the corner rather than the
+    // nearer edge so nothing along the long sides is cut off flat.
+    let ring: CanvasGradient | string = "transparent";
     const readInk = () => {
       const style = getComputedStyle(element);
 
@@ -262,6 +335,16 @@ export function RailConstellation({
       element.style.height = `${height}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      if (vignette) {
+        const cx = width / 2;
+        const cy = height / 2;
+        const gradient = context.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(cx, cy));
+        gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+        gradient.addColorStop(0.45, "rgba(0, 0, 0, 0)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 1)");
+        ring = gradient;
+      }
+
       const wanted = Math.max(
         14,
         Math.min(maxPoints, Math.round((width * height) / areaPerPoint)),
@@ -282,6 +365,8 @@ export function RailConstellation({
           dy: 0,
           tx: 0,
           ty: 0,
+          sx: 0,
+          sy: 0,
           px: 0,
           py: 0,
         });
@@ -305,6 +390,19 @@ export function RailConstellation({
       calm += (wanted - calm) * CALM_CHASE;
       if (Math.abs(wanted - calm) < 0.005) calm = wanted;
       else moving = true;
+
+      if (scatterRef.current && !still.matches) {
+        if (!scatterStart) {
+          scatterStart = performance.now();
+          aim();
+        }
+        if (flung < 1) {
+          const t = Math.min(1, (performance.now() - scatterStart) / SCATTER_MS);
+          flung = 1 - (1 - t) ** 2;
+          gone = t;
+          moving = true;
+        }
+      }
 
       // The drift is stated per frame at 30fps. The quiet cadence is half
       // that, so the per-frame step is scaled up by the same factor to keep
@@ -351,8 +449,8 @@ export function RailConstellation({
         // A tenth of a pixel is under the smallest thing this can draw.
         if (Math.abs(point.dx) > 0.1 || Math.abs(point.dy) > 0.1) moving = true;
 
-        point.px = point.x + point.dx;
-        point.py = point.y + point.dy;
+        point.px = point.x + point.dx + point.sx * flung;
+        point.py = point.y + point.dy + point.sy * flung;
       }
 
       return moving;
@@ -362,8 +460,9 @@ export function RailConstellation({
       context.clearRect(0, 0, width, height);
       context.lineWidth = 0.9;
 
-      // The theme's strength, stepped down by however quiet the web is now.
-      const fade = themeFade * (1 - calm * (1 - QUIET_FADE));
+      // The theme's strength, stepped down by however quiet the web is now,
+      // and by how far into the scatter it has got.
+      const fade = themeFade * (1 - calm * (1 - QUIET_FADE)) * (1 - gone);
 
       for (const bucket of buckets) bucket.length = 0;
 
@@ -431,20 +530,26 @@ export function RailConstellation({
       // gradient bands over a surface that was going to be re-rastered anyway;
       // doing it in CSS made the whole element a masked layer that seven
       // backdrop filters then had to resolve before they could read it.
-      const hem = height * HEM;
       context.globalCompositeOperation = "destination-out";
 
-      const top = context.createLinearGradient(0, 0, 0, hem);
-      top.addColorStop(0, "rgba(0, 0, 0, 1)");
-      top.addColorStop(1, "rgba(0, 0, 0, 0)");
-      context.fillStyle = top;
-      context.fillRect(0, 0, width, hem);
+      if (vignette) {
+        context.fillStyle = ring;
+        context.fillRect(0, 0, width, height);
+      } else {
+        const hem = height * HEM;
 
-      const bottom = context.createLinearGradient(0, height - hem, 0, height);
-      bottom.addColorStop(0, "rgba(0, 0, 0, 0)");
-      bottom.addColorStop(1, "rgba(0, 0, 0, 1)");
-      context.fillStyle = bottom;
-      context.fillRect(0, height - hem, width, hem);
+        const top = context.createLinearGradient(0, 0, 0, hem);
+        top.addColorStop(0, "rgba(0, 0, 0, 1)");
+        top.addColorStop(1, "rgba(0, 0, 0, 0)");
+        context.fillStyle = top;
+        context.fillRect(0, 0, width, hem);
+
+        const bottom = context.createLinearGradient(0, height - hem, 0, height);
+        bottom.addColorStop(0, "rgba(0, 0, 0, 0)");
+        bottom.addColorStop(1, "rgba(0, 0, 0, 1)");
+        context.fillStyle = bottom;
+        context.fillRect(0, height - hem, width, hem);
+      }
 
       context.globalCompositeOperation = "source-over";
     };
@@ -471,7 +576,12 @@ export function RailConstellation({
 
     // The frame gate in force: the quiet one only once the web has fully
     // settled into it, so the easing in and out is drawn at full cadence.
-    const cadence = () => (calm >= 1 ? QUIET_FRAME_MS : FRAME_MS);
+    const cadence = () =>
+      scatterStart && flung < 1
+        ? SCATTER_FRAME_MS
+        : calm >= 1
+          ? QUIET_FRAME_MS
+          : FRAME_MS;
 
     const step = (now: number) => {
       // rAF is tied to the display, so 30fps is a gate rather than a timer.
@@ -619,7 +729,7 @@ export function RailConstellation({
       rail.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [areaPerPoint, maxPoints]);
+  }, [areaPerPoint, maxPoints, vignette]);
 
   return (
     <canvas

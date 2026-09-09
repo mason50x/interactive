@@ -2,16 +2,18 @@ import {
   CpuChipIcon,
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
-  PuzzlePieceIcon,
 } from "@heroicons/react/24/outline";
-import {
-  CpuChipIcon as CpuChipIconSolid,
-  ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid,
-  HomeModernIcon as HomeModernIconSolid,
-  PuzzlePieceIcon as PuzzlePieceIconSolid,
-} from "@heroicons/react/24/solid";
 import type { IconPair } from "@/lib/icons";
-import { BrainIcon, BrainIconSolid } from "@/components/app/brain-icon";
+import { BrainIcon } from "@/components/app/brain-icon";
+import { ControllerIcon } from "@/components/app/controller-icon";
+import {
+  BrainIconSolid,
+  ChatIconSolid,
+  ChipIconSolid,
+  ControllerIconSolid,
+  HomeIconSolid,
+} from "@/components/app/nav-icons";
+import { extraNavItems } from "@/lib/nav-extras";
 
 export type NavItem = {
   label: string;
@@ -42,34 +44,39 @@ export const PHILOSOPHY_HREF = "/dashboard/our-philosophy";
  * them. New dashboard routes are added here and nowhere else.
  *
  * Each carries both cuts of its icon: the page you are on gets the solid one.
+ * The solids are the rail's own animated set (see `nav-icons.tsx`); the
+ * outlines are Heroicons' where it has the glyph.
  */
 export const navItems: NavItem[] = [
   {
     label: "Home",
     href: "/dashboard",
-    icon: { outline: HomeModernIcon, solid: HomeModernIconSolid },
+    icon: { outline: HomeModernIcon, solid: HomeIconSolid },
   },
   {
     label: "Activities",
     href: ACTIVITIES_HREF,
-    icon: { outline: PuzzlePieceIcon, solid: PuzzlePieceIconSolid },
-  },
-  {
-    label: "Interactive Simulators",
-    href: SIMULATOR_HREF,
-    icon: { outline: CpuChipIcon, solid: CpuChipIconSolid },
+    icon: { outline: ControllerIcon, solid: ControllerIconSolid },
   },
   {
     label: "Chat",
     href: CHAT_HREF,
     icon: {
       outline: ChatBubbleLeftRightIcon,
-      solid: ChatBubbleLeftRightIconSolid,
+      solid: ChatIconSolid,
     },
     unread: true,
   },
+  // Rows that exist only on a developer's machine; an empty list in every
+  // build. See `src/lib/nav-extras.ts` for how the swap works.
+  ...extraNavItems,
   {
-    label: "Our Philosophy",
+    label: "Simulators",
+    href: SIMULATOR_HREF,
+    icon: { outline: CpuChipIcon, solid: ChipIconSolid },
+  },
+  {
+    label: "Philosophy",
     href: PHILOSOPHY_HREF,
     icon: { outline: BrainIcon, solid: BrainIconSolid },
   },

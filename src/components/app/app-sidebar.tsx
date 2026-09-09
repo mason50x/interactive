@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useChat } from "@/components/app/chat/chat-provider";
-import { AnnouncementsCard } from "@/components/app/announcements-card";
+import { VersionCard } from "@/components/app/version-card";
 import { InviteCard } from "@/components/app/invite-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/components/app/rail-context";
 import { usePreferences } from "@/components/preferences-provider";
 import { RailSearch } from "@/components/app/rail-search";
+import { RailIconSolid } from "@/components/app/nav-icons";
 import { UserMenu } from "@/components/app/user-menu";
 import { NAV_HREFS, PHILOSOPHY_HREF, navItems } from "@/lib/nav";
 import { Wordmark } from "@/components/wordmark";
@@ -82,7 +83,7 @@ import { useWarmRoutes } from "@/lib/warm";
 export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   const pathname = usePathname();
   const { preferences } = usePreferences();
-  const { hasUnread } = useChat();
+  const { hasUnread, mentioned } = useChat();
 
   // The width asked for. Seeded from the cookie the layout read, so the first
   // frame is the remembered one, and written back on every change. Below `lg`
@@ -267,7 +268,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
           {navItems.map((item) => {
             const active = item.href === activeHref;
             const lit = item.href === litHref;
-            const { outline: Outline, solid: Solid } = item.icon;
+            const { solid: Solid } = item.icon;
 
             return (
               <li key={item.href}>
@@ -287,7 +288,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
                     // row follow the width transition instead of jumping at the
                     // end of it — and the icon rail's rows carry a real name for
                     // a screen reader, which the old `lg:inline` label did not.
-                    "relative flex h-11 items-center gap-3 overflow-hidden rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap",
+                    "group nav-row relative flex h-11 items-center gap-3 overflow-hidden rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap",
                     // The global focus ring is a 2px outline held 2px off the
                     // element — around a row that is already filled blue it lands
                     // as a second, brighter border. These get an inset ring
@@ -325,59 +326,69 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
                         "text-muted-foreground backdrop-blur-[3px] transition-[background-color,color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground",
                   )}
                 >
-                  {/* Both cuts are drawn, stacked, and traded on the same
-                    beat as the colour above — a single `Icon` swapped on the
-                    route would change shape the instant the URL did, which is
-                    a solid glyph appearing on the bare rail 70ms before the
-                    pill and the white arrive to explain it, and an outline one
-                    popping onto the face the pill has not left yet. Opacity is
-                    switched, not faded, for the same reason the colour is: a
-                    half-drawn glyph over a half-arrived pill is worse than
-                    either end of it. */}
-                  {/* The margin is what centres the icon in the narrow rail —
+                  {/* Solid in every state. The rail once traded outline for
+                    solid on the lit row; now the glyph never changes shape,
+                    so only the colour switch above has to be timed. The
+                    margin is what centres the icon in the narrow rail —
                     padding plus margin plus half the icon lands on the middle
                     of the 60px row — and eases to nothing as the labels
                     arrive, so the icon slides its 8px rather than hopping. */}
-                  <span className="relative ml-2 size-5 shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
-                    <Outline
-                      className={cn(
-                        "absolute inset-0 size-5 transition-[opacity] delay-[70ms] duration-0",
-                        lit && "opacity-0",
-                      )}
-                    />
-                    <Solid
-                      className={cn(
-                        "absolute inset-0 size-5 transition-[opacity] delay-[70ms] duration-0",
-                        !lit && "opacity-0",
-                      )}
-                    />
-                  </span>
-                  <span className="opacity-0 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:opacity-100">
+                  <Solid className="ml-2 size-5 shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0" />
+                  {/* An unread row's label glints now and then in the brand
+                    colour — a pass, not a loop, so it can be noticed without
+                    having to be watched. Not on the lit row, which is already
+                    where it points. The base is the row's own ink, and it
+                    follows the hover through `group-hover` because the word
+                    is painted by the gradient and no longer by `color`. */}
+                  <span
+                    className={cn(
+                      "opacity-0 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:opacity-100",
+                      item.unread &&
+                        hasUnread &&
+                        !lit &&
+                        "text-shimmer-periodic [--shimmer-base:var(--muted-foreground)] group-hover:[--shimmer-base:var(--foreground)]",
+                    )}
+                  >
                     {item.label}
                   </span>
 
-                  {/* A dot and never a number. The rail is a list of places, and
-                    a count on it would be a second thing to read on a row whose
-                    whole job is to be recognised at a glance — the conversation
-                    list is where "how many, and from whom" belongs.
+                  {/* A dot and a word, never a number. The rail is a list of
+                    places, and a count on it would be a second thing to read
+                    on a row whose whole job is to be recognised at a glance —
+                    the conversation list is where "how many, and from whom"
+                    belongs. Any new message lights it, the room's included;
+                    the word changes when one of them names you.
 
-                    Absolutely positioned on the icon rather than placed after
-                    the label, because below `lg` there is no label to place it
-                    after and the row must not change shape between the two
-                    widths. It rides the same colour switch as everything else
-                    on a lit row: white on the pill, brand blue off it. */}
-                  {item.unread && hasUnread ? (
+                    Anchored to the row's right edge, dot outermost, so the
+                    word can fade with the label in the icon rail and leave the
+                    dot where it was. There it tucks into the top corner beside
+                    the icon, since the row is 60px and a dot on the icon's own
+                    centreline would read as part of the glyph; with labels it
+                    sits on the label's line. Absolutely positioned either way
+                    so the row never changes shape between the two widths.
+
+                    Not on the lit row: you are already where it points, and
+                    the glint on the label goes for the same reason. */}
+                  {item.unread && hasUnread && !lit ? (
                     <span
-                      aria-label="Unread messages"
+                      aria-label={
+                        mentioned ? "You were mentioned" : "Unread messages"
+                      }
                       role="status"
-                      className={cn(
-                        // Two transitions with two clocks: the colour switch on
-                        // the pill's beat, and the slide between its two offsets
-                        // on the rail's.
-                        "absolute top-2.5 left-[2.125rem] size-2 rounded-full [transition:background-color_0s_70ms,left_300ms_cubic-bezier(0.32,0.72,0,1)] wide:left-[1.9375rem]",
-                        lit ? "bg-primary-foreground" : "bg-primary",
-                      )}
-                    />
+                      className="absolute top-2.5 right-2 flex items-center gap-1.5 text-primary [transition:top_300ms_cubic-bezier(0.32,0.72,0,1),right_300ms_cubic-bezier(0.32,0.72,0,1),translate_300ms_cubic-bezier(0.32,0.72,0,1)] wide:top-1/2 wide:right-3 wide:-translate-y-1/2"
+                    >
+                      <span className="text-xs leading-none font-medium opacity-0 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:opacity-100">
+                        {mentioned ? "Mentioned" : "Unread"}
+                      </span>
+                      {/* The ring is Tailwind's ping slowed to the beat the
+                        chat header's presence dot uses: at this size the stock
+                        second reads as an alarm. The blanket reduced-motion
+                        rule at the foot of `globals.css` stills it. */}
+                      <span className="relative flex size-2 shrink-0">
+                        <span className="absolute inset-0 animate-ping rounded-full bg-current opacity-70 [animation-duration:2.4s]" />
+                        <span className="relative size-2 rounded-full bg-current" />
+                      </span>
+                    </span>
                   ) : null}
 
                   <NavPending href={item.href} report={report} />
@@ -392,7 +403,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
           a number you have to open a popup to read is a number nobody reads.
           It renders nothing while invites are switched off on the server.
           See `InviteCard`. */}
-        <AnnouncementsCard />
+        <VersionCard />
         <InviteCard />
 
         {/* Nothing links back to the marketing site: `/` bounces a live session
@@ -431,38 +442,14 @@ function RailToggle({
       onClick={() => setRail(to)}
       aria-label={label}
       title={label}
+      data-to={to}
       className={cn(
-        "flex cursor-pointer items-center justify-center text-muted-foreground backdrop-blur-[3px] outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
+        "rail-toggle flex cursor-pointer items-center justify-center text-muted-foreground backdrop-blur-[3px] outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
         className,
       )}
     >
-      <RailIcon className="size-5" />
+      <RailIconSolid className="size-5" />
     </button>
-  );
-}
-
-/**
- * The collapse glyph: a window with its left column marked off. Drawn here
- * because Heroicons has no sidebar, and drawn to its outline set's rules — 24
- * on the grid, a 1.5 stroke, round caps and joins — so it sits beside the
- * nav rows' icons as one of them. The same glyph both ways: it names the
- * thing being moved, and the label says which way.
- */
-function RailIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className={className}
-    >
-      <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
-      <path d="M9 4.5v15" />
-    </svg>
   );
 }
 
