@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal/legal-document";
-import { privacy } from "@/lib/legal";
+import { privacy, terms } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: privacy.title,
@@ -9,5 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPage() {
-  return <LegalDocument doc={privacy} />;
+  return (
+    <LegalDocument doc={privacy} sibling={{ title: terms.title, href: "/tos" }} />
+  );
 }

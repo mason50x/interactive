@@ -1,11 +1,13 @@
 import { AppProviders } from "@/components/app-providers";
 import { SiteFooter } from "@/components/site-footer";
-import styles from "@/components/landing/landing.module.css";
+import { SiteHeader } from "@/components/site-header";
 
 /**
- * The marketing/app chrome. It lives in a route group rather than in the root
- * layout so `/auth` can opt out of the footer entirely and render
- * its own full-bleed split screen.
+ * The public site's chrome: header above, footer below, the page between.
+ *
+ * It lives in a route group rather than in the root layout so `/auth` can opt
+ * out of both and render its own split screen, and so `/learn` (an activity's
+ * bare frame) never sees a header at all.
  *
  * There was an `EducationalOrganization` JSON-LD block here, which existed to
  * describe the site to search engines in the vocabulary they read. The site
@@ -16,7 +18,8 @@ import styles from "@/components/landing/landing.module.css";
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
     <AppProviders>
-      <div className={styles.site}>
+      <div className="flex min-h-dvh flex-col bg-background text-foreground">
+        <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </div>
