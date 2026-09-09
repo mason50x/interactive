@@ -382,26 +382,43 @@ function ConversationThread({
   }, [conversationId, daysAgo, newest, pending, results.length]);
 
   /**
-   * The end of the thread, watched for growing.
+   * The thread, watched for changing size after the effect above has run.
    *
-   * The typing row does not appear at its full height — it grows in over a
-   * few hundred milliseconds, and the effect above runs once, before the
-   * first of those frames. So the tail is observed instead, and every frame
-   * it gets taller a pinned reader is moved to the new end. Unpinned readers
-   * are left where they are, exactly as they are for a new message.
+   * That effect runs once per new message, before the first paint — and a
+   * long thread keeps moving after that paint. The web font swaps in and
+   * every line of text reflows a little taller. The header and the composer
+   * mount once the conversation's detail arrives, and the pane between them
+   * shrinks by their height. The typing row grows in over a few hundred
+   * milliseconds. Each of those left a pinned reader a little short of the
+   * end, and in a long enough thread the shortfall was an inch of screen
+   * they had to scroll by hand.
+   *
+   * So the pane and everything in it are observed, and every frame any of
+   * them changes size a pinned reader is moved back to the end. Unpinned
+   * readers are left where they are, exactly as they are for a new message.
+   * Children come and go as messages arrive, so the list of what is watched
+   * is refreshed whenever the pane's children change.
    */
-  const tail = useRef<HTMLDivElement>(null);
   const outside = detail === null;
 
   useEffect(() => {
-    const element = tail.current;
     const box = scroller.current;
-    if (element === null || box === null) return;
-    const observer = new ResizeObserver(() => {
+    if (box === null) return;
+    const settle = () => {
       if (pinned.current) box.scrollTop = box.scrollHeight;
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
+    };
+    const sizes = new ResizeObserver(settle);
+    sizes.observe(box);
+    const watch = () => {
+      for (const child of box.children) sizes.observe(child);
+    };
+    watch();
+    const children = new MutationObserver(watch);
+    children.observe(box, { childList: true });
+    return () => {
+      sizes.disconnect();
+      children.disconnect();
+    };
   }, [outside]);
 
   /**
@@ -647,11 +664,8 @@ function ConversationThread({
           </div>
         )}
 
-        {/* Under everything, where their message is about to be. Wrapped so
-            its growth can be watched — see `tail` above. */}
-        <div ref={tail}>
-          {live ? <Typing typists={typists} /> : null}
-        </div>
+        {/* Under everything, where their message is about to be. */}
+        {live ? <Typing typists={typists} /> : null}
       </div>
 
       {/* Under the thread, in the flow. It floated over the messages on a
