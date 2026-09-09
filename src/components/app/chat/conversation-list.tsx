@@ -12,6 +12,7 @@ import {
   GroupRowActions,
 } from "@/components/app/chat/group-panel";
 import { useChat } from "@/components/app/chat/chat-provider";
+import { GlideList } from "@/components/app/chat/glide-list";
 import { Monogram } from "@/components/app/chat/monogram";
 import { Waiting } from "@/components/app/chat/waiting";
 import {
@@ -151,7 +152,9 @@ export function ConversationList() {
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-3">
             {needle === "" ? <Waiting /> : null}
 
-            <ul className="flex flex-col gap-0.5 px-2">
+            {/* One highlight glides between the rows rather than each row
+                lighting up on its own — see `GlideList`. */}
+            <GlideList listClassName="flex flex-col gap-0.5 px-2">
               {shown.map((conversation) => {
                 const href = `${CHAT_HREF}/${conversation._id}`;
                 const active = pathname === href;
@@ -166,15 +169,17 @@ export function ConversationList() {
                   // may not contain any. So the link fills the row, the
                   // controls sit over its right end, and only one of them is
                   // ever under the pointer.
-                  <li key={conversation._id} className="relative">
+                  <li
+                    key={conversation._id}
+                    data-glide-row
+                    className="relative"
+                  >
                     <Link
                       href={href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-2 py-2 transition-colors",
-                        active
-                          ? "bg-foreground/[0.06]"
-                          : "hover:bg-foreground/[0.035]",
+                        active && "bg-foreground/[0.06]",
                         // Room kept for the controls beside it, so the unread
                         // count has somewhere to sit that is not underneath
                         // them. Held rather than revealed on hover: this
@@ -269,11 +274,11 @@ export function ConversationList() {
               })}
 
               {alone ? (
-                <li>
+                <li data-glide-row>
                   <button
                     type="button"
                     onClick={() => field.current?.focus()}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-foreground/[0.035]"
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left"
                   >
                     <span
                       aria-hidden
@@ -298,7 +303,7 @@ export function ConversationList() {
                   Nothing yet. The room should be here in a moment.
                 </li>
               ) : null}
-            </ul>
+            </GlideList>
 
             {needle === "" ? null : (
               <div className="px-2">
