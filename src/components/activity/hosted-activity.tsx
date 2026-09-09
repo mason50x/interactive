@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * A third-party bundle, framed inside `/learn`.
  *
@@ -31,6 +33,11 @@ export function HostedActivity({ title, src }: { title: string; src: string }) {
     <iframe
       src={src}
       title={title}
+      // Eaglercraft cancels canvas mouse-down defaults, so clicking it does
+      // not reliably focus its window after focus returns to the app shell.
+      // Focus the actual game window when the pointer comes back. Cross-origin
+      // Window.focus() is allowed; this does not access the game's document.
+      onMouseEnter={(event) => event.currentTarget.contentWindow?.focus()}
       /**
        * A nested frame can only ever be more restricted than the one holding
        * it, never less — so every capability here must also be granted by
