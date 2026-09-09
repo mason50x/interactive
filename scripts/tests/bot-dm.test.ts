@@ -137,3 +137,47 @@ test("welcome waits three seconds and can restart after the DM is emptied", asyn
     }
   } finally { vi.useRealTimers(); }
 });
+
+test("context hands the bot the newest readable pictures, numbered in reading order", async () => {
+  const { t, dm, global } = await setup();
+  const picture = async (owner: string, contentType: string) => {
+    const storageId = await t.run(ctx => ctx.storage.store(new Blob([new Uint8Array([1, 2, 3])], { type: contentType })));
+    const attachmentId = await t.run(ctx => ctx.db.insert("attachments", {
+      storageId, ownerClerkId: owner, status: "sent", purpose: "message", contentType,
+      size: 3, width: 10, height: 10,
+    }));
+    return { attachmentId, storageId, width: 10, height: 10 };
+  };
+  const post = async (conversationId: typeof dm, author: string, body: string, images?: Awaited<ReturnType<typeof picture>>[]) =>
+    t.run(ctx => ctx.db.insert("messages", {
+      conversationId, authorClerkId: author, authorHandle: author, body, status: "visible", flags: [],
+      images, mentions: conversationId === global ? [{ clerkId: "bot", handle: "bot" }] : undefined,
+    }));
+
+  // A DM: a picture-only message, then a question about it.
+  const dog = await picture("alice", "image/jpeg");
+  await post(dm, "alice", "", [dog]);
+  const question = await post(dm, "alice", "What breed is that?");
+  const room = await t.query(internal.chat.bot.context, { conversationId: dm, messageId: question, askerClerkId: "alice" });
+  expect(room?.messages.map(message => [message.body, message.pictures])).toEqual([
+    ["[shared a picture]", [1]],
+    ["What breed is that?", []],
+  ]);
+  expect(room?.pictures).toEqual([{ number: 1, storageId: dog.storageId, contentType: "image/jpeg", authorHandle: "alice" }]);
+
+  // The room: the tag's own pictures win over older ones, GIFs stay words, and four is the cap.
+  const old = await picture("bob", "image/png");
+  await post(global, "bob", "look", [old]);
+  const gif = await picture("alice", "image/gif");
+  await post(global, "alice", "", [gif]);
+  const fresh = await Promise.all(["image/png", "image/webp", "image/jpeg", "image/png"].map(type => picture("alice", type)));
+  const tag = await post(global, "alice", "@bot which of these is best?", fresh);
+  const tagged = await t.query(internal.chat.bot.context, { conversationId: global, messageId: tag, askerClerkId: "alice" });
+  expect(tagged?.pictures.map(p => [p.number, p.storageId, p.authorHandle])).toEqual(
+    fresh.map((image, index) => [index + 1, image.storageId, "alice"]),
+  );
+  expect(tagged?.messages.map(message => message.pictures)).toEqual([[], [], [1, 2, 3, 4]]);
+
+  // Nobody else can borrow the asker's context.
+  expect(await t.query(internal.chat.bot.context, { conversationId: global, messageId: tag, askerClerkId: "bob" })).toBeNull();
+});
