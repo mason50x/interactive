@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
+import { GlideList } from "@/components/app/chat/glide-list";
 import { PersonRow, RowMenu } from "@/components/app/chat/people-rows";
 import { SectionLabel } from "@/components/app/chat/section-label";
 import { api } from "../../../../convex/_generated/api";
@@ -32,9 +33,13 @@ export function Waiting() {
   return (
     <div className="px-2 pt-1 pb-2">
       <SectionLabel>Waiting on you</SectionLabel>
-      <ul className="mt-1 flex flex-col">
+      <GlideList className="mt-1" listClassName="flex flex-col">
         {incoming.map((row) => (
-          <PersonRow key={row.clerkId} person={row} detail="Wants to be friends">
+          <PersonRow
+            key={row.clerkId}
+            person={row}
+            detail="Wants to be friends"
+          >
             {/* Turning a request down leaves them free to send another one,
                 which is the right default and the wrong one for the person
                 sending the fourth. */}
@@ -105,7 +110,7 @@ export function Waiting() {
             </Button>
           </PersonRow>
         ))}
-      </ul>
+      </GlideList>
     </div>
   );
 }

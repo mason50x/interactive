@@ -3,6 +3,7 @@
 import { Menu } from "@base-ui/react/menu";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/solid";
 import type { ReactNode } from "react";
+import { GlideList } from "@/components/app/chat/glide-list";
 import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
@@ -66,12 +67,18 @@ export function PersonRow({
     </>
   );
 
+  // Hover is not the row's to draw: the list it is in slides one highlight
+  // between whichever rows can be pressed — see `GlideList`. A row with no
+  // card is not one of those, so the highlight passes it by.
   return (
-    <li className="flex min-h-11 items-center gap-2">
+    <li
+      data-glide-row={card ? "" : undefined}
+      className="flex min-h-11 items-center gap-2"
+    >
       {card ? (
         <PersonCard
           person={person}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition-colors outline-none hover:bg-foreground/[0.04] focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:bg-foreground/[0.06]"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:bg-foreground/[0.06]"
         >
           {face}
         </PersonCard>
@@ -145,7 +152,9 @@ export function Group({
   return (
     <section className="pt-3">
       <SectionLabel>{label}</SectionLabel>
-      <ul className="mt-1 flex flex-col">{children}</ul>
+      <GlideList className="mt-1" listClassName="flex flex-col">
+        {children}
+      </GlideList>
     </section>
   );
 }
