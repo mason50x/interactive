@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import type { ChatMention } from "../../../../convex/chat/messages";
+import { useDebounced } from "@/lib/use-debounced";
 
 /**
  * Naming somebody in a message, on screen.
@@ -124,11 +125,7 @@ export function useMentionPeople({
   // The index is asked once typing has paused, and only in the room: a group
   // has its members and a direct message has its one person, and neither
   // wants strangers offered.
-  const [term, setTerm] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => setTerm(query), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const term = useDebounced(query, SEARCH_DEBOUNCE_MS);
   const searching = global && term.length >= 2;
   const found = useQuery(
     api.chat.profiles.search,

@@ -12,6 +12,7 @@ import { isBot, openDmError, personName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
+import { FieldError } from "@/components/ui/alert";
 
 /**
  * A person, when their name is pressed.
@@ -290,9 +291,7 @@ function Body({
               messages from friends is told so next to the Add button rather
               than after pressing Message. */}
           {notice !== null ? (
-            <p role="status" className="mt-2 text-[0.8125rem] text-destructive">
-              {notice}
-            </p>
+            <FieldError role="status">{notice}</FieldError>
           ) : !card.canMessage &&
             !card.blocked &&
             card.conversationId === null ? (

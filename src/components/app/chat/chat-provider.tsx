@@ -1,10 +1,12 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { createContext, use, useEffect, useRef, type ReactNode } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { ConversationSummary } from "../../../../convex/chat/conversations";
 import type { MyProfile } from "../../../../convex/chat/profiles";
+import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useConvexAuth } from "convex/react";
 
 /**
  * Everything about chat that something outside chat needs to know.
@@ -69,25 +71,12 @@ export function useChat() {
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
-
-  const profile = useQuery(
-    api.chat.profiles.mine,
-    isAuthenticated ? {} : "skip",
-  );
-  const conversations = useQuery(
-    api.chat.conversations.list,
-    isAuthenticated ? {} : "skip",
-  );
-  const pending = useQuery(
-    api.chat.friends.pending,
-    isAuthenticated ? {} : "skip",
-  );
-  const invitations = useQuery(
-    api.chat.groups.invitations,
-    isAuthenticated ? {} : "skip",
-  );
-  const isAdmin = useQuery(api.chat.admin.mine, isAuthenticated ? {} : "skip");
-  const features = useQuery(api.features.get, isAuthenticated ? {} : "skip");
+  const profile = useAuthedQuery(api.chat.profiles.mine, {});
+  const conversations = useAuthedQuery(api.chat.conversations.list, {});
+  const pending = useAuthedQuery(api.chat.friends.pending, {});
+  const invitations = useAuthedQuery(api.chat.groups.invitations, {});
+  const isAdmin = useAuthedQuery(api.chat.admin.mine, {});
+  const features = useAuthedQuery(api.features.get, {});
 
   // Puts the account back in the global room. Idempotent, and it exists for the
   // accounts that claimed a handle before the room did — and for anyone who

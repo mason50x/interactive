@@ -1,15 +1,13 @@
 "use client";
 
-import { Menu } from "@base-ui/react/menu";
 import { EllipsisHorizontalIcon } from "@heroicons/react/24/solid";
 import type { ReactNode } from "react";
 import { GlideList } from "@/components/app/chat/glide-list";
-import { menuItemClass, popupClass } from "@/components/app/chat/menu";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
-import { SectionLabel } from "@/components/app/chat/section-label";
 import { personName } from "@/lib/chat";
-import { cn } from "@/lib/utils";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
+import { Separator } from "@/components/ui/separator";
 
 /**
  * The pieces every list of people is built from, so the three lists — search
@@ -111,34 +109,31 @@ export function RowMenu({
   items: readonly { label: string; onClick: () => void; danger?: boolean }[];
 }) {
   return (
-    <Menu.Root>
-      <Menu.Trigger
+    <Menu>
+      <MenuTrigger
         aria-label={label}
         className="flex size-7 items-center justify-center rounded-lg text-faint transition-colors outline-none hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring data-popup-open:bg-foreground/[0.06] data-popup-open:text-foreground"
       >
         <EllipsisHorizontalIcon className="size-4" />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner
-          side="bottom"
-          align="end"
-          sideOffset={6}
-          className="z-[60] outline-none"
-        >
-          <Menu.Popup className={cn(popupClass, "w-44 flex-col")}>
-            {items.map((item) => (
-              <Menu.Item
-                key={item.label}
-                onClick={item.onClick}
-                className={cn(menuItemClass, item.danger && "text-destructive")}
-              >
-                {item.label}
-              </Menu.Item>
-            ))}
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+      </MenuTrigger>
+      <MenuContent
+        side="bottom"
+        align="end"
+        padding="xs"
+        positionerClassName="z-[60]"
+        className="w-44 flex-col"
+      >
+        {items.map((item) => (
+          <MenuItem
+            key={item.label}
+            onClick={item.onClick}
+            tone={item.danger ? "destructive" : "default"}
+          >
+            {item.label}
+          </MenuItem>
+        ))}
+      </MenuContent>
+    </Menu>
   );
 }
 
@@ -151,18 +146,10 @@ export function Group({
 }) {
   return (
     <section className="pt-3">
-      <SectionLabel>{label}</SectionLabel>
+      <Separator>{label}</Separator>
       <GlideList className="mt-1" listClassName="flex flex-col">
         {children}
       </GlideList>
     </section>
-  );
-}
-
-export function Empty({ children }: { children: ReactNode }) {
-  return (
-    <li className="py-6 text-center text-[0.8125rem] leading-relaxed text-muted-foreground">
-      {children}
-    </li>
   );
 }

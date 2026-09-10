@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { GlideList } from "@/components/app/chat/glide-list";
 import { PersonRow, RowMenu } from "@/components/app/chat/people-rows";
-import { SectionLabel } from "@/components/app/chat/section-label";
+import { Separator } from "@/components/ui/separator";
 import { api } from "../../../../convex/_generated/api";
 
 /**
@@ -32,7 +32,7 @@ export function Waiting() {
 
   return (
     <div className="px-2 pt-1 pb-2">
-      <SectionLabel>Waiting on you</SectionLabel>
+      <Separator>Waiting on you</Separator>
       <GlideList className="mt-1" listClassName="flex flex-col">
         {incoming.map((row) => (
           <PersonRow
