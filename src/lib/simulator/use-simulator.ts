@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * The player's state machine, as one hook.
+ *
+ * Owns the engine and the sync for one program on one canvas: starting it,
+ * pausing and resuming, saving to a slot and restoring from one, importing
+ * and exporting progress, and the device settings. The component that
+ * renders it is left with the screen, the buttons and the words.
+ */
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useConvex } from "convex/react";
 import type {

@@ -1,3 +1,13 @@
+/**
+ * The one button.
+ *
+ * Every variant is a way of sitting on a surface — filled with the accent,
+ * outlined on the page, ghosted into a row, inverted on the dark panel — and
+ * every size is a height, so a row of controls lines up on one baseline. The
+ * marketing sizes are pills because that is the shape the site draws them
+ * at; `shape="circle"` is for an icon button in a round well. `ButtonLink`
+ * is the same styling on a Next.js link, for an action that is a navigation.
+ */
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import Link from "next/link";

@@ -1,3 +1,4 @@
+/** One HTML simulation, addressed by the hash of its bytes. */
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";

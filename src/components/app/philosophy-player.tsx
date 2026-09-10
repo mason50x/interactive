@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * The audio behind the philosophy scene, and the one control over it.
+ *
+ * Sound starts muted, because a page that plays sound unasked is a page
+ * people close. The engine is built on the first press and torn down on
+ * leave; the loop timing comes from `src/lib/philosophy-timing.ts` so the
+ * sound and the picture agree on where the beat falls.
+ */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SpeakerWaveIcon, SpeakerXMarkIcon } from "@heroicons/react/24/outline";
 import { useStillness } from "@/lib/motion";

@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * A panel that slides in from an edge and takes the page's focus while it
+ * is open. Base UI's dialog parts under the app's surface: held off every
+ * edge rather than fixed to one, the same shape the dashboard shell is.
+ */
 import * as React from "react";
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 

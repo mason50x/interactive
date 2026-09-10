@@ -1,3 +1,12 @@
+/**
+ * Keeping the device's progress and the cloud's in step.
+ *
+ * The device is written first and always; the cloud is written after, with a
+ * timeout, and a cloud failure never costs a local save. On open the two are
+ * compared by timestamp and the newer wins, so a session that ended on
+ * another machine picks up here. Every status change is reported so the
+ * save indicator can say which half is behind.
+ */
 import { ConvexError } from "convex/values";
 import type { ConvexReactClient } from "convex/react";
 import { api } from "@convex/_generated/api";

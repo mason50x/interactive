@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckIcon } from "@heroicons/react/24/solid";
-import { accents, type AccentId } from "@/lib/preferences";
+import { accents, type AccentId } from "@/lib/accent";
 import { cn } from "@/lib/utils";
 
 /**

@@ -1,3 +1,11 @@
+/**
+ * The philosophy page: a scene, not a document.
+ *
+ * The prohibition sign and its caption are drawn here; the puppets and the
+ * audio live in their own files. `useStillness` swaps every motion for its
+ * end frame, so the page says the same thing to someone who asked for less
+ * movement, just all at once.
+ */
 import styles from "@/components/app/philosophy-animation.module.css";
 import { PhilosophyPlayer } from "@/components/app/philosophy-player";
 import { PhilosophyPuppets } from "@/components/app/philosophy-puppets";

@@ -9,19 +9,20 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { applyAccent } from "@/lib/accent";
+import { canonicalCombo, safePanicUrl } from "@/lib/panic-key";
 import {
-  applyAccent,
-  cachePreferences,
-  canonicalCombo,
-  clearCachedPreferences,
   defaultPreferences,
+  type Preferences,
+  resolvePreferences,
+} from "@/lib/preferences";
+import {
+  cachePreferences,
+  clearCachedPreferences,
   parseCachedPreferences,
   readCachedPreferences,
-  resolvePreferences,
-  safePanicUrl,
   subscribeToCachedPreferences,
-  type Preferences,
-} from "@/lib/preferences";
+} from "@/lib/preferences-cache";
 import { tabMaskAssets, watchTabMask } from "@/lib/tab-mask";
 import { api } from "@convex/_generated/api";
 

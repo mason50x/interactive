@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * The puppets: strings hung from fixed points above the frame, each pulled
+ * on its own beat. The geometry is a table of anchor points and the lengths
+ * derived from them, so the picture is data plus one loop.
+ */
 import { useEffect, useRef, type CSSProperties } from "react";
 import { useStillness } from "@/lib/motion";
 import styles from "@/components/app/philosophy-animation.module.css";

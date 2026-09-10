@@ -1,3 +1,4 @@
+/** One Game Boy simulation, addressed by the hash of its bytes. */
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";

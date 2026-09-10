@@ -1,3 +1,4 @@
+/** Who makes this and why, told in three bands. */
 import type { Metadata } from "next";
 import { CtaPair } from "@/components/landing/cta-pair";
 import { DotBand } from "@/components/landing/dot-band";

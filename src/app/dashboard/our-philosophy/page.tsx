@@ -1,3 +1,4 @@
+/** The philosophy scene, behind the sign-in like every dashboard page. */
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { PhilosophyAnimation } from "@/components/app/philosophy-animation";

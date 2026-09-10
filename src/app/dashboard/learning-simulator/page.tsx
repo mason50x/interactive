@@ -1,3 +1,4 @@
+/** The simulator library: what the reader has brought, in either format. */
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { SimulatorLibrary } from "@/components/simulator/simulator-library";

@@ -11,7 +11,7 @@ import {
 import { PacketCover } from "@/components/app/packet-cover";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
 import { usePreferences } from "@/components/preferences-provider";
-import { safePanicUrl } from "@/lib/preferences";
+import { safePanicUrl } from "@/lib/panic-key";
 
 /**
  * The app's side of the origin boundary.

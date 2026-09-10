@@ -1,3 +1,13 @@
+/**
+ * The Game Boy core, wrapped.
+ *
+ * The runtime under `public/simulator/core/` is a WebAssembly build of an
+ * emulator with a C ABI; this class is the whole of what the app knows
+ * about it. It loads the module once, feeds it a program and a canvas,
+ * pumps frames and audio, maps keys to the joypad, and reads and writes
+ * the two blobs progress is made of: the machine state and the cartridge's
+ * own RAM. Nothing outside this file calls an exported symbol by name.
+ */
 import type { Input } from "./types";
 import { ENGINE_BUILD, STATE_BYTES } from "./progress";
 type FunctionName =

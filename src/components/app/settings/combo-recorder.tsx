@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Kbd } from "@/components/ui/kbd";
-import { canonicalCombo, comboParts, isRiskyCombo } from "@/lib/preferences";
+import { canonicalCombo, comboParts, isRiskyCombo } from "@/lib/panic-key";
 import { cn } from "@/lib/utils";
 
 /**

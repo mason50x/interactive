@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * A word on hover. Dark on light and light on dark, so it reads as a label
+ * pinned to the control rather than a second surface. `Kbd` inside one gets
+ * tighter padding, which is what the `data-slot=kbd` rules are for.
+ */
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { cn } from "@/lib/utils";
 

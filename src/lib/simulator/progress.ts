@@ -1,3 +1,12 @@
+/**
+ * What a save is, and what makes one valid.
+ *
+ * A checkpoint is the emulator's state blob at one frame plus the cartridge
+ * RAM, tagged with the engine build that wrote it and the hash of the
+ * program it belongs to. `validateProgress` refuses anything that does not
+ * match all three, because loading a state into the wrong core or the wrong
+ * program is not a corrupted game — it is a crash.
+ */
 import type { Progress, Mode } from "./types";
 export const ENGINE_BUILD = "c60e138";
 export const STATE_BYTES = 199608;

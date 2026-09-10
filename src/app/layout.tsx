@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import { brand } from "@/lib/brand";
 import { consoleGreetingScript } from "@/lib/console-greeting";
-import { preferencesScript } from "@/lib/preferences";
+import { preferencesScript } from "@/lib/preferences-script";
 import { themeScript } from "@/lib/theme";
 import "./globals.css";
 import { cn } from "@/lib/utils";

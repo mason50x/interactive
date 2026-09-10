@@ -1,3 +1,9 @@
+/**
+ * The foot of every marketing page: the lockup and the blurb on the left,
+ * the link columns on the right, and the legal line under both. The copy
+ * comes from `src/lib/content.ts` so the footer and the pages it links say
+ * the same names.
+ */
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { Wordmark } from "@/components/wordmark";

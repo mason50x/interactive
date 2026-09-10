@@ -1,3 +1,4 @@
+/** The terms of service, read from `legalDocuments`. */
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal/legal-document";
 import { legalDocuments } from "@/lib/legal";

@@ -1,3 +1,12 @@
+/**
+ * The device's copy of every simulation and its progress, in IndexedDB.
+ *
+ * Two object stores: the programs themselves, so a file only has to be
+ * chosen once, and the progress, keyed by owner and hash so two accounts on
+ * one machine never see each other's saves. The cloud copy in
+ * `convex/simulator/` is the backup; this is what the player actually runs
+ * from, which is why it works with no network at all.
+ */
 import { identify } from "./files";
 import type { Program, LocalEntry } from "./types";
 const database = "50x-learning-simulator-v1";

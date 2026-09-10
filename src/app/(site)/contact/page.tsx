@@ -1,3 +1,4 @@
+/** How to reach us, one card per channel. */
 import type { Metadata } from "next";
 import { ArrowUpRightIcon } from "@heroicons/react/16/solid";
 import { DotBand } from "@/components/landing/dot-band";

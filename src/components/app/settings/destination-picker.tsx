@@ -1,7 +1,7 @@
 "use client";
 
 import { PresetSelect } from "@/components/app/settings/preset-select";
-import { panicPresets, safePanicUrl } from "@/lib/preferences";
+import { panicPresets, safePanicUrl } from "@/lib/panic-key";
 
 /**
  * The blank page first, then five places anyone might plausibly be. Six
