@@ -10,7 +10,7 @@
  * without a reply, so a stray script cannot learn that the channel exists.
  */
 
-export const HTML_CHANNEL = "interactive-html";
+const HTML_CHANNEL = "interactive-html";
 
 export type FrameRequest = {
   id: number;

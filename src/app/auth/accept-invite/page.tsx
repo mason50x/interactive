@@ -8,6 +8,7 @@ import {
   TICKET_PARAM,
   TICKET_STATUS_PARAM,
 } from "@/lib/invitations";
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = { title: "Accept your invitation" };
 
@@ -113,7 +114,7 @@ function Panel({
   eyebrow: string;
   heading: string;
   body: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="w-full max-w-md">

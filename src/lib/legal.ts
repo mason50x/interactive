@@ -23,7 +23,7 @@
 import { brand } from "@/lib/brand";
 
 /** Role addresses. Deliberately not a person, on any of these. */
-export const legalContacts = {
+const legalContacts = {
   privacy: `privacy@${brand.domain}`,
   legal: `legal@${brand.domain}`,
   copyright: `copyright@${brand.domain}`,

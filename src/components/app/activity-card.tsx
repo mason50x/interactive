@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { type Activity, popularityLabel, thumbnailSrc } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
@@ -58,7 +58,7 @@ export function ActivityCard({
   const art = artFailed ? null : thumbnailSrc(activity);
   const meta = GENRES[activity.genre];
 
-  const hue = { "--hue": meta.hue } as React.CSSProperties;
+  const hue = { "--hue": meta.hue } as CSSProperties;
 
   const shell = cn(
     "group relative block aspect-video w-full overflow-hidden rounded-xl",

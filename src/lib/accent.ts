@@ -40,7 +40,7 @@ export const accents = [
  * The ink on top of any of them. One value, not a column in the table above:
  * the palette is chosen so this is always the right answer.
  */
-export const ACCENT_INK = "#ffffff";
+const ACCENT_INK = "#ffffff";
 
 export type AccentId = (typeof accents)[number]["id"];
 
@@ -54,7 +54,7 @@ export function isAccentId(value: unknown): value is AccentId {
   return accents.some((accent) => accent.id === value);
 }
 
-export function accentColor(id: AccentId): string {
+function accentColor(id: AccentId): string {
   return (accents.find((accent) => accent.id === id) ?? accents[0]).color;
 }
 
@@ -76,7 +76,7 @@ export function accentColor(id: AccentId): string {
  * The `--sidebar-*` twins are here because shadcn keeps a parallel set for
  * chrome, and the rail is where most of this is actually seen.
  */
-export function accentVariables(id: AccentId): [string, string][] {
+function accentVariables(id: AccentId): [string, string][] {
   return accentVariablesFor(accentColor(id));
 }
 

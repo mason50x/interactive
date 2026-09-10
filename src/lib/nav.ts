@@ -33,7 +33,7 @@ export type NavItem = {
 /** The catalogue. Has a search box of its own, separate from the rail's. */
 export const ACTIVITIES_HREF = "/dashboard/activities";
 
-export const SIMULATOR_HREF = "/dashboard/learning-simulator";
+const SIMULATOR_HREF = "/dashboard/learning-simulator";
 
 export const CHAT_HREF = "/dashboard/chat";
 

@@ -91,7 +91,7 @@ export function PresetSelect({
  * sits on the panel rather than on a white sticker stuck to it. A site whose
  * mark cannot do that does not belong in this list.
  */
-export function PresetMark({ icon }: { icon?: string }) {
+function PresetMark({ icon }: { icon?: string }) {
   return (
     <span className="flex size-4 shrink-0 items-center justify-center">
       {icon ? (

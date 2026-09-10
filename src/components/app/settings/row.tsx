@@ -50,7 +50,7 @@ export function Row({
  * row starts closing would animate an empty box shut, so the last thing said
  * stays said until the space it occupied is gone.
  */
-export function RowNote({ children }: { children: string | null }) {
+function RowNote({ children }: { children: string | null }) {
   const [held, setHeld] = useState(children);
   if (children !== null && children !== held) setHeld(children);
 

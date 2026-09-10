@@ -15,13 +15,16 @@ import type { Builtin } from "@/lib/simulator/types";
 import { readProgram } from "@/lib/simulator/local-store";
 import { openProgram } from "@/lib/simulator/files";
 import { useSimulator } from "@/lib/simulator/use-simulator";
-import { useSimulatorSession } from "./session-provider";
-import { HiddenFileInput, useOriginalFilePicker } from "./file-picker";
-import { Reveal } from "./reveal";
-import { SaveStatus } from "./save-status";
-import { GameBoy } from "./game-boy";
+import { useSimulatorSession } from "@/components/simulator/session-provider";
+import {
+  HiddenFileInput,
+  useOriginalFilePicker,
+} from "@/components/simulator/file-picker";
+import { Reveal } from "@/components/simulator/reveal";
+import { SaveStatus } from "@/components/simulator/save-status";
+import { GameBoy } from "@/components/simulator/game-boy";
 import styles from "./game-boy.module.css";
-import { SavesPanel } from "./saves-panel";
+import { SavesPanel } from "@/components/simulator/saves-panel";
 
 /**
  * One Game Boy session: the device on the left, the session card on the

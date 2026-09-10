@@ -3,8 +3,8 @@
 import { Popover } from "@base-ui/react/popover";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Monogram } from "./monogram";
-import { OptionTiles } from "./option-tiles";
+import { Monogram } from "@/components/app/chat/monogram";
+import { OptionTiles } from "@/components/app/chat/option-tiles";
 import { AVATAR_EMOJI, AVATAR_HUES, MAX_INITIALS } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";

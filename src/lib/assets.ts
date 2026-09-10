@@ -75,7 +75,7 @@ export const ACTIVITIES_PREFIX = "activities";
  * The candidates are tried in order and the first one that parses wins, for
  * the reason `originFromEnv` gives.
  */
-export function assetOrigin(): string | null {
+function assetOrigin(): string | null {
   return originFromEnv(
     process.env.ASSET_ORIGIN,
     process.env.NEXT_PUBLIC_ASSET_ORIGIN,

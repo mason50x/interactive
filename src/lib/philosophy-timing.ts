@@ -2,7 +2,7 @@ export const PHILOSOPHY_LOOP_SECONDS = 6.56;
 
 // Source recording: D (8.10–11.55s) starts at 0.5s; B (11.55–14.70s)
 // starts at 3.95s in accents-loop.wav. Preserve the recording's beat spacing.
-export const PHILOSOPHY_CUES = [
+const PHILOSOPHY_CUES = [
   { time: 1.125, frame: 0 },
   { time: 1.948, frame: 1 },
   { time: 2.771, frame: 2 },

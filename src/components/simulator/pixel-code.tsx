@@ -1,4 +1,4 @@
-import { PixelArt } from "./pixel-art";
+import { PixelArt } from "@/components/simulator/pixel-art";
 
 /** A pair of angle brackets with a slash: the HTML library's empty state. */
 const ART = [

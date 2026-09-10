@@ -8,7 +8,10 @@ import type {
 } from "@/lib/simulator/types";
 import { Button } from "@/components/ui/button";
 import { exportProgress, importProgress } from "@/lib/simulator/progress";
-import { HiddenFileInput, useFilePicker } from "./file-picker";
+import {
+  HiddenFileInput,
+  useFilePicker,
+} from "@/components/simulator/file-picker";
 
 /**
  * The save slots of one Game Boy entry: two autosaves the engine rotates on

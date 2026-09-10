@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { ActivityRow } from "@/components/app/activity-row";
 import { Spinner } from "@/components/ui/spinner";
 import type { Activity } from "@/lib/activity";
@@ -179,13 +179,7 @@ export function HomeBoard({ activities }: { activities: readonly Activity[] }) {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
       <h2 className="text-[1.25rem] leading-tight font-semibold text-foreground">

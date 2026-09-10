@@ -112,7 +112,7 @@ export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as c
  * picker's contents; there they are the check that a picked value is one of
  * them. Change one, change the other. The server is the one that decides.
  */
-export const GROUP_EMOJI = [
+const GROUP_EMOJI = [
   "🎮",
   "🎵",
   "⚽",
@@ -131,15 +131,12 @@ export const GROUP_EMOJI = [
   "🦊",
 ] as const;
 
-export const GROUP_HUES = [
+const GROUP_HUES = [
   10, 40, 70, 100, 130, 160, 190, 220, 250, 280, 310, 340,
 ] as const;
 
 /** The longest a group may be called, the same as `MAX_TITLE` on the server. */
 export const MAX_TITLE = 40;
-
-/** The longest a display name may be, the same as `MAX_DISPLAY_NAME` there. */
-export const MAX_DISPLAY_NAME = 30;
 
 /**
  * What a person is called where there is room for one line: their display
@@ -166,13 +163,6 @@ export function personName(person: {
 export const AVATAR_HUES = GROUP_HUES;
 export const AVATAR_EMOJI = GROUP_EMOJI;
 export const MAX_INITIALS = 2;
-
-/**
- * How many handle changes an account gets, ever. Mirrors
- * `MAX_HANDLE_CHANGES` on the server, which is the one that decides; here it
- * only decides what the panel says is left.
- */
-export const MAX_HANDLE_CHANGES = 2;
 
 /**
  * How long a message can still be deleted, duplicated from

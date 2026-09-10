@@ -1119,29 +1119,6 @@
    flame — and it is affordable here for the reason it is in the handle
    ceremony: it runs for under a second, on one element of about ninety pixels,
    on a screen where nothing else is moving. */
-@keyframes streak-flare {
-  0% {
-    filter: drop-shadow(0 0 0 transparent);
-  }
-  26% {
-    filter: drop-shadow(
-      0 0 12px color-mix(in srgb, var(--fire) 75%, transparent)
-    );
-  }
-  58% {
-    filter: drop-shadow(
-      0 0 7px color-mix(in srgb, var(--fire) 45%, transparent)
-    );
-  }
-  100% {
-    filter: drop-shadow(0 0 0 transparent);
-  }
-}
-
-.streak-flare {
-  animation: streak-flare 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 /* Rail icon microanimations.
 
    Each of the rail's icons does one small thing on hover, and the thing is

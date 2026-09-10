@@ -158,7 +158,7 @@ export function scoreFolded(haystack: string, needle: string): number | null {
  * outrank one found by its name, so the keyword tiers are shifted down past
  * the bottom of the title tiers rather than merely reduced.
  */
-export function scoreEntry(
+function scoreEntry(
   needle: string,
   title: string,
   keywords: readonly string[] = [],

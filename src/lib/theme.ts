@@ -13,8 +13,8 @@ export type ThemePreference = (typeof themePreferences)[number];
 /** What the page is actually painted as, once `system` has been read. */
 export type ResolvedTheme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "il-theme";
-export const THEME_ATTRIBUTE = "data-theme";
+const THEME_STORAGE_KEY = "il-theme";
+const THEME_ATTRIBUTE = "data-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
@@ -23,14 +23,14 @@ export function usesAppTheme(pathname: string): boolean {
   return /^\/(dashboard|learn)(?:\/|$)/.test(pathname);
 }
 
-export function isThemePreference(value: unknown): value is ThemePreference {
+function isThemePreference(value: unknown): value is ThemePreference {
   return (
     typeof value === "string" &&
     (themePreferences as readonly string[]).includes(value)
   );
 }
 
-export function systemTheme(): ResolvedTheme {
+function systemTheme(): ResolvedTheme {
   return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
 }
 
@@ -44,7 +44,7 @@ export function readStoredPreference(): ThemePreference {
   return isThemePreference(stored) ? stored : "system";
 }
 
-export function storePreference(preference: ThemePreference): void {
+function storePreference(preference: ThemePreference): void {
   // `system` is the absence of a choice, so it is stored as the absence of a
   // key. That way a user who goes back to it is not pinned to whatever the OS
   // happened to be on the day they chose.

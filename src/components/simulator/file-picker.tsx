@@ -19,7 +19,7 @@ import {
 
 /** The first chosen file, with the input reset so a re-pick of the same
  *  file is still a change. */
-export function pickFile(event: ChangeEvent<HTMLInputElement>): File | null {
+function pickFile(event: ChangeEvent<HTMLInputElement>): File | null {
   const file = event.target.files?.[0] ?? null;
   event.target.value = "";
   return file;

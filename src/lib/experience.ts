@@ -56,7 +56,7 @@ export function findExperienceApp(id: string): ExperienceApp | null {
 }
 
 /** The experience origin, or `null` when none is configured. */
-export function experienceOrigin(): string | null {
+function experienceOrigin(): string | null {
   return originFromEnv(
     process.env.EXPERIENCE_ORIGIN,
     process.env.NEXT_PUBLIC_EXPERIENCE_ORIGIN,

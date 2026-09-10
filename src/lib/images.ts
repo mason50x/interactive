@@ -47,7 +47,7 @@
 export const MAX_IMAGES_PER_MESSAGE = 4;
 
 /** Mirrors `MAX_IMAGE_BYTES` there. Here it is when to give up, not a rule. */
-export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 
 /**
  * The longest a shrunk picture's longest side will be.
