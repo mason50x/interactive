@@ -1108,17 +1108,6 @@
   animation: flame-core 1.13s ease-in-out infinite;
 }
 
-/* The chip catching light as the number turns over.
-
-   A `drop-shadow` and not a `box-shadow`: the chip's hairline and its drop are
-   both box-shadows already, and a keyframe on that property would take them
-   off for the length of the flare and put them back at the end. This composes
-   with them instead, and follows the pill's shape rather than its box.
-
-   A filter is the expense this file otherwise refuses — see the note on the
-   flame — and it is affordable here for the reason it is in the handle
-   ceremony: it runs for under a second, on one element of about ninety pixels,
-   on a screen where nothing else is moving. */
 /* Rail icon microanimations.
 
    Each of the rail's icons does one small thing on hover, and the thing is
