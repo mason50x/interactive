@@ -291,22 +291,8 @@
 .sectionTrigger[aria-expanded="true"] svg {
   transform: rotate(90deg);
 }
-.sectionPanel {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 220ms ease;
-}
-.sectionPanel[data-open="true"] {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-.sectionContent {
-  min-height: 0;
-  overflow: hidden;
-}
+/* The saves panel draws its own card; inside the session card it is one
+   section among others, so its frame comes off. */
 .sectionContent > section {
   border: 0;
   background: transparent;
@@ -350,7 +336,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .power > span:first-child,
-  .sectionPanel,
   .sectionTrigger svg {
     transition: none;
   }

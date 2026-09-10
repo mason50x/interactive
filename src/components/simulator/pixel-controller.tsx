@@ -1,4 +1,7 @@
 import { PixelArt } from "./pixel-art";
+
+/** A game pad with a d-pad and two buttons: the Game Boy library's empty
+ *  state. */
 const ART = [
   "...#####...#####...",
   "..#.....###.....#..",

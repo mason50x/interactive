@@ -1,13 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { TrashIcon } from "@heroicons/react/24/outline";
 import { api } from "../../../convex/_generated/api";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { PixelCode } from "./pixel-code";
-import { ImportPanel, ProgressSection } from "./library-parts";
+import { useAuthedQuery } from "@/lib/use-authed-query";
 import {
   identifyHtml,
   importHtml,
@@ -18,23 +16,42 @@ import {
   type HtmlEntry,
   type HtmlProgram,
 } from "@/lib/simulator/html-store";
+import { useFilePicker } from "./file-picker";
+import { ClearAllButton } from "./clear-all-button";
+import { HtmlImportPanel, ProgressSection } from "./library-parts";
+import {
+  EntryList,
+  EntryRow,
+  LibraryEmpty,
+  formatSavedAt,
+} from "./library-entries";
+import { LibraryShell } from "./library-shell";
+import { PixelCode } from "./pixel-code";
+
 const ROOT = "/dashboard/learning-simulator/html";
+
+/**
+ * The HTML library: the self-contained pages this account has opened,
+ * merged from this device's store and the account's list of names.
+ *
+ * The device is the source of truth here, the reverse of the Game Boy
+ * library: the HTML itself never leaves the device, and the account keeps
+ * only a name against each hash so the list can show what is missing on a
+ * second device. A row that is in the account but not on this device says
+ * so and opens to a screen that asks for the original file. Pasted code is
+ * hashed the same way a chosen file is, so it lands as an ordinary entry.
+ */
 export default function HtmlLibrary() {
-  const { userId } = useAuth(),
-    { isAuthenticated } = useConvexAuth(),
-    router = useRouter();
-  const cloud = useQuery(
-    api.simulator.html.list,
-    isAuthenticated ? {} : "skip",
-  );
-  const remove = useMutation(api.simulator.html.remove),
-    rename = useMutation(api.simulator.html.rename);
-  const [local, setLocal] = useState<HtmlEntry[]>([]),
-    [search, setSearch] = useState(""),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [confirmClear, setConfirmClear] = useState(false);
-  const picker = useRef<HTMLInputElement>(null);
+  const { userId } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
+  const router = useRouter();
+  const cloud = useAuthedQuery(api.simulator.html.list, {});
+  const remove = useMutation(api.simulator.html.remove);
+  const rename = useMutation(api.simulator.html.rename);
+  const [local, setLocal] = useState<HtmlEntry[]>([]);
+  const [search, setSearch] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   useEffect(() => {
     let alive = true;
     if (userId)
@@ -59,6 +76,8 @@ export default function HtmlLibrary() {
     try {
       const p = await makeProgram();
       await importHtml(userId, p);
+      // Best effort: ask the browser not to evict this origin's storage,
+      // since the HTML exists nowhere else for this account.
       void navigator.storage?.persist?.().catch(() => {});
       router.push(`${ROOT}/${p.contentHash}`);
     } catch (e) {
@@ -71,6 +90,7 @@ export default function HtmlLibrary() {
       setBusy(false);
     }
   }
+  const picker = useFilePicker((file) => void open(() => openHtml(file)));
   const rows = [
     ...local.map((e) => ({ ...e, available: true })),
     ...(cloud ?? [])
@@ -85,42 +105,16 @@ export default function HtmlLibrary() {
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .filter((e) => e.label.toLowerCase().includes(search.toLowerCase()));
   return (
-    <div
-      className="space-y-10"
-      onDragOver={(e) => {
-        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        if (e.dataTransfer.files[0])
-          void open(() => openHtml(e.dataTransfer.files[0]));
-      }}
+    <LibraryShell
+      picker={picker}
+      accept=".html,.htm,text/html"
+      inputLabel="Open HTML file"
+      busy={busy}
+      error={error}
     >
-      <input
-        ref={picker}
-        type="file"
-        accept=".html,.htm,text/html"
-        className="hidden"
-        aria-label="Open HTML file"
-        disabled={busy}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (f) void open(() => openHtml(f));
-        }}
-      />
-      {error && (
-        <p
-          role="alert"
-          className="rounded-xl border border-destructive/30 p-4 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
-      <ImportPanel
-        html
+      <HtmlImportPanel
         busy={busy || !userId}
-        choose={() => picker.current?.click()}
+        choose={picker.open}
         paste={(code, label) =>
           void open(() =>
             identifyHtml(new TextEncoder().encode(code).buffer, label),
@@ -131,18 +125,12 @@ export default function HtmlLibrary() {
         search={search}
         setSearch={setSearch}
         actions={
-          <Button
-            variant="ghost"
+          <ClearAllButton
+            label="Clear HTML library"
+            confirmLabel="Confirm clear HTML library"
+            title="Clear every HTML simulation and its progress from this device and your account."
             disabled={busy || !rows.length}
-            aria-label={
-              confirmClear ? "Confirm clear HTML library" : "Clear HTML library"
-            }
-            onBlur={() => setConfirmClear(false)}
-            onClick={async () => {
-              if (!confirmClear) {
-                setConfirmClear(true);
-                return;
-              }
+            onConfirm={async () => {
               if (!userId) return;
               setBusy(true);
               setError("");
@@ -156,99 +144,68 @@ export default function HtmlLibrary() {
                 );
               } finally {
                 setBusy(false);
-                setConfirmClear(false);
               }
             }}
-          >
-            <TrashIcon className="size-4" />
-            {confirmClear && "Confirm?"}
-          </Button>
+          />
         }
       >
         {!rows.length ? (
-          <div className="flex flex-col items-center gap-5 rounded-xl border border-border px-6 py-10 text-center text-sm text-muted-foreground">
-            {!search && <PixelCode />}
-            <p>
-              {search
-                ? "No matching simulations."
-                : "Your HTML simulations will appear here. Open a file or paste code to begin."}
-            </p>
-          </div>
+          <LibraryEmpty search={search} art={<PixelCode />}>
+            Your HTML simulations will appear here. Open a file or paste code to
+            begin.
+          </LibraryEmpty>
         ) : (
-          <div className="divide-y divide-border rounded-xl border border-border bg-background">
+          <EntryList>
             {rows.map((row) => (
-              <div
+              <EntryRow
                 key={row.contentHash}
-                className="flex flex-wrap items-center gap-3 px-5 py-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{row.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                title={row.label}
+                subtitle={
+                  <>
                     {row.available
                       ? "Kept on this device"
                       : "Original HTML needed on this device"}{" "}
-                    · {new Date(row.updatedAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <ButtonLink
-                  variant="outline"
-                  href={`${ROOT}/${row.contentHash}`}
-                >
-                  {row.available ? "Resume" : "Open"}
-                </ButtonLink>
-                <Button
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={async () => {
-                    const label = window.prompt("Simulation name", row.label);
-                    if (!label || !userId) return;
-                    try {
-                      await renameHtml(userId, row.contentHash, label);
-                      setLocal(await listHtml(userId));
-                      if (isAuthenticated)
-                        await rename({ contentHash: row.contentHash, label });
-                    } catch (e) {
-                      setError(
-                        e instanceof Error ? e.message : "Could not rename.",
-                      );
-                    }
-                  }}
-                >
-                  Rename
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={async () => {
-                    if (
-                      !userId ||
-                      !window.confirm(
-                        "Delete this HTML, its device progress, and its account library entry? Copies on other devices remain.",
-                      )
-                    )
-                      return;
-                    setBusy(true);
-                    try {
-                      await removeHtml(userId, row.contentHash);
-                      setLocal(await listHtml(userId));
-                      if (isAuthenticated)
-                        await remove({ contentHash: row.contentHash });
-                    } catch {
-                      setError(
-                        "Account metadata could not be removed. Reconnect and retry; local deletion may have completed.",
-                      );
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
+                    · {formatSavedAt(row.updatedAt)}
+                  </>
+                }
+                href={`${ROOT}/${row.contentHash}`}
+                action={row.available ? "Resume" : "Open"}
+                disabled={busy}
+                deleteMessage="Delete this HTML, its device progress, and its account library entry? Copies on other devices remain."
+                onRename={async (label) => {
+                  if (!userId) return;
+                  try {
+                    await renameHtml(userId, row.contentHash, label);
+                    setLocal(await listHtml(userId));
+                    if (isAuthenticated)
+                      await rename({ contentHash: row.contentHash, label });
+                  } catch (e) {
+                    setError(
+                      e instanceof Error ? e.message : "Could not rename.",
+                    );
+                  }
+                }}
+                onDelete={async () => {
+                  if (!userId) return;
+                  setBusy(true);
+                  try {
+                    await removeHtml(userId, row.contentHash);
+                    setLocal(await listHtml(userId));
+                    if (isAuthenticated)
+                      await remove({ contentHash: row.contentHash });
+                  } catch {
+                    setError(
+                      "Account metadata could not be removed. Reconnect and retry; local deletion may have completed.",
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
             ))}
-          </div>
+          </EntryList>
         )}
       </ProgressSection>
-    </div>
+    </LibraryShell>
   );
 }

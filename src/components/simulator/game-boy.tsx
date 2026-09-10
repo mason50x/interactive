@@ -10,7 +10,25 @@ import {
   type ReactNode,
 } from "react";
 import type { Input } from "@/lib/simulator/types";
+import { cn } from "@/lib/utils";
 import styles from "./game-boy.module.css";
+
+/**
+ * The Game Boy itself: the shell drawn as SVG, the screen the caller fills,
+ * and real buttons laid over the artwork where the drawn ones are.
+ *
+ * Every press, from wherever it comes — a key, a pointer on a drawn button,
+ * a screen reader's click — is filed by its source in `held`, so a key and
+ * a finger on the same button are two holds and the button stays down until
+ * both let go. Pressing is only allowed while `enabled`; a release is always
+ * allowed, and everything is released when the window loses focus or the
+ * tab is hidden, so a key held across a tab switch is not held forever.
+ *
+ * The words printed on the shell — the silkscreen labels, the OFF · ON by
+ * the switch, VOL. by the wheel — are the device's own, set in the case the
+ * hardware prints them; they are artwork, not UI type. They are still set at
+ * the type's natural spacing, as everything on the site is.
+ */
 
 const keys: Record<string, Input> = {
   ArrowUp: "up",
@@ -23,8 +41,8 @@ const keys: Record<string, Input> = {
   ShiftRight: "select",
 };
 // SVG artwork and HTML hit targets share these device-space measurements.
-const deviceWidth = 400,
-  deviceHeight = 660;
+const deviceWidth = 400;
+const deviceHeight = 660;
 const actionButtons = { B: { x: 271, y: 457 }, A: { x: 331, y: 427 } };
 const actionRadius = 25;
 const screen = { x: 93, y: 113, width: 224, height: 201.6 };
@@ -211,7 +229,6 @@ export function GameBoy({
           fill="#d8d7dc"
           fontFamily="Arial, sans-serif"
           fontSize="9"
-          letterSpacing=".6"
         >
           DOT MATRIX WITH STEREO SOUND
         </text>
@@ -251,7 +268,6 @@ export function GameBoy({
           fontFamily="Arial, sans-serif"
           fontStyle="italic"
           fontSize="27"
-          letterSpacing="-1"
         >
           GAME BOY
         </text>
@@ -323,7 +339,6 @@ export function GameBoy({
           fontFamily="Arial, sans-serif"
           fontWeight="700"
           fontSize="10"
-          letterSpacing="1"
           textAnchor="middle"
         >
           <text x="158" y="560" transform="rotate(-26 158 560)">
@@ -360,7 +375,6 @@ export function GameBoy({
           fill="#93938d"
           fontFamily="Arial, sans-serif"
           fontSize="9"
-          letterSpacing="2"
         >
           PHONES
         </text>
@@ -375,6 +389,7 @@ export function GameBoy({
         title="Power · pause / resume"
       >
         <span data-on={powered} />
+        {/* Silkscreen beside the switch, as printed on the device. */}
         <span>OFF · ON</span>
       </button>
       <div
@@ -387,7 +402,7 @@ export function GameBoy({
         <button
           key={key}
           type="button"
-          className={`${styles.hardware} ${styles[key]}`}
+          className={cn(styles.hardware, styles[key])}
           style={
             key === "A" || key === "B"
               ? position(
@@ -440,6 +455,7 @@ export function GameBoy({
         />
       ))}
       <label className={styles.volume} title="Volume">
+        {/* Silkscreen beside the wheel, as printed on the device. */}
         <span>VOL.</span>
         <input
           aria-label="Volume"

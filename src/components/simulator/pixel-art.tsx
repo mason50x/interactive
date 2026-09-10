@@ -1,4 +1,15 @@
 import type { CSSProperties } from "react";
+
+/**
+ * The little floating pixel drawings on the libraries' empty states.
+ *
+ * `art` is a picture in rows of characters: `#` is a pixel on every plane,
+ * `+` a pixel on the outermost two only, anything else is empty. The same
+ * picture is laid out five times at different depths, and each pixel gets
+ * its position and plane as CSS variables for the `dot-bubble` animation in
+ * `globals.css` to bob and fade them by. `aria-hidden` because the drawing
+ * only decorates the sentence next to it.
+ */
 const PLANES = [
   { z: 8, near: 1, far: 0.2, phase: 0 },
   { z: 4, near: 0.82, far: 0.34, phase: 0 },

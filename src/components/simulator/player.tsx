@@ -1,40 +1,41 @@
 "use client";
+
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { CenteredSpinner, Spinner } from "@/components/ui/spinner";
-import { useAuth } from "@clerk/nextjs";
-import { useConvexAuth } from "convex/react";
+import { Spinner } from "@/components/ui/spinner";
 import {
   ArrowLeftIcon,
   ChevronRightIcon,
   PlayIcon,
   PauseIcon,
 } from "@heroicons/react/24/outline";
+import { Alert } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Builtin } from "@/lib/simulator/types";
 import { readProgram } from "@/lib/simulator/local-store";
 import { openProgram } from "@/lib/simulator/files";
 import { useSimulator } from "@/lib/simulator/use-simulator";
 import { useSimulatorSession } from "./session-provider";
+import { HiddenFileInput, useOriginalFilePicker } from "./file-picker";
+import { Reveal } from "./reveal";
 import { SaveStatus } from "./save-status";
 import { GameBoy } from "./game-boy";
 import styles from "./game-boy.module.css";
 import { SavesPanel } from "./saves-panel";
-export default function Player(props: {
-  contentHash: string;
-  builtin: Builtin | null;
-}) {
-  const { userId } = useAuth(),
-    { isAuthenticated } = useConvexAuth();
-  if (!userId || !isAuthenticated) return <CenteredSpinner />;
-  return (
-    <PlayerSession
-      key={`${userId}:${props.contentHash}`}
-      owner={userId}
-      {...props}
-    />
-  );
-}
-function PlayerSession({
+
+/**
+ * One Game Boy session: the device on the left, the session card on the
+ * right, and the file input that asks for the original program when this
+ * device has the progress but not the bytes.
+ *
+ * `owner` is fixed for the life of the component — the loader keys on it —
+ * so the engine, the lock and the sync below are all set up once against
+ * one account and one hash. The program comes from the session provider
+ * when the library just opened it, from the device store when it was kept
+ * from an earlier visit, or from the catalogue for a built-in; only when
+ * all three come up empty does the screen ask for the file.
+ */
+export default function Player({
   owner,
   contentHash,
   builtin,
@@ -45,6 +46,9 @@ function PlayerSession({
 }) {
   const { program, setProgram, storageError } = useSimulatorSession();
   const page = useRef<HTMLDivElement>(null);
+  // The page is fixed over the dashboard chrome, so the chrome underneath is
+  // made inert while it is up: it must not take focus or be read out from
+  // behind the game.
   useEffect(() => {
     const main = page.current?.closest("main");
     const siblings = [...(main?.parentElement?.children ?? [])].filter(
@@ -60,8 +64,7 @@ function PlayerSession({
         element.inert = previous[index];
       });
   }, []);
-  const canvas = useRef<HTMLCanvasElement>(null),
-    file = useRef<HTMLInputElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
   const selected = program?.contentHash === contentHash ? program : null;
   const s = useSimulator(owner, contentHash, builtin, selected, canvas);
   const [checkedHash, setCheckedHash] = useState("");
@@ -86,6 +89,17 @@ function PlayerSession({
       cancelled = true;
     };
   }, [owner, contentHash, selected, builtin, setProgram, setError]);
+  const file = useOriginalFilePicker({
+    contentHash,
+    open: openProgram,
+    mismatch:
+      "This is a different file. Select the original file for this progress.",
+    onOpen: async (p) => {
+      await setProgram(p);
+      s.setError("");
+    },
+    onError: s.setError,
+  });
   const checkingFile = !selected && !builtin && checkedHash !== contentHash;
   const canStart = !!(selected || builtin);
   const title =
@@ -101,16 +115,14 @@ function PlayerSession({
         </ButtonLink>
       </div>
       {(s.error || storageError) && (
-        <p
-          role="alert"
-          className={`${styles.alert} rounded-xl border border-destructive/30 p-4 text-sm text-destructive`}
-        >
-          {s.error || storageError}
-        </p>
+        <Alert className={styles.alert}>{s.error || storageError}</Alert>
       )}
       {s.status.cloud === "conflict" && (
         <div
-          className={`${styles.alert} flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/50 bg-amber-500/5 p-4`}
+          className={cn(
+            styles.alert,
+            "flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/50 bg-amber-500/5 p-4",
+          )}
         >
           <p className="flex-1 text-sm">
             Another session saved different progress. Choose which version to
@@ -129,11 +141,11 @@ function PlayerSession({
         </div>
       )}
       {s.status.cloud === "deleted" && (
-        <p role="alert" className="rounded-xl border border-border p-4 text-sm">
+        <Alert className="border-border text-foreground">
           This cloud entry was deleted. Local progress is preserved for export.
           Return to the library and delete its local entry before starting
           fresh.
-        </p>
+        </Alert>
       )}
       <div className={styles.layout}>
         <div className={styles.console}>
@@ -144,11 +156,7 @@ function PlayerSession({
             focus={s.focus}
             powerDisabled={!s.ready || s.busy || checkingFile}
             power={() =>
-              s.loaded
-                ? s.toggle()
-                : canStart
-                  ? void s.start()
-                  : file.current?.click()
+              s.loaded ? s.toggle() : canStart ? void s.start() : file.open()
             }
             volume={s.settings.volume}
             setVolume={(volume) => s.updateSettings({ ...s.settings, volume })}
@@ -160,6 +168,8 @@ function PlayerSession({
               tabIndex={0}
               aria-label="Game screen. Arrow keys move, X is A, Z is B, Enter starts, right Shift selects."
             />
+            {/* The words on the screen are the device's own, set the way a
+                Game Boy prints them, which is why they are not sentence case. */}
             {!s.loaded ? (
               <div className={styles.screenOverlay}>
                 <p>
@@ -171,9 +181,7 @@ function PlayerSession({
                 </p>
                 <button
                   disabled={!s.ready || s.busy || checkingFile}
-                  onClick={() =>
-                    canStart ? void s.start() : file.current?.click()
-                  }
+                  onClick={() => (canStart ? void s.start() : file.open())}
                 >
                   {s.busy || checkingFile ? (
                     <Spinner />
@@ -272,35 +280,16 @@ function PlayerSession({
           </div>
         </aside>
       </div>
-      <input
-        ref={file}
-        type="file"
+      <HiddenFileInput
+        picker={file}
         accept=".gb,.gbc"
-        className="hidden"
         aria-label="Select original simulation file"
-        onChange={async (e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (!f) return;
-          try {
-            const p = await openProgram(f);
-            if (p.contentHash !== contentHash)
-              throw new Error(
-                "This is a different file. Select the original file for this progress.",
-              );
-            await setProgram(p);
-            s.setError("");
-          } catch (err) {
-            s.setError(
-              err instanceof Error ? err.message : "Could not open file.",
-            );
-          }
-        }}
       />
     </div>
   );
 }
 
+/** A collapsed section of the session card, opened by its heading. */
 function SessionSection({
   title,
   children,
@@ -322,14 +311,9 @@ function SessionSection({
         <ChevronRightIcon aria-hidden="true" />
         {title}
       </button>
-      <div
-        id={id}
-        className={styles.sectionPanel}
-        data-open={open}
-        inert={!open}
-      >
-        <div className={styles.sectionContent}>{children}</div>
-      </div>
+      <Reveal id={id} open={open} contentClassName={styles.sectionContent}>
+        {children}
+      </Reveal>
     </section>
   );
 }

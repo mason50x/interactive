@@ -1,4 +1,5 @@
-import { useRef } from "react";
+"use client";
+
 import type {
   LocalEntry,
   Slot,
@@ -7,6 +8,19 @@ import type {
 } from "@/lib/simulator/types";
 import { Button } from "@/components/ui/button";
 import { exportProgress, importProgress } from "@/lib/simulator/progress";
+import { HiddenFileInput, useFilePicker } from "./file-picker";
+
+/**
+ * The save slots of one Game Boy entry: two autosaves the engine rotates on
+ * its own and three the player fills by hand, each with restore and export,
+ * and under them the way progress comes in from a file.
+ *
+ * Overwriting a hand-filled slot and restoring over the running game both
+ * ask first, since either throws away state that is not otherwise kept;
+ * the rotating autosaves do not, because the previous one is the undo. An
+ * import is checked against this entry's hash before it is offered back to
+ * the caller, so progress from another game cannot be loaded by mistake.
+ */
 export function SavesPanel({
   record,
   disabled,
@@ -22,7 +36,14 @@ export function SavesPanel({
   importSave: (p: Progress) => void;
   onError: (message: string) => void;
 }) {
-  const file = useRef<HTMLInputElement>(null);
+  const file = useFilePicker((f) => {
+    if (!record) return;
+    void importProgress(f, record.contentHash)
+      .then(importSave)
+      .catch((err) =>
+        onError(err instanceof Error ? err.message : "Import failed."),
+      );
+  });
   return (
     <section
       aria-label="Save slots"
@@ -103,7 +124,7 @@ export function SavesPanel({
           variant="outline"
           size="sm"
           disabled={disabled}
-          onClick={() => file.current?.click()}
+          onClick={file.open}
         >
           Import progress
         </Button>
@@ -117,22 +138,10 @@ export function SavesPanel({
           </Button>
         )}
       </div>
-      <input
-        ref={file}
-        type="file"
+      <HiddenFileInput
+        picker={file}
         accept=".progress,.json"
-        className="hidden"
         aria-label="Import progress file"
-        onChange={async (e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (!f || !record) return;
-          try {
-            importSave(await importProgress(f, record.contentHash));
-          } catch (err) {
-            onError(err instanceof Error ? err.message : "Import failed.");
-          }
-        }}
       />
     </section>
   );

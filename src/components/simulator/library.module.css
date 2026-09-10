@@ -46,24 +46,6 @@
   }
 }
 
-.codeReveal {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-rows 300ms ease,
-    opacity 220ms ease;
-}
-.codeReveal[data-open="true"] {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .codeReveal {
-    transition: none;
-  }
-}
-
 .modeSwitch {
   position: relative;
   display: grid;

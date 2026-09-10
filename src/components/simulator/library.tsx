@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { TrashIcon } from "@heroicons/react/24/solid";
 import { api } from "../../../convex/_generated/api";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { useAuthedQuery } from "@/lib/use-authed-query";
 import type { LocalEntry } from "@/lib/simulator/types";
 import { openProgram } from "@/lib/simulator/files";
 import {
@@ -14,36 +14,58 @@ import {
   removeLocal,
 } from "@/lib/simulator/local-store";
 import { useSimulatorSession } from "./session-provider";
+import { useFilePicker } from "./file-picker";
+import { ClearAllButton } from "./clear-all-button";
 import { ImportPanel, ProgressSection } from "./library-parts";
+import {
+  EntryList,
+  EntryRow,
+  LibraryEmpty,
+  formatSavedAt,
+} from "./library-entries";
+import { LibraryShell } from "./library-shell";
 import { PixelController } from "./pixel-controller";
+
 const ROOT = "/dashboard/learning-simulator";
+
+/**
+ * The Game Boy library: every program this account has progress for, from
+ * the account's entries and from this device's store, merged by content
+ * hash so a game saved in both places is one row.
+ *
+ * The account is the source of truth for names and the cloud save; the
+ * device store holds the program bytes and the local autosaves, and a row
+ * that exists only there has no entry to rename. Opening a file hashes it,
+ * hands it to the session so the player can start without asking again,
+ * and navigates to its hash.
+ */
 export function GameBoyLibrary() {
-  const { userId } = useAuth(),
-    { isAuthenticated } = useConvexAuth();
+  const { userId } = useAuth();
   const router = useRouter();
   const { setProgram } = useSimulatorSession();
-  const file = useRef<HTMLInputElement>(null);
-  const entries = useQuery(
-    api.simulator.library.list,
-    isAuthenticated ? {} : "skip",
-  );
-  const rename = useMutation(api.simulator.library.rename),
-    remove = useMutation(api.simulator.library.remove);
-  const [local, setLocal] = useState<LocalEntry[]>([]),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false),
-    [confirmClear, setConfirmClear] = useState(false),
-    [clearing, setClearing] = useState(false),
-    [search, setSearch] = useState("");
+  const entries = useAuthedQuery(api.simulator.library.list, {});
+  const rename = useMutation(api.simulator.library.rename);
+  const remove = useMutation(api.simulator.library.remove);
+  const [local, setLocal] = useState<LocalEntry[]>([]);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState("");
   useEffect(() => {
+    let alive = true;
     if (userId)
       void listLocal(userId)
-        .then(setLocal)
-        .catch(() =>
-          setError(
-            "Local storage is unavailable. Cloud progress can still be used.",
-          ),
-        );
+        .then((rows) => {
+          if (alive) setLocal(rows);
+        })
+        .catch(() => {
+          if (alive)
+            setError(
+              "Local storage is unavailable. Cloud progress can still be used.",
+            );
+        });
+    return () => {
+      alive = false;
+    };
   }, [userId]);
   const rows = [
     ...(entries ?? []).map((e) => ({
@@ -60,72 +82,49 @@ export function GameBoyLibrary() {
         at: l.updatedAt,
         id: undefined,
       })),
-  ].filter((e) => e.label.toLowerCase().includes(search.toLowerCase()));
-  async function select(f: File) {
-    setBusy(true);
-    setError("");
-    try {
-      const p = await openProgram(f);
-      await setProgram(p);
-      router.push(`${ROOT}/${p.contentHash}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to open file.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  ]
+    .sort((a, b) => b.at - a.at)
+    .filter((e) => e.label.toLowerCase().includes(search.toLowerCase()));
+  const picker = useFilePicker((file) => {
+    void (async () => {
+      setBusy(true);
+      setError("");
+      try {
+        const p = await openProgram(file);
+        await setProgram(p);
+        router.push(`${ROOT}/${p.contentHash}`);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unable to open file.");
+      } finally {
+        setBusy(false);
+      }
+    })();
+  });
   return (
-    <div
-      className="space-y-10"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        if (e.dataTransfer.files[0]) void select(e.dataTransfer.files[0]);
-      }}
+    <LibraryShell
+      picker={picker}
+      accept=".gb,.gbc"
+      inputLabel="Open simulation file"
+      busy={busy}
+      error={error}
     >
-      <input
-        ref={file}
-        type="file"
-        accept=".gb,.gbc"
-        className="hidden"
-        aria-label="Open simulation file"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (f) void select(f);
-        }}
+      <ImportPanel
+        heading="Bring your own file"
+        description="Drop a .gb or .gbc file here, or choose one from your device."
+        busy={busy}
+        choose={picker.open}
       />
-      {error && (
-        <p
-          role="alert"
-          className="rounded-xl border border-destructive/30 p-4 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      )}
-      <ImportPanel busy={busy} choose={() => file.current?.click()} />
       <ProgressSection
         search={search}
         setSearch={setSearch}
         actions={
-          <Button
-            variant="ghost"
-            aria-label={
-              confirmClear ? "Confirm clear all progress" : "Clear all progress"
-            }
+          <ClearAllButton
+            label="Clear all progress"
+            confirmLabel="Confirm clear all progress"
             title="Clear all saved progress from this device and your account."
-            disabled={clearing || !userId || entries === undefined}
-            onBlur={() => setConfirmClear(false)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setConfirmClear(false);
-            }}
-            onClick={async () => {
-              if (!confirmClear) {
-                setConfirmClear(true);
-                return;
-              }
-              if (!userId || clearing) return;
-              setClearing(true);
+            disabled={!userId || entries === undefined}
+            onConfirm={async () => {
+              if (!userId) return;
               try {
                 for (const entry of entries ?? []) {
                   await remove({ entryId: entry._id });
@@ -137,97 +136,51 @@ export function GameBoyLibrary() {
                 setError(
                   "Could not clear all progress. Please try again to finish clearing the remaining saves.",
                 );
-              } finally {
-                setClearing(false);
-                setConfirmClear(false);
               }
             }}
-            className={`relative h-9 gap-0 overflow-hidden px-2.5 transition-[width,color,background-color] duration-300 ease-in-out motion-reduce:transition-none ${confirmClear ? "w-28 text-destructive" : "w-9 text-muted-foreground"}`}
-          >
-            <TrashIcon className="absolute left-2.5 size-4" />
-            <span
-              aria-hidden="true"
-              className={`ml-6 whitespace-nowrap transition-[opacity,transform] duration-300 ease-in-out motion-reduce:transition-none ${confirmClear ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0"}`}
-            >
-              Confirm?
-            </span>
-          </Button>
+          />
         }
       >
         {rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-border px-6 py-10 text-center text-sm text-muted-foreground">
-            {!search && <PixelController />}
-            <p>
-              {search
-                ? "No matching simulations."
-                : "Saved simulations will appear here. Open a file to begin."}
-            </p>
-          </div>
+          <LibraryEmpty search={search} art={<PixelController />}>
+            Saved simulations will appear here. Open a file to begin.
+          </LibraryEmpty>
         ) : (
-          <div className="divide-y divide-border rounded-xl border border-border bg-background">
+          <EntryList>
             {rows.map((row) => (
-              <div
+              <EntryRow
                 key={row.hash}
-                className="flex flex-wrap items-center gap-3 px-5 py-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{row.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {new Date(row.at).toLocaleString(undefined, {
-                      year: "numeric",
-                      month: "numeric",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-                <ButtonLink variant="outline" href={`${ROOT}/${row.hash}`}>
-                  Resume
-                </ButtonLink>
-                {row.id && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      const name = window.prompt("Simulation label", row.label);
-                      if (name && row.id)
-                        void rename({ entryId: row.id, label: name }).catch(
-                          (e) => setError(e.message),
-                        );
-                    }}
-                  >
-                    Rename
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  onClick={async () => {
-                    if (
-                      !userId ||
-                      !window.confirm(
-                        "Delete this simulation’s saved progress from this device and your account?",
-                      )
-                    )
-                      return;
-                    try {
-                      if (row.id) await remove({ entryId: row.id });
-                      await removeLocal(userId, row.hash);
-                      await setProgram(null);
-                      setLocal(await listLocal(userId));
-                    } catch (e) {
-                      setError(
-                        e instanceof Error ? e.message : "Delete failed.",
-                      );
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
+                title={row.label}
+                subtitle={formatSavedAt(row.at)}
+                href={`${ROOT}/${row.hash}`}
+                action="Resume"
+                deleteMessage="Delete this simulation’s saved progress from this device and your account?"
+                onRename={
+                  row.id
+                    ? (label) => {
+                        if (row.id)
+                          void rename({ entryId: row.id, label }).catch((e) =>
+                            setError(e.message),
+                          );
+                      }
+                    : undefined
+                }
+                onDelete={async () => {
+                  if (!userId) return;
+                  try {
+                    if (row.id) await remove({ entryId: row.id });
+                    await removeLocal(userId, row.hash);
+                    await setProgram(null);
+                    setLocal(await listLocal(userId));
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Delete failed.");
+                  }
+                }}
+              />
             ))}
-          </div>
+          </EntryList>
         )}
       </ProgressSection>
-    </div>
+    </LibraryShell>
   );
 }

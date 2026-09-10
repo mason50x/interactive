@@ -1,19 +1,18 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useConvexAuth, useMutation } from "convex/react";
-import {
-  ArrowLeftIcon,
-  ArrowPathIcon,
-  ArrowsPointingOutIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
-import { ChevronRightIcon } from "@heroicons/react/24/solid";
-import styles from "./html-player.module.css";
 import { api } from "../../../convex/_generated/api";
-import { Button, ButtonLink } from "@/components/ui/button";
 import { CenteredSpinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import { htmlDocument } from "@/lib/simulator/html-document";
+import {
+  createRateLimiter,
+  postToFrame,
+  readFrameRequest,
+} from "@/lib/simulator/html-bridge";
 import { acquirePlayerLock } from "@/lib/simulator/lock";
+import { useFullscreen } from "@/lib/simulator/use-fullscreen";
 import {
   importHtml,
   openHtml,
@@ -23,7 +22,27 @@ import {
   validateHtmlSave,
   type HtmlEntry,
 } from "@/lib/simulator/html-store";
+import { useOriginalFilePicker } from "./file-picker";
+import { HtmlFilePrompt } from "./html-file-prompt";
+import { HtmlPlayerControls } from "./html-player-controls";
+
 const BACK = "/dashboard/learning-simulator?mode=html";
+
+/**
+ * One HTML session: an imported page running in a sandboxed frame, with
+ * its progress kept in this device's store.
+ *
+ * The page is untrusted, so the player is built around giving it as little
+ * as possible: a `srcdoc` with a locked-down policy from `html-document`,
+ * no network, and one channel back to us that carries only its own saved
+ * JSON. Everything the page can ask for comes through `message` events
+ * validated in `html-bridge`; everything we ask of it is a request to save.
+ *
+ * `run` is the session counter. Bumping it tears the whole effect down and
+ * builds it again — a new token, a fresh document seeded from the latest
+ * autosave, a new frame — which is what "reload" and "file just imported"
+ * both mean here.
+ */
 export default function HtmlPlayer({
   owner,
   contentHash,
@@ -31,24 +50,30 @@ export default function HtmlPlayer({
   owner: string;
   contentHash: string;
 }) {
-  const frame = useRef<HTMLIFrameElement>(null),
-    stage = useRef<HTMLDivElement>(null);
-  const { isAuthenticated } = useConvexAuth(),
-    register = useMutation(api.simulator.html.register);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const { isAuthenticated } = useConvexAuth();
+  const register = useMutation(api.simulator.html.register);
+  // Saves are refused between "reload pressed" and "new session started" so
+  // a page in its last moments cannot overwrite the autosave the next one
+  // is about to be seeded from.
   const accepting = useRef(true);
-  const registered = useRef(false),
-    queue = useRef<Promise<unknown>>(Promise.resolve());
-  const [entry, setEntry] = useState<HtmlEntry>(),
-    [document, setDocument] = useState(""),
-    [run, setRun] = useState(0),
-    [ready, setReady] = useState(false),
-    [error, setError] = useState(""),
-    [metadataError, setMetadataError] = useState("");
-  const [controlsOpen, setControlsOpen] = useState(false),
-    [saveError, setSaveError] = useState(""),
-    [fullscreen, setFullscreen] = useState(false),
-    [expanded, setExpanded] = useState(false);
-  const hasFile = !!document;
+  const registered = useRef(false);
+  // Every save runs after the one before it, whatever order the page sent
+  // them in, so the store always ends up holding the last one the page saw
+  // succeed.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const [entry, setEntry] = useState<HtmlEntry>();
+  const [srcDoc, setSrcDoc] = useState("");
+  const [run, setRun] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
+  const [metadataError, setMetadataError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const { fullscreen, expanded, toggle } = useFullscreen(stage);
+  const hasFile = !!srcDoc;
+  // The account only ever learns the name and the hash, once per mount, and
+  // only if it is reachable: a failure here costs a note, not the session.
   useEffect(() => {
     if (!entry || !isAuthenticated || registered.current) return;
     registered.current = true;
@@ -59,94 +84,100 @@ export default function HtmlPlayer({
     });
   }, [contentHash, entry, isAuthenticated, register]);
   useEffect(() => {
-    let alive = true,
-      release: (() => void) | null = null;
-    let windowStart = Date.now(),
-      requests = 0;
+    let alive = true;
+    let release: (() => void) | null = null;
+    // The token is minted per session and written into the document, so a
+    // message can only be answered by the frame that was built with it.
     const session = crypto.randomUUID();
+    const withinLimit = createRateLimiter(20, 1000);
     accepting.current = true;
-    const message = (event: MessageEvent) => {
-      const m = event.data;
-      if (
-        !alive ||
-        event.source !== frame.current?.contentWindow ||
-        event.origin !== "null" ||
-        !m ||
-        m.channel !== "interactive-html" ||
-        m.token !== session ||
-        !Number.isSafeInteger(m.id)
-      )
-        return;
-      const reply = (error?: string) => {
-        if (alive)
-          frame.current?.contentWindow?.postMessage(
-            { channel: "interactive-html", token: session, id: m.id, error },
-            "*",
-          );
-      };
-      if (Date.now() - windowStart > 1000) {
-        windowStart = Date.now();
-        requests = 0;
-      }
-      if (++requests > 20) {
-        reply(
-          "Save requests are too frequent. Await simulator.save() and save meaningful changes.",
-        );
-        return;
-      }
-      if (m.type === "ready") {
-        reply();
-        return;
-      }
-      if (m.type !== "save") return;
-      if (!accepting.current) {
-        reply("The player is restoring progress. Try again after it reloads.");
-        return;
-      }
-      // The only durable write available to imported HTML is its own bounded local save.
+
+    const reply = (id: number, error?: string) => {
+      if (alive)
+        postToFrame(frame.current?.contentWindow, session, { id, error });
+    };
+
+    // Writes the page's value as the autosave, then reads the entry back so
+    // the label and timestamps on screen follow the store rather than a
+    // guess at what it did.
+    const enqueueSave = (id: number, value: unknown) => {
       queue.current = queue.current
         .catch(() => {})
         .then(async () => {
           if (!alive) return;
           try {
-            await saveHtml(owner, contentHash, m.value);
+            await saveHtml(owner, contentHash, value);
             const next = await readHtmlEntry(owner, contentHash);
             if (alive) {
               setEntry(next);
               setSaveError("");
-              reply();
+              reply(id);
             }
           } catch (e) {
             const reason =
               e instanceof Error ? e.message : "Local save failed.";
             if (alive) {
               setSaveError("Progress couldn’t save on this device. " + reason);
-              reply(reason);
+              reply(id, reason);
             }
           }
         });
     };
-    // Documents that expose a save-request handler are captured automatically.
-    // Direct simulator.save() calls still persist each meaningful state change.
-    const requestSave = () =>
-      frame.current?.contentWindow?.postMessage(
-        {
-          channel: "interactive-html",
-          token: session,
-          type: "request-save",
-        },
-        "*",
+
+    // The only two requests a page can make: `ready`, answered so its
+    // `simulator.load()` resolves, and `save`, which is the one durable
+    // write imported HTML has. Anything off-channel is dropped in silence.
+    const handleFrameMessage = (event: MessageEvent) => {
+      if (!alive) return;
+      const request = readFrameRequest(
+        event,
+        frame.current?.contentWindow,
+        session,
       );
+      if (!request) return;
+      if (!withinLimit()) {
+        reply(
+          request.id,
+          "Save requests are too frequent. Await simulator.save() and save meaningful changes.",
+        );
+        return;
+      }
+      if (request.type === "ready") {
+        reply(request.id);
+        return;
+      }
+      if (request.type !== "save") return;
+      if (!accepting.current) {
+        reply(
+          request.id,
+          "The player is restoring progress. Try again after it reloads.",
+        );
+        return;
+      }
+      enqueueSave(request.id, request.value);
+    };
+
+    // A page that listens for `simulator:save-request` is captured on a
+    // timer and when the tab goes away; one that only calls
+    // `simulator.save()` itself is saved whenever it chooses to.
+    const requestSave = () =>
+      postToFrame(frame.current?.contentWindow, session, {
+        type: "request-save",
+      });
     const autosave = window.setInterval(() => {
-      if (!window.document.hidden) requestSave();
+      if (!document.hidden) requestSave();
     }, 10000);
     const visibility = () => {
-      if (window.document.hidden) requestSave();
+      if (document.hidden) requestSave();
     };
-    window.document.addEventListener("visibilitychange", visibility);
+    document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", requestSave);
-    window.addEventListener("message", message);
-    void (async () => {
+    window.addEventListener("message", handleFrameMessage);
+
+    // Take the device lock for this entry, then build the document from the
+    // stored bytes seeded with the latest autosave. No bytes is not an
+    // error: it is the "choose the original" screen.
+    const openSession = async () => {
       try {
         release = await acquirePlayerLock(
           `html-simulator:${owner}:${contentHash}`,
@@ -171,7 +202,7 @@ export default function HtmlPlayer({
           const initial = saved?.saves.auto
             ? validateHtmlSave(saved.saves.auto, contentHash).json
             : null;
-          setDocument(
+          setSrcDoc(
             htmlDocument(
               new TextDecoder().decode(program.bytes),
               session,
@@ -185,193 +216,75 @@ export default function HtmlPlayer({
       } finally {
         if (alive) setReady(true);
       }
-    })();
+    };
+    void openSession();
+
     return () => {
       alive = false;
       window.clearInterval(autosave);
-      window.document.removeEventListener("visibilitychange", visibility);
+      document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("pagehide", requestSave);
-      window.removeEventListener("message", message);
+      window.removeEventListener("message", handleFrameMessage);
+      // The lock outlives the effect until the last queued save has landed,
+      // so the next session cannot start reading while this one is writing.
       void queue.current.finally(() => release?.());
     };
   }, [owner, contentHash, run]);
-  useEffect(() => {
-    const change = () =>
-      setFullscreen(window.document.fullscreenElement === stage.current);
-    window.document.addEventListener("fullscreenchange", change);
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setExpanded(false);
-        setControlsOpen(false);
-      }
-    };
-    window.addEventListener("keydown", escape);
-    return () => {
-      window.document.removeEventListener("fullscreenchange", change);
-      window.removeEventListener("keydown", escape);
-    };
-  }, []);
   function reload() {
     accepting.current = false;
-    setDocument("");
+    setSrcDoc("");
     setReady(false);
     setError("");
     setSaveError("");
-    setRun((v) => v + 1);
+    setRun((value) => value + 1);
   }
-  async function fillScreen() {
-    try {
-      if (expanded) {
-        setExpanded(false);
-        return;
-      }
-      if (window.document.fullscreenElement)
-        await window.document.exitFullscreen();
-      else if (stage.current?.requestFullscreen)
-        await stage.current.requestFullscreen();
-      else setExpanded((v) => !v);
-    } catch {
-      setExpanded((v) => !v);
-    }
-  }
+  const picker = useOriginalFilePicker({
+    contentHash,
+    open: openHtml,
+    mismatch: "Choose the same HTML file to resume this entry.",
+    onOpen: async (program) => {
+      await importHtml(owner, program);
+      reload();
+    },
+    onError: setError,
+  });
   if (!ready) return <CenteredSpinner />;
   if (!hasFile)
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
-        <h1 className="text-2xl font-semibold">
-          {error ? "HTML couldn’t open" : "Open the original HTML"}
-        </h1>
-        <p
-          role={error ? "alert" : undefined}
-          className="max-w-md text-sm text-muted-foreground"
-        >
-          {error ||
-            "This device doesn’t have the file yet. Choose the matching original HTML. Progress is stored separately on each device."}
-        </p>
-        <label className="cursor-pointer rounded-lg border border-border bg-background px-4 py-2 text-sm">
-          Choose HTML
-          <input
-            type="file"
-            accept=".html,.htm"
-            className="sr-only"
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              e.target.value = "";
-              if (!f) return;
-              try {
-                const p = await openHtml(f);
-                if (p.contentHash !== contentHash)
-                  throw new Error(
-                    "Choose the same HTML file to resume this entry.",
-                  );
-                await importHtml(owner, p);
-                reload();
-              } catch (err) {
-                setError(
-                  err instanceof Error ? err.message : "Could not open file.",
-                );
-              }
-            }}
-          />
-        </label>
-        <div className="flex gap-3">
-          <ButtonLink href={BACK} variant="ghost">
-            Back to HTML
-          </ButtonLink>
-          {error && (
-            <Button onClick={reload} variant="outline">
-              Retry
-            </Button>
-          )}
-        </div>
-      </div>
+      <HtmlFilePrompt
+        error={error}
+        picker={picker}
+        back={BACK}
+        retry={reload}
+      />
     );
   return (
     <div
       ref={stage}
-      className={`${expanded ? "fixed inset-0 z-50" : "relative size-full"} isolate overflow-hidden bg-white`}
+      className={cn(
+        expanded ? "fixed inset-0 z-50" : "relative size-full",
+        "isolate overflow-hidden bg-white",
+      )}
     >
       <iframe
         ref={frame}
         key={run}
         title={entry?.label ?? "HTML simulation"}
-        srcDoc={document}
+        srcDoc={srcDoc}
         sandbox="allow-scripts allow-pointer-lock"
         referrerPolicy="no-referrer"
         className="block size-full border-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-500"
         onLoad={() => frame.current?.focus()}
       />
-      <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)]">
-        <div className={styles.controls} data-open={controlsOpen}>
-          <button
-            type="button"
-            aria-label={
-              controlsOpen ? "Hide player controls" : "Show player controls"
-            }
-            aria-expanded={controlsOpen}
-            aria-controls="html-player-controls"
-            className={styles.toggle}
-            onClick={() => setControlsOpen((v) => !v)}
-          >
-            <ChevronRightIcon
-              className="size-4 transition-transform duration-300 motion-reduce:transition-none"
-              style={{ transform: controlsOpen ? "rotate(180deg)" : undefined }}
-            />
-          </button>
-          <div
-            id="html-player-controls"
-            className={styles.actions}
-            inert={!controlsOpen}
-          >
-            <ButtonLink
-              href={BACK}
-              variant="ghost"
-              aria-label="Back to HTML library"
-              className={styles.action}
-            >
-              <ArrowLeftIcon className="size-4" />
-            </ButtonLink>
-            <span className="min-w-0 flex-1 truncate px-1 text-xs font-medium">
-              {entry?.label ?? "HTML"}
-            </span>
-            <Button
-              variant="ghost"
-              aria-label="Reload HTML from saved progress"
-              onClick={reload}
-              className={styles.action}
-            >
-              <ArrowPathIcon className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              aria-label={
-                fullscreen || expanded ? "Exit fullscreen" : "Enter fullscreen"
-              }
-              onClick={() => void fillScreen()}
-              className={styles.action}
-            >
-              {fullscreen || expanded ? (
-                <XMarkIcon className="size-4" />
-              ) : (
-                <ArrowsPointingOutIcon className="size-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-        {saveError && (
-          <p
-            role="alert"
-            className="mt-2 max-w-72 rounded-lg bg-zinc-950/90 px-3 py-2 text-xs text-white"
-          >
-            {saveError}
-          </p>
-        )}
-        {controlsOpen && metadataError && (
-          <p className="mt-2 max-w-72 rounded-lg bg-zinc-950/90 px-3 py-2 text-xs text-white">
-            {metadataError}
-          </p>
-        )}
-      </div>
+      <HtmlPlayerControls
+        label={entry?.label ?? "HTML"}
+        back={BACK}
+        fullscreen={fullscreen || expanded}
+        reload={reload}
+        toggleFullscreen={() => void toggle()}
+        saveError={saveError}
+        metadataError={metadataError}
+      />
     </div>
   );
 }

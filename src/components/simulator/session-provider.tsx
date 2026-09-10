@@ -9,6 +9,20 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import type { Program } from "@/lib/simulator/types";
 import { writeProgram } from "@/lib/simulator/local-store";
+
+/**
+ * The program the library just opened, carried to the player.
+ *
+ * Opening a file hashes it and navigates to its hash; the player on the
+ * other side of that navigation needs the bytes, and asking for the file
+ * again would be absurd. So the library puts the program here and the
+ * player takes it — and in the same motion it is written to the device
+ * store, so the next visit finds it without the library at all. The write
+ * failing is not fatal: the game still runs from memory, and the error is
+ * shown so the reader knows to expect the prompt next time.
+ *
+ * Keyed by account, so a sign-out empties it.
+ */
 const Context = createContext<{
   program: Program | null;
   setProgram: (p: Program | null) => Promise<void>;
