@@ -1,4 +1,15 @@
 import type { SyncStatus } from "@/lib/simulator/types";
+
+/**
+ * The one line under the game's title that says where its progress is.
+ *
+ * Sync has two halves that fail on their own: the device store and the
+ * account. The cloud word is the headline, and when the device has a copy
+ * the line says so first, so "cloud save pending" reads as reassurance
+ * rather than warning. A device failure is prepended instead, because then
+ * the cloud is the only copy there is. `aria-live` so the change from
+ * pending to synced is heard without the reader having to look for it.
+ */
 export function SaveStatus({ status }: { status: SyncStatus }) {
   const cloud = {
     ready: "Ready",

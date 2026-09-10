@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * the letterforms themselves. Sized in `em` and baseline-aligned, which is
  * what lets it sit on the same cap line as text beside it.
  */
-export function LogoMark({ className = "" }: { className?: string }) {
+export function LogoMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="18 21 64 58"
@@ -19,29 +19,6 @@ export function LogoMark({ className = "" }: { className?: string }) {
       className={className}
     >
       <path d={monogram.path} />
-    </svg>
-  );
-}
-
-/**
- * The monogram in its container — black on white, always, in both themes.
- * This is the icon form: the favicon, the app icon, the avatar.
- */
-export function LogoTile({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox={monogram.viewBox}
-      role="img"
-      aria-label={brand.name}
-      className={className}
-    >
-      <rect
-        width="100"
-        height="100"
-        rx={monogram.tileRadius}
-        fill={brand.colors.paper}
-      />
-      <path d={monogram.path} fill={brand.colors.ink} />
     </svg>
   );
 }
@@ -57,7 +34,7 @@ export function Wordmark({
   tone = "default",
   showName = true,
   short = false,
-  className = "",
+  className,
   nameClassName,
 }: {
   tone?: "default" | "inverted";

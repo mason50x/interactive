@@ -1,4 +1,13 @@
 "use client";
+
+/**
+ * The player's state machine, as one hook.
+ *
+ * Owns the engine and the sync for one program on one canvas: starting it,
+ * pausing and resuming, saving to a slot and restoring from one, importing
+ * and exporting progress, and the device settings. The component that
+ * renders it is left with the screen, the buttons and the words.
+ */
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useConvex } from "convex/react";
 import type {
@@ -23,29 +32,29 @@ export function useSimulator(
   program: Program | null,
   canvas: RefObject<HTMLCanvasElement | null>,
 ) {
-  const client = useConvex(),
-    engine = useRef<SimulatorEngine | null>(null),
-    sync = useRef<ProgressSync | null>(null),
-    alive = useRef(false),
-    starting = useRef(false),
-    capturedFrame = useRef(-1),
-    settingsRef = useRef(defaultSettings);
-  const [ready, setReady] = useState(false),
-    [running, setRunning] = useState(false),
-    [loaded, setLoaded] = useState(false),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [record, setRecord] = useState<LocalEntry | null>(null),
-    [status, setStatus] = useState<SyncStatus>({
-      local: "ready",
-      cloud: "ready",
-    }),
-    [settings, setSettings] = useState(defaultSettings);
+  const client = useConvex();
+  const engine = useRef<SimulatorEngine | null>(null);
+  const sync = useRef<ProgressSync | null>(null);
+  const alive = useRef(false);
+  const starting = useRef(false);
+  const capturedFrame = useRef(-1);
+  const settingsRef = useRef(defaultSettings);
+  const [ready, setReady] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [record, setRecord] = useState<LocalEntry | null>(null);
+  const [status, setStatus] = useState<SyncStatus>({
+    local: "ready",
+    cloud: "ready",
+  });
+  const [settings, setSettings] = useState(defaultSettings);
   useEffect(() => {
     alive.current = true;
     queueMicrotask(() => setReady(false));
-    let cancelled = false,
-      release: (() => void) | null = null;
+    let cancelled = false;
+    let release: (() => void) | null = null;
     capturedFrame.current = -1;
     let lastSave = 0;
     const manager = new ProgressSync(
@@ -203,8 +212,8 @@ export function useSimulator(
     }
   }
   async function save(slot: WriteSlot = "auto", cloud = true) {
-    const e = engine.current,
-      m = sync.current;
+    const e = engine.current;
+    const m = sync.current;
     if (!e || !m) return;
     try {
       if (slot !== "auto" || capturedFrame.current !== e.frames) {
@@ -229,8 +238,8 @@ export function useSimulator(
     }
   }
   async function restore(slot: Slot) {
-    const m = sync.current,
-      e = engine.current;
+    const m = sync.current;
+    const e = engine.current;
     if (!m || !e) return;
     e.pause();
     setRunning(false);
@@ -277,8 +286,8 @@ export function useSimulator(
     setRunning(true);
   }
   async function importSave(p: import("./types").Progress) {
-    const e = engine.current,
-      m = sync.current;
+    const e = engine.current;
+    const m = sync.current;
     if (!e || !m) return;
     e.pause();
     setRunning(false);

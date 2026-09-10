@@ -1,6 +1,12 @@
-import type { ReactNode } from "react";
+import type { ComponentProps } from "react";
+
 import { cn } from "@/lib/utils";
 
+/**
+ * The page's measure: centred, gutters that widen with the viewport, and one
+ * of four maximum widths. `wide` is the dashboard's, `default` the marketing
+ * site's; `narrow` and `prose` are for a column of text.
+ */
 const widths = {
   default: "max-w-[1200px]",
   wide: "max-w-[1400px]",
@@ -8,20 +14,24 @@ const widths = {
   prose: "max-w-2xl",
 } as const;
 
-export function Container({
-  children,
+export type ContainerWidth = keyof typeof widths;
+
+function Container({
+  className,
   width = "default",
-  className = "",
-}: {
-  children: ReactNode;
-  width?: keyof typeof widths;
-  className?: string;
-}) {
+  ...props
+}: ComponentProps<"div"> & { width?: ContainerWidth }) {
   return (
     <div
-      className={cn("mx-auto w-full px-5 sm:px-8 lg:px-10", widths[width], className)}
-    >
-      {children}
-    </div>
+      data-slot="container"
+      className={cn(
+        "mx-auto w-full px-5 sm:px-8 lg:px-10",
+        widths[width],
+        className,
+      )}
+      {...props}
+    />
   );
 }
+
+export { Container };

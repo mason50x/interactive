@@ -15,7 +15,7 @@ import { siteUrl } from "./site-url";
 
 /** Where an invitation link lands. Must never call `auth.protect()`, and must
  *  stay out of the signed-out redirect in `src/proxy.ts`. */
-export const ACCEPT_INVITE_PATH = "/auth/accept-invite";
+const ACCEPT_INVITE_PATH = "/auth/accept-invite";
 
 /**
  * Clerk appends these to `redirect_url` when the recipient clicks through.
@@ -35,7 +35,7 @@ export function isTicketStatus(value: string | null): value is TicketStatus {
 }
 
 /** The absolute URL Clerk mails out. Must be absolute — it leaves our origin. */
-export function inviteRedirectUrl(): string {
+function inviteRedirectUrl(): string {
   return new URL(ACCEPT_INVITE_PATH, siteUrl()).toString();
 }
 
@@ -72,16 +72,6 @@ export async function inviteUser({
     expiresInDays,
     ignoreExisting,
     notify: true,
-  });
-}
-
-/** Pending invitations, newest first. */
-export async function listPendingInvitations(limit = 100) {
-  const client = await clerkClient();
-  return await client.invitations.getInvitationList({
-    status: "pending",
-    orderBy: "-created_at",
-    limit,
   });
 }
 

@@ -1,3 +1,5 @@
+import { readStoredJson, writeStoredJson } from "@/lib/storage";
+
 /**
  * The weather where the visitor actually is.
  *
@@ -42,14 +44,7 @@ const TIMEOUT_MS = 6_000;
 const CACHE_KEY = "50x:weather";
 
 export type WeatherKind =
-  | "clear"
-  | "partly"
-  | "cloudy"
-  | "fog"
-  | "drizzle"
-  | "rain"
-  | "snow"
-  | "storm";
+  "clear" | "partly" | "cloudy" | "fog" | "drizzle" | "rain" | "snow" | "storm";
 
 export type Weather = {
   /** Where this is the weather for, as the reverse lookup named it. */
@@ -153,9 +148,7 @@ export function currentPosition(): Promise<GeolocationCoordinates> {
  * outright `prompt`. Getting this wrong in that direction costs a button
  * press; getting it wrong the other way fires a dialog nobody asked for.
  */
-export async function geolocationPermission(): Promise<
-  PermissionState | null
-> {
+export async function geolocationPermission(): Promise<PermissionState | null> {
   if (typeof navigator === "undefined" || !navigator.permissions) return null;
   try {
     const status = await navigator.permissions.query({ name: "geolocation" });
@@ -205,8 +198,7 @@ async function reverseGeocode(
 
     // `city` is empty for a lot of the world, where the useful name is the
     // locality; the region is the last resort before giving up on a name.
-    const name =
-      data.city || data.locality || data.principalSubdivision || "";
+    const name = data.city || data.locality || data.principalSubdivision || "";
 
     return {
       city: name || "Your location",
@@ -318,33 +310,22 @@ type Cached = { at: number; lat: number; lon: number; weather: Weather };
  * navigating inside the app remounts the card, and without this every one of
  * those is two network calls to draw a number that has not changed.
  *
- * Every access is guarded. Storage throws outright in a handful of real
- * situations — a browser set to block site data, Safari's private mode — and a
- * weather card is not worth taking a page down over.
+ * Storage is best-effort throughout (see `src/lib/storage.ts`): the card
+ * works without a cache, it is just two network calls slower.
  */
 function readCache(lat: number, lon: number): Weather | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-
-    const cached = JSON.parse(raw) as Cached;
-    if (cached.lat !== lat || cached.lon !== lon) return null;
-    if (Date.now() - cached.at > MAX_AGE_MS) return null;
-
-    return cached.weather;
-  } catch {
-    return null;
-  }
+  const cached = readStoredJson<Cached>(CACHE_KEY);
+  if (!cached) return null;
+  if (cached.lat !== lat || cached.lon !== lon) return null;
+  if (Date.now() - cached.at > MAX_AGE_MS) return null;
+  return cached.weather;
 }
 
 function writeCache(lat: number, lon: number, weather: Weather): void {
-  try {
-    localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ at: Date.now(), lat, lon, weather } satisfies Cached),
-    );
-  } catch {
-    // Full, blocked, or unavailable. The card works without a cache.
-  }
+  writeStoredJson(CACHE_KEY, {
+    at: Date.now(),
+    lat,
+    lon,
+    weather,
+  } satisfies Cached);
 }
-

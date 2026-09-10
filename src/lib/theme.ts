@@ -1,4 +1,5 @@
 import { brand } from "@/lib/brand";
+import { readStorage, removeStorage, writeStorage } from "@/lib/storage";
 
 /**
  * What the user picked. `system` is the default and is not a colour — it is a
@@ -12,8 +13,8 @@ export type ThemePreference = (typeof themePreferences)[number];
 /** What the page is actually painted as, once `system` has been read. */
 export type ResolvedTheme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "il-theme";
-export const THEME_ATTRIBUTE = "data-theme";
+const THEME_STORAGE_KEY = "il-theme";
+const THEME_ATTRIBUTE = "data-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
@@ -22,14 +23,14 @@ export function usesAppTheme(pathname: string): boolean {
   return /^\/(dashboard|learn)(?:\/|$)/.test(pathname);
 }
 
-export function isThemePreference(value: unknown): value is ThemePreference {
+function isThemePreference(value: unknown): value is ThemePreference {
   return (
     typeof value === "string" &&
     (themePreferences as readonly string[]).includes(value)
   );
 }
 
-export function systemTheme(): ResolvedTheme {
+function systemTheme(): ResolvedTheme {
   return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
 }
 
@@ -37,33 +38,18 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
   return preference === "system" ? systemTheme() : preference;
 }
 
-/**
- * Storage access is wrapped because it throws outright — not returns null —
- * in a browser set to block site data, and a theme is never worth taking the
- * page down for. Every failure falls back to `system`.
- */
+/** Anything storage cannot give — blocked, missing, malformed — is `system`. */
 export function readStoredPreference(): ThemePreference {
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemePreference(stored) ? stored : "system";
-  } catch {
-    return "system";
-  }
+  const stored = readStorage(THEME_STORAGE_KEY);
+  return isThemePreference(stored) ? stored : "system";
 }
 
-export function storePreference(preference: ThemePreference): void {
-  try {
-    // `system` is the absence of a choice, so it is stored as the absence of
-    // a key. That way a user who goes back to it is not pinned to whatever
-    // the OS happened to be on the day they chose.
-    if (preference === "system") {
-      window.localStorage.removeItem(THEME_STORAGE_KEY);
-    } else {
-      window.localStorage.setItem(THEME_STORAGE_KEY, preference);
-    }
-  } catch {
-    // Ignored: the theme still applies for this page view.
-  }
+function storePreference(preference: ThemePreference): void {
+  // `system` is the absence of a choice, so it is stored as the absence of a
+  // key. That way a user who goes back to it is not pinned to whatever the OS
+  // happened to be on the day they chose.
+  if (preference === "system") removeStorage(THEME_STORAGE_KEY);
+  else writeStorage(THEME_STORAGE_KEY, preference);
 }
 
 /**

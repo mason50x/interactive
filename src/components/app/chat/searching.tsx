@@ -1,4 +1,5 @@
 import { Spinner } from "@/components/ui/spinner";
+import type { ReactNode } from "react";
 
 export function Searching() {
   return (
@@ -15,7 +16,7 @@ export function Searching() {
  * a handle typed wrong or an account that is gone. Where the caller has more
  * to say it says it; where it does not, `Nobody found.` is the whole of it.
  */
-export function FoundNobody({ children }: { children?: React.ReactNode }) {
+export function FoundNobody({ children }: { children?: ReactNode }) {
   return (
     <p className="py-7 text-center text-[0.8125rem] leading-relaxed text-muted-foreground">
       {children ?? "Nobody found."}

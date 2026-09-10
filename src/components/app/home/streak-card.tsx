@@ -7,7 +7,7 @@ import { useStreak } from "@/components/streak-provider";
 import { Card } from "@/components/ui/card";
 import { useTzOffset } from "@/lib/use-tz-offset";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * The streak, as a run rather than as a number.

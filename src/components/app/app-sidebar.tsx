@@ -1,32 +1,25 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { VersionCard } from "@/components/app/version-card";
 import { InviteCard } from "@/components/app/invite-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
+import { RailContext } from "@/components/app/rail-context";
+import { RailLockup } from "@/components/app/rail/rail-lockup";
+import { RailToggle } from "@/components/app/rail/rail-toggle";
+import { useActivePill } from "@/components/app/rail/use-active-pill";
 import {
-  RailContext,
-  type RailContextValue,
-  useRail,
-} from "@/components/app/rail-context";
+  NavPending,
+  useNavPending,
+} from "@/components/app/rail/use-nav-pending";
+import { useRailState } from "@/components/app/rail/use-rail-state";
 import { usePreferences } from "@/components/preferences-provider";
 import { RailSearch } from "@/components/app/rail-search";
-import { RailIconSolid } from "@/components/app/nav-icons";
 import { UserMenu } from "@/components/app/user-menu";
 import { NAV_HREFS, PHILOSOPHY_HREF, navItems } from "@/lib/nav";
-import { Wordmark } from "@/components/wordmark";
-import { brand } from "@/lib/brand";
-import { type RailState, rememberRailState } from "@/lib/rail";
+import type { RailState } from "@/lib/rail";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
 
@@ -85,49 +78,13 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   const { preferences } = usePreferences();
   const { hasUnread, mentioned } = useChat();
 
-  // The width asked for. Seeded from the cookie the layout read, so the first
-  // frame is the remembered one, and written back on every change. Below `lg`
-  // the rail is icons whatever this says; see the `wide:` variant.
-  const [rail, setRail] = useState<RailState>(initialRail);
-
-  // Whether it has ever been toggled in this document. The swapped elements
-  // do not animate until it has — see `rail-wide` in `globals.css` for why a
-  // rail that has not moved must not fade anything in.
-  const [moved, setMoved] = useState(false);
-
-  const changeRail = useCallback((state: RailState) => {
-    setRail(state);
-    setMoved(true);
-    rememberRailState(state);
-  }, []);
-
-  const railContext = useMemo<RailContextValue>(
-    () => ({ rail, setRail: changeRail }),
-    [rail, changeRail],
-  );
-  const list = useRef<HTMLUListElement>(null);
-  const [pill, setPill] = useState<{ top: number; height: number } | null>(
-    null,
+  const { rail, moved, railContext } = useRailState(initialRail);
+  const { pendingHref, report } = useNavPending();
+  const { activeHref, litHref, list, pill } = useActivePill(
+    pathname,
+    pendingHref,
   );
 
-  // The row that has been clicked and is waiting on the server, if any. See
-  // `NavPending` at the bottom of this file for why this is state up here
-  // rather than something each row reads for itself.
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
-
-  // Functional, and matched on the way down, so two rows reporting in either
-  // order cannot leave a stale one lit: only the row that claimed the pending
-  // state can release it.
-  const report = useCallback((href: string, pending: boolean) => {
-    setPendingHref((current) =>
-      pending ? href : current === href ? null : current,
-    );
-  }, []);
-
-  // Exactly one item is lit: the one whose href is the *longest* prefix of the
-  // current path. Testing each item on its own would light every ancestor too,
-  // and since every route here sits under `/dashboard`, an item pointing at
-  // the root would be lit on every page of the app.
   // An activity is running in a frame beside this rail, and an activity is the most
   // expensive thing this app ever puts on a screen. The constellation is
   // decoration; it stays, but dimmed and slowed and at half its frame rate
@@ -138,43 +95,11 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   // a server component — see `src/app/dashboard/activities/[slug]/page.tsx`.
   // `/dashboard/activities` itself is the browser, not an activity, so this wants
   // the trailing segment and not just the prefix.
-  const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname) || pathname === PHILOSOPHY_HREF;
-
-  const activeHref = navItems.reduce((best, item) => {
-    const matches =
-      pathname === item.href || pathname.startsWith(`${item.href}/`);
-    return matches && item.href.length > best.length ? item.href : best;
-  }, "");
-
-  // Which row wears the pill. A click lights its row *now* and lets the URL
-  // catch up, rather than the other way round: every route under `/dashboard`
-  // reads cookies and so is rendered on demand, and until `src/lib/warm.ts` has
-  // been round the rail the answer arrives some hundreds of milliseconds after
-  // the click. Waiting for `pathname` to move means waiting all of that with
-  // the rail showing the row you just left — which reads as a click that
-  // missed, and gets clicked again.
-  //
-  // Only the pill and the ink follow this. `aria-current` stays on the route
-  // actually being shown, because that is what it means; a screen reader saying
-  // "current page" of a page that has not arrived is a lie, and a navigation
-  // that fails would leave it as one.
-  const litHref = pendingHref ?? activeHref;
+  const viewing =
+    /^\/dashboard\/activities\/[^/]+/.test(pathname) ||
+    pathname === PHILOSOPHY_HREF;
 
   const warm = useWarmRoutes(NAV_HREFS, pathname);
-
-  // Where the lit face has to be. Read off the row rather than computed from
-  // the row height and the gap, so the two cannot drift apart: this is laid
-  // out by Tailwind classes a few lines below, and arithmetic here would be a
-  // second copy of them that nothing checks.
-  //
-  // A layout effect, not an effect: the pill is placed in the same frame the
-  // row is, so it never paints at the wrong end of the list first. Measuring
-  // needs no observer — every row is a fixed `h-11`, at both widths of the
-  // rail, so nothing but the selection moves them.
-  useLayoutEffect(() => {
-    const row = list.current?.querySelector<HTMLElement>('[data-lit="true"]');
-    setPill(row ? { top: row.offsetTop, height: row.offsetHeight } : null);
-  }, [litHref]);
 
   return (
     <RailContext value={railContext}>
@@ -186,51 +111,14 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
       >
         {preferences.constellation && <RailConstellation quiet={viewing} />}
 
-        {/* Also the only route back to `/dashboard` itself: the overview has
-            no row of its own in the list.
-
-            One lockup at both widths, not two. The mark is sized in `em`, so
-            easing the font size is what carries it between the icon rail's
-            larger cut and the labelled rail's smaller one, and the name is
-            swapped out from beside it rather than the whole thing replaced.
-            The padding eases too: it is what centres the mark over the icon
-            column at one width and puts it on the labels' left edge at the
-            other. `overflow-hidden` is for the name on the way out — it is
-            wider than the rail it is leaving.
-
-            The narrow padding is the icon column's centre less half the mark:
-            the rows below are 60px wide behind a 12px inset, so their icons
-            sit on the 42px line, and the mark at 1.375rem is 17.6px wide.
-            Change the mark's size or the rail's width and this moves. */}
-        <div className="flex h-16 items-center overflow-hidden pl-[2.0625rem] transition-[padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:pl-5">
-          <Link
-            href="/dashboard"
-            aria-label={`${brand.name} dashboard`}
-            {...warm("/dashboard")}
-            className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
-          >
-            <Wordmark
-              short
-              className="text-[1.375rem] transition-[font-size] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:text-[1.0625rem]"
-              nameClassName="rail-wide hidden wide:inline [--rail-leave:150ms]"
-            />
-          </Link>
-
-          {/* Flush to the rail's right edge like every row below it, and for
-              the same reason: the shell's margin is the chrome on that side. */}
-          <RailToggle
-            to="closed"
-            label="Collapse sidebar"
-            className="rail-wide ml-auto hidden size-9 rounded-lg wide:flex"
-          />
-        </div>
+        <RailLockup warm={warm} />
 
         {/* The way back. Below `lg` there is no wide rail to open, so this is
             the one place the two narrow cases part: it exists in the collapsed
             one only. A row of its own rather than a hover state on the mark,
             because a control that only appears when the pointer happens to be
             over the thing it replaced is a control that has to be discovered. */}
-        <div className="rail-narrow hidden pb-2 pl-3 collapsed:block">
+        <div className="hidden pb-2 pl-3 rail-narrow collapsed:block">
           <RailToggle
             to="open"
             label="Expand sidebar"
@@ -414,74 +302,4 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
       </nav>
     </RailContext>
   );
-}
-
-/**
- * One half of the collapse control: the button in the header that closes the
- * rail, or the row in the icon rail that opens it. Which is `to`; the caller
- * shapes it. Both are drawn as one of the rail's own hover surfaces, and take
- * the inset focus ring the nav rows do for the reason given there.
- *
- * No `transition-colors`: both halves carry `rail-wide` or `rail-narrow` (or
- * sit inside one), and those own the transition list. See `globals.css`.
- */
-function RailToggle({
-  to,
-  label,
-  className,
-}: {
-  to: RailState;
-  label: string;
-  className?: string;
-}) {
-  const { setRail } = useRail();
-
-  return (
-    <button
-      type="button"
-      onClick={() => setRail(to)}
-      aria-label={label}
-      title={label}
-      data-to={to}
-      className={cn(
-        "rail-toggle flex cursor-pointer items-center justify-center text-muted-foreground backdrop-blur-[3px] outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
-        className,
-      )}
-    >
-      <RailIconSolid className="size-5" />
-    </button>
-  );
-}
-
-/**
- * Reports whether the row it sits in has been clicked and is still waiting.
- *
- * `useLinkStatus` only answers inside a `Link`, so this has to be a child of
- * one — which is also why the pending row is state on `AppSidebar` and not on
- * each row: the pill is one element for the whole list, so the list is what has
- * to know which row to send it to.
- *
- * Renders nothing. The visible half of this is the pill and the ink, which the
- * rail already knows how to move.
- *
- * The cleanup releases the claim as well as the effect, so a row unmounting
- * mid-navigation cannot leave the rail lit on a destination nobody is going to.
- * Both paths report the same thing, which is why it is safe for them to run
- * back to back on the commit that resolves the click.
- */
-function NavPending({
-  href,
-  report,
-}: {
-  href: string;
-  report: (href: string, pending: boolean) => void;
-}) {
-  const { pending } = useLinkStatus();
-
-  useEffect(() => {
-    report(href, pending);
-    return () => report(href, false);
-  }, [href, pending, report]);
-
-  return null;
 }

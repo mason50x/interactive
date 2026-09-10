@@ -40,7 +40,8 @@
 import "server-only";
 
 import catalogue from "@/lib/activities.catalogue.json";
-import { type Activity, filterActivities, type Genre } from "@/lib/activity";
+import type { Activity, Genre } from "@/lib/activity";
+import type { ActivityEntry } from "@/components/app/search-provider";
 
 // Re-exported so a Server Component that already needs the catalogue does not
 // have to import its type from a second module.
@@ -56,23 +57,24 @@ export type { Activity, Genre };
  */
 export const ACTIVITIES: readonly Activity[] = catalogue as Activity[];
 
-/** How many tiles the dashboard shows before you have to search. */
-export const POPULAR_COUNT = 24;
-
-const BY_SLUG = new Map(ACTIVITIES.map((activity) => [activity.slug, activity]));
+const BY_SLUG = new Map(
+  ACTIVITIES.map((activity) => [activity.slug, activity]),
+);
 
 export function findActivity(slug: string): Activity | undefined {
   return BY_SLUG.get(slug);
 }
 
-/** The head of the catalogue — what the grid shows with an empty search box. */
-export function popularActivities(count: number = POPULAR_COUNT): readonly Activity[] {
-  return ACTIVITIES.slice(0, count);
-}
-
-/** Substring search across the whole catalogue, in catalogue order. The
- *  browser runs the same matcher over the catalogue it was handed; see
- *  `filterActivities`. */
-export function searchActivities(query: string): readonly Activity[] {
-  return filterActivities(ACTIVITIES, query);
+/**
+ * The catalogue, narrowed to what a search result row needs.
+ *
+ * This is the shape the dashboard layout hands `SearchProvider`, so the rail's
+ * search can find an activity from any page of the app rather than only from
+ * the one that already has the grid. Three fields rather than the whole
+ * `Activity`, because the list travels in every dashboard page's RSC payload
+ * and a result row draws none of the rest — see `ActivityEntry` for the same
+ * argument from the other side.
+ */
+export function searchableActivities(): ActivityEntry[] {
+  return ACTIVITIES.map(({ slug, title, genre }) => ({ slug, title, genre }));
 }

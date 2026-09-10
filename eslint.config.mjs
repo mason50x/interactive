@@ -23,6 +23,38 @@ const eslintConfig = defineConfig([
   ]),
 
   /**
+   * The typography rule from `CLAUDE.md`, enforced: no uppercase transform
+   * and no letter-spacing, anywhere. Class strings are the way both would
+   * arrive in a React tree, so string literals and template literals are
+   * checked for the Tailwind utilities, and the SVG attribute is checked by
+   * name. The stylesheet is checked by hand; ESLint does not read CSS.
+   */
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "Literal[value=/(^|[\\s:])(uppercase|lowercase|capitalize|normal-case|tracking-[a-z0-9\\[\\]\\-]+)([\\s]|$)/]",
+          message:
+            "Type is set at its natural case and spacing: no uppercase, no tracking-* (see CLAUDE.md).",
+        },
+        {
+          selector:
+            "TemplateElement[value.raw=/(^|[\\s:])(uppercase|lowercase|capitalize|normal-case|tracking-[a-z0-9\\[\\]\\-]+)([\\s]|$)/]",
+          message:
+            "Type is set at its natural case and spacing: no uppercase, no tracking-* (see CLAUDE.md).",
+        },
+        {
+          selector: "JSXAttribute[name.name='letterSpacing']",
+          message: "No letter-spacing, in SVG either (see CLAUDE.md).",
+        },
+      ],
+    },
+  },
+
+  /**
    * The wall between the browser bundle and the moderation rules.
    *
    * Everything under `convex/moderation/` — the word lists, the patterns, the
@@ -49,13 +81,18 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ["**/convex/moderation/*", "**/convex/moderation"],
+              group: [
+                "**/convex/moderation/*",
+                "**/convex/moderation",
+                "@convex/moderation/*",
+                "@convex/moderation",
+              ],
               message:
                 "The moderation rules are server-side only and must never reach a browser bundle. Anything the client needs comes through convex/_generated/api — see src/lib/chat.ts.",
               allowTypeImports: false,
             },
             {
-              group: ["**/convex/chat/*"],
+              group: ["**/convex/chat/*", "@convex/chat/*"],
               message:
                 "Import only types from convex/chat — a value import bundles the server code with it.",
               allowTypeImports: true,

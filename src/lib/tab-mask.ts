@@ -142,7 +142,7 @@ const REAL_ICON_SELECTOR = `link[rel~="icon"]:not([${MASK_LINK_ATTRIBUTE}]),link
  * `reannounce`, behind a check that this pass changed something — which is
  * what keeps `watchTabMask` from observing its own work and looping forever.
  */
-export function applyTabMask(mask: TabMaskAssets | null): void {
+function applyTabMask(mask: TabMaskAssets | null): void {
   const root = document.documentElement;
   const head = document.head;
 

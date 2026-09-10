@@ -2,10 +2,13 @@
 
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { useQuery } from "convex/react";
-import { useEffect, useState, type RefObject } from "react";
-import { Empty, Group, PersonRow } from "@/components/app/chat/people-rows";
+import type { RefObject } from "react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { Group, PersonRow } from "@/components/app/chat/people-rows";
+import { useDebounced } from "@/lib/use-debounced";
 import { Searching } from "@/components/app/chat/searching";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * One field over the conversation list, for both things a field there is for:
@@ -27,9 +30,11 @@ export function SearchField({
   fieldRef: RefObject<HTMLInputElement | null>;
 }) {
   return (
-    <div className="flex h-9 items-center gap-2 rounded-lg border border-border bg-foreground/[0.03] px-2.5 transition-colors focus-within:border-ring focus-within:bg-background focus-within:ring-1 focus-within:ring-ring">
-      <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
-      <input
+    <InputGroup className="bg-foreground/[0.03] px-2.5 transition-colors focus-within:bg-background">
+      <InputAddon className="text-muted-foreground">
+        <MagnifyingGlassIcon />
+      </InputAddon>
+      <Input
         ref={fieldRef}
         type="search"
         value={term}
@@ -45,7 +50,7 @@ export function SearchField({
         spellCheck={false}
         autoComplete="off"
         maxLength={40}
-        className="h-full min-w-0 flex-1 bg-transparent text-[0.875rem] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:appearance-none"
+        className="h-full [&::-webkit-search-cancel-button]:appearance-none"
       />
       {term === "" ? null : (
         <button
@@ -60,7 +65,7 @@ export function SearchField({
           <XMarkIcon className="size-3.5" />
         </button>
       )}
-    </div>
+    </InputGroup>
   );
 }
 
@@ -80,12 +85,7 @@ export function People({
   exclude: ReadonlySet<string>;
 }) {
   const wanted = term.trim().toLowerCase();
-  const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(wanted), 250);
-    return () => clearTimeout(timer);
-  }, [wanted]);
+  const query = useDebounced(wanted, 250);
 
   const found = useQuery(
     api.chat.profiles.search,
@@ -104,9 +104,9 @@ export function People({
           <Searching />
         </li>
       ) : rows.length === 0 ? (
-        <Empty>
+        <EmptyState as="li">
           Nobody by that handle, or they are not letting themselves be found.
-        </Empty>
+        </EmptyState>
       ) : (
         rows.map((person) => <PersonRow key={person.clerkId} person={person} />)
       )}

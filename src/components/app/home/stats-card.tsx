@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { Card } from "@/components/ui/card";
 import { splitDuration } from "@/lib/time";
 import { useTzOffset } from "@/lib/use-tz-offset";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * Four numbers about your own use of the place.
@@ -72,14 +72,14 @@ function Stat({
   return (
     <div className="min-w-0">
       <p className="flex items-baseline gap-1">
-        <span className="text-[1.5rem] leading-none font-semibold tabular-nums text-foreground">
+        <span className="text-[1.5rem] leading-none font-semibold text-foreground tabular-nums">
           {value}
         </span>
         <span className="truncate text-[0.75rem] text-muted-foreground">
           {unit}
         </span>
       </p>
-      <p className="label-small mt-1 text-faint">{label}</p>
+      <p className="mt-1 text-xs text-faint">{label}</p>
     </div>
   );
 }

@@ -11,10 +11,11 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
+import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { EXPERIENCE_HREF, type ExperienceApp } from "@/lib/experience";
-import { cn } from "@/lib/utils";
 
 /**
  * A browser, drawn around a frame.
@@ -49,32 +50,22 @@ export function ExperienceChrome({
   const stage = useRef<HTMLDivElement>(null);
   const [run, setRun] = useState(0);
 
-  const full = useSyncExternalStore(
-    subscribeFullscreen,
-    () => document.fullscreenElement === stage.current,
-    () => false,
-  );
-  const canFull = useSyncExternalStore(
-    subscribeNever,
-    () => document.fullscreenEnabled,
-    () => false,
-  );
-  const toggleFull = useCallback(() => {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      stage.current?.requestFullscreen().catch(() => {});
-    }
-  }, []);
+  const { full, canFull, toggleFull } = useStageFullscreen(stage);
 
   const start = new URL(app.start);
-  const path = start.pathname === "/" && !start.search ? "" : start.pathname + start.search;
+  const path =
+    start.pathname === "/" && !start.search
+      ? ""
+      : start.pathname + start.search;
 
   return (
     <div ref={stage} className="flex h-full min-h-0 flex-col bg-sidebar">
       {/* Tab strip: the window buttons, and one tab. */}
       <div className="flex items-end gap-3 px-3 pt-2">
-        <div className="mb-2.5 flex items-center gap-1.5 pl-1" aria-hidden="true">
+        <div
+          className="mb-2.5 flex items-center gap-1.5 pl-1"
+          aria-hidden="true"
+        >
           <span className="size-3 rounded-full bg-[#ff5f57]" />
           <span className="size-3 rounded-full bg-[#febc2e]" />
           <span className="size-3 rounded-full bg-[#28c840]" />
@@ -100,7 +91,10 @@ export function ExperienceChrome({
         <ChromeButton label="Forward" onClick={() => window.history.forward()}>
           <ArrowRightIcon className="size-4" />
         </ChromeButton>
-        <ChromeButton label="Reload" onClick={() => setRun((value) => value + 1)}>
+        <ChromeButton
+          label="Reload"
+          onClick={() => setRun((value) => value + 1)}
+        >
           <ArrowPathIcon className="size-4" />
         </ChromeButton>
 
@@ -127,14 +121,17 @@ export function ExperienceChrome({
             )}
           </ChromeButton>
         )}
-        <Link
+        <ButtonLink
           href={EXPERIENCE_HREF}
           aria-label="All apps"
           title="All apps"
-          className={chromeButtonClass}
+          variant="ghost"
+          size="icon"
+          shape="circle"
+          className="text-foreground"
         >
           <Squares2X2Icon className="size-4" />
-        </Link>
+        </ButtonLink>
       </div>
 
       <iframe
@@ -150,9 +147,7 @@ export function ExperienceChrome({
   );
 }
 
-const chromeButtonClass =
-  "flex size-8 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
-
+/** One round control in the toolbar: the ghost icon button, in a circle. */
 function ChromeButton({
   label,
   onClick,
@@ -160,25 +155,19 @@ function ChromeButton({
 }: {
   label: string;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon"
+      shape="circle"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={cn(chromeButtonClass)}
+      className="text-foreground"
     >
       {children}
-    </button>
+    </Button>
   );
 }
-
-function subscribeFullscreen(onChange: () => void) {
-  document.addEventListener("fullscreenchange", onChange);
-  return () => document.removeEventListener("fullscreenchange", onChange);
-}
-
-/** For a value the browser fixes at load and never changes again. */
-const subscribeNever = () => () => {};

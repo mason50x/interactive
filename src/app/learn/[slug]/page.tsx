@@ -25,7 +25,9 @@ export async function generateMetadata({
   return { title: findActivity(slug)?.title ?? "Activity" };
 }
 
-export default async function LearnPage({ params }: PageProps<"/learn/[slug]">) {
+export default async function LearnPage({
+  params,
+}: PageProps<"/learn/[slug]">) {
   const { slug } = await params;
 
   const activity = findActivity(slug);

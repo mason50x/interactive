@@ -11,7 +11,9 @@ import { RowMenu } from "@/components/app/chat/people-rows";
 import { isBot, openDmError, personName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
+import { FieldError } from "@/components/ui/alert";
+import { popupVariants } from "@/components/ui/popup";
 
 /**
  * A person, when their name is pressed.
@@ -63,7 +65,8 @@ export function PersonCard({
 }) {
   const [open, setOpen] = useState(false);
 
-  if (isBot(person.clerkId)) return <div className={cn(className, "cursor-default")}>{children}</div>;
+  if (isBot(person.clerkId))
+    return <div className={cn(className, "cursor-default")}>{children}</div>;
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -84,8 +87,11 @@ export function PersonCard({
         >
           <Popover.Popup
             className={cn(
-              side === "bottom" ? "popup-drop" : "popup-slide",
-              "w-[17rem] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none",
+              popupVariants({
+                motion: side === "bottom" ? "drop" : "slide",
+                padding: "lg",
+              }),
+              "w-[17rem]",
             )}
           >
             {open ? (
@@ -289,9 +295,7 @@ function Body({
               messages from friends is told so next to the Add button rather
               than after pressing Message. */}
           {notice !== null ? (
-            <p role="status" className="mt-2 text-[0.8125rem] text-destructive">
-              {notice}
-            </p>
+            <FieldError role="status">{notice}</FieldError>
           ) : !card.canMessage &&
             !card.blocked &&
             card.conversationId === null ? (

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import styles from "@/components/app/browser-check.module.css";
 import { RailConstellation } from "@/components/app/rail-constellation";
-import styles from "./browser-check.module.css";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "50x:browser-check:v1";
 const LETTER =
@@ -12,7 +13,8 @@ const LETTER =
  * of the drawing so it can slide sideways without running out, and deep
  * enough to stay under the whole letter once it has risen past the top.
  */
-const WATER = "M-48 0 q4 -3.2 8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 V120 H-48 Z";
+const WATER =
+  "M-48 0 q4 -3.2 8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 V120 H-48 Z";
 let lastShownInMemory = "";
 
 function localDay() {
@@ -45,7 +47,11 @@ export function BrowserCheck() {
     const onAnimationEnd = (event: AnimationEvent) => {
       if (event.pseudoElement) return;
       // The letter's fill ends at the top of the I; start fading at that instant.
-      if (event.target instanceof Element && event.target.classList.contains(styles.fill)) leave();
+      if (
+        event.target instanceof Element &&
+        event.target.classList.contains(styles.fill)
+      )
+        leave();
       else if (event.target === dialog) {
         dialog.close();
         setOpen(false);
@@ -73,7 +79,8 @@ export function BrowserCheck() {
         // The in-memory marker still covers navigation in this session.
       }
       // Reduced motion shows the letter statically, so no trace animation ends.
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches) finishTimer = setTimeout(leave, 6_000);
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+        finishTimer = setTimeout(leave, 6_000);
     }, 0);
 
     return () => {
@@ -107,7 +114,10 @@ export function BrowserCheck() {
           re-read on every frame the canvas under it changes, and it changes
           on all of them. */}
       <div
-        className={`${styles.content} flex w-full max-w-6xl flex-col items-center gap-10 md:flex-row md:gap-16`}
+        className={cn(
+          styles.content,
+          "flex w-full max-w-6xl flex-col items-center gap-10 md:flex-row md:gap-16",
+        )}
         role="status"
       >
         {/* Sized by the viewport's height, so the letter is the page's
@@ -115,8 +125,19 @@ export function BrowserCheck() {
             phone. The stroke is in drawing units and scales with it; it is
             thinner here than the rail's marks so that at this size it stays
             a line rather than becoming a bar. */}
-        <div className="flex w-full justify-center text-foreground md:w-1/2" aria-hidden="true">
-          <svg className="h-[clamp(12rem,36vh,20rem)] w-auto md:h-[clamp(16rem,60vh,32rem)]" viewBox="0 0 48 64" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <div
+          className="flex w-full justify-center text-foreground md:w-1/2"
+          aria-hidden="true"
+        >
+          <svg
+            className="h-[clamp(12rem,36vh,20rem)] w-auto md:h-[clamp(16rem,60vh,32rem)]"
+            viewBox="0 0 48 64"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             {/* The letter is traced, then filled with water: a wide wavy
                 sheet, clipped to the outline, that rises through it from the
                 bottom while its crests slide sideways. */}
@@ -135,10 +156,16 @@ export function BrowserCheck() {
           {/* One line each. The sizes track the viewport so neither line
               has to break on a phone. */}
           <div className="rounded-3xl px-4 py-4 backdrop-blur-[3px] sm:px-6">
-            <h1 id="browser-check-title" className="text-[clamp(1.5rem,4.5vw,3rem)] leading-tight font-semibold whitespace-nowrap">
+            <h1
+              id="browser-check-title"
+              className="text-[clamp(1.5rem,4.5vw,3rem)] leading-tight font-semibold whitespace-nowrap"
+            >
               Checking Security
             </h1>
-            <p id="browser-check-description" className="mt-3 text-[clamp(0.6875rem,2.8vw,1.125rem)] leading-relaxed whitespace-nowrap text-muted-foreground">
+            <p
+              id="browser-check-description"
+              className="mt-3 text-[clamp(0.6875rem,2.8vw,1.125rem)] leading-relaxed whitespace-nowrap text-muted-foreground"
+            >
               We’re verifying your device for the day.
             </p>
           </div>

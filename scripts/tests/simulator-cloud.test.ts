@@ -314,10 +314,24 @@ test("manual slots persist while restore rotates autosave and keeps five rows", 
 
 test("upload titles fill generic entries and preserve custom names", async () => {
   const a = alice();
-  const entry = await a.mutation(api.simulator.library.register, { contentHash: hash, mode: "mono" });
-  const named = await a.mutation(api.simulator.library.register, { contentHash: hash, mode: "mono", label: "Pokemon — Red Version" });
+  const entry = await a.mutation(api.simulator.library.register, {
+    contentHash: hash,
+    mode: "mono",
+  });
+  const named = await a.mutation(api.simulator.library.register, {
+    contentHash: hash,
+    mode: "mono",
+    label: "Pokemon — Red Version",
+  });
   expect(named.label).toBe("Pokemon — Red Version");
-  await a.mutation(api.simulator.library.rename, { entryId: entry._id, label: "My adventure" });
-  const again = await a.mutation(api.simulator.library.register, { contentHash: hash, mode: "mono", label: "Another filename" });
+  await a.mutation(api.simulator.library.rename, {
+    entryId: entry._id,
+    label: "My adventure",
+  });
+  const again = await a.mutation(api.simulator.library.register, {
+    contentHash: hash,
+    mode: "mono",
+    label: "Another filename",
+  });
   expect(again.label).toBe("My adventure");
 });

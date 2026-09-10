@@ -1,27 +1,21 @@
+import { StatList } from "@/components/landing/stat-list";
+import { Section } from "@/components/ui/section";
 import { stats } from "@/lib/content";
-import { Container } from "@/components/ui/container";
 
+/**
+ * Four figures from the pilot cohorts, and the line that says where they
+ * came from. Shallower than the bands around it, on the lifted surface, with
+ * a hairline underneath — a ledger between two arguments, not an argument
+ * itself.
+ */
 export function Stats() {
   return (
-    <section className="border-b border-border bg-surface py-16 sm:py-20">
-      <Container>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
-          {stats.items.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col gap-2 border-l border-border pl-5"
-            >
-              <dt className="text-display text-[2.5rem] text-foreground sm:text-[3rem]">
-                {stat.value}
-              </dt>
-              <dd className="max-w-[14rem] text-[0.9375rem] leading-relaxed text-muted-foreground">
-                {stat.label}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mt-10 text-[0.8125rem] text-faint">{stats.footnote}</p>
-      </Container>
-    </section>
+    <Section
+      width="default"
+      className="border-b border-border bg-surface py-16 sm:py-20 lg:py-20"
+    >
+      <StatList items={stats.items} size="large" />
+      <p className="mt-10 text-[0.8125rem] text-faint">{stats.footnote}</p>
+    </Section>
   );
 }

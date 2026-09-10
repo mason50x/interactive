@@ -1,9 +1,15 @@
+import type { ReactElement } from "react";
+import { accent, ink, muted, stroke } from "@/components/landing/palette";
 import type { Feature } from "@/lib/content";
 
-const stroke = "var(--border-strong)";
-const ink = "var(--foreground)";
-const muted = "var(--muted-foreground)";
-const accent = "var(--primary)";
+/**
+ * The drawing at the top of each feature card, one per `Feature["visual"]`.
+ *
+ * Six small SVGs on one viewBox, so they take the same space whatever card
+ * they land in, drawn in the palette's four colours plus the surface tints.
+ * `FeatureVisual` is the only export: the card asks for a visual by name and
+ * the registry at the foot maps names to drawings.
+ */
 
 const shell = "h-full w-full";
 
@@ -23,14 +29,50 @@ function MapVisual() {
         strokeWidth="1.5"
         className="animate-dash-flow"
       />
-      <rect x="14" y="26" width="64" height="28" rx="9" fill="var(--surface-muted)" stroke={stroke} />
-      <rect x="152" y="12" width="60" height="28" rx="9" fill="var(--accent)" stroke={accent} />
-      <rect x="152" y="52" width="60" height="28" rx="9" fill="var(--surface-muted)" stroke={stroke} />
+      <rect
+        x="14"
+        y="26"
+        width="64"
+        height="28"
+        rx="9"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+      />
+      <rect
+        x="152"
+        y="12"
+        width="60"
+        height="28"
+        rx="9"
+        fill="var(--accent)"
+        stroke={accent}
+      />
+      <rect
+        x="152"
+        y="52"
+        width="60"
+        height="28"
+        rx="9"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+      />
       <rect x="268" y="12" width="42" height="28" rx="9" fill={accent} />
-      <rect x="268" y="86" width="42" height="28" rx="9" fill="var(--surface-muted)" stroke={stroke} />
+      <rect
+        x="268"
+        y="86"
+        width="42"
+        height="28"
+        rx="9"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+      />
       <g fill={muted} fontSize="9.5">
-        <text x="30" y="44">Topic</text>
-        <text x="164" y="70">Detail</text>
+        <text x="30" y="44">
+          Topic
+        </text>
+        <text x="164" y="70">
+          Detail
+        </text>
       </g>
       <text x="166" y="30" fontSize="9.5" fill={accent}>
         Expanded
@@ -60,10 +102,30 @@ function FramesVisual() {
         <path d="M178 56 L190 40 L202 48 L216 34" />
         <path d="M254 56 L266 32 L278 44 L292 38" />
       </g>
-      <path d="M102 56 L114 30 L126 44 L140 26" stroke={accent} strokeWidth="1.75" fill="none" />
-      <rect x="14" y="92" width="292" height="6" rx="3" fill="var(--surface-muted)" stroke={stroke} />
+      <path
+        d="M102 56 L114 30 L126 44 L140 26"
+        stroke={accent}
+        strokeWidth="1.75"
+        fill="none"
+      />
+      <rect
+        x="14"
+        y="92"
+        width="292"
+        height="6"
+        rx="3"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+      />
       <rect x="14" y="92" width="104" height="6" rx="3" fill={accent} />
-      <circle cx="118" cy="95" r="7" fill="var(--surface)" stroke={accent} strokeWidth="2" />
+      <circle
+        cx="118"
+        cy="95"
+        r="7"
+        fill="var(--surface)"
+        stroke={accent}
+        strokeWidth="2"
+      />
       <text x="14" y="120" fontSize="9.5" fill={muted}>
         Step 2 of 9 — substitute and simplify
       </text>
@@ -92,9 +154,15 @@ function RecallVisual() {
         ))}
       </g>
       <g fill={muted} fontSize="9.5">
-        <text x="14" y="122">Day 1</text>
-        <text x="140" y="122">Day 6</text>
-        <text x="266" y="122">Day 21</text>
+        <text x="14" y="122">
+          Day 1
+        </text>
+        <text x="140" y="122">
+          Day 6
+        </text>
+        <text x="266" y="122">
+          Day 21
+        </text>
         <text x="14" y="22" fill={ink} fontSize="10">
           Retention
         </text>
@@ -107,14 +175,30 @@ function RecallVisual() {
 function SourceVisual() {
   return (
     <svg viewBox="0 0 320 132" className={shell} aria-hidden>
-      <rect x="14" y="14" width="128" height="104" rx="10" fill="var(--surface-muted)" stroke={stroke} />
+      <rect
+        x="14"
+        y="14"
+        width="128"
+        height="104"
+        rx="10"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+      />
       <g stroke={muted} strokeWidth="4" strokeLinecap="round" opacity="0.35">
         <path d="M28 36 H126" />
         <path d="M28 50 H112" />
         <path d="M28 78 H120" />
         <path d="M28 92 H98" />
       </g>
-      <rect x="24" y="58" width="94" height="12" rx="4" fill="var(--accent)" stroke={accent} />
+      <rect
+        x="24"
+        y="58"
+        width="94"
+        height="12"
+        rx="4"
+        fill="var(--accent)"
+        stroke={accent}
+      />
       <path
         d="M142 64 C 176 64, 178 50, 206 50"
         fill="none"
@@ -137,7 +221,16 @@ function SourceVisual() {
 function SketchVisual() {
   return (
     <svg viewBox="0 0 320 132" className={shell} aria-hidden>
-      <rect x="14" y="18" width="126" height="96" rx="12" fill="var(--surface-muted)" stroke={stroke} strokeDasharray="5 5" />
+      <rect
+        x="14"
+        y="18"
+        width="126"
+        height="96"
+        rx="12"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+        strokeDasharray="5 5"
+      />
       <g fill="none" stroke={muted} strokeWidth="1.75" strokeLinecap="round">
         <path d="M38 88 C 52 44, 62 96, 76 52 C 86 22, 96 78, 116 58" />
         <path d="M34 44 L48 40" />
@@ -146,8 +239,21 @@ function SketchVisual() {
         your sketch
       </text>
       <path d="M150 66 H176" stroke={accent} strokeWidth="1.5" />
-      <path d="M170 60 L178 66 L170 72" fill="none" stroke={accent} strokeWidth="1.5" />
-      <rect x="186" y="18" width="120" height="96" rx="12" fill="var(--surface)" stroke={accent} />
+      <path
+        d="M170 60 L178 66 L170 72"
+        fill="none"
+        stroke={accent}
+        strokeWidth="1.5"
+      />
+      <rect
+        x="186"
+        y="18"
+        width="120"
+        height="96"
+        rx="12"
+        fill="var(--surface)"
+        stroke={accent}
+      />
       <path
         d="M200 92 C 216 40, 232 40, 248 66 C 262 90, 278 40, 294 40"
         fill="none"
@@ -172,21 +278,64 @@ function GroupVisual() {
   ];
   return (
     <svg viewBox="0 0 320 132" className={shell} aria-hidden>
-      <rect x="14" y="14" width="292" height="104" rx="12" fill="var(--surface-muted)" stroke={stroke} />
+      <rect
+        x="14"
+        y="14"
+        width="292"
+        height="104"
+        rx="12"
+        fill="var(--surface-muted)"
+        stroke={stroke}
+      />
       <g fill="none" stroke={stroke} strokeWidth="1.25">
         <path d="M74 62 H126" />
         <path d="M188 62 H240" />
       </g>
-      <rect x="30" y="48" width="44" height="28" rx="8" fill="var(--surface)" stroke={stroke} />
-      <rect x="126" y="48" width="62" height="28" rx="8" fill="var(--surface)" stroke={stroke} />
-      <rect x="240" y="48" width="46" height="28" rx="8" fill="var(--surface)" stroke={stroke} />
+      <rect
+        x="30"
+        y="48"
+        width="44"
+        height="28"
+        rx="8"
+        fill="var(--surface)"
+        stroke={stroke}
+      />
+      <rect
+        x="126"
+        y="48"
+        width="62"
+        height="28"
+        rx="8"
+        fill="var(--surface)"
+        stroke={stroke}
+      />
+      <rect
+        x="240"
+        y="48"
+        width="46"
+        height="28"
+        rx="8"
+        fill="var(--surface)"
+        stroke={stroke}
+      />
       {cursors.map((c) => (
-        <g key={c.name} className="animate-drift" style={{ animationDelay: `${c.x % 5}00ms` }}>
+        <g
+          key={c.name}
+          className="animate-drift"
+          style={{ animationDelay: `${c.x % 5}00ms` }}
+        >
           <path
             d={`M${c.x} ${c.y} l0 13 l3.4 -3.4 l2.4 5.2 l2.6 -1.2 l-2.4 -5.2 l4.8 -0.2 z`}
             fill={c.color}
           />
-          <rect x={c.x + 12} y={c.y + 6} width="34" height="15" rx="7" fill={c.color} />
+          <rect
+            x={c.x + 12}
+            y={c.y + 6}
+            width="34"
+            height="15"
+            rx="7"
+            fill={c.color}
+          />
           <text x={c.x + 19} y={c.y + 17} fontSize="9" fill="#fff">
             {c.name}
           </text>
@@ -196,7 +345,7 @@ function GroupVisual() {
   );
 }
 
-const registry: Record<Feature["visual"], () => React.JSX.Element> = {
+const registry: Record<Feature["visual"], () => ReactElement> = {
   map: MapVisual,
   frames: FramesVisual,
   recall: RecallVisual,

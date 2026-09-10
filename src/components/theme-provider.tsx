@@ -20,7 +20,9 @@ export function ThemeProvider() {
 
   useLayoutEffect(() => {
     const update = () => {
-      const preference = usesAppTheme(pathname) ? readStoredPreference() : "system";
+      const preference = usesAppTheme(pathname)
+        ? readStoredPreference()
+        : "system";
       applyTheme(resolveTheme(preference));
     };
     update();

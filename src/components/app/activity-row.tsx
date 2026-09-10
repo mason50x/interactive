@@ -86,7 +86,10 @@ export function ActivityRow({
     // Not a full width. Leaving a sliver of the last card visible is what
     // makes the jump read as the row moving rather than as the row being
     // replaced.
-    el.scrollBy({ left: direction * el.clientWidth * 0.85, behavior: "smooth" });
+    el.scrollBy({
+      left: direction * el.clientWidth * 0.85,
+      behavior: "smooth",
+    });
   }
 
   return (
@@ -162,13 +165,15 @@ function RowArrow({
       className={cn(
         "absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center sm:flex",
         "rounded-full border border-border bg-surface/85 text-foreground shadow-md backdrop-blur",
-        "transition-[opacity,background-color,transform] duration-200 hover:bg-surface hover:scale-105",
+        "transition-[opacity,background-color,transform] duration-200 hover:scale-105 hover:bg-surface",
         // Positioned over the fade zone at the edge
-        side === "start" ? "-left-2 sm:-left-3 lg:-left-4" : "-right-2 sm:-right-3 lg:-right-4",
+        side === "start"
+          ? "-left-2 sm:-left-3 lg:-left-4"
+          : "-right-2 sm:-right-3 lg:-right-4",
         // Quiet until working in this row
         hidden
           ? "pointer-events-none opacity-0"
-          : "opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+          : "opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100",
       )}
     >
       <Icon className="size-5" />

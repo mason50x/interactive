@@ -1,3 +1,5 @@
+import { originFromEnv } from "@/lib/origin";
+
 /**
  * The asset origin: where hosted activity bundles are served from.
  *
@@ -70,32 +72,14 @@ export const ACTIVITIES_PREFIX = "activities";
  * is a state `npm run domains` reports; wrong is a state nothing can detect.
  * See `config/domains.md` for what a move actually costs.
  *
- * The candidates are tried in order and the first one that *parses* wins,
- * rather than the first one that exists. The difference is not academic:
- * `vercel env pull` writes the literal string `[SENSITIVE]` for a variable
- * marked as a Secret, and a variable holding a public bucket hostname gets
- * marked that way easily — the CLI defaults to it for anything unprefixed.
- * Preferring an unparseable value over a working one behind it would take
- * every hosted activity off the site, with the valid origin sitting unused in
- * the next variable along.
+ * The candidates are tried in order and the first one that parses wins, for
+ * the reason `originFromEnv` gives.
  */
-export function assetOrigin(): string | null {
-  for (const candidate of [
+function assetOrigin(): string | null {
+  return originFromEnv(
     process.env.ASSET_ORIGIN,
     process.env.NEXT_PUBLIC_ASSET_ORIGIN,
-  ]) {
-    if (!candidate) continue;
-
-    // A malformed value would otherwise surface as every tile showing a broken
-    // image and every activity framing a 404, with nothing naming the cause.
-    try {
-      return new URL(candidate.replace(/\/$/, "")).origin;
-    } catch {
-      continue;
-    }
-  }
-
-  return null;
+  );
 }
 
 /**

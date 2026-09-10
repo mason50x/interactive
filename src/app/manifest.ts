@@ -1,3 +1,5 @@
+/** The web app manifest: the name, the icons and the paper colour, all
+ *  read from `src/lib/brand.ts` so the installed app matches the site. */
 import type { MetadataRoute } from "next";
 import { brand } from "@/lib/brand";
 

@@ -14,14 +14,14 @@
  * mail. See `config/domains.md`.
  */
 
-import domains from "../../config/domains.json";
+import domains from "@config/domains.json";
+import { withoutTrailingSlash } from "@/lib/origin";
 
 /** The site's own origin, most-explicit first. Preview deployments set nothing
  *  and resolve their own host at runtime — see `src/lib/site-url.ts`, which
  *  does the same walk for the invitation links that must not guess wrong. */
 function resolveUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL ?? domains.site;
-  return configured.replace(/\/$/, "");
+  return withoutTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL ?? domains.site);
 }
 
 /**
@@ -56,7 +56,8 @@ function isDeploymentHost(host: string): boolean {
  */
 function resolveDomain(url: string): string {
   const override = process.env.NEXT_PUBLIC_BRAND_DOMAIN ?? domains.mail;
-  if (override) return override.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (override)
+    return withoutTrailingSlash(override.replace(/^https?:\/\//, ""));
 
   const fallback = new URL(domains.site).host;
   try {

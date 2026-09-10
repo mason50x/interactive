@@ -1,5 +1,5 @@
 import { accountKey } from "./local-store";
-export const MAX_HTML_BYTES = 8 * 1024 * 1024;
+const MAX_HTML_BYTES = 8 * 1024 * 1024;
 export const MAX_HTML_SAVE_BYTES = 256 * 1024;
 export type HtmlSlot = "auto" | "previous" | "manual1" | "manual2" | "manual3";
 export type HtmlSave = {

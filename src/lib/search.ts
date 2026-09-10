@@ -48,12 +48,7 @@ import { navItems } from "@/lib/nav";
  * filed your password under the site's appearance options would be undoing a
  * distinction the modal's own navigation makes.
  */
-export type HitSource =
-  | "page"
-  | "activity"
-  | "setting"
-  | "account"
-  | "message";
+export type HitSource = "page" | "activity" | "setting" | "account" | "message";
 
 /**
  * One thing you can find, in the shape the list draws.
@@ -81,11 +76,7 @@ export type Hit = {
 
 /** The things a result can do that are not navigation. */
 export type SearchAction =
-  | "settings"
-  | "account"
-  | "theme:system"
-  | "theme:light"
-  | "theme:dark";
+  "settings" | "account" | "theme:system" | "theme:light" | "theme:dark";
 
 /**
  * A static entry before it is scored — a `Hit` plus the words that should find
@@ -167,7 +158,7 @@ export function scoreFolded(haystack: string, needle: string): number | null {
  * outrank one found by its name, so the keyword tiers are shifted down past
  * the bottom of the title tiers rather than merely reduced.
  */
-export function scoreEntry(
+function scoreEntry(
   needle: string,
   title: string,
   keywords: readonly string[] = [],

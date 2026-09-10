@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/ui/page";
+
 /**
  * The top of the home page: a name, and nothing else.
  *
@@ -12,9 +14,20 @@
  * greeting that reads as broken twice a day.
  */
 export function HomeGreeting({ name }: { name: string | null }) {
-  return (
-    <h1 className="text-display text-display-title text-[2.25rem] sm:text-[2.75rem]">
-      Welcome back{name ? <>, {name}</> : ""}
-    </h1>
-  );
+  return <PageTitle>Welcome back{name ? <>, {name}</> : ""}</PageTitle>;
+}
+
+/**
+ * What the greeting calls you.
+ *
+ * A first name is the greeting; a full name in a heading reads as a form
+ * letter. `username` is the fallback for accounts created without one, and
+ * `null` means the greeting simply stops after "Welcome back". Typed on the
+ * two fields it reads rather than on Clerk's `User`, so the page hands in
+ * whatever it fetched and this file stays free of the auth client.
+ */
+export function greetingName(
+  user: { firstName: string | null; username: string | null } | null,
+): string | null {
+  return user?.firstName ?? user?.username ?? null;
 }

@@ -1,5 +1,6 @@
 import type { FunctionReturnType } from "convex/server";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
+import { channel } from "@/lib/events";
 
 /**
  * The client's half of chat: types, copy, and nothing that decides anything.
@@ -111,7 +112,7 @@ export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as c
  * picker's contents; there they are the check that a picked value is one of
  * them. Change one, change the other. The server is the one that decides.
  */
-export const GROUP_EMOJI = [
+const GROUP_EMOJI = [
   "🎮",
   "🎵",
   "⚽",
@@ -130,15 +131,12 @@ export const GROUP_EMOJI = [
   "🦊",
 ] as const;
 
-export const GROUP_HUES = [
+const GROUP_HUES = [
   10, 40, 70, 100, 130, 160, 190, 220, 250, 280, 310, 340,
 ] as const;
 
 /** The longest a group may be called, the same as `MAX_TITLE` on the server. */
 export const MAX_TITLE = 40;
-
-/** The longest a display name may be, the same as `MAX_DISPLAY_NAME` there. */
-export const MAX_DISPLAY_NAME = 30;
 
 /**
  * What a person is called where there is room for one line: their display
@@ -150,23 +148,6 @@ export function personName(person: {
   displayName?: string;
 }): string {
   return person.displayName ?? person.handle;
-}
-
-/**
- * Why a display name did not take. The filter refusals stay vague on purpose,
- * the same as the composer's — see `refusalMessage` above.
- */
-export function displayNameError(
-  reason: Refusal | "no-profile",
-): string {
-  switch (reason) {
-    case "no-profile":
-      return "Pick a handle first.";
-    case "too-long":
-      return "That name is too long.";
-    default:
-      return "That name will not work. Try another.";
-  }
 }
 
 /**
@@ -182,13 +163,6 @@ export function displayNameError(
 export const AVATAR_HUES = GROUP_HUES;
 export const AVATAR_EMOJI = GROUP_EMOJI;
 export const MAX_INITIALS = 2;
-
-/**
- * How many handle changes an account gets, ever. Mirrors
- * `MAX_HANDLE_CHANGES` on the server, which is the one that decides; here it
- * only decides what the panel says is left.
- */
-export const MAX_HANDLE_CHANGES = 2;
 
 /**
  * How long a message can still be deleted, duplicated from
@@ -249,65 +223,13 @@ export function typingLabel(
   return `${names[0]}, ${names[1]} and ${others} others are typing`;
 }
 
-/** Shape only. Everything else about a handle is decided on the server. */
-export function handleShapeError(handle: string): string | null {
-  const wanted = handle.trim().toLowerCase();
-  if (wanted.length < 3) return "At least three characters.";
-  if (wanted.length > 20) return "At most twenty characters.";
-  if (!/^[a-z]/.test(wanted)) return "Start with a letter.";
-  if (!/^[a-z0-9_]+$/.test(wanted)) {
-    return "Letters, numbers and underscores only.";
-  }
-  if (wanted.includes("__")) return "One underscore at a time.";
-  if (wanted.endsWith("_")) return "Cannot end with an underscore.";
-  return null;
-}
-
-/** Why a handle was refused, once the server has looked at it properly. */
-export function claimError(reason: string): string {
-  switch (reason) {
-    case "taken":
-      return "Someone already has that one, or something close enough to it.";
-    case "reserved":
-      return "That one is reserved.";
-    case "language":
-      return "Pick something else.";
-    case "already":
-      return "You already have a handle.";
-    case "limit":
-      return "You have used both of your changes.";
-    case "same":
-      return "That is already your handle.";
-    case "no-profile":
-      return "You do not have a handle yet.";
-    default:
-      return "That handle will not work.";
-  }
-}
-
-/**
- * How much of the rename allowance is left, in the words somebody would use.
- *
- * Takes what has been spent rather than what remains, because that is the
- * number the server keeps — deriving it here means there is one subtraction in
- * the app and it is next to the sentence that depends on it.
- */
-export function changesLeftLabel(spent: number): string {
-  const left = Math.max(0, MAX_HANDLE_CHANGES - spent);
-  if (left === 0) return "No changes left. This handle is yours for good.";
-  if (left === 1) return "One change left.";
-  return "Two changes left.";
-}
-
 /**
  * Why a group did not get made.
  *
  * The filter refusals stay vague on purpose, the same as the composer's — see
  * `refusalMessage` above.
  */
-export function groupNameError(
-  reason: Refusal | "no-profile",
-): string {
+export function groupNameError(reason: Refusal | "no-profile"): string {
   switch (reason) {
     case "no-profile":
       return "Pick a handle first.";
@@ -421,27 +343,22 @@ export type GroupPanelRequest = {
   mode: GroupPanelMode;
 };
 
+const groupPanelChannel = channel<GroupPanelRequest>(GROUP_PANEL_EVENT);
+
 /** Ask for one. Nothing happens where the conversation column is not mounted,
  *  which is everywhere outside chat. */
 export function requestGroupPanel(
   conversationId: string,
   mode: GroupPanelMode,
 ) {
-  window.dispatchEvent(
-    new CustomEvent<GroupPanelRequest>(GROUP_PANEL_EVENT, {
-      detail: { conversationId, mode },
-    }),
-  );
+  groupPanelChannel.request({ conversationId, mode });
 }
 
 /** The column's side of it. Returns the unsubscribe, for an effect's cleanup. */
 export function onGroupPanelRequest(
   handler: (request: GroupPanelRequest) => void,
 ) {
-  const listener = (event: Event) =>
-    handler((event as CustomEvent<GroupPanelRequest>).detail);
-  window.addEventListener(GROUP_PANEL_EVENT, listener);
-  return () => window.removeEventListener(GROUP_PANEL_EVENT, listener);
+  return groupPanelChannel.subscribe(handler);
 }
 
 /**

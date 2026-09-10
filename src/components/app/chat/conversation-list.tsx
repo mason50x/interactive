@@ -22,7 +22,8 @@ import {
 } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
+import { CountBadge } from "@/components/ui/badge";
 
 /**
  * Everywhere you can talk, with the room at the top.
@@ -250,11 +251,11 @@ export function ConversationList() {
                           it does not. See the note at the top of this file. */}
                       {unread ? (
                         conversation.unreadExact ? (
-                          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[0.6875rem] font-semibold text-primary-foreground">
+                          <CountBadge size="md">
                             {conversation.unread > 99
                               ? "99+"
                               : conversation.unread}
-                          </span>
+                          </CountBadge>
                         ) : (
                           <span className="size-2 shrink-0 rounded-full bg-primary" />
                         )

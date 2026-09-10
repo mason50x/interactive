@@ -21,7 +21,9 @@ import { resolveDomains } from "./resolve-domains.mjs";
  *  so the TypeScript module that wraps it is not loadable. */
 function readActivities() {
   try {
-    return JSON.parse(readFileSync("src/lib/activities.catalogue.json", "utf8"));
+    return JSON.parse(
+      readFileSync("src/lib/activities.catalogue.json", "utf8"),
+    );
   } catch {
     return [];
   }
@@ -55,12 +57,16 @@ if (assets) {
   // Two examples rather than a listing: the catalogue runs to hundreds, and a
   // couple of openable URLs is the whole point of printing any.
   for (const activity of activities.slice(0, 2)) {
-    lines.push(dim(`               ${app}/dashboard/activities/${activity.slug}`));
+    lines.push(
+      dim(`               ${app}/dashboard/activities/${activity.slug}`),
+    );
   }
 } else {
   lines.push(
     warn("  ASSET_ORIGIN is unset"),
-    dim(`  All ${activities.length} hosted activities are hidden — every one loads`),
+    dim(
+      `  All ${activities.length} hosted activities are hidden — every one loads`,
+    ),
     dim("  from the bucket. Run `vercel env pull`."),
   );
 }

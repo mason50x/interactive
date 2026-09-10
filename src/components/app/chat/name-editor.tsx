@@ -5,6 +5,8 @@ import { PencilIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { popupVariants } from "@/components/ui/popup";
 
 /**
  * A name, and a pencil that opens the one field that changes it.
@@ -165,7 +167,12 @@ export function NameEditor({
           sideOffset={8}
           className="z-50 outline-none"
         >
-          <Popover.Popup className="popup-drop w-[17rem] rounded-xl border border-border bg-popover p-2.5 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none">
+          <Popover.Popup
+            className={cn(
+              popupVariants({ motion: "drop", padding: "md" }),
+              "w-[17rem]",
+            )}
+          >
             <Popover.Title
               render={<p />}
               className="text-[0.875rem] font-semibold"
@@ -180,16 +187,11 @@ export function NameEditor({
                 void save();
               }}
             >
-              <div
-                className={cn(
-                  "flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-background px-3 transition-[border-color,box-shadow]",
-                  "focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
-                )}
-              >
+              <InputGroup className="flex-1 gap-1.5">
                 {prefix === undefined ? null : (
-                  <span className="text-[0.875rem] text-faint">{prefix}</span>
+                  <InputAddon>{prefix}</InputAddon>
                 )}
-                <input
+                <Input
                   // The one field in the popup, so the caret is in it on the
                   // frame it opens — nobody presses a pencil to look at a field.
                   autoFocus
@@ -207,9 +209,9 @@ export function NameEditor({
                   spellCheck={false}
                   autoComplete="off"
                   aria-label={label}
-                  className="h-9 min-w-0 flex-1 bg-transparent text-[0.875rem] outline-none disabled:cursor-not-allowed"
+                  className="h-9"
                 />
-              </div>
+              </InputGroup>
 
               <Button
                 type="submit"

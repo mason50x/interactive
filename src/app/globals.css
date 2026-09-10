@@ -401,7 +401,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background font-sans text-foreground;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -458,21 +458,6 @@
     line-height: 1.05;
   }
 
-  /* Hero keyword underline — thick, offset, drawn in the brand colour. */
-  .underline-marker {
-    text-decoration: underline;
-    text-decoration-thickness: 0.07em;
-    text-underline-offset: 0.1em;
-    text-decoration-color: var(--primary);
-  }
-
-  /* The dashboard content shell: recessed into the page rather than raised
-     off it, so the bar above reads as the surface and the content sits in a
-     well below it. Two inner shadows do the work — a soft one for depth, a
-     tight one for the lip at the top edge — with a single hairline highlight
-     underneath to catch the far side of the rim. Both themes get their own
-     values: the light one is a grey shadow on white, the dark one has to be
-     near-black to read at all. */
   /*
    * The selected rail item: a real button, not a tint.
    *
@@ -513,8 +498,6 @@
         );
   }
 
-  /* Dark rails take less light, so the face is pulled down a step and the
-     specular line thinned — the light-theme values glare against #0f0f0f. */
   /*
    * A light travelling across a word, for a wait too short to deserve a
    * skeleton and too long to leave silent.
@@ -633,9 +616,8 @@
     color: oklch(0.86 0.09 var(--monogram-hue));
   }
 
-
-
-
+  /* Dark rails take less light, so the face is pulled down a step and the
+     specular line thinned — the light-theme values glare against #0f0f0f. */
   :root[data-theme="dark"] .nav-pill {
     background-image: linear-gradient(
       to bottom,
@@ -913,10 +895,6 @@
       animation: none;
     }
   }
-
-  .label-small {
-    font-size: 0.75rem;
-  }
 }
 
 /*
@@ -937,7 +915,6 @@
   filter: invert(1);
 }
 
-
 @keyframes drift {
   0%,
   100% {
@@ -951,21 +928,6 @@
 @keyframes dash-flow {
   to {
     stroke-dashoffset: -24;
-  }
-}
-
-@keyframes pulse-ring {
-  0% {
-    r: 5;
-    opacity: 0.55;
-  }
-  70% {
-    r: 18;
-    opacity: 0;
-  }
-  100% {
-    r: 18;
-    opacity: 0;
   }
 }
 
@@ -987,10 +949,6 @@
 .animate-dash-flow {
   stroke-dasharray: 6 6;
   animation: dash-flow 1.6s linear infinite;
-}
-
-.animate-pulse-ring {
-  animation: pulse-ring 2.6s ease-out infinite;
 }
 
 .animate-rise-in {
@@ -1148,94 +1106,6 @@
   transform-box: fill-box;
   transform-origin: 50% 100%;
   animation: flame-core 1.13s ease-in-out infinite;
-}
-
-/* The chip catching light as the number turns over.
-
-   A `drop-shadow` and not a `box-shadow`: the chip's hairline and its drop are
-   both box-shadows already, and a keyframe on that property would take them
-   off for the length of the flare and put them back at the end. This composes
-   with them instead, and follows the pill's shape rather than its box.
-
-   A filter is the expense this file otherwise refuses — see the note on the
-   flame — and it is affordable here for the reason it is in the handle
-   ceremony: it runs for under a second, on one element of about ninety pixels,
-   on a screen where nothing else is moving. */
-@keyframes streak-flare {
-  0% {
-    filter: drop-shadow(0 0 0 transparent);
-  }
-  26% {
-    filter: drop-shadow(
-      0 0 12px color-mix(in srgb, var(--fire) 75%, transparent)
-    );
-  }
-  58% {
-    filter: drop-shadow(
-      0 0 7px color-mix(in srgb, var(--fire) 45%, transparent)
-    );
-  }
-  100% {
-    filter: drop-shadow(0 0 0 transparent);
-  }
-}
-
-.streak-flare {
-  animation: streak-flare 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* ---------------------------------------------------------------------------
- * The handle ceremony.
- *
- * Two halves of one dissolve: the account's photograph goes out of focus and
- * away, the letter that replaces it in chat arrives out of the same blur. They
- * are stacked on each other and run together, so what you see is one thing
- * turning into another rather than two things swapping places.
- *
- * A blur *is* the expensive filter this file otherwise refuses — see the note
- * on the flame — and it is affordable here for the one reason it is not there:
- * this runs once, for three quarters of a second, on a screen nobody ever
- * returns to. Nothing in chat animates a filter.
- *
- * `both` matters more than usual. Under reduced motion the blanket rule at the
- * foot of this file collapses both of these to a single instant, and the fill
- * is what makes that instant land on the *end* of the animation: the picture
- * gone, the letter there. Without it the reduced-motion path would leave the
- * photograph on screen and the monogram invisible, which is not a quieter
- * version of the moment but the wrong one.
- * ------------------------------------------------------------------------- */
-@keyframes handle-dissolve {
-  from {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    filter: blur(18px);
-    transform: scale(1.08);
-  }
-}
-
-@keyframes handle-resolve {
-  from {
-    opacity: 0;
-    filter: blur(18px);
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
-  }
-}
-
-.animate-handle-dissolve {
-  animation: handle-dissolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.animate-handle-resolve {
-  animation: handle-resolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Rail icon microanimations.
@@ -1864,8 +1734,9 @@
 .packet-grid-row {
   display: block;
   flex: 1 0 24px;
-  background: radial-gradient(circle, currentColor 1.7px, transparent 2px) center / 24px 24px;
-  opacity: .2;
+  background: radial-gradient(circle, currentColor 1.7px, transparent 2px)
+    center / 24px 24px;
+  opacity: 0.2;
   animation: packet-grid-flow 2.8s ease-in-out infinite;
 }
 .packet-border {
@@ -1874,22 +1745,36 @@
   border-radius: 24px;
   padding: 6px;
   pointer-events: none;
-  background: conic-gradient(from var(--packet-light-angle),
-    transparent 0deg, #a4dfff33 35deg, #86eaff 65deg,
-    #b4a2ff 90deg, #ffb9e8 112deg, #ffe8b0 134deg,
-    #b6ffe433 165deg, transparent 195deg, transparent 245deg,
-    #c4b5fd55 280deg, #b5f3ffbb 308deg, transparent 345deg);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  background: conic-gradient(
+    from var(--packet-light-angle),
+    transparent 0deg,
+    #a4dfff33 35deg,
+    #86eaff 65deg,
+    #b4a2ff 90deg,
+    #ffb9e8 112deg,
+    #ffe8b0 134deg,
+    #b6ffe433 165deg,
+    transparent 195deg,
+    transparent 245deg,
+    #c4b5fd55 280deg,
+    #b5f3ffbb 308deg,
+    transparent 345deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
-  animation: packet-light-travel 3.5s linear infinite, packet-rim-flow 3s ease-in-out infinite;
-  opacity: .85;
+  animation:
+    packet-light-travel 3.5s linear infinite,
+    packet-rim-flow 3s ease-in-out infinite;
+  opacity: 0.85;
 }
 .packet-border-halo {
   inset: 8px;
   padding: 20px;
   border-radius: 28px;
   filter: blur(16px);
-  opacity: .4;
+  opacity: 0.4;
 }
 .packet-caption {
   position: relative;
@@ -1901,24 +1786,43 @@
   margin: 0;
   color: color-mix(in srgb, var(--foreground) 48%, transparent);
   font-size: 12px;
-  letter-spacing: .02em;
 }
-.packet-reveal { opacity: 0; }
+.packet-reveal {
+  opacity: 0;
+}
 @keyframes packet-grid-flow {
-  0%, 100% { transform: translate3d(-14px, -7px, 0) scaleX(.98); }
-  25% { transform: translate3d(0, -14px, 0) scaleX(1.015); }
-  50% { transform: translate3d(14px, 7px, 0) scaleX(1.025); }
-  75% { transform: translate3d(0, 14px, 0) scaleX(.99); }
+  0%,
+  100% {
+    transform: translate3d(-14px, -7px, 0) scaleX(0.98);
+  }
+  25% {
+    transform: translate3d(0, -14px, 0) scaleX(1.015);
+  }
+  50% {
+    transform: translate3d(14px, 7px, 0) scaleX(1.025);
+  }
+  75% {
+    transform: translate3d(0, 14px, 0) scaleX(0.99);
+  }
 }
 @keyframes packet-rim-flow {
-  0%, 100% { border-radius: 24px 38px 26px 42px; transform: scale(1); }
-  50% { border-radius: 42px 24px 38px 26px; transform: scale(.99); }
+  0%,
+  100% {
+    border-radius: 24px 38px 26px 42px;
+    transform: scale(1);
+  }
+  50% {
+    border-radius: 42px 24px 38px 26px;
+    transform: scale(0.99);
+  }
 }
 /* The wavy rule in the release sheet, drawn from left to right as the sheet
    arrives. Starts a beat after the panel so the line is seen being drawn on
    a page that is already there. */
 @keyframes squiggle-draw {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .squiggle-draw {
@@ -1960,14 +1864,20 @@
     color-mix(in oklch, var(--primary) 30%, transparent) 352deg,
     transparent 360deg
   );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
-  filter: drop-shadow(0 0 3px color-mix(in oklch, var(--primary) 45%, transparent));
+  filter: drop-shadow(
+    0 0 3px color-mix(in oklch, var(--primary) 45%, transparent)
+  );
   animation: release-rim-travel 5s linear infinite;
 }
 
 @keyframes release-rim-travel {
-  to { --release-rim-angle: 360deg; }
+  to {
+    --release-rim-angle: 360deg;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1978,12 +1888,17 @@
 }
 
 @keyframes packet-light-travel {
-  to { --packet-light-angle: 360deg; }
+  to {
+    --packet-light-angle: 360deg;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
+  .packet-cover *,
+  .packet-cover {
+    animation: none !important;
+    transition: none !important;
+  }
 }
-
 
 /*
  * The public site's grounds.

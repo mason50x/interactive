@@ -1,3 +1,13 @@
+/**
+ * The one button.
+ *
+ * Every variant is a way of sitting on a surface — filled with the accent,
+ * outlined on the page, ghosted into a row, inverted on the dark panel — and
+ * every size is a height, so a row of controls lines up on one baseline. The
+ * marketing sizes are pills because that is the shape the site draws them
+ * at; `shape="circle"` is for an icon button in a round well. `ButtonLink`
+ * is the same styling on a Next.js link, for an action that is a navigation.
+ */
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import Link from "next/link";
@@ -10,14 +20,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "bg-primary text-primary-foreground hover:bg-primary-hover",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover",
         /** Alias of `default`, kept so brand-led call sites read clearly. */
-        primary:
-          "bg-primary text-primary-foreground hover:bg-primary-hover",
+        primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
         /** For use on the inverted panel, which is dark in both themes. */
-        inverted:
-          "bg-panel-foreground text-panel hover:bg-panel-foreground/88",
+        inverted: "bg-panel-foreground text-panel hover:bg-panel-foreground/88",
         "inverted-outline":
           "border border-panel-border text-panel-foreground hover:border-panel-foreground/45 hover:bg-panel-foreground/[0.07]",
         outline:
@@ -46,10 +53,17 @@ const buttonVariants = cva(
         md: "h-11 rounded-full px-5 text-[0.9375rem]",
         xl: "h-[3.25rem] rounded-full px-7 text-base",
       },
+      /** `circle` for an icon button that sits in a round well — the chrome
+       *  over a framed activity, the plus on a composer. */
+      shape: {
+        default: "",
+        circle: "rounded-full",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      shape: "default",
     },
   },
 );
@@ -58,12 +72,13 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  shape = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   );
@@ -74,12 +89,13 @@ function ButtonLink({
   className,
   variant = "default",
   size = "default",
+  shape = "default",
   ...props
 }: ComponentProps<typeof Link> & VariantProps<typeof buttonVariants>) {
   return (
     <Link
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   );

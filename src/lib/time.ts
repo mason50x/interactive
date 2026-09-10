@@ -14,35 +14,16 @@ const MINUTE = 60;
 const HOUR = 60 * MINUTE;
 
 /**
- * Seconds as a span someone would say out loud: `"6m"`, `"1h 20m"`, `"14h"`.
- *
- * Under a minute reads as `"<1m"` rather than as a count of seconds. A card
- * showing `47s` invites you to watch it tick; the point of the number is the
- * shape of the day, and at that size the shape is "barely any".
- *
- * The minutes are dropped once there are hours *and* the minutes are zero,
- * which is the only case where `"3h 0m"` would be worse than `"3h"`.
- */
-export function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0m";
-  if (seconds < MINUTE) return "<1m";
-
-  const hours = Math.floor(seconds / HOUR);
-  const minutes = Math.floor((seconds % HOUR) / MINUTE);
-
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-}
-
-/**
  * The same span split for a stat tile, where the number and its unit are set
  * at different sizes and so cannot be one string.
  *
  * Returns hours when there are any, minutes otherwise — a tile has room for
  * one number, and `"2"` over `"hours"` is the one that reads at a glance.
  */
-export function splitDuration(seconds: number): { value: string; unit: string } {
+export function splitDuration(seconds: number): {
+  value: string;
+  unit: string;
+} {
   if (!Number.isFinite(seconds) || seconds < MINUTE) {
     return { value: "0", unit: "minutes" };
   }

@@ -589,47 +589,88 @@ Three origins now, and only two of them are boundaries:
 ## Layout
 
 ```
-convex/
-  schema.ts        users, invites, preferences
-  auth.config.ts   trusts Clerk-issued JWTs
-  users.ts         current / store / upsertFromClerk / deleteFromClerk
-  invites.ts       the five-invite allowance, counted transactionally
-  streaks.ts       the daily streak, one write per user per day
-  preferences.ts   the account-level half of the settings sheet
-  http.ts          Clerk webhook endpoint
+convex/                 the backend; Convex bundles it on its own terms
+config/                 hand-laid tables: domains and the chat admins
+scripts/                catalogue and asset tooling, deploy, and the vitest suite under tests/
 src/
-  proxy.ts         host dispatch; clerkMiddleware; signed-out-only redirects
-  lib/
-    player.ts      where games are allowed to run, and why
-    assets.ts      where hosted bundles are served from, and what that costs
-    games.ts       the catalogue: authored + generated, one union
-    games.catalogue.json   generated — do not edit
-    nav.ts         the rail's destinations
-    site-url.ts    the origin an invitation link has to be baked with
-    invitations.ts the Clerk Backend API calls
-    invite-actions.ts  the seam: Convex counts, Clerk sends
-    preferences.ts accents, the panic key, and their defaults
-    streak.ts      the client's half of the streak
+  proxy.ts              host dispatch; clerkMiddleware; signed-out-only redirects
   app/
-    layout.tsx     document shell only — no providers (see Two origins)
-    (site)/        landing, marketing chrome
-    auth/          sign-in, sign-up, accept-invite
-    dashboard/
-      activities/  the shelves, and [slug] — one route for every game
-    player/[slug]  the player origin's only route
+    layout.tsx          document shell only — no providers (see Two origins)
+    (site)/             landing, about, contact — the marketing chrome
+    (legal)/            /pp and /tos, the same reader over two documents
+    auth/               sign-in, sign-up, accept-invite
+    dashboard/          everything behind the sign-in; each page calls auth.protect()
+      activities/       the shelves, and [slug] — one route for every activity
+      chat/             the conversation column and [conversationId]
+      learning-simulator/  the library, and [contentHash] in two formats
+    learn/[slug]        the activity shell, framed by the dashboard
   components/
-    app-providers.tsx      Clerk > Convex > analytics; never on /player
-    preferences-provider.tsx  localStorage first, the row second
-    streak-provider.tsx    reports a visit once a day
-    app/game-frame.tsx     the app's side of the boundary
-    app/activities-browser.tsx  popular shelf + client-side search
-    app/settings-sheet.tsx accent, constellation, panic key
-    app/invite-card.tsx    the allowance, in the account menu
-    player/hosted-game.tsx frames a bundle from the asset origin
-scripts/
-  build-catalogue.mjs  regenerates the catalogue from upstream
-  migrate-to-r2.mjs    stages and syncs bundles to the bucket
+    ui/                 the primitives — see Primitives below
+    app/                the dashboard: rail, search, settings, activities, home
+      chat/             the chat feature; thread/, group-panel/, chat-tools/ split its screens
+      rail/ search/ settings/ user-menu/ invite/ constellation/
+                        the pieces each shell file is assembled from
+    landing/            one file per band of the landing page, plus the shared parts
+    legal/              the legal reader
+    simulator/          both simulator formats over one set of shared parts
+    activity/           the /learn side of the activity boundary
+    *.tsx               providers and site chrome mounted from src/app
+  lib/
+    use-*.ts            React hooks with no UI of their own
+    simulator/          the simulator's engine, stores and sync (under test)
+    *.ts                pure modules: one vocabulary each
 ```
+
+A shell file — `app-sidebar.tsx`, `thread.tsx`, `settings-panel.tsx` — keeps
+its path and its exports and is assembled from the folder of the same name
+beside it. Nothing is reached through a barrel; every import names the module
+it wants.
+
+### Primitives
+
+`src/components/ui/` is the whole visual vocabulary, and anything drawn more
+than once in the app is drawn there once:
+
+| primitive | what it is |
+| --- | --- |
+| `Button`, `ButtonLink` | every button; `shape="circle"` for an icon in a round well |
+| `Card` | the raised surface, with `radius`, `surface` and `hover` variants |
+| `Section`, `SectionHeading`, `PageIntro`, `Eyebrow` | a band of a marketing page and its head |
+| `Container`, `Page`, `PageTitle` | the measure of a site page and of a dashboard page |
+| `Input`, `InputGroup`, `InputAddon`, `Textarea` | the one text field, alone or with company |
+| `Select`, `Switch`, `SegmentedControl` | the other controls |
+| `Menu*`, `Popup`, `popupVariants`, `Tooltip*`, `Sheet*` | every floating surface, on one popup style |
+| `Badge`, `CountBadge`, `Kbd`, `Pips` | small marks |
+| `Alert`, `FieldError`, `EmptyState`, `Spinner` | states |
+| `Separator`, `CheckList`, `OutlineIcon`, `SolidIcon` | the rest |
+
+Variants are `cva`; classes merge through `cn`, so a caller that passes a
+conflicting utility wins. Every primitive spreads its props and carries a
+`data-slot`.
+
+### Conventions
+
+- **Formatting** is Prettier's, with the Tailwind class-sorting plugin:
+  `npm run format`, and `npm run format:check` in CI. `npm run typecheck`
+  runs `next typegen` first so the route prop types exist.
+- **Type is set at its natural case and spacing.** No `uppercase`, no
+  `tracking-*`, no `letter-spacing`, in a class or an SVG attribute — and
+  ESLint says so if one appears.
+- **Imports** go through `@/` for `src`, `@convex/` for the backend's
+  generated API and types, and `@config/` for the tables. Value imports from
+  `convex/chat` and anything from `convex/moderation` are refused by lint;
+  see `eslint.config.mjs` for why.
+- **Modules** are named exports, `type` rather than `interface`, inline prop
+  types, `"use client";` on line one followed by a blank line, and a header
+  comment that says what the file is for and why it is shaped that way. The
+  three simulator chunks that `dynamic()` imports keep a default export.
+- **Hooks** with no UI live in `src/lib/use-*.ts`. `useAuthedQuery` is how a
+  dashboard component asks Convex for something behind the sign-in;
+  `useDebounced`, `useClickOutside`, `useTransientFlag` and `useHeld` are the
+  four patterns that used to be re-typed.
+- **Browser storage** goes through `src/lib/storage.ts`, and a message
+  between two distant parts of the page through `channel` in
+  `src/lib/events.ts`.
 
 ## Adding a table
 

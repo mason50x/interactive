@@ -1,3 +1,4 @@
+/** The landing page: the sections, in the order they are read. */
 import type { Metadata } from "next";
 import { ClosingCta } from "@/components/landing/closing-cta";
 import { Educators } from "@/components/landing/educators";

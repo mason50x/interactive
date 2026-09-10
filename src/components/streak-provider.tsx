@@ -1,16 +1,27 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import {
   createContext,
   use,
-  useCallback,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { api } from "../../convex/_generated/api";
+import { useAuthedQuery } from "@/lib/use-authed-query";
+import { api } from "@convex/_generated/api";
+
+/**
+ * The streak: the account's run as the server has it, and the claim that
+ * extends it.
+ *
+ * `useStreak` is a subscription any card can read. The provider also claims
+ * today's visit once per session, which is what makes the number move; the
+ * card reads the new value off the same subscription a moment later. Mounted
+ * by the dashboard layout, because arriving at the app is a day's activity
+ * and reading the pricing page is not.
+ */
 
 export type Streak = {
   current: number;
@@ -25,28 +36,8 @@ export function useStreak() {
   return use(StreakContext);
 }
 
-/**
- * What the chip in the rail should be drawing right now.
- *
- * `display` overrides the subscription for the length of the ceremony and is
- * `null` the rest of the time, which is the chip's cue to go back to reading
- * the account's own number.
- */
-export type StreakDisplay = {
-  display: number | null;
-  glowing: boolean;
-};
-
-const StreakDisplayContext = createContext<StreakDisplay>({
-  display: null,
-  glowing: false,
-});
-
-export function useStreakDisplay() {
-  return use(StreakDisplayContext);
-}
-
-/** Claims one weekday visit and briefly lights the updated badge. */
+/** Claims one weekday visit, once, and retries while the user row is still
+ *  being written. */
 export function StreakProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
 
@@ -56,24 +47,8 @@ export function StreakProvider({ children }: { children: ReactNode }) {
   // right trade for not tearing down a subscription to find out.
   const [tzOffsetMinutes] = useState(() => new Date().getTimezoneOffset());
 
-  const streak = useQuery(
-    api.streaks.mine,
-    isAuthenticated ? { tzOffsetMinutes } : "skip",
-  );
+  const streak = useAuthedQuery(api.streaks.mine, { tzOffsetMinutes });
   const claimToday = useMutation(api.streaks.claimToday);
-
-  const [display, setDisplay] = useState<number | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-
-  const celebrate = useCallback((to: number) => {
-    if (timer.current) clearTimeout(timer.current);
-    setDisplay(to);
-    timer.current = setTimeout(() => setDisplay(null), 900);
-  }, []);
 
   const claimed = useRef(false);
 
@@ -91,13 +66,9 @@ export function StreakProvider({ children }: { children: ReactNode }) {
     // worth a poll that never stops.
     const claim = (attempt: number) => {
       void claimToday({ tzOffsetMinutes }).then((result) => {
-        if (result.deferred) {
-          if (attempt < 2) {
-            retry = setTimeout(() => claim(attempt + 1), 800 * (attempt + 1));
-          }
-          return;
+        if (result.deferred && attempt < 2) {
+          retry = setTimeout(() => claim(attempt + 1), 800 * (attempt + 1));
         }
-        if (result.extended) celebrate(result.current);
       });
     };
 
@@ -106,18 +77,11 @@ export function StreakProvider({ children }: { children: ReactNode }) {
     // Only the pending timer. Deliberately no `cancelled` flag around the
     // response: this effect is torn down and re-run on every mount in
     // StrictMode, and a flag would have the second pass skip the claim (the
-    // ref has already been taken) while the first pass throws its answer away
-    // — which is a celebration that never appears in development and does in
-    // production. A `celebrate` that lands after a real unmount is a no-op,
+    // ref has already been taken) while the first pass throws its answer away.
+    // A retry that lands after a real unmount is one more idempotent write,
     // which is the cheaper of the two failures by a distance.
     return () => clearTimeout(retry);
-  }, [isAuthenticated, claimToday, tzOffsetMinutes, celebrate]);
+  }, [isAuthenticated, claimToday, tzOffsetMinutes]);
 
-  return (
-    <StreakContext value={streak ?? null}>
-      <StreakDisplayContext value={{ display, glowing: display !== null }}>
-        {children}
-      </StreakDisplayContext>
-    </StreakContext>
-  );
+  return <StreakContext value={streak ?? null}>{children}</StreakContext>;
 }

@@ -101,7 +101,10 @@ export function useMicLevel({
           analyser.getByteFrequencyData(data);
           for (let band = 0; band < bands; band++) {
             const from = Math.floor(LOW_BIN + band * width);
-            const to = Math.max(from + 1, Math.floor(LOW_BIN + (band + 1) * width));
+            const to = Math.max(
+              from + 1,
+              Math.floor(LOW_BIN + (band + 1) * width),
+            );
             let sum = 0;
             for (let i = from; i < to; i++) sum += data[i];
             const mean = sum / ((to - from) * 255);

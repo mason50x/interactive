@@ -48,9 +48,19 @@ function Spinner({ className, ...props }: ComponentProps<"svg">) {
   );
 }
 
-function CenteredSpinner({ className }: { className?: string }) {
+/** The spinner filling whatever it is put in, for a pane that is still
+ *  loading. `min-h-48` so an empty pane holds its shape rather than
+ *  collapsing to the spinner's own height. */
+function CenteredSpinner({ className, ...props }: ComponentProps<"div">) {
   return (
-    <div className={cn("flex h-full min-h-48 w-full items-center justify-center", className)}>
+    <div
+      data-slot="centered-spinner"
+      className={cn(
+        "flex h-full min-h-48 w-full items-center justify-center",
+        className,
+      )}
+      {...props}
+    >
       <Spinner className="size-5 text-muted-foreground" />
     </div>
   );

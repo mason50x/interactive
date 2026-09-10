@@ -18,12 +18,21 @@ describe("hosted activity HTML", () => {
   });
 
   it("leaves the working original and unrelated scripts/styles alone", () => {
-    const original = game + `<style>body{background:black}</style><script>window.gameStarted=true;</script>`;
+    const original =
+      game +
+      `<style>body{background:black}</style><script>window.gameStarted=true;</script>`;
     expect(patchGameHtml(original)).toBe(original);
   });
 
   it("refuses to upload an unrecognized frame-buster instead of partially removing it", () => {
-    const changed = game + frameBuster.replace("top.location = self.location", "top.location.href = self.location.href");
-    expect(() => assertPatched("changed-template", patchGameHtml(changed))).toThrow(/anticlickjack/);
+    const changed =
+      game +
+      frameBuster.replace(
+        "top.location = self.location",
+        "top.location.href = self.location.href",
+      );
+    expect(() =>
+      assertPatched("changed-template", patchGameHtml(changed)),
+    ).toThrow(/anticlickjack/);
   });
 });

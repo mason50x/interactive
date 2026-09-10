@@ -3,8 +3,8 @@
 import { useMutation, useQuery } from "convex/react";
 import { useEffect } from "react";
 import { HEARTBEAT_MS } from "@/lib/chat";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * How many people are in this conversation, right now, with a dot to say the

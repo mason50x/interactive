@@ -135,6 +135,8 @@ export function filterActivities(
   const needle = normalise(query);
   if (!needle) return activities;
   return activities.filter((activity) =>
-    normalise(`${activity.title} ${activity.slug} ${activity.genre}`).includes(needle),
+    normalise(`${activity.title} ${activity.slug} ${activity.genre}`).includes(
+      needle,
+    ),
   );
 }

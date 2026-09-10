@@ -23,7 +23,7 @@
 import { brand } from "@/lib/brand";
 
 /** Role addresses. Deliberately not a person, on any of these. */
-export const legalContacts = {
+const legalContacts = {
   privacy: `privacy@${brand.domain}`,
   legal: `legal@${brand.domain}`,
   copyright: `copyright@${brand.domain}`,
@@ -55,8 +55,7 @@ export function formatLegalDate(iso: string): string {
  * court reads as the whole agreement. Everything here is set at one weight.
  */
 export type LegalBlock =
-  | { kind: "p"; text: string }
-  | { kind: "list"; items: readonly string[] };
+  { kind: "p"; text: string } | { kind: "list"; items: readonly string[] };
 
 export type LegalSection = {
   /** The fragment this section answers to, so a clause can be linked. */
@@ -632,4 +631,19 @@ export const privacy: LegalDocument = {
       ],
     },
   ],
+};
+
+/**
+ * The two documents by the route that serves them, each with the other as
+ * its sibling. `/pp` and `/tos` are the same page with these two values
+ * swapped, and this is the one place that swap is written down.
+ */
+export type LegalSlug = "pp" | "tos";
+
+export const legalDocuments: Record<
+  LegalSlug,
+  { document: LegalDocument; sibling: { title: string; href: string } }
+> = {
+  pp: { document: privacy, sibling: { title: terms.title, href: "/tos" } },
+  tos: { document: terms, sibling: { title: privacy.title, href: "/pp" } },
 };

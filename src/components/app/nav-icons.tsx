@@ -1,4 +1,6 @@
-import { type ComponentProps, useId } from "react";
+import { useId } from "react";
+
+import { SolidIcon, type IconProps } from "@/components/ui/icon";
 
 /**
  * The rail's solid icons, drawn in parts.
@@ -23,17 +25,8 @@ import { type ComponentProps, useId } from "react";
  * in the rail and in the header at once.
  */
 
-type Props = ComponentProps<"svg">;
-
 function useMaskId() {
   return `ni-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
-}
-
-/** The svg shell every icon shares. */
-function Svg(props: Props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props} />
-  );
 }
 
 /**
@@ -41,9 +34,9 @@ function Svg(props: Props) {
  * roof slab with its chimney, and the house under it with the door cut out.
  * On hover the roof lifts and settles.
  */
-export function HomeIconSolid(props: Props) {
+export function HomeIconSolid(props: IconProps) {
   return (
-    <Svg {...props}>
+    <SolidIcon {...props}>
       <path
         className="ni-home-roof"
         d="M19.006 3.705a.75.75 0 0 0-.512-1.41L6 6.838V3a.75.75 0 0 0-.75-.75h-1.5A.75.75 0 0 0 3 3v4.93l-1.006.365a.75.75 0 0 0 .512 1.41l16.5-6Z"
@@ -53,7 +46,7 @@ export function HomeIconSolid(props: Props) {
         clipRule="evenodd"
         d="M3.019 11.115 18 5.667v3.421l4.006 1.457a.75.75 0 1 1-.512 1.41l-.494-.18v8.475h.75a.75.75 0 0 1 0 1.5H2.25a.75.75 0 0 1 0-1.5H3v-9.129l.019-.007ZM18 20.25v-9.566l1.5.546v9.02H18Zm-9-6a.75.75 0 0 0-.75.75v4.5c0 .414.336.75.75.75h3a.75.75 0 0 0 .75-.75V15a.75.75 0 0 0-.75-.75H9Z"
       />
-    </Svg>
+    </SolidIcon>
   );
 }
 
@@ -62,11 +55,18 @@ export function HomeIconSolid(props: Props) {
  * can move: on hover the D-pad nudges, the two buttons press in turn, and the
  * whole thing rumbles a hair.
  */
-export function ControllerIconSolid(props: Props) {
+export function ControllerIconSolid(props: IconProps) {
   const id = useMaskId();
   return (
-    <Svg {...props}>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+    <SolidIcon {...props}>
+      <mask
+        id={id}
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="24"
+      >
         <path
           fill="#fff"
           d="M8.25 6h7.5a6 6 0 0 1 5.95 5.4l.6 4.7a2.85 2.85 0 0 1-5.1 2.1L15.25 15.75h-6.5L6.8 18.2a2.85 2.85 0 0 1-5.1-2.1l.6-4.7A6 6 0 0 1 8.25 6Z"
@@ -82,7 +82,7 @@ export function ControllerIconSolid(props: Props) {
       <g className="ni-controller">
         <rect width="24" height="24" mask={`url(#${id})`} />
       </g>
-    </Svg>
+    </SolidIcon>
   );
 }
 
@@ -91,9 +91,9 @@ export function ControllerIconSolid(props: Props) {
  * bubble behind and the one in front. On hover they take turns — the back one
  * rises a touch, then the front one answers.
  */
-export function ChatIconSolid(props: Props) {
+export function ChatIconSolid(props: IconProps) {
   return (
-    <Svg {...props}>
+    <SolidIcon {...props}>
       <path
         className="ni-chat-back"
         d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 0 0-1.032-.211 50.89 50.89 0 0 0-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 0 0 2.433 3.984L7.28 21.53A.75.75 0 0 1 6 21v-4.03a48.527 48.527 0 0 1-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979Z"
@@ -102,7 +102,7 @@ export function ChatIconSolid(props: Props) {
         className="ni-chat-front"
         d="M15.75 7.5c-1.376 0-2.739.057-4.086.169C10.124 7.797 9 9.103 9 10.609v4.285c0 1.507 1.128 2.814 2.67 2.94 1.243.102 2.5.157 3.768.165l2.782 2.781a.75.75 0 0 0 1.28-.53v-2.39l.33-.026c1.542-.125 2.67-1.433 2.67-2.94v-4.286c0-1.505-1.125-2.811-2.664-2.94A49.392 49.392 0 0 0 15.75 7.5Z"
       />
-    </Svg>
+    </SolidIcon>
   );
 }
 
@@ -119,12 +119,19 @@ export function ChatIconSolid(props: Props) {
  * are `non-scaling` so a meridian near the middle is not drawn thinner than
  * one near the edge.
  */
-export function GlobeIconSolid(props: Props) {
+export function GlobeIconSolid(props: IconProps) {
   const id = useMaskId();
   const arc = "M12 2.25A9.75 9.75 0 0 1 12 21.75";
   return (
-    <Svg {...props}>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+    <SolidIcon {...props}>
+      <mask
+        id={id}
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="24"
+      >
         <circle cx="12" cy="12" r="9.75" fill="#fff" />
         <g
           fill="none"
@@ -144,7 +151,7 @@ export function GlobeIconSolid(props: Props) {
         </g>
       </mask>
       <rect width="24" height="24" mask={`url(#${id})`} />
-    </Svg>
+    </SolidIcon>
   );
 }
 
@@ -154,10 +161,10 @@ export function GlobeIconSolid(props: Props) {
  * stubs. On hover the pins seat outward a hair, side by side around the
  * package, and the die blinks.
  */
-export function ChipIconSolid(props: Props) {
+export function ChipIconSolid(props: IconProps) {
   const pin = { rx: 0.75 };
   return (
-    <Svg {...props}>
+    <SolidIcon {...props}>
       <path
         fillRule="evenodd"
         clipRule="evenodd"
@@ -184,7 +191,7 @@ export function ChipIconSolid(props: Props) {
         <rect x="2.25" y="11.25" width="2.25" height="1.5" {...pin} />
         <rect x="2.25" y="15" width="2.25" height="1.5" {...pin} />
       </g>
-    </Svg>
+    </SolidIcon>
   );
 }
 
@@ -193,7 +200,7 @@ export function ChipIconSolid(props: Props) {
  * with their own folds so each can swell from the midline on its own. On
  * hover they think: left, then right.
  */
-export function BrainIconSolid(props: Props) {
+export function BrainIconSolid(props: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -233,11 +240,18 @@ export function BrainIconSolid(props: Props) {
  * on hover it slides toward the side the rail is about to go, which is what
  * `data-to` on the button says.
  */
-export function RailIconSolid(props: Props) {
+export function RailIconSolid(props: IconProps) {
   const id = useMaskId();
   return (
-    <Svg {...props}>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+    <SolidIcon {...props}>
+      <mask
+        id={id}
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="24"
+      >
         <rect x="2.25" y="3.75" width="19.5" height="16.5" rx="3" fill="#fff" />
         <rect
           className="ni-rail-pane"
@@ -250,6 +264,30 @@ export function RailIconSolid(props: Props) {
         />
       </mask>
       <rect width="24" height="24" mask={`url(#${id})`} />
-    </Svg>
+    </SolidIcon>
+  );
+}
+
+/**
+ * Sign out, drawn here rather than imported.
+ *
+ * Every row in the account menu is a solid Heroicon, and Heroicons' own
+ * `arrow-right-start-on-rectangle` breaks that: its solid cut is the outline
+ * cut — a hairline door and a hairline arrow — so next to a filled gear it
+ * reads as the one unfinished row in the popup. This is the same idea at the
+ * weight the rest of the menu is set in: a filled door with the handle knocked
+ * out of it, and a solid arrow leaving through the side it opens.
+ */
+export function SignOutIconSolid(props: IconProps) {
+  return (
+    <SolidIcon {...props}>
+      <path
+        fillRule="evenodd"
+        d="M4.5 3h3.75a2.25 2.25 0 0 1 2.25 2.25v13.5a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V5.25A2.25 2.25 0 0 1 4.5 3Zm3.375 8.1a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z"
+        clipRule="evenodd"
+      />
+      <path d="M13.65 10.95h3.75v2.1h-3.75a1.05 1.05 0 0 1 0-2.1Z" />
+      <path d="M16.65 8.25 21.75 12l-5.1 3.75Z" />
+    </SolidIcon>
   );
 }

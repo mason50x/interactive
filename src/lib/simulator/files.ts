@@ -42,18 +42,28 @@ export async function openProgram(file: File) {
     throw new Error("Choose a .gb or .gbc file.");
   if (file.size > 8 * 1024 * 1024)
     throw new Error("The file is larger than 8 MB.");
-  return { ...await identify(await file.arrayBuffer()), label: programLabel(file.name) };
+  return {
+    ...(await identify(await file.arrayBuffer())),
+    label: programLabel(file.name),
+  };
 }
 
 /** Keep title punctuation/casing; remove common ROM dump metadata. */
 export function programLabel(filename: string): string {
-  return filename
-    .replace(/\.(?:gbc?|zip)$/i, "")
-    .replace(/\[[^\]]*\]/g, " ")
-    .replace(/\((?:USA|Europe|Japan|World|UK|United States|En(?:,|\b)|Rev\b|v\d|SGB\b|GBC\b|Beta\b|Proto\b)[^)]*\)/gi, " ")
-    .replace(/[\x00-\x1f_]+/g, " ")
-    .replace(/\s+-\s+/g, " — ")
-    .replace(/\s+/g, " ")
-    .replace(/^[\s—-]+|[\s—-]+$/g, "")
-    .trim().slice(0, 60).trim() || "Imported simulation";
+  return (
+    filename
+      .replace(/\.(?:gbc?|zip)$/i, "")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(
+        /\((?:USA|Europe|Japan|World|UK|United States|En(?:,|\b)|Rev\b|v\d|SGB\b|GBC\b|Beta\b|Proto\b)[^)]*\)/gi,
+        " ",
+      )
+      .replace(/[\x00-\x1f_]+/g, " ")
+      .replace(/\s+-\s+/g, " — ")
+      .replace(/\s+/g, " ")
+      .replace(/^[\s—-]+|[\s—-]+$/g, "")
+      .trim()
+      .slice(0, 60)
+      .trim() || "Imported simulation"
+  );
 }

@@ -1,3 +1,9 @@
+/**
+ * The foot of every marketing page: the lockup and the blurb on the left,
+ * the link columns on the right, and the legal line under both. The copy
+ * comes from `src/lib/content.ts` so the footer and the pages it links say
+ * the same names.
+ */
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { Wordmark } from "@/components/wordmark";
@@ -20,7 +26,10 @@ export function SiteFooter() {
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-7 md:justify-items-end">
             {footer.columns.map((column) => (
-              <div key={column.heading} className="flex min-w-[8rem] flex-col gap-4">
+              <div
+                key={column.heading}
+                className="flex min-w-[8rem] flex-col gap-4"
+              >
                 <p className="text-[0.875rem] font-semibold text-foreground">
                   {column.heading}
                 </p>

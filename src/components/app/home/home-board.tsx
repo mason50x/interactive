@@ -1,13 +1,13 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { ActivityRow } from "@/components/app/activity-row";
 import { Spinner } from "@/components/ui/spinner";
 import type { Activity } from "@/lib/activity";
 import { formatSince } from "@/lib/time";
 import { useNow } from "@/lib/use-now";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * Everything on the home page that depends on what you have opened.
@@ -40,11 +40,7 @@ import { api } from "../../../../convex/_generated/api";
  *  what makes the row scroll and read as a row. */
 const ROW_SIZE = 18;
 
-export function HomeBoard({
-  activities,
-}: {
-  activities: readonly Activity[];
-}) {
+export function HomeBoard({ activities }: { activities: readonly Activity[] }) {
   const favourites = useQuery(api.views.favourites, { limit: ROW_SIZE });
   const recent = useQuery(api.views.recent, { limit: ROW_SIZE });
   const popular = useQuery(api.views.popularToday, { limit: ROW_SIZE });
@@ -101,8 +97,9 @@ export function HomeBoard({
         const activity = bySlug.get(row.slug);
         return activity ? { activity, views: row.views } : null;
       })
-      .filter((entry): entry is { activity: Activity; views: number } =>
-        entry !== null,
+      .filter(
+        (entry): entry is { activity: Activity; views: number } =>
+          entry !== null,
       );
 
     const listed = new Set(counted.map((entry) => entry.activity.slug));
@@ -125,7 +122,8 @@ export function HomeBoard({
     [recent],
   );
   const viewsToday = useMemo(
-    () => new Map(popularRow.map((entry) => [entry.activity.slug, entry.views])),
+    () =>
+      new Map(popularRow.map((entry) => [entry.activity.slug, entry.views])),
     [popularRow],
   );
 
@@ -181,13 +179,7 @@ export function HomeBoard({
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
       <h2 className="text-[1.25rem] leading-tight font-semibold text-foreground">

@@ -1,9 +1,18 @@
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+/**
+ * The vocabulary the simulator modules share: an entry as Convex stores it,
+ * the save slots, a program as the device holds it, and a built-in.
+ */
+import type { Doc, Id } from "@convex/_generated/dataModel";
 export type Entry = Doc<"simulatorEntries">;
 export type Slot = "auto" | "previous" | "manual1" | "manual2" | "manual3";
 export type WriteSlot = Exclude<Slot, "previous">;
 export type Mode = "mono" | "color";
-export type Program = { contentHash: string; bytes: ArrayBuffer; mode: Mode; label?: string };
+export type Program = {
+  contentHash: string;
+  bytes: ArrayBuffer;
+  mode: Mode;
+  label?: string;
+};
 export type Builtin = {
   id: string;
   contentHash: string;
