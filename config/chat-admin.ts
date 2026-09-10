@@ -1,7 +1,23 @@
-// Mason Singel's verified production account (users/j579a533vvb3hc4z0psaw8kn018dgjm3).
-// Authorization uses Clerk's signed subject, never editable names or metadata.
-const ADMIN_CLERK_IDS = new Set(["user_3IhbuJdEMX72wHvrpeidDZP1LY5"]);
-
+/** Deployment-owned subjects only; display names and public env never grant access. */
 export function isChatAdmin(clerkId: string): boolean {
-  return ADMIN_CLERK_IDS.has(clerkId);
+  return containsSubject(process.env.CHAT_ADMIN_CLERK_IDS, clerkId);
+}
+
+/** Cosmetic browser badge only. Authorization always uses the Convex setting. */
+export function hasChatAdminBadge(clerkId: string): boolean {
+  return containsSubject(process.env.NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS, clerkId);
+}
+
+function containsSubject(
+  configured: string | undefined,
+  clerkId: string,
+): boolean {
+  return (
+    Boolean(clerkId) &&
+    (configured ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .includes(clerkId)
+  );
 }

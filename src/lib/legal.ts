@@ -199,7 +199,7 @@ export const terms: LegalDocument = {
             "use another person's account, sell or transfer your own, or resell or commercialise access to the Service",
             "probe, scan, or test the security of the Service, or defeat, work around, or interfere with any limit, gate, or protection built into it",
             "access the Service by automated means, scrape it, or copy any substantial part of it",
-            "reverse-engineer, decompile, or attempt to derive the source of the Service, except where a law gives you a right that cannot be waived",
+            "reverse-engineer third-party components except as permitted by their licenses or applicable law; this does not restrict rights granted under the open-source licenses for our application code",
             "upload, submit, or transmit anything unlawful, infringing, malicious, or harmful to other people",
             "misrepresent who you are, how old you are, or your relationship to us or to any institution",
             "interfere with anyone else's use of the Service, or place an unreasonable load on it",

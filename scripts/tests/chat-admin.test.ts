@@ -1,10 +1,12 @@
 /// <reference types="vite/client" />
-import { expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
-const mason = "user_3IhbuJdEMX72wHvrpeidDZP1LY5";
+const mason = "user_test_admin";
+beforeEach(() => vi.stubEnv("CHAT_ADMIN_CLERK_IDS", mason));
+afterEach(() => vi.unstubAllEnvs());
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -146,4 +148,40 @@ test("verified admin gets 50 bot uses; other accounts get five, with refunds in 
   } finally {
     vi.useRealTimers();
   }
+});
+
+test("an unset admin list denies access and the public badge setting cannot grant it", async () => {
+  vi.stubEnv("CHAT_ADMIN_CLERK_IDS", "");
+  vi.stubEnv("NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS", mason);
+  const { t, messageId } = await setup();
+  const admin = t.withIdentity({ subject: mason });
+  expect(await admin.query(api.chat.admin.mine, {})).toBe(false);
+  await expect(
+    admin.mutation(api.chat.admin.remove, { messageId }),
+  ).rejects.toThrow("Admin access required");
+});
+
+test("deployment admin list accepts multiple exact subjects and supports revocation", async () => {
+  vi.stubEnv("CHAT_ADMIN_CLERK_IDS", ` , ${mason}, user_other_admin , `);
+  const { t } = await setup();
+  await t.run((ctx) =>
+    ctx.db.insert("users", {
+      clerkId: "user_other_admin",
+      name: "Second admin",
+    }),
+  );
+  expect(
+    await t
+      .withIdentity({ subject: "user_other_admin" })
+      .query(api.chat.admin.mine, {}),
+  ).toBe(true);
+  expect(
+    await t
+      .withIdentity({ subject: "user_other" })
+      .query(api.chat.admin.mine, {}),
+  ).toBe(false);
+  vi.stubEnv("CHAT_ADMIN_CLERK_IDS", "user_other_admin");
+  expect(
+    await t.withIdentity({ subject: mason }).query(api.chat.admin.mine, {}),
+  ).toBe(false);
 });
