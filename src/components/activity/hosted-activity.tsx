@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  ACTIVITY_ALLOW,
+  ACTIVITY_REFERRER_POLICY,
+  ACTIVITY_SANDBOX,
+} from "@/components/app/activity-sandbox";
+
 /**
  * A third-party bundle, framed inside `/learn`.
  *
@@ -42,6 +48,8 @@ export function HostedActivity({ title, src }: { title: string; src: string }) {
        * A nested frame can only ever be more restricted than the one holding
        * it, never less — so every capability here must also be granted by
        * `ActivityFrame`'s sandbox, or it is silently dropped at this level.
+       * Both read the same lists from `activity-sandbox.ts`, which is what
+       * keeps them agreeing.
        *
        * `allow-same-origin` is safe because the bucket is a different origin
        * to this document — cross-origin whether or not the app has a player
@@ -49,9 +57,9 @@ export function HostedActivity({ title, src }: { title: string; src: string }) {
        * reaches nothing of ours. `allow-pointer-lock` is what the driving and
        * 3D titles need to capture the mouse.
        */
-      sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-      allow="gamepad; fullscreen; autoplay"
-      referrerPolicy="no-referrer"
+      sandbox={ACTIVITY_SANDBOX}
+      allow={ACTIVITY_ALLOW}
+      referrerPolicy={ACTIVITY_REFERRER_POLICY}
       /* The learn layout is a centring `min-h-svh` column; `flex-1` with
          `self-stretch` is what turns this from a centred box into the whole
          board, without the layout needing to know which runtime it holds. */

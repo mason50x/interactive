@@ -1,12 +1,13 @@
-import styles from "./philosophy-animation.module.css";
-import { PhilosophyPlayer } from "./philosophy-player";
-import { PhilosophyPuppets } from "./philosophy-puppets";
+import styles from "@/components/app/philosophy-animation.module.css";
+import { PhilosophyPlayer } from "@/components/app/philosophy-player";
+import { PhilosophyPuppets } from "@/components/app/philosophy-puppets";
+import { cn } from "@/lib/utils";
 
 function Prohibition({ still = false }: { still?: boolean }) {
   return (
     <div
       aria-hidden="true"
-      className={`${styles.ban} ${still ? styles.stillBan : ""}`}
+      className={cn(styles.ban, still && styles.stillBan)}
     >
       <svg viewBox="0 0 320 320" fill="none">
         <circle
@@ -86,7 +87,6 @@ export function PhilosophyAnimation() {
               fontFamily="var(--font-inter), Arial, sans-serif"
               fontSize="116"
               fontWeight="900"
-              letterSpacing="-9"
             >
               FUN
             </text>

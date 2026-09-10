@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { SolidIcon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,9 +46,9 @@ export function Flame({
   const core = `${id}-core`;
 
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
+    // The shell's `fill="currentColor"` is what the unlit paths inherit; the
+    // lit ones override it with their gradients below.
+    <SolidIcon
       className={cn("overflow-visible", className)}
       // Only the lit flame throws light. The shadow is on the <svg> rather
       // than the paths so it follows the silhouette as one shape instead of
@@ -90,6 +91,6 @@ export function Flame({
         fillOpacity={lit ? 1 : 0.16}
         className={cn(lit && animated && "flame-core")}
       />
-    </svg>
+    </SolidIcon>
   );
 }

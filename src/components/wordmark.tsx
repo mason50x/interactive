@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * the letterforms themselves. Sized in `em` and baseline-aligned, which is
  * what lets it sit on the same cap line as text beside it.
  */
-export function LogoMark({ className = "" }: { className?: string }) {
+export function LogoMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="18 21 64 58"
@@ -34,7 +34,7 @@ export function Wordmark({
   tone = "default",
   showName = true,
   short = false,
-  className = "",
+  className,
   nameClassName,
 }: {
   tone?: "default" | "inverted";

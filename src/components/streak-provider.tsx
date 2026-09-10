@@ -1,6 +1,6 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
 import {
   createContext,
   use,
@@ -10,7 +10,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useTransientFlag } from "@/lib/use-transient-flag";
 import { api } from "../../convex/_generated/api";
+
+/**
+ * The streak, and the moment it grows.
+ *
+ * Two contexts from one provider. `useStreak` is the account's run as the
+ * server has it, a subscription that any card or chip can read. `useStreakDisplay`
+ * is the short ceremony over the top of it: when the day's claim extends the
+ * run, the chip is handed the new number and told to glow for under a second,
+ * and then goes back to reading the subscription. Mounted by the dashboard
+ * layout, because arriving at the app is a day's activity and reading the
+ * pricing page is not.
+ */
 
 export type Streak = {
   current: number;
@@ -56,27 +70,24 @@ export function StreakProvider({ children }: { children: ReactNode }) {
   // right trade for not tearing down a subscription to find out.
   const [tzOffsetMinutes] = useState(() => new Date().getTimezoneOffset());
 
-  const streak = useQuery(
-    api.streaks.mine,
-    isAuthenticated ? { tzOffsetMinutes } : "skip",
-  );
+  const streak = useAuthedQuery(api.streaks.mine, { tzOffsetMinutes });
   const claimToday = useMutation(api.streaks.claimToday);
 
-  const [display, setDisplay] = useState<number | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The number the chip shows for the length of the ceremony, and the flag
+  // that times it. The number is kept after the glow ends — only the flag
+  // decides whether the chip reads it — so the context can go back to `null`
+  // without a second timer to clear it.
+  const [celebrated, setCelebrated] = useState<number | null>(null);
+  const [glowing, glow] = useTransientFlag(900);
+  const display = glowing ? celebrated : null;
 
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
+  const celebrate = useCallback(
+    (to: number) => {
+      setCelebrated(to);
+      glow();
     },
-    [],
+    [glow],
   );
-
-  const celebrate = useCallback((to: number) => {
-    if (timer.current) clearTimeout(timer.current);
-    setDisplay(to);
-    timer.current = setTimeout(() => setDisplay(null), 900);
-  }, []);
 
   const claimed = useRef(false);
 
@@ -118,7 +129,7 @@ export function StreakProvider({ children }: { children: ReactNode }) {
 
   return (
     <StreakContext value={streak ?? null}>
-      <StreakDisplayContext value={{ display, glowing: display !== null }}>
+      <StreakDisplayContext value={{ display, glowing }}>
         {children}
       </StreakDisplayContext>
     </StreakContext>

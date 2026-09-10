@@ -7,7 +7,7 @@ import { BrowserCheck } from "@/components/app/browser-check";
 import { SearchProvider } from "@/components/app/search-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
-import { ACTIVITIES } from "@/lib/activities";
+import { searchableActivities } from "@/lib/activities";
 import { RAIL_COOKIE, railState } from "@/lib/rail";
 
 export const metadata: Metadata = {
@@ -68,11 +68,7 @@ export default async function DashboardLayout({
   // above — because `@/lib/activities` is `server-only` and a client module
   // importing it would publish all 318 entries to a static chunk with no
   // session in front of it. See that file's header.
-  const activities = ACTIVITIES.map(({ slug, title, genre }) => ({
-    slug,
-    title,
-    genre,
-  }));
+  const activities = searchableActivities();
 
   return (
     <AppProviders>

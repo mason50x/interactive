@@ -1,10 +1,11 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import { HomeGreeting } from "@/components/app/home/greeting";
+import { greetingName, HomeGreeting } from "@/components/app/home/greeting";
 import { HomeBoard } from "@/components/app/home/home-board";
 import { StatsCard } from "@/components/app/home/stats-card";
 import { StreakCard } from "@/components/app/home/streak-card";
 import { WeatherCard } from "@/components/app/home/weather-card";
+import { Page } from "@/components/ui/page";
 import { ACTIVITIES } from "@/lib/activities";
 
 export const metadata: Metadata = { title: "Home" };
@@ -42,15 +43,10 @@ export default async function DashboardPage() {
   // layout between sibling pages, so every page under /dashboard guards itself.
   await auth.protect();
 
-  const user = await currentUser();
-
-  // A first name is the greeting; a full name in a heading reads as a form
-  // letter. `username` is the fallback for accounts created without one, and
-  // `null` means the greeting simply stops after "Welcome back".
-  const name = user?.firstName ?? user?.username ?? null;
+  const name = greetingName(await currentUser());
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-6 pt-8 pb-16 sm:px-8 lg:px-10">
+    <Page>
       <HomeGreeting name={name} />
 
       {/* One column on a phone, three from `md`. Deliberately not two at any
@@ -66,6 +62,6 @@ export default async function DashboardPage() {
           client component would put all 318 entries in a public static chunk.
           See `src/lib/activities.ts`. */}
       <HomeBoard activities={ACTIVITIES} />
-    </div>
+    </Page>
   );
 }

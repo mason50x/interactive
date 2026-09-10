@@ -1,4 +1,5 @@
 import { GlobeAltIcon } from "@heroicons/react/24/solid";
+import { SolidIcon } from "@/components/ui/icon";
 
 /**
  * The mark for an app in the experience: a brand glyph where we have drawn
@@ -14,10 +15,10 @@ export function ExperienceAppIcon({
 }) {
   if (id === "youtube") {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <SolidIcon className={className}>
         <rect x="1.5" y="5" width="21" height="14" rx="4.5" fill="#ff0033" />
         <path d="M10 9v6l5-3z" fill="#fff" />
-      </svg>
+      </SolidIcon>
     );
   }
   return <GlobeAltIcon aria-hidden="true" className={className} />;

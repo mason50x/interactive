@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import { useStillness } from "@/lib/motion";
-import styles from "./philosophy-animation.module.css";
+import styles from "@/components/app/philosophy-animation.module.css";
 
 const FINGERS = [
   [50, 548],

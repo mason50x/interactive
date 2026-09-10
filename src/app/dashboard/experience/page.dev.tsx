@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
+import { Page, PageTitle } from "@/components/ui/page";
 import { EXPERIENCE_APPS, experienceAppHref } from "@/lib/experience";
 
 export const metadata: Metadata = { title: "Experience" };
@@ -21,11 +22,11 @@ export default async function ExperiencePage() {
   // layout between sibling pages, so every page under /dashboard guards itself.
   await auth.protect();
 
+  // Narrower than the catalogue: this is a short list of tiles, not a field
+  // of art, and it reads better at the prose pages' measure.
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 pt-8 pb-16 sm:px-8 lg:px-10">
-      <h1 className="text-display text-display-title text-[2.25rem] sm:text-[2.75rem]">
-        Experience
-      </h1>
+    <Page className="max-w-5xl">
+      <PageTitle>Experience</PageTitle>
 
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {EXPERIENCE_APPS.map((app) => (
@@ -48,6 +49,6 @@ export default async function ExperiencePage() {
           </li>
         ))}
       </ul>
-    </div>
+    </Page>
   );
 }

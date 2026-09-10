@@ -7,7 +7,7 @@ import {
   PHILOSOPHY_LOOP_SECONDS,
   philosophyFramePose,
 } from "@/lib/philosophy-timing";
-import styles from "./philosophy-animation.module.css";
+import styles from "@/components/app/philosophy-animation.module.css";
 
 type AudioEngine = {
   context: AudioContext;

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import styles from "@/components/app/browser-check.module.css";
 import { RailConstellation } from "@/components/app/rail-constellation";
-import styles from "./browser-check.module.css";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "50x:browser-check:v1";
 const LETTER =
@@ -113,7 +114,10 @@ export function BrowserCheck() {
           re-read on every frame the canvas under it changes, and it changes
           on all of them. */}
       <div
-        className={`${styles.content} flex w-full max-w-6xl flex-col items-center gap-10 md:flex-row md:gap-16`}
+        className={cn(
+          styles.content,
+          "flex w-full max-w-6xl flex-col items-center gap-10 md:flex-row md:gap-16",
+        )}
         role="status"
       >
         {/* Sized by the viewport's height, so the letter is the page's

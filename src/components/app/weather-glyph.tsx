@@ -1,3 +1,4 @@
+import { SolidIcon } from "@/components/ui/icon";
 import type { WeatherKind } from "@/lib/weather";
 
 /**
@@ -160,12 +161,7 @@ export function WeatherGlyph({
   className?: string;
 }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
+    <SolidIcon className={className}>
       {kind === "clear" && (isDay ? <Sun /> : <Moon />)}
 
       {kind === "partly" && (
@@ -203,6 +199,6 @@ export function WeatherGlyph({
           <Marks kind={kind} />
         </>
       )}
-    </svg>
+    </SolidIcon>
   );
 }

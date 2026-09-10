@@ -2,6 +2,13 @@ import Script from "next/script";
 
 const GA_MEASUREMENT_ID = "G-QJLG879G82";
 
+/**
+ * The Google tag, loaded after the page is interactive.
+ *
+ * Mounted by `AppProviders` and nowhere else, so it rides with the app's own
+ * route trees and never with `/learn` — an activity frame firing its own
+ * pageviews would double-count every session.
+ */
 export function GoogleAnalytics() {
   return (
     <>
