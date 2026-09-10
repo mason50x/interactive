@@ -131,7 +131,8 @@ export const howItWorks = {
 
 export const practice = {
   eyebrow: "Practice",
-  heading: "Questions aimed at the exact thing you were pretending to understand",
+  heading:
+    "Questions aimed at the exact thing you were pretending to understand",
   body: "Flashcards test facts in isolation. Interactive Learning tests whether you can connect them. Every recall session is generated from the edges of your map you keep skipping, then scheduled so the answer is still there in three weeks.",
   bullets: [
     "Spaced repetition tuned per concept, not per deck",

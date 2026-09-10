@@ -62,7 +62,10 @@ export function mentionQueryAt(
   const match = MENTION_AT_END.exec(text.slice(0, caret));
   if (match === null) return null;
   if (/[a-z0-9_-]/i.test(text.charAt(caret))) return null;
-  return { start: match.index + match[1].length, query: match[2].toLowerCase() };
+  return {
+    start: match.index + match[1].length,
+    query: match[2].toLowerCase(),
+  };
 }
 
 /** A run of the body: plain words, or a mention that resolved to somebody. */

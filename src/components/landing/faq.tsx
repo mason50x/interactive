@@ -9,7 +9,10 @@ export function Faq() {
       <Container>
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-4">
-            <SectionHeading eyebrow={faqSection.eyebrow} title={faqSection.heading} />
+            <SectionHeading
+              eyebrow={faqSection.eyebrow}
+              title={faqSection.heading}
+            />
           </div>
 
           <div className="lg:col-span-8">

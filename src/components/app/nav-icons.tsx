@@ -32,7 +32,12 @@ function useMaskId() {
 /** The svg shell every icon shares. */
 function Svg(props: Props) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props} />
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      {...props}
+    />
   );
 }
 
@@ -66,7 +71,14 @@ export function ControllerIconSolid(props: Props) {
   const id = useMaskId();
   return (
     <Svg {...props}>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+      <mask
+        id={id}
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="24"
+      >
         <path
           fill="#fff"
           d="M8.25 6h7.5a6 6 0 0 1 5.95 5.4l.6 4.7a2.85 2.85 0 0 1-5.1 2.1L15.25 15.75h-6.5L6.8 18.2a2.85 2.85 0 0 1-5.1-2.1l.6-4.7A6 6 0 0 1 8.25 6Z"
@@ -124,7 +136,14 @@ export function GlobeIconSolid(props: Props) {
   const arc = "M12 2.25A9.75 9.75 0 0 1 12 21.75";
   return (
     <Svg {...props}>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+      <mask
+        id={id}
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="24"
+      >
         <circle cx="12" cy="12" r="9.75" fill="#fff" />
         <g
           fill="none"
@@ -237,7 +256,14 @@ export function RailIconSolid(props: Props) {
   const id = useMaskId();
   return (
     <Svg {...props}>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+      <mask
+        id={id}
+        maskUnits="userSpaceOnUse"
+        x="0"
+        y="0"
+        width="24"
+        height="24"
+      >
         <rect x="2.25" y="3.75" width="19.5" height="16.5" rx="3" fill="#fff" />
         <rect
           className="ni-rail-pane"

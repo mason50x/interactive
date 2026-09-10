@@ -19,14 +19,32 @@ export async function syncChatAccount() {
     return;
   }
   const user = await currentUser();
-  if (!user || user.id !== userId || !user.username) throw new Error("Account needs a username");
+  if (!user || user.id !== userId || !user.username)
+    throw new Error("Account needs a username");
   const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
   // Convex supports admin authentication for trusted server-to-server internal calls.
-  (client as ConvexHttpClient & { setAdminAuth(key: string): void }).setAdminAuth(deployKey);
-  await client.mutation(makeFunctionReference<"mutation", FunctionArgs<typeof internal.users.upsertFromClerk>>("users:upsertFromClerk"), { data: {
-    id: user.id, username: user.username, first_name: user.firstName,
-    last_name: user.lastName, image_url: user.imageUrl, updated_at: user.updatedAt,
-    primary_email_address_id: user.primaryEmailAddressId,
-    email_addresses: user.emailAddresses.map(address => ({ id: address.id, email_address: address.emailAddress })),
-  } });
+  (
+    client as ConvexHttpClient & { setAdminAuth(key: string): void }
+  ).setAdminAuth(deployKey);
+  await client.mutation(
+    makeFunctionReference<
+      "mutation",
+      FunctionArgs<typeof internal.users.upsertFromClerk>
+    >("users:upsertFromClerk"),
+    {
+      data: {
+        id: user.id,
+        username: user.username,
+        first_name: user.firstName,
+        last_name: user.lastName,
+        image_url: user.imageUrl,
+        updated_at: user.updatedAt,
+        primary_email_address_id: user.primaryEmailAddressId,
+        email_addresses: user.emailAddresses.map((address) => ({
+          id: address.id,
+          email_address: address.emailAddress,
+        })),
+      },
+    },
+  );
 }

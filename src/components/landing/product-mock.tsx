@@ -41,23 +41,73 @@ type Edge = {
 
 const nodes: Node[] = [
   { id: "glucose", label: "Glucose", x: 32, y: 44, w: 132, h: 48 },
-  { id: "glycolysis", label: "Glycolysis", sub: "cytosol", x: 232, y: 44, w: 156, h: 48 },
+  {
+    id: "glycolysis",
+    label: "Glycolysis",
+    sub: "cytosol",
+    x: 232,
+    y: 44,
+    w: 156,
+    h: 48,
+  },
   { id: "pyruvate", label: "Pyruvate", x: 456, y: 44, w: 132, h: 48 },
-  { id: "krebs", label: "Krebs cycle", sub: "matrix", x: 444, y: 158, w: 156, h: 48 },
+  {
+    id: "krebs",
+    label: "Krebs cycle",
+    sub: "matrix",
+    x: 444,
+    y: 158,
+    w: 156,
+    h: 48,
+  },
   { id: "carriers", label: "NADH + FADH₂", x: 224, y: 262, w: 172, h: 48 },
-  { id: "oxygen", label: "O₂", sub: "final acceptor", x: 32, y: 362, w: 132, h: 48 },
-  { id: "etc", label: "Electron transport chain", x: 420, y: 362, w: 228, h: 48 },
-  { id: "atp", label: "ATP", sub: "32 net", x: 700, y: 262, w: 116, h: 48, accent: true },
+  {
+    id: "oxygen",
+    label: "O₂",
+    sub: "final acceptor",
+    x: 32,
+    y: 362,
+    w: 132,
+    h: 48,
+  },
+  {
+    id: "etc",
+    label: "Electron transport chain",
+    x: 420,
+    y: 362,
+    w: 228,
+    h: 48,
+  },
+  {
+    id: "atp",
+    label: "ATP",
+    sub: "32 net",
+    x: 700,
+    y: 262,
+    w: 116,
+    h: 48,
+    accent: true,
+  },
 ];
 
 const edges: Edge[] = [
   { d: "M164 68 H232", label: "enters", at: [198, 60] },
   { d: "M388 68 H456", label: "yields", at: [422, 60] },
   { d: "M522 92 V158", label: "oxidised", at: [530, 130] },
-  { d: "M444 182 C 400 182, 372 230, 350 262", label: "reduces", at: [378, 232] },
+  {
+    d: "M444 182 C 400 182, 372 230, 350 262",
+    label: "reduces",
+    at: [378, 232],
+  },
   { d: "M330 310 C 330 350, 380 378, 420 378", flow: true },
   { d: "M164 386 H420", label: "accepts e⁻", at: [292, 378] },
-  { d: "M648 380 C 700 376, 730 340, 748 310", accent: true, flow: true, label: "produces", at: [722, 352] },
+  {
+    d: "M648 380 C 700 376, 730 340, 748 310",
+    accent: true,
+    flow: true,
+    label: "produces",
+    at: [722, 352],
+  },
 ];
 
 function MapDiagram({ className }: { className?: string }) {
@@ -239,16 +289,15 @@ export function ProductMock({ className }: { className?: string }) {
         </div>
         <div className="mx-auto flex h-7 w-full max-w-md items-center justify-center gap-2 rounded-md bg-muted px-3 text-[0.75rem] text-muted-foreground">
           <LogoMark className="h-[0.6em] w-auto text-faint" />
-          <span className="truncate">{brand.domain}/maps/cellular-respiration</span>
+          <span className="truncate">
+            {brand.domain}/maps/cellular-respiration
+          </span>
         </div>
         <div className="hidden shrink-0 -space-x-1.5 sm:flex" aria-hidden>
           {["bg-chart-2", "bg-chart-3", "bg-chart-4"].map((c) => (
             <span
               key={c}
-              className={cn(
-                "size-6 rounded-full border-2 border-surface",
-                c,
-              )}
+              className={cn("size-6 rounded-full border-2 border-surface", c)}
             />
           ))}
         </div>
@@ -288,8 +337,7 @@ export function ProductMock({ className }: { className?: string }) {
             </div>
           ))}
           <div className="mt-auto flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-2 text-[0.75rem] text-muted-foreground">
-            <BoltIcon className="size-3.5 text-primary" />
-            4 cards due today
+            <BoltIcon className="size-3.5 text-primary" />4 cards due today
           </div>
         </aside>
 
@@ -320,7 +368,7 @@ export function ProductMock({ className }: { className?: string }) {
               ))}
             </div>
           </div>
-          <div className="relative flex-1 bg-dots p-3 sm:p-5">
+          <div className="bg-dots relative flex-1 p-3 sm:p-5">
             <MapDiagram />
             <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-lg border border-border bg-surface p-1 text-faint shadow-card sm:bottom-5 sm:left-5">
               <span className="flex size-6 items-center justify-center rounded-md">

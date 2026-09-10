@@ -32,7 +32,11 @@ const { site, asset, experience, mail } = resolveDomains();
 const rows = [
   ["Site", site.url, site.from],
   ["Assets", asset.url, asset.from],
-  ["Experience", experience.url, experience.from ? `${experience.from} (dev only)` : null],
+  [
+    "Experience",
+    experience.url,
+    experience.from ? `${experience.from} (dev only)` : null,
+  ],
   ["Mail", `@${mail.host}`, mail.from],
 ];
 
@@ -84,11 +88,15 @@ lines.push(
   warn("  5. Convex — npx convex env set CLERK_JWT_ISSUER_DOMAIN \\"),
   warn("       https://clerk.<new domain> --prod"),
   dim("     Miss this and every authenticated query fails after the Clerk"),
-  dim("     change lands, not before. It is the one with no build-time signal."),
+  dim(
+    "     change lands, not before. It is the one with no build-time signal.",
+  ),
   dim("  6. Send yourself one invitation and click it. Clerk stamps"),
   dim("     redirect_url at send time; there is no editing it afterwards."),
   "",
-  good("  scripts/invite.mjs resolves the production origin from PROD_SITE_URL"),
+  good(
+    "  scripts/invite.mjs resolves the production origin from PROD_SITE_URL",
+  ),
   good("  or config/domains.json, so it moves with step 1 or 2 by itself."),
   "",
 );

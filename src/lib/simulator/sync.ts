@@ -86,7 +86,8 @@ export class ProgressSync {
       const local = await readLocal(this.owner, this.record.contentHash);
       if (local) {
         this.record = local;
-        if (this.record.label === "Imported simulation" && this.importedLabel) this.record.label = this.importedLabel;
+        if (this.record.label === "Imported simulation" && this.importedLabel)
+          this.record.label = this.importedLabel;
         this.status.local = "saved";
       }
     } catch {

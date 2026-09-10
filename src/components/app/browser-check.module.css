@@ -17,12 +17,18 @@
 }
 
 @keyframes ground-away {
-  to { background-color: transparent; }
+  to {
+    background-color: transparent;
+  }
 }
 
 @keyframes fade-away {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /*
@@ -45,8 +51,12 @@
 }
 
 @keyframes trace-letter {
-  from { stroke-dashoffset: 102; }
-  to { stroke-dashoffset: 0; }
+  from {
+    stroke-dashoffset: 102;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /*
@@ -61,8 +71,12 @@
 }
 
 @keyframes fill-letter {
-  from { transform: translateY(62px); }
-  to { transform: translateY(2px); }
+  from {
+    transform: translateY(62px);
+  }
+  to {
+    transform: translateY(2px);
+  }
 }
 
 /*
@@ -77,8 +91,12 @@
 }
 
 @keyframes water-sway {
-  from { transform: translateX(0); }
-  to { transform: translateX(-16px); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-16px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

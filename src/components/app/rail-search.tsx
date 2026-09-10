@@ -393,7 +393,7 @@ export function RailSearch() {
         type="button"
         aria-label="Search"
         onClick={() => router.push(ACTIVITIES_HREF)}
-        className="rail-narrow flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground backdrop-blur-[3px] hover:bg-foreground/[0.05] hover:text-foreground wide:hidden"
+        className="flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-muted-foreground rail-narrow backdrop-blur-[3px] hover:bg-foreground/[0.05] hover:text-foreground wide:hidden"
       >
         <MagnifyingGlassIcon className="size-5" />
       </button>
@@ -403,7 +403,7 @@ export function RailSearch() {
           push the destinations down the rail: this wrapper keeps the 2.75rem
           the collapsed row occupies, and every extra pixel of the open one is
           borrowed from the shell to the right and from the list below. */}
-      <search className="rail-wide relative hidden h-11 wide:block">
+      <search className="relative hidden h-11 rail-wide wide:block">
         <div
           className={cn(
             // Anchored top-left, which is this end of the rail's answer to the
@@ -538,9 +538,11 @@ export function RailSearch() {
                   role="status"
                   className="px-2.5 py-10 text-center text-[0.875rem] text-muted-foreground"
                 >
-                  {found === undefined && chatText !== ""
-                    ? <Spinner className="mx-auto size-5" />
-                    : `Nothing matches ${query.trim()}.`}
+                  {found === undefined && chatText !== "" ? (
+                    <Spinner className="mx-auto size-5" />
+                  ) : (
+                    `Nothing matches ${query.trim()}.`
+                  )}
                 </p>
               ) : (
                 sections.map((section) => (

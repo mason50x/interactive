@@ -10,14 +10,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "bg-primary text-primary-foreground hover:bg-primary-hover",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover",
         /** Alias of `default`, kept so brand-led call sites read clearly. */
-        primary:
-          "bg-primary text-primary-foreground hover:bg-primary-hover",
+        primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
         /** For use on the inverted panel, which is dark in both themes. */
-        inverted:
-          "bg-panel-foreground text-panel hover:bg-panel-foreground/88",
+        inverted: "bg-panel-foreground text-panel hover:bg-panel-foreground/88",
         "inverted-outline":
           "border border-panel-border text-panel-foreground hover:border-panel-foreground/45 hover:bg-panel-foreground/[0.07]",
         outline:

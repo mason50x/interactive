@@ -210,16 +210,10 @@ export function useFlip(signature: unknown) {
     const floor = window.innerHeight + reach;
     const leap = window.innerHeight;
 
-    for (const {
-      el,
-      id,
-      spot,
-      tx,
-      ty,
-      scale,
-      alpha,
-      top,
-    } of read(root, flights.current)) {
+    for (const { el, id, spot, tx, ty, scale, alpha, top } of read(
+      root,
+      flights.current,
+    )) {
       now.set(id, spot);
 
       if (!animate) continue;
@@ -407,7 +401,8 @@ export function useFlip(signature: unknown) {
 
     const observer = new ResizeObserver(() => {
       const fresh = new Map<string, Spot>();
-      for (const { id, spot } of read(root, flights.current)) fresh.set(id, spot);
+      for (const { id, spot } of read(root, flights.current))
+        fresh.set(id, spot);
       spots.current = fresh;
     });
 

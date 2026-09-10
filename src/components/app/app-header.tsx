@@ -71,103 +71,103 @@ export function AppHeader() {
       <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4 px-6 sm:px-8 lg:px-10">
         {/* Left: Brand + Nav */}
         <div className="flex items-center gap-4 lg:gap-6">
-        <Link
-          href="/dashboard"
-          aria-label={`${brand.name} dashboard`}
-          {...warm("/dashboard")}
-          className="shrink-0 transition-opacity hover:opacity-75"
-        >
-          <Wordmark short className="text-[1.125rem]" />
-        </Link>
+          <Link
+            href="/dashboard"
+            aria-label={`${brand.name} dashboard`}
+            {...warm("/dashboard")}
+            className="shrink-0 transition-opacity hover:opacity-75"
+          >
+            <Wordmark short className="text-[1.125rem]" />
+          </Link>
 
-        {/* Desktop Navigation Links */}
-        <nav
-          ref={navRef}
-          aria-label="Dashboard navigation"
-          className="relative hidden md:flex items-center gap-1"
-        >
-          {pill ? (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute top-0 left-0 h-9 rounded-lg bg-foreground/[0.08] transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{
-                width: pill.width,
-                transform: `translateX(${pill.left}px)`,
-              }}
-            />
-          ) : null}
-          {navItems.map((item) => {
-            const active = item.href === activeHref;
-            const { outline: Outline, solid: Solid } = item.icon;
+          {/* Desktop Navigation Links */}
+          <nav
+            ref={navRef}
+            aria-label="Dashboard navigation"
+            className="relative hidden items-center gap-1 md:flex"
+          >
+            {pill ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-0 left-0 h-9 rounded-lg bg-foreground/[0.08] transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                style={{
+                  width: pill.width,
+                  transform: `translateX(${pill.left}px)`,
+                }}
+              />
+            ) : null}
+            {navItems.map((item) => {
+              const active = item.href === activeHref;
+              const { outline: Outline, solid: Solid } = item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                {...warm(item.href)}
-                className={cn(
-                  "relative flex h-9 items-center gap-2 rounded-lg px-3 text-[0.875rem] font-medium transition-colors outline-none",
-                  "focus-visible:ring-2 focus-visible:ring-ring/60",
-                  active
-                    ? "font-semibold text-foreground"
-                    : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
-                )}
-              >
-                <span className="relative size-4 shrink-0">
-                  <Outline
-                    className={cn(
-                      "absolute inset-0 size-4 transition-opacity duration-150",
-                      active && "opacity-0",
-                    )}
-                  />
-                  <Solid
-                    className={cn(
-                      "absolute inset-0 size-4 transition-opacity duration-150",
-                      !active && "opacity-0",
-                    )}
-                  />
-                </span>
-                <span>{item.label}</span>
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  {...warm(item.href)}
+                  className={cn(
+                    "relative flex h-9 items-center gap-2 rounded-lg px-3 text-[0.875rem] font-medium transition-colors outline-none",
+                    "focus-visible:ring-2 focus-visible:ring-ring/60",
+                    active
+                      ? "font-semibold text-foreground"
+                      : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
+                  )}
+                >
+                  <span className="relative size-4 shrink-0">
+                    <Outline
+                      className={cn(
+                        "absolute inset-0 size-4 transition-opacity duration-150",
+                        active && "opacity-0",
+                      )}
+                    />
+                    <Solid
+                      className={cn(
+                        "absolute inset-0 size-4 transition-opacity duration-150",
+                        !active && "opacity-0",
+                      )}
+                    />
+                  </span>
+                  <span>{item.label}</span>
 
-                {item.unread && hasUnread ? (
-                  <span
-                    aria-label="Unread messages"
-                    role="status"
-                    className="size-2 rounded-full bg-primary"
-                  />
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                  {item.unread && hasUnread ? (
+                    <span
+                      aria-label="Unread messages"
+                      role="status"
+                      className="size-2 rounded-full bg-primary"
+                    />
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
-      {/* Center: Search */}
-      <div className="mx-2 flex flex-1 justify-center sm:mx-4">
-        <HeaderSearch />
-      </div>
+        {/* Center: Search */}
+        <div className="mx-2 flex flex-1 justify-center sm:mx-4">
+          <HeaderSearch />
+        </div>
 
-      {/* Right: Actions (Invites, UserMenu, Mobile Hamburger) */}
-      <div className="flex items-center gap-1 sm:gap-2">
-        <HeaderInvites />
-        <UserMenu />
+        {/* Right: Actions (Invites, UserMenu, Mobile Hamburger) */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          <HeaderInvites />
+          <UserMenu />
 
-        {/* Mobile menu button */}
-        <button
-          type="button"
-          aria-label="Toggle navigation menu"
-          aria-expanded={mobileMenuOpen}
-          onClick={() => setMobileMenuOpen((open) => !open)}
-          className="flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
-        >
-          {mobileMenuOpen ? (
-            <XMarkIcon className="size-5" />
-          ) : (
-            <Bars3Icon className="size-5" />
-          )}
-        </button>
-      </div>
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground md:hidden"
+          >
+            {mobileMenuOpen ? (
+              <XMarkIcon className="size-5" />
+            ) : (
+              <Bars3Icon className="size-5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile navigation drawer / dropdown */}

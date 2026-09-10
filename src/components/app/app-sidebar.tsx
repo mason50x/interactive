@@ -138,7 +138,9 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   // a server component — see `src/app/dashboard/activities/[slug]/page.tsx`.
   // `/dashboard/activities` itself is the browser, not an activity, so this wants
   // the trailing segment and not just the prefix.
-  const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname) || pathname === PHILOSOPHY_HREF;
+  const viewing =
+    /^\/dashboard\/activities\/[^/]+/.test(pathname) ||
+    pathname === PHILOSOPHY_HREF;
 
   const activeHref = navItems.reduce((best, item) => {
     const matches =
@@ -221,7 +223,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
           <RailToggle
             to="closed"
             label="Collapse sidebar"
-            className="rail-wide ml-auto hidden size-9 rounded-lg wide:flex"
+            className="ml-auto hidden size-9 rounded-lg rail-wide wide:flex"
           />
         </div>
 
@@ -230,7 +232,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
             one only. A row of its own rather than a hover state on the mark,
             because a control that only appears when the pointer happens to be
             over the thing it replaced is a control that has to be discovered. */}
-        <div className="rail-narrow hidden pb-2 pl-3 collapsed:block">
+        <div className="hidden pb-2 pl-3 rail-narrow collapsed:block">
           <RailToggle
             to="open"
             label="Expand sidebar"

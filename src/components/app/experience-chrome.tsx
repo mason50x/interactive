@@ -68,13 +68,19 @@ export function ExperienceChrome({
   }, []);
 
   const start = new URL(app.start);
-  const path = start.pathname === "/" && !start.search ? "" : start.pathname + start.search;
+  const path =
+    start.pathname === "/" && !start.search
+      ? ""
+      : start.pathname + start.search;
 
   return (
     <div ref={stage} className="flex h-full min-h-0 flex-col bg-sidebar">
       {/* Tab strip: the window buttons, and one tab. */}
       <div className="flex items-end gap-3 px-3 pt-2">
-        <div className="mb-2.5 flex items-center gap-1.5 pl-1" aria-hidden="true">
+        <div
+          className="mb-2.5 flex items-center gap-1.5 pl-1"
+          aria-hidden="true"
+        >
           <span className="size-3 rounded-full bg-[#ff5f57]" />
           <span className="size-3 rounded-full bg-[#febc2e]" />
           <span className="size-3 rounded-full bg-[#28c840]" />
@@ -100,7 +106,10 @@ export function ExperienceChrome({
         <ChromeButton label="Forward" onClick={() => window.history.forward()}>
           <ArrowRightIcon className="size-4" />
         </ChromeButton>
-        <ChromeButton label="Reload" onClick={() => setRun((value) => value + 1)}>
+        <ChromeButton
+          label="Reload"
+          onClick={() => setRun((value) => value + 1)}
+        >
           <ArrowPathIcon className="size-4" />
         </ChromeButton>
 

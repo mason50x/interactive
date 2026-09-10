@@ -42,7 +42,10 @@ export function formatDuration(seconds: number): string {
  * Returns hours when there are any, minutes otherwise — a tile has room for
  * one number, and `"2"` over `"hours"` is the one that reads at a glance.
  */
-export function splitDuration(seconds: number): { value: string; unit: string } {
+export function splitDuration(seconds: number): {
+  value: string;
+  unit: string;
+} {
   if (!Number.isFinite(seconds) || seconds < MINUTE) {
     return { value: "0", unit: "minutes" };
   }

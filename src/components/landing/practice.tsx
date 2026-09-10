@@ -46,7 +46,9 @@ function RecallCard() {
                   : "border-border-strong",
               )}
             >
-              {option.state === "correct" ? <CheckIcon className="size-3" /> : null}
+              {option.state === "correct" ? (
+                <CheckIcon className="size-3" />
+              ) : null}
             </span>
             {option.text}
           </li>
@@ -119,8 +121,24 @@ function WeakSpot() {
             </text>
           </g>
         ))}
-        <rect x="250" y="86" width="60" height="28" rx="9" fill="var(--destructive)" opacity="0.12" stroke="var(--destructive)" />
-        <text x="280" y="104" textAnchor="middle" fontSize="11.5" fontWeight="500" fill="var(--destructive)">
+        <rect
+          x="250"
+          y="86"
+          width="60"
+          height="28"
+          rx="9"
+          fill="var(--destructive)"
+          opacity="0.12"
+          stroke="var(--destructive)"
+        />
+        <text
+          x="280"
+          y="104"
+          textAnchor="middle"
+          fontSize="11.5"
+          fontWeight="500"
+          fill="var(--destructive)"
+        >
           ATP
         </text>
       </svg>
@@ -156,7 +174,12 @@ export function Practice() {
                 </li>
               ))}
             </ul>
-            <ButtonLink href="#product" variant="outline" size="md" className="mt-2">
+            <ButtonLink
+              href="#product"
+              variant="outline"
+              size="md"
+              className="mt-2"
+            >
               {practice.cta}
             </ButtonLink>
           </div>

@@ -23,8 +23,13 @@ export function Features() {
                 feature.span && "sm:col-span-2",
               )}
             >
-              <div className="flex h-[200px] items-center justify-center border-b border-border bg-dots p-5 [mask-image:none]">
-                <div className={cn("h-full w-full", feature.span ? "max-w-[460px]" : "max-w-[360px]")}>
+              <div className="bg-dots flex h-[200px] items-center justify-center border-b border-border [mask-image:none] p-5">
+                <div
+                  className={cn(
+                    "h-full w-full",
+                    feature.span ? "max-w-[460px]" : "max-w-[360px]",
+                  )}
+                >
                   <FeatureVisual name={feature.visual} />
                 </div>
               </div>

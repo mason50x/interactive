@@ -238,14 +238,12 @@ function CategoryMenu({
   return (
     <Menu.Root>
       <Menu.Trigger
-        aria-label={
-          chosen ? `Category: ${chosen.label}` : "Filter by category"
-        }
+        aria-label={chosen ? `Category: ${chosen.label}` : "Filter by category"}
         className={cn(
           "flex h-10 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-[0.8125rem] transition-colors outline-none",
           "focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring",
           chosen
-            ? "border-border bg-foreground/[0.08] text-foreground font-medium"
+            ? "border-border bg-foreground/[0.08] font-medium text-foreground"
             : "border-border bg-foreground/[0.03] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
         )}
       >

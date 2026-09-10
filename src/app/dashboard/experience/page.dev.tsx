@@ -40,7 +40,9 @@ export default async function ExperiencePage() {
               </span>
               <span className="flex flex-col gap-0.5">
                 <span className="font-medium">{app.label}</span>
-                <span className="text-xs text-muted-foreground">{app.host}</span>
+                <span className="text-xs text-muted-foreground">
+                  {app.host}
+                </span>
               </span>
             </Link>
           </li>

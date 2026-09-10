@@ -252,7 +252,7 @@ function Frame({
           <Spinner />
         </div>
       ) : (
-        <div className="animate-in fade-in flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 pb-4 duration-200">
+        <div className="flex min-h-0 flex-1 animate-in flex-col gap-6 overflow-y-auto px-3 pb-4 duration-200 fade-in">
           {children}
         </div>
       )}

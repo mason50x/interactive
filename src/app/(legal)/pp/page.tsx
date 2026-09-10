@@ -10,6 +10,9 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalDocument doc={privacy} sibling={{ title: terms.title, href: "/tos" }} />
+    <LegalDocument
+      doc={privacy}
+      sibling={{ title: terms.title, href: "/tos" }}
+    />
   );
 }

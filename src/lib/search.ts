@@ -48,12 +48,7 @@ import { navItems } from "@/lib/nav";
  * filed your password under the site's appearance options would be undoing a
  * distinction the modal's own navigation makes.
  */
-export type HitSource =
-  | "page"
-  | "activity"
-  | "setting"
-  | "account"
-  | "message";
+export type HitSource = "page" | "activity" | "setting" | "account" | "message";
 
 /**
  * One thing you can find, in the shape the list draws.
@@ -81,11 +76,7 @@ export type Hit = {
 
 /** The things a result can do that are not navigation. */
 export type SearchAction =
-  | "settings"
-  | "account"
-  | "theme:system"
-  | "theme:light"
-  | "theme:dark";
+  "settings" | "account" | "theme:system" | "theme:light" | "theme:dark";
 
 /**
  * A static entry before it is scored — a `Hit` plus the words that should find

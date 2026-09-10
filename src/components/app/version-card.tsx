@@ -99,7 +99,7 @@ export function VersionCard() {
         type="button"
         onClick={show}
         aria-label={`${label}: ${currentRelease.title}. See what's new`}
-        className="rail-narrow relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-[0.75rem] font-medium text-muted-foreground outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset tabular-nums wide:hidden"
+        className="relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-[0.75rem] font-medium text-muted-foreground tabular-nums rail-narrow outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:hidden"
       >
         {label}
         {!seen && (
@@ -113,7 +113,7 @@ export function VersionCard() {
           alive without being coloured; the colour is the rim alone. */}
       <Card
         className={cn(
-          "rail-wide relative hidden overflow-hidden rounded-xl wide:block wide:w-[14.25rem]",
+          "relative hidden overflow-hidden rounded-xl rail-wide wide:block wide:w-[14.25rem]",
           !seen && "release-unread-glow",
         )}
       >

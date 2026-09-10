@@ -11,10 +11,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  FaceEditor,
-  type Face,
-} from "@/components/app/chat/face-editor";
+import { FaceEditor, type Face } from "@/components/app/chat/face-editor";
 import {
   Empty,
   Group,
@@ -23,9 +20,7 @@ import {
 } from "@/components/app/chat/people-rows";
 import { SectionLabel } from "@/components/app/chat/section-label";
 import { useChat } from "@/components/app/chat/chat-provider";
-import {
-  groupNameError,
-} from "@/lib/chat";
+import { groupNameError } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import type { Icon } from "@/lib/icons";
@@ -154,7 +149,7 @@ export function ChatTools({
   return (
     <div
       className={cn(
-        "flex w-full min-h-0 flex-col",
+        "flex min-h-0 w-full flex-col",
         // Closed, this is a header sitting above a list. Open, it *is* the
         // column, and the panel inside it is what scrolls.
         open === null ? "shrink-0" : "flex-1",
@@ -206,7 +201,7 @@ export function ChatTools({
         id={panelId}
         inert={open === null}
         className={cn(
-          "animate-in fade-in min-h-0 flex-1 overflow-y-auto px-3 pb-3 duration-200",
+          "min-h-0 flex-1 animate-in overflow-y-auto px-3 pb-3 duration-200 fade-in",
           open === null && "hidden",
         )}
       >
@@ -293,7 +288,7 @@ function Tool({
       aria-expanded={active}
       aria-controls={controls}
       className={cn(
-        "relative ml-0.5 flex h-8 shrink-0 cursor-pointer items-center overflow-hidden rounded-lg outline-none transition-[width,margin,opacity,background-color,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
+        "relative ml-0.5 flex h-8 shrink-0 cursor-pointer items-center overflow-hidden rounded-lg transition-[width,margin,opacity,background-color,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
         collapsed
           ? "ml-0 w-0 opacity-0"
           : active
@@ -351,8 +346,8 @@ function SettingsPanel({ open }: { open: boolean }) {
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-foreground/[0.03] px-3 py-2.5">
         <UserGroupIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <p className="min-w-0 text-[0.8125rem] leading-snug text-muted-foreground">
-          Only friends can message you. Anyone can find you by handle and ask
-          to be one.
+          Only friends can message you. Anyone can find you by handle and ask to
+          be one.
         </p>
       </div>
 
@@ -466,24 +461,57 @@ function Me() {
     try {
       const result = await setAvatar({ ...face, mode });
       setError(result.ok ? null : "Could not save your picture. Try again.");
-    } catch { setError("Could not save your picture. Try again."); }
+    } catch {
+      setError("Could not save your picture. Try again.");
+    }
   };
-  return <div className="mt-2">
-    <FaceEditor name={profile?.handle ?? ""} label="your picture"
-      face={{ emoji: profile?.avatarEmoji, initials: profile?.avatarInitials, hue: profile?.avatarHue }}
-      imageUrl={profile?.avatarUrl}
-      account={{ selected: profile?.avatarMode !== "custom", onSelect: () => void save({}, "account") }}
-      onChange={face => void save(face, "custom")}>
-      <div className="min-w-0">
-        <p className="truncate text-[0.9375rem] font-semibold">{profile?.displayName || profile?.handle}</p>
-        <p className="truncate text-[0.8125rem] text-muted-foreground">@{profile?.handle}</p>
-        <p className="text-[0.75rem] text-faint">{sentLabel(profile?.messagesSent ?? 0)}</p>
-      </div>
-    </FaceEditor>
-    <Button variant="ghost" size="sm" className="mt-2" onClick={() => openUserProfile()}>Manage account</Button>
-    <p className="mt-1 text-xs text-muted-foreground">Your name and handle come from your account.</p>
-    {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
-  </div>;
+  return (
+    <div className="mt-2">
+      <FaceEditor
+        name={profile?.handle ?? ""}
+        label="your picture"
+        face={{
+          emoji: profile?.avatarEmoji,
+          initials: profile?.avatarInitials,
+          hue: profile?.avatarHue,
+        }}
+        imageUrl={profile?.avatarUrl}
+        account={{
+          selected: profile?.avatarMode !== "custom",
+          onSelect: () => void save({}, "account"),
+        }}
+        onChange={(face) => void save(face, "custom")}
+      >
+        <div className="min-w-0">
+          <p className="truncate text-[0.9375rem] font-semibold">
+            {profile?.displayName || profile?.handle}
+          </p>
+          <p className="truncate text-[0.8125rem] text-muted-foreground">
+            @{profile?.handle}
+          </p>
+          <p className="text-[0.75rem] text-faint">
+            {sentLabel(profile?.messagesSent ?? 0)}
+          </p>
+        </div>
+      </FaceEditor>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mt-2"
+        onClick={() => openUserProfile()}
+      >
+        Manage account
+      </Button>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Your name and handle come from your account.
+      </p>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** A name and a button. Everything else about a group is set from inside it. */

@@ -219,7 +219,10 @@ export function HeaderSearch() {
   // Detect non-Mac platform
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (typeof navigator !== "undefined" && !navigator.userAgent.includes("Mac")) {
+      if (
+        typeof navigator !== "undefined" &&
+        !navigator.userAgent.includes("Mac")
+      ) {
         setChord("Ctrl K");
       }
     }, 0);
@@ -261,7 +264,7 @@ export function HeaderSearch() {
   }, [open, active]);
 
   return (
-    <div ref={containerRef} className="relative flex-1 max-w-sm sm:max-w-md">
+    <div ref={containerRef} className="relative max-w-sm flex-1 sm:max-w-md">
       <div
         className={cn(
           "flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-foreground/[0.03] px-3 transition-colors",
@@ -292,7 +295,7 @@ export function HeaderSearch() {
           }
           autoComplete="off"
           spellCheck={false}
-          className="h-full min-w-0 flex-1 bg-transparent text-[0.875rem] font-medium text-foreground placeholder:text-muted-foreground outline-none [&::-webkit-search-cancel-button]:appearance-none"
+          className="h-full min-w-0 flex-1 bg-transparent text-[0.875rem] font-medium text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
         />
         {query ? (
           <button
@@ -324,7 +327,7 @@ export function HeaderSearch() {
           role={hits.length > 0 ? "listbox" : undefined}
           aria-label={hits.length > 0 ? "Search results" : undefined}
           onMouseDown={(event) => event.preventDefault()}
-          className="popup-slide absolute top-full left-0 z-50 mt-1.5 w-full min-w-[18rem] sm:min-w-[24rem] overflow-hidden rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl shadow-black/[0.1]"
+          className="popup-slide absolute top-full left-0 z-50 mt-1.5 w-full min-w-[18rem] overflow-hidden rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl shadow-black/[0.1] sm:min-w-[24rem]"
         >
           <div className="max-h-[22rem] overflow-y-auto overscroll-contain">
             {!searching ? (
@@ -334,9 +337,11 @@ export function HeaderSearch() {
                 role="status"
                 className="px-3 py-8 text-center text-[0.875rem] text-muted-foreground"
               >
-                {found === undefined && chatText !== ""
-                  ? <Spinner className="mx-auto size-5" />
-                  : `Nothing matches "${query.trim()}".`}
+                {found === undefined && chatText !== "" ? (
+                  <Spinner className="mx-auto size-5" />
+                ) : (
+                  `Nothing matches "${query.trim()}".`
+                )}
               </p>
             ) : (
               sections.map((section) => (
@@ -428,7 +433,11 @@ function Row({
         style={hit.tint ? { color: hit.tint } : undefined}
         className={cn(
           "size-4 shrink-0",
-          hit.tint ? undefined : active ? "text-foreground" : "text-muted-foreground",
+          hit.tint
+            ? undefined
+            : active
+              ? "text-foreground"
+              : "text-muted-foreground",
         )}
       />
       <span className="min-w-0 flex-1">

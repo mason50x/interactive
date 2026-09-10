@@ -314,9 +314,7 @@ export function MentionPicker({
 
       {candidates.length === 0 ? (
         loading ? (
-          <div
-            className="flex items-center justify-center gap-2 py-3"
-          >
+          <div className="flex items-center justify-center gap-2 py-3">
             <Spinner className="size-3.5 text-faint" />
           </div>
         ) : (

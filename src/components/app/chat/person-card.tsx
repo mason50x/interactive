@@ -63,7 +63,8 @@ export function PersonCard({
 }) {
   const [open, setOpen] = useState(false);
 
-  if (isBot(person.clerkId)) return <div className={cn(className, "cursor-default")}>{children}</div>;
+  if (isBot(person.clerkId))
+    return <div className={cn(className, "cursor-default")}>{children}</div>;
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>

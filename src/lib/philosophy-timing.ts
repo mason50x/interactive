@@ -14,20 +14,33 @@ export const PHILOSOPHY_CUES = [
 const SMEAR_SECONDS = 0.14;
 
 export function philosophyFramePose(seconds: number, frame: number) {
-  const time = ((seconds % PHILOSOPHY_LOOP_SECONDS) + PHILOSOPHY_LOOP_SECONDS) % PHILOSOPHY_LOOP_SECONDS;
+  const time =
+    ((seconds % PHILOSOPHY_LOOP_SECONDS) + PHILOSOPHY_LOOP_SECONDS) %
+    PHILOSOPHY_LOOP_SECONDS;
   for (let index = 0; index < PHILOSOPHY_CUES.length; index++) {
     const cue = PHILOSOPHY_CUES[index];
     if (cue.frame !== frame) continue;
-    const end = PHILOSOPHY_CUES[index + 1]?.time ?? PHILOSOPHY_LOOP_SECONDS + PHILOSOPHY_CUES[0].time;
+    const end =
+      PHILOSOPHY_CUES[index + 1]?.time ??
+      PHILOSOPHY_LOOP_SECONDS + PHILOSOPHY_CUES[0].time;
     // Carry the final graphic over the loop boundary. Only the initial visit
     // gets the empty prohibition intro; subsequent loops never go blank.
-    const frameTime = index === PHILOSOPHY_CUES.length - 1 && time < PHILOSOPHY_CUES[0].time && seconds >= PHILOSOPHY_LOOP_SECONDS
-      ? time + PHILOSOPHY_LOOP_SECONDS
-      : time;
+    const frameTime =
+      index === PHILOSOPHY_CUES.length - 1 &&
+      time < PHILOSOPHY_CUES[0].time &&
+      seconds >= PHILOSOPHY_LOOP_SECONDS
+        ? time + PHILOSOPHY_LOOP_SECONDS
+        : time;
     if (frameTime < cue.time - SMEAR_SECONDS || frameTime >= end) continue;
 
-    const entering = Math.min(1, Math.max(0, (frameTime - cue.time + SMEAR_SECONDS) / SMEAR_SECONDS));
-    const leaving = Math.min(1, Math.max(0, (frameTime - end + SMEAR_SECONDS) / SMEAR_SECONDS));
+    const entering = Math.min(
+      1,
+      Math.max(0, (frameTime - cue.time + SMEAR_SECONDS) / SMEAR_SECONDS),
+    );
+    const leaving = Math.min(
+      1,
+      Math.max(0, (frameTime - end + SMEAR_SECONDS) / SMEAR_SECONDS),
+    );
     const opacity = entering * (1 - leaving);
     const smear = 1 - opacity;
     return {

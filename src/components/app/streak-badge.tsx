@@ -44,7 +44,7 @@ export function StreakBadge() {
         // drop under it. The hairline flips with the theme because a shadow
         // alone is invisible on the dark rail, which is nearly the same value
         // as the shadow itself.
-        "mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-card py-[0.125rem] pr-2 pl-1.5 text-[0.6875rem] font-medium text-fire-ink shadow-sm shadow-black/[0.08] ring-1 ring-black/[0.06] ring-inset dark:ring-white/[0.07]",
+        "mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-card py-[0.125rem] pr-2 pl-1.5 text-[0.6875rem] font-medium text-fire-ink shadow-sm ring-1 shadow-black/[0.08] ring-black/[0.06] ring-inset dark:ring-white/[0.07]",
         !lit && "text-muted-foreground",
         glowing && "streak-flare",
       )}

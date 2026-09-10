@@ -170,7 +170,9 @@ if (options.list) {
     for (const row of rows) {
       console.log(
         `${row.id}  ${row.email_address.padEnd(32)}  expires ${
-          row.expires_at ? new Date(row.expires_at).toISOString().slice(0, 10) : "—"
+          row.expires_at
+            ? new Date(row.expires_at).toISOString().slice(0, 10)
+            : "—"
         }  -> ${row.url ?? row.public_metadata?.redirect_url ?? ""}`,
       );
     }
@@ -209,7 +211,9 @@ for (const email of options.emails) {
   };
 
   if (options.dryRun) {
-    console.log(`\n[dry run] POST /invitations\n${JSON.stringify(body, null, 2)}`);
+    console.log(
+      `\n[dry run] POST /invitations\n${JSON.stringify(body, null, 2)}`,
+    );
     continue;
   }
 

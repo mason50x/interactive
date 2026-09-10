@@ -72,7 +72,7 @@ function Stat({
   return (
     <div className="min-w-0">
       <p className="flex items-baseline gap-1">
-        <span className="text-[1.5rem] leading-none font-semibold tabular-nums text-foreground">
+        <span className="text-[1.5rem] leading-none font-semibold text-foreground tabular-nums">
           {value}
         </span>
         <span className="truncate text-[0.75rem] text-muted-foreground">

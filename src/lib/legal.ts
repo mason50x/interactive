@@ -55,8 +55,7 @@ export function formatLegalDate(iso: string): string {
  * court reads as the whole agreement. Everything here is set at one weight.
  */
 export type LegalBlock =
-  | { kind: "p"; text: string }
-  | { kind: "list"; items: readonly string[] };
+  { kind: "p"; text: string } | { kind: "list"; items: readonly string[] };
 
 export type LegalSection = {
   /** The fragment this section answers to, so a clause can be linked. */

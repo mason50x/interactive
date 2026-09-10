@@ -44,7 +44,9 @@ export function Pricing() {
                 <span className="text-display text-[2.75rem] text-foreground">
                   {plan.price}
                 </span>
-                <span className="text-[0.875rem] text-faint">{plan.cadence}</span>
+                <span className="text-[0.875rem] text-faint">
+                  {plan.cadence}
+                </span>
               </p>
 
               <ul className="mt-7 flex flex-1 flex-col gap-3 border-t border-border pt-7">
@@ -72,8 +74,8 @@ export function Pricing() {
         </div>
 
         <p className="mt-8 text-center text-[0.8125rem] text-faint">
-          Prices in US dollars. Scholar is billed monthly or annually; every plan
-          includes source citations.
+          Prices in US dollars. Scholar is billed monthly or annually; every
+          plan includes source citations.
         </p>
       </Container>
     </Section>

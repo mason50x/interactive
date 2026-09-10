@@ -47,13 +47,7 @@ import styles from "./activity-frame.module.css";
  * the browser's compositing rather than sampling cross-origin pixels in JS,
  * so the colours always come from the displayed activity, not its thumbnail.
  */
-export function ActivityFrame({
-  title,
-  src,
-}: {
-  title: string;
-  src: string;
-}) {
+export function ActivityFrame({ title, src }: { title: string; src: string }) {
   // The element that goes fullscreen. The stage rather than the iframe, so the
   // controls come with it — fullscreening the iframe alone would hand the
   // whole screen to the activity with no way back but Escape.

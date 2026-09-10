@@ -160,7 +160,7 @@ function Forecast({ weather }: { weather: Weather }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-baseline gap-1">
-            <span className="text-[2.75rem] leading-none font-semibold tabular-nums text-foreground">
+            <span className="text-[2.75rem] leading-none font-semibold text-foreground tabular-nums">
               {weather.temperature}
             </span>
             <span className="text-[0.875rem] text-muted-foreground">
@@ -181,9 +181,7 @@ function Forecast({ weather }: { weather: Weather }) {
       </div>
 
       <div>
-        <p className="text-[0.875rem] text-foreground">
-          {weather.description}
-        </p>
+        <p className="text-[0.875rem] text-foreground">{weather.description}</p>
         <p className="label-small mt-1 text-faint">
           Feels like {weather.apparent}° · {weather.low}° to {weather.high}°
         </p>

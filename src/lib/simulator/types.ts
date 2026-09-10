@@ -3,7 +3,12 @@ export type Entry = Doc<"simulatorEntries">;
 export type Slot = "auto" | "previous" | "manual1" | "manual2" | "manual3";
 export type WriteSlot = Exclude<Slot, "previous">;
 export type Mode = "mono" | "color";
-export type Program = { contentHash: string; bytes: ArrayBuffer; mode: Mode; label?: string };
+export type Program = {
+  contentHash: string;
+  bytes: ArrayBuffer;
+  mode: Mode;
+  label?: string;
+};
 export type Builtin = {
   id: string;
   contentHash: string;

@@ -185,7 +185,7 @@ export function UserMenu() {
           <span className="ml-1 flex shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
             <Avatar src={user.imageUrl} name={name} size={36} />
           </span>
-          <span className="rail-wide hidden min-w-0 flex-1 text-left wide:block">
+          <span className="hidden min-w-0 flex-1 text-left rail-wide wide:block">
             <span className="block truncate text-[0.9375rem] leading-tight">
               {user.fullName ?? name}
             </span>
@@ -194,7 +194,7 @@ export function UserMenu() {
               it will appear, and flipped once it is open because from there
               the only thing left to do is put it away. Wrapped so the swap's
               transition list and the turn's are on different elements. */}
-          <span className="rail-wide hidden shrink-0 wide:block">
+          <span className="hidden shrink-0 rail-wide wide:block">
             <ChevronUpIcon className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180" />
           </span>
         </Menu.Trigger>

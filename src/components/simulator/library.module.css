@@ -26,7 +26,9 @@
     #0891b2 80deg,
     #0891b2 90deg
   );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
   pointer-events: none;
   animation: uploadBorderTravel 4s linear infinite;
@@ -48,10 +50,19 @@
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows 300ms ease, opacity 220ms ease;
+  transition:
+    grid-template-rows 300ms ease,
+    opacity 220ms ease;
 }
-.codeReveal[data-open="true"] { grid-template-rows: 1fr; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .codeReveal { transition: none; } }
+.codeReveal[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .codeReveal {
+    transition: none;
+  }
+}
 
 .modeSwitch {
   position: relative;
@@ -72,10 +83,14 @@
   width: calc((100% - 14px) / 2);
   border-radius: 11px;
   background: var(--foreground);
-  box-shadow: 0 2px 5px rgb(0 0 0 / 15%), inset 0 1px 0 rgb(255 255 255 / 15%);
-  transition: transform 300ms cubic-bezier(.22, 1, .36, 1);
+  box-shadow:
+    0 2px 5px rgb(0 0 0 / 15%),
+    inset 0 1px 0 rgb(255 255 255 / 15%);
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.modeSwitch[data-mode="gb"] .modeIndicator { transform: translateX(calc(100% + 4px)); }
+.modeSwitch[data-mode="gb"] .modeIndicator {
+  transform: translateX(calc(100% + 4px));
+}
 .modeButton {
   position: relative;
   display: flex;
@@ -86,12 +101,24 @@
   border-radius: 11px;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: .015em;
+  letter-spacing: 0.015em;
   color: var(--muted-foreground);
   cursor: pointer;
   transition: color 200ms ease;
 }
-.modeButton[aria-pressed="true"] { color: var(--background); }
-.modeButton:hover:not([aria-pressed="true"]) { color: var(--foreground); }
-.modeButton:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .modeIndicator, .modeButton { transition: none; } }
+.modeButton[aria-pressed="true"] {
+  color: var(--background);
+}
+.modeButton:hover:not([aria-pressed="true"]) {
+  color: var(--foreground);
+}
+.modeButton:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .modeIndicator,
+  .modeButton {
+    transition: none;
+  }
+}

@@ -401,7 +401,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background font-sans text-foreground;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -632,9 +632,6 @@
     background-color: oklch(0.32 0.05 var(--monogram-hue));
     color: oklch(0.86 0.09 var(--monogram-hue));
   }
-
-
-
 
   :root[data-theme="dark"] .nav-pill {
     background-image: linear-gradient(
@@ -936,7 +933,6 @@
 :root[data-theme="dark"] .cl-logoImage {
   filter: invert(1);
 }
-
 
 @keyframes drift {
   0%,
@@ -1864,8 +1860,9 @@
 .packet-grid-row {
   display: block;
   flex: 1 0 24px;
-  background: radial-gradient(circle, currentColor 1.7px, transparent 2px) center / 24px 24px;
-  opacity: .2;
+  background: radial-gradient(circle, currentColor 1.7px, transparent 2px)
+    center / 24px 24px;
+  opacity: 0.2;
   animation: packet-grid-flow 2.8s ease-in-out infinite;
 }
 .packet-border {
@@ -1874,22 +1871,36 @@
   border-radius: 24px;
   padding: 6px;
   pointer-events: none;
-  background: conic-gradient(from var(--packet-light-angle),
-    transparent 0deg, #a4dfff33 35deg, #86eaff 65deg,
-    #b4a2ff 90deg, #ffb9e8 112deg, #ffe8b0 134deg,
-    #b6ffe433 165deg, transparent 195deg, transparent 245deg,
-    #c4b5fd55 280deg, #b5f3ffbb 308deg, transparent 345deg);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  background: conic-gradient(
+    from var(--packet-light-angle),
+    transparent 0deg,
+    #a4dfff33 35deg,
+    #86eaff 65deg,
+    #b4a2ff 90deg,
+    #ffb9e8 112deg,
+    #ffe8b0 134deg,
+    #b6ffe433 165deg,
+    transparent 195deg,
+    transparent 245deg,
+    #c4b5fd55 280deg,
+    #b5f3ffbb 308deg,
+    transparent 345deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
-  animation: packet-light-travel 3.5s linear infinite, packet-rim-flow 3s ease-in-out infinite;
-  opacity: .85;
+  animation:
+    packet-light-travel 3.5s linear infinite,
+    packet-rim-flow 3s ease-in-out infinite;
+  opacity: 0.85;
 }
 .packet-border-halo {
   inset: 8px;
   padding: 20px;
   border-radius: 28px;
   filter: blur(16px);
-  opacity: .4;
+  opacity: 0.4;
 }
 .packet-caption {
   position: relative;
@@ -1901,24 +1912,44 @@
   margin: 0;
   color: color-mix(in srgb, var(--foreground) 48%, transparent);
   font-size: 12px;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
 }
-.packet-reveal { opacity: 0; }
+.packet-reveal {
+  opacity: 0;
+}
 @keyframes packet-grid-flow {
-  0%, 100% { transform: translate3d(-14px, -7px, 0) scaleX(.98); }
-  25% { transform: translate3d(0, -14px, 0) scaleX(1.015); }
-  50% { transform: translate3d(14px, 7px, 0) scaleX(1.025); }
-  75% { transform: translate3d(0, 14px, 0) scaleX(.99); }
+  0%,
+  100% {
+    transform: translate3d(-14px, -7px, 0) scaleX(0.98);
+  }
+  25% {
+    transform: translate3d(0, -14px, 0) scaleX(1.015);
+  }
+  50% {
+    transform: translate3d(14px, 7px, 0) scaleX(1.025);
+  }
+  75% {
+    transform: translate3d(0, 14px, 0) scaleX(0.99);
+  }
 }
 @keyframes packet-rim-flow {
-  0%, 100% { border-radius: 24px 38px 26px 42px; transform: scale(1); }
-  50% { border-radius: 42px 24px 38px 26px; transform: scale(.99); }
+  0%,
+  100% {
+    border-radius: 24px 38px 26px 42px;
+    transform: scale(1);
+  }
+  50% {
+    border-radius: 42px 24px 38px 26px;
+    transform: scale(0.99);
+  }
 }
 /* The wavy rule in the release sheet, drawn from left to right as the sheet
    arrives. Starts a beat after the panel so the line is seen being drawn on
    a page that is already there. */
 @keyframes squiggle-draw {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .squiggle-draw {
@@ -1960,14 +1991,20 @@
     color-mix(in oklch, var(--primary) 30%, transparent) 352deg,
     transparent 360deg
   );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
-  filter: drop-shadow(0 0 3px color-mix(in oklch, var(--primary) 45%, transparent));
+  filter: drop-shadow(
+    0 0 3px color-mix(in oklch, var(--primary) 45%, transparent)
+  );
   animation: release-rim-travel 5s linear infinite;
 }
 
 @keyframes release-rim-travel {
-  to { --release-rim-angle: 360deg; }
+  to {
+    --release-rim-angle: 360deg;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1978,12 +2015,17 @@
 }
 
 @keyframes packet-light-travel {
-  to { --packet-light-angle: 360deg; }
+  to {
+    --packet-light-angle: 360deg;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .packet-cover *, .packet-cover { animation: none !important; transition: none !important; }
+  .packet-cover *,
+  .packet-cover {
+    animation: none !important;
+    transition: none !important;
+  }
 }
-
 
 /*
  * The public site's grounds.

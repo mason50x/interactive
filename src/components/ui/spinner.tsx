@@ -50,7 +50,12 @@ function Spinner({ className, ...props }: ComponentProps<"svg">) {
 
 function CenteredSpinner({ className }: { className?: string }) {
   return (
-    <div className={cn("flex h-full min-h-48 w-full items-center justify-center", className)}>
+    <div
+      className={cn(
+        "flex h-full min-h-48 w-full items-center justify-center",
+        className,
+      )}
+    >
       <Spinner className="size-5 text-muted-foreground" />
     </div>
   );

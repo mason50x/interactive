@@ -42,7 +42,9 @@ export function LegalDocument({
         <div className="mt-8 grid gap-12 lg:mt-12 lg:grid-cols-12 lg:gap-16">
           <aside className="lg:col-span-4 xl:col-span-3">
             <div className="lg:sticky lg:top-24">
-              <p className="text-[0.8125rem] font-medium text-faint">Contents</p>
+              <p className="text-[0.8125rem] font-medium text-faint">
+                Contents
+              </p>
               <ol className="mt-4 flex flex-col gap-2 border-l border-border">
                 {doc.sections.map((section, i) => (
                   <li key={section.id}>

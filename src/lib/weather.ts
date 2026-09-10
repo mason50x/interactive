@@ -42,14 +42,7 @@ const TIMEOUT_MS = 6_000;
 const CACHE_KEY = "50x:weather";
 
 export type WeatherKind =
-  | "clear"
-  | "partly"
-  | "cloudy"
-  | "fog"
-  | "drizzle"
-  | "rain"
-  | "snow"
-  | "storm";
+  "clear" | "partly" | "cloudy" | "fog" | "drizzle" | "rain" | "snow" | "storm";
 
 export type Weather = {
   /** Where this is the weather for, as the reverse lookup named it. */
@@ -153,9 +146,7 @@ export function currentPosition(): Promise<GeolocationCoordinates> {
  * outright `prompt`. Getting this wrong in that direction costs a button
  * press; getting it wrong the other way fires a dialog nobody asked for.
  */
-export async function geolocationPermission(): Promise<
-  PermissionState | null
-> {
+export async function geolocationPermission(): Promise<PermissionState | null> {
   if (typeof navigator === "undefined" || !navigator.permissions) return null;
   try {
     const status = await navigator.permissions.query({ name: "geolocation" });
@@ -205,8 +196,7 @@ async function reverseGeocode(
 
     // `city` is empty for a lot of the world, where the useful name is the
     // locality; the region is the last resort before giving up on a name.
-    const name =
-      data.city || data.locality || data.principalSubdivision || "";
+    const name = data.city || data.locality || data.principalSubdivision || "";
 
     return {
       city: name || "Your location",
@@ -347,4 +337,3 @@ function writeCache(lat: number, lon: number, weather: Weather): void {
     // Full, blocked, or unavailable. The card works without a cache.
   }
 }
-

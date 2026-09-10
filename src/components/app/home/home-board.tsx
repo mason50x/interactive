@@ -40,11 +40,7 @@ import { api } from "../../../../convex/_generated/api";
  *  what makes the row scroll and read as a row. */
 const ROW_SIZE = 18;
 
-export function HomeBoard({
-  activities,
-}: {
-  activities: readonly Activity[];
-}) {
+export function HomeBoard({ activities }: { activities: readonly Activity[] }) {
   const favourites = useQuery(api.views.favourites, { limit: ROW_SIZE });
   const recent = useQuery(api.views.recent, { limit: ROW_SIZE });
   const popular = useQuery(api.views.popularToday, { limit: ROW_SIZE });
@@ -101,8 +97,9 @@ export function HomeBoard({
         const activity = bySlug.get(row.slug);
         return activity ? { activity, views: row.views } : null;
       })
-      .filter((entry): entry is { activity: Activity; views: number } =>
-        entry !== null,
+      .filter(
+        (entry): entry is { activity: Activity; views: number } =>
+          entry !== null,
       );
 
     const listed = new Set(counted.map((entry) => entry.activity.slug));
@@ -125,7 +122,8 @@ export function HomeBoard({
     [recent],
   );
   const viewsToday = useMemo(
-    () => new Map(popularRow.map((entry) => [entry.activity.slug, entry.views])),
+    () =>
+      new Map(popularRow.map((entry) => [entry.activity.slug, entry.views])),
     [popularRow],
   );
 

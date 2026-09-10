@@ -1,6 +1,10 @@
 import { createTestProgram } from "./simulator-fixture.mjs";
 import { describe, expect, it } from "vitest";
-import { identify, openProgram, programLabel } from "../../src/lib/simulator/files";
+import {
+  identify,
+  openProgram,
+  programLabel,
+} from "../../src/lib/simulator/files";
 import {
   importProgress,
   makeProgress,
@@ -17,7 +21,12 @@ describe("simulation file boundary", () => {
     const a = await openProgram(new File([sample()], "first.gb"));
     const b = await openProgram(new File([sample()], "renamed.GB"));
     expect(a.contentHash).toBe(b.contentHash);
-    expect(Object.keys(a).sort()).toEqual(["bytes", "contentHash", "label", "mode"]);
+    expect(Object.keys(a).sort()).toEqual([
+      "bytes",
+      "contentHash",
+      "label",
+      "mode",
+    ]);
   });
   it("separates modified content and detects color mode", async () => {
     const a = await identify(sample());
@@ -78,8 +87,14 @@ describe("simulation file boundary", () => {
 });
 
 it("cleans ROM filenames while retaining meaningful titles", () => {
-  expect(programLabel("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb")).toBe("Pokemon — Red Version");
-  expect(programLabel("Super_Mario_Land (World) (Rev 1) [!].gb")).toBe("Super Mario Land");
-  expect(programLabel("Zelda (Link’s Awakening).gbc")).toBe("Zelda (Link’s Awakening)");
+  expect(
+    programLabel("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb"),
+  ).toBe("Pokemon — Red Version");
+  expect(programLabel("Super_Mario_Land (World) (Rev 1) [!].gb")).toBe(
+    "Super Mario Land",
+  );
+  expect(programLabel("Zelda (Link’s Awakening).gbc")).toBe(
+    "Zelda (Link’s Awakening)",
+  );
   expect(programLabel("[!].gb")).toBe("Imported simulation");
 });

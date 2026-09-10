@@ -24,7 +24,10 @@ export function SavesPanel({
 }) {
   const file = useRef<HTMLInputElement>(null);
   return (
-    <section aria-label="Save slots" className="rounded-xl border border-border bg-background p-5">
+    <section
+      aria-label="Save slots"
+      className="rounded-xl border border-border bg-background p-5"
+    >
       <div className="divide-y divide-border">
         {(["auto", "previous", "manual1", "manual2", "manual3"] as Slot[]).map(
           (slot, i) => {

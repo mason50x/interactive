@@ -1,0 +1,21 @@
+# Generated or third-party output.
+.next/
+node_modules/
+convex/_generated/
+public/simulator/core/
+.cache/
+package-lock.json
+experience/package-lock.json
+src/lib/activities.catalogue.json
+
+# Convex is formatted and deployed on its own terms.
+convex/
+
+# Hand-laid tables: one entry per line reads better than Prettier's expansion.
+config/*.json
+
+# The experience worker is its own package with its own conventions.
+experience/
+
+# Prose is written by hand and wrapped by hand.
+*.md

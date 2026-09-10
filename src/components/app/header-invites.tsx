@@ -1,18 +1,9 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
-import {
-  ExclamationTriangleIcon,
-  TicketIcon,
-} from "@heroicons/react/24/solid";
+import { ExclamationTriangleIcon, TicketIcon } from "@heroicons/react/24/solid";
 import { useConvexAuth, useQuery } from "convex/react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { revokeInvite, sendInvite } from "@/lib/invite-actions";
 import { cn } from "@/lib/utils";
@@ -208,7 +199,7 @@ export function HeaderInvites() {
                   )}
 
                   {invites.invites.length > 0 && (
-                    <ul className="mt-2.5 flex max-h-36 flex-col overflow-y-auto divide-y divide-border">
+                    <ul className="mt-2.5 flex max-h-36 flex-col divide-y divide-border overflow-y-auto">
                       {invites.invites.map((invite) => (
                         <li
                           key={invite.id}

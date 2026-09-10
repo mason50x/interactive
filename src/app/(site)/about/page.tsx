@@ -16,7 +16,7 @@ export default function AboutPage() {
       <section className="relative overflow-hidden pt-14 sm:pt-20 lg:pt-24">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-dots [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.6),transparent)]"
+          className="bg-dots pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.6),transparent)]"
         />
         <Container>
           <div className="flex max-w-3xl flex-col items-start gap-5">
@@ -35,7 +35,9 @@ export default function AboutPage() {
                 <dt className="text-display text-[2.25rem] text-foreground sm:text-[2.75rem]">
                   {fact.value}
                 </dt>
-                <dd className="text-[0.9375rem] text-muted-foreground">{fact.label}</dd>
+                <dd className="text-[0.9375rem] text-muted-foreground">
+                  {fact.label}
+                </dd>
               </div>
             ))}
           </dl>

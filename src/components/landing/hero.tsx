@@ -15,11 +15,11 @@ export function Hero() {
           brand colour behind the product. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[42rem] bg-dots [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.6),transparent)]"
+        className="bg-dots pointer-events-none absolute inset-x-0 top-0 -z-10 h-[42rem] [mask-image:linear-gradient(to_bottom,rgba(0,0,0,0.6),transparent)]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[60rem] bg-glow"
+        className="bg-glow pointer-events-none absolute inset-x-0 top-0 -z-10 h-[60rem]"
       />
 
       <Container>
@@ -40,7 +40,9 @@ export function Hero() {
             className="text-display mt-7 text-[2.75rem] text-balance text-foreground min-[420px]:text-[3.25rem] sm:text-[4rem] lg:text-[4.75rem]"
           >
             {hero.headline}{" "}
-            <span className="serif-accent text-primary">{hero.headlineAccent}</span>
+            <span className="serif-accent text-primary">
+              {hero.headlineAccent}
+            </span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-[1.0625rem] leading-relaxed text-pretty text-muted-foreground sm:text-[1.1875rem]">
@@ -48,7 +50,11 @@ export function Hero() {
           </p>
 
           <div className="mt-9 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
-            <ButtonLink href="/auth/sign-up" size="xl" className="w-full sm:w-auto">
+            <ButtonLink
+              href="/auth/sign-up"
+              size="xl"
+              className="w-full sm:w-auto"
+            >
               {hero.primaryCta}
             </ButtonLink>
             <ButtonLink

@@ -43,7 +43,7 @@ export function PacketCover() {
       // reachable during a wait, and five seconds is long enough for someone
       // to want out of one.
       className={cn(
-        "absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 packet-cover",
+        "packet-cover absolute inset-0 z-10 flex flex-col items-center justify-center gap-3",
         // `pointer-events-none` only while it is going: until then the cover
         // is what swallows a click aimed at an activity that is not there yet.
         phase === "lifting" && "packet-reveal pointer-events-none",
@@ -65,7 +65,8 @@ export function PacketCover() {
         role="status"
         className="packet-caption text-shimmer text-[1.75rem] font-semibold"
       >
-        {caption}<span className="sr-only">. Activity loading.</span>
+        {caption}
+        <span className="sr-only">. Activity loading.</span>
       </p>
       <p className="packet-detail">Waiting for R2 response.</p>
     </div>
@@ -78,7 +79,15 @@ type Phase = "held" | "lifting" | "gone";
  *  the server snapshot giving way to the client one at hydration. */
 const subscribeNever = () => () => {};
 
-const CAPTIONS = ["Rummaging", "Brewing", "Conjuring", "Shuffling", "Tinkering", "Watering", "Unpacking"];
+const CAPTIONS = [
+  "Rummaging",
+  "Brewing",
+  "Conjuring",
+  "Shuffling",
+  "Tinkering",
+  "Watering",
+  "Unpacking",
+];
 
 // The hosted games have no shared ready event; retain the existing timed hold.
 const HOLD = 4600;

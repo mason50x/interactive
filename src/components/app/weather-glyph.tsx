@@ -73,13 +73,7 @@ const FULL_SUN = rays(12, 12, 8, 6.9, 9.6, -Math.PI / 2);
 /** Only the bearings that clear the cloud in front of it. */
 const PEEKING_SUN = rays(15.8, 7.4, 8, 4.8, 6.6, -Math.PI / 2).slice(0, 4);
 
-function Strokes({
-  d,
-  opacity = 0.75,
-}: {
-  d: string;
-  opacity?: number;
-}) {
+function Strokes({ d, opacity = 0.75 }: { d: string; opacity?: number }) {
   return (
     <path
       d={d}
@@ -101,12 +95,7 @@ function Sun() {
     <g fill={WARM} stroke={WARM}>
       <circle cx={12} cy={12} r={4.7} />
       {FULL_SUN.map((ray, index) => (
-        <line
-          key={index}
-          {...ray}
-          strokeWidth={2}
-          strokeLinecap="round"
-        />
+        <line key={index} {...ray} strokeWidth={2} strokeLinecap="round" />
       ))}
     </g>
   );
@@ -155,9 +144,7 @@ function Marks({ kind }: { kind: WeatherKind }) {
     case "fog":
       // Ragged on purpose — three lines of the same length read as a barcode,
       // and fog is the one condition with no edge to it.
-      return (
-        <Strokes d="M5.6 18.4h11.2M7.4 21.4h9.4" opacity={0.55} />
-      );
+      return <Strokes d="M5.6 18.4h11.2M7.4 21.4h9.4" opacity={0.55} />;
     default:
       return null;
   }

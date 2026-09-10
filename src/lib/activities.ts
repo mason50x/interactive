@@ -59,14 +59,18 @@ export const ACTIVITIES: readonly Activity[] = catalogue as Activity[];
 /** How many tiles the dashboard shows before you have to search. */
 export const POPULAR_COUNT = 24;
 
-const BY_SLUG = new Map(ACTIVITIES.map((activity) => [activity.slug, activity]));
+const BY_SLUG = new Map(
+  ACTIVITIES.map((activity) => [activity.slug, activity]),
+);
 
 export function findActivity(slug: string): Activity | undefined {
   return BY_SLUG.get(slug);
 }
 
 /** The head of the catalogue — what the grid shows with an empty search box. */
-export function popularActivities(count: number = POPULAR_COUNT): readonly Activity[] {
+export function popularActivities(
+  count: number = POPULAR_COUNT,
+): readonly Activity[] {
   return ACTIVITIES.slice(0, count);
 }
 

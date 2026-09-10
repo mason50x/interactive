@@ -65,9 +65,12 @@ export function StreakProvider({ children }: { children: ReactNode }) {
   const [display, setDisplay] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   const celebrate = useCallback((to: number) => {
     if (timer.current) clearTimeout(timer.current);

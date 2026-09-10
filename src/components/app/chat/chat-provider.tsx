@@ -70,12 +70,18 @@ export function useChat() {
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
 
-  const profile = useQuery(api.chat.profiles.mine, isAuthenticated ? {} : "skip");
+  const profile = useQuery(
+    api.chat.profiles.mine,
+    isAuthenticated ? {} : "skip",
+  );
   const conversations = useQuery(
     api.chat.conversations.list,
     isAuthenticated ? {} : "skip",
   );
-  const pending = useQuery(api.chat.friends.pending, isAuthenticated ? {} : "skip");
+  const pending = useQuery(
+    api.chat.friends.pending,
+    isAuthenticated ? {} : "skip",
+  );
   const invitations = useQuery(
     api.chat.groups.invitations,
     isAuthenticated ? {} : "skip",

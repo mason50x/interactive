@@ -6,7 +6,8 @@ function connect(): Promise<IDBDatabase> {
     const request = indexedDB.open(database, 2);
     request.onupgradeneeded = () => {
       for (const name of ["progress", "programs"])
-        if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name);
+        if (!request.result.objectStoreNames.contains(name))
+          request.result.createObjectStore(name);
     };
     request.onsuccess = () => {
       request.result.onversionchange = () => request.result.close();
@@ -95,21 +96,48 @@ export async function clearLocal(owner: string) {
 
 // Program bytes live only in this browser store, never in progress envelopes.
 export async function writeProgram(owner: string, program: Program) {
-  await transaction("readwrite", store => store.put({ bytes: program.bytes, label: program.label }, accountKey(owner) + program.contentHash), "programs");
+  await transaction(
+    "readwrite",
+    (store) =>
+      store.put(
+        { bytes: program.bytes, label: program.label },
+        accountKey(owner) + program.contentHash,
+      ),
+    "programs",
+  );
 }
-export async function readProgram(owner: string, hash: string): Promise<Program | null> {
-  const cached = await transaction<ArrayBuffer | { bytes: ArrayBuffer; label?: string } | undefined>("readonly", store => store.get(accountKey(owner) + hash), "programs");
+export async function readProgram(
+  owner: string,
+  hash: string,
+): Promise<Program | null> {
+  const cached = await transaction<
+    ArrayBuffer | { bytes: ArrayBuffer; label?: string } | undefined
+  >("readonly", (store) => store.get(accountKey(owner) + hash), "programs");
   if (!cached) return null;
-  const program = await identify(cached instanceof ArrayBuffer ? cached : cached.bytes);
-  if (program.contentHash !== hash) throw new Error("The stored game file is damaged. Select the original file again.");
-  return cached instanceof ArrayBuffer ? program : { ...program, ...(cached.label ? { label: cached.label } : {}) };
+  const program = await identify(
+    cached instanceof ArrayBuffer ? cached : cached.bytes,
+  );
+  if (program.contentHash !== hash)
+    throw new Error(
+      "The stored game file is damaged. Select the original file again.",
+    );
+  return cached instanceof ArrayBuffer
+    ? program
+    : { ...program, ...(cached.label ? { label: cached.label } : {}) };
 }
 async function deleteStored(key: string | IDBKeyRange) {
   const db = await connect();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction(["progress", "programs"], "readwrite");
-    for (const name of ["progress", "programs"]) tx.objectStore(name).delete(key);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = tx.onabort = () => { db.close(); reject(tx.error ?? new Error("Could not clear local storage.")); };
+    for (const name of ["progress", "programs"])
+      tx.objectStore(name).delete(key);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = tx.onabort = () => {
+      db.close();
+      reject(tx.error ?? new Error("Could not clear local storage."));
+    };
   });
 }

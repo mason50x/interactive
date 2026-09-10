@@ -60,7 +60,9 @@ function CohortHeatmap() {
       <div className="mt-6 flex items-center gap-3 border-t border-panel-border pt-5">
         <span className="size-2 shrink-0 rounded-full bg-primary" />
         <p className="text-[0.875rem] text-panel-muted">
-          <span className="text-panel-foreground">Electron transport chain</span>{" "}
+          <span className="text-panel-foreground">
+            Electron transport chain
+          </span>{" "}
           is unconnected for 19 of 28 students.
         </p>
       </div>
@@ -93,7 +95,12 @@ export function Educators() {
                 </li>
               ))}
             </ul>
-            <ButtonLink href="/contact" variant="inverted" size="md" className="mt-2">
+            <ButtonLink
+              href="/contact"
+              variant="inverted"
+              size="md"
+              className="mt-2"
+            >
               {educators.cta}
             </ButtonLink>
           </div>

@@ -6,6 +6,8 @@
   padding: 6px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   mask-composite: exclude;
 }

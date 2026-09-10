@@ -156,9 +156,7 @@ export function personName(person: {
  * Why a display name did not take. The filter refusals stay vague on purpose,
  * the same as the composer's — see `refusalMessage` above.
  */
-export function displayNameError(
-  reason: Refusal | "no-profile",
-): string {
+export function displayNameError(reason: Refusal | "no-profile"): string {
   switch (reason) {
     case "no-profile":
       return "Pick a handle first.";
@@ -305,9 +303,7 @@ export function changesLeftLabel(spent: number): string {
  * The filter refusals stay vague on purpose, the same as the composer's — see
  * `refusalMessage` above.
  */
-export function groupNameError(
-  reason: Refusal | "no-profile",
-): string {
+export function groupNameError(reason: Refusal | "no-profile"): string {
   switch (reason) {
     case "no-profile":
       return "Pick a handle first.";

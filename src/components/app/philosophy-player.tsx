@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SpeakerWaveIcon, SpeakerXMarkIcon } from "@heroicons/react/24/outline";
 import { useStillness } from "@/lib/motion";
-import { PHILOSOPHY_LOOP_SECONDS, philosophyFramePose } from "@/lib/philosophy-timing";
+import {
+  PHILOSOPHY_LOOP_SECONDS,
+  philosophyFramePose,
+} from "@/lib/philosophy-timing";
 import styles from "./philosophy-animation.module.css";
 
 type AudioEngine = {
@@ -32,16 +35,21 @@ export function PhilosophyPlayer({ children }: { children: ReactNode }) {
     let disposed = false;
     let hiddenPause = false;
 
-    const update = () => setAudible(context.state === "running" && audio.ready && !muted.current);
+    const update = () =>
+      setAudible(context.state === "running" && audio.ready && !muted.current);
     context.addEventListener("statechange", update);
 
     async function load() {
       try {
-        const buffers = await Promise.all(["background", "accents"].map(async (name) => {
-          const response = await fetch(`/audio/philosophy/${name}-loop.wav`, { signal: abort.signal });
-          if (!response.ok) throw new Error(`Unable to load ${name}`);
-          return context.decodeAudioData(await response.arrayBuffer());
-        }));
+        const buffers = await Promise.all(
+          ["background", "accents"].map(async (name) => {
+            const response = await fetch(`/audio/philosophy/${name}-loop.wav`, {
+              signal: abort.signal,
+            });
+            if (!response.ok) throw new Error(`Unable to load ${name}`);
+            return context.decodeAudioData(await response.arrayBuffer());
+          }),
+        );
         if (disposed) return;
         audio.startedAt = context.currentTime + 0.05;
         buffers.forEach((buffer, index) => {
@@ -86,7 +94,10 @@ export function PhilosophyPlayer({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const frames = Array.from(root.current?.querySelectorAll<HTMLElement>("[data-philosophy-frame]") ?? []);
+    const frames = Array.from(
+      root.current?.querySelectorAll<HTMLElement>("[data-philosophy-frame]") ??
+        [],
+    );
     if (still) {
       frames.forEach((frame) => frame.removeAttribute("style"));
       return;
@@ -102,9 +113,10 @@ export function PhilosophyPlayer({ children }: { children: ReactNode }) {
       }
       previous = now;
       const audio = engine.current;
-      const seconds = audio?.ready && audio.context.state === "running"
-        ? Math.max(0, audio.context.currentTime - audio.startedAt)
-        : (performance.now() - silentStart) / 1000;
+      const seconds =
+        audio?.ready && audio.context.state === "running"
+          ? Math.max(0, audio.context.currentTime - audio.startedAt)
+          : (performance.now() - silentStart) / 1000;
       frames.forEach((frame, index) => {
         const pose = philosophyFramePose(seconds, index);
         const key = `${pose.opacity.toFixed(3)},${pose.x.toFixed(2)}`;
@@ -139,15 +151,42 @@ export function PhilosophyPlayer({ children }: { children: ReactNode }) {
     }
   }
 
-  const label = failed ? "Audio unavailable" : audible ? "Mute sound" : "Play with sound";
+  const label = failed
+    ? "Audio unavailable"
+    : audible
+      ? "Mute sound"
+      : "Play with sound";
   return (
     <section ref={root} className={styles.page} aria-label="Our Philosophy">
       {children}
-      <button type="button" className={styles.sound} onClick={toggleSound} aria-label={label} title={label} aria-pressed={audible} data-audible={audible} disabled={failed}>
-        {audible ? <SpeakerWaveIcon aria-hidden="true" /> : <SpeakerXMarkIcon aria-hidden="true" />}
-        <span>{failed ? "Audio unavailable" : audible ? "Sound on" : "Play with sound"}</span>
+      <button
+        type="button"
+        className={styles.sound}
+        onClick={toggleSound}
+        aria-label={label}
+        title={label}
+        aria-pressed={audible}
+        data-audible={audible}
+        disabled={failed}
+      >
+        {audible ? (
+          <SpeakerWaveIcon aria-hidden="true" />
+        ) : (
+          <SpeakerXMarkIcon aria-hidden="true" />
+        )}
+        <span>
+          {failed
+            ? "Audio unavailable"
+            : audible
+              ? "Sound on"
+              : "Play with sound"}
+        </span>
       </button>
-      {failed ? <span className="sr-only" role="status">Audio could not load. The animation is still available.</span> : null}
+      {failed ? (
+        <span className="sr-only" role="status">
+          Audio could not load. The animation is still available.
+        </span>
+      ) : null}
     </section>
   );
 }

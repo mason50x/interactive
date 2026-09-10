@@ -156,9 +156,7 @@ function run(command, args, options = {}) {
     const child = spawn(command, args, { stdio: "inherit", ...options });
     child.on("error", reject);
     child.on("close", (code) =>
-      code === 0
-        ? resolve()
-        : reject(new Error(`${command} exited ${code}`)),
+      code === 0 ? resolve() : reject(new Error(`${command} exited ${code}`)),
     );
   });
 }
@@ -215,7 +213,8 @@ function bytes(value) {
  * grep over the result — `assertPatched` fails the run if any survives, so a
  * template change upstream stops the migration instead of quietly leaking.
  */
-const GTAG_SHIM = "<script>window.dataLayer=[];window.gtag=function(){};</script>";
+const GTAG_SHIM =
+  "<script>window.dataLayer=[];window.gtag=function(){};</script>";
 
 /**
  * Puts the shim as early in the document as the markup allows.
@@ -273,8 +272,10 @@ export function patchGameHtml(html) {
   // These Phaser bundles name "content" as their parent and attach input /
   // SDK resume listeners to it. Upstream omitted the container, so the canvas
   // falls back to body but listener setup throws. Create it before startup.
-  if (/<script\b[^>]*\bsrc=["']motox3m\.min\.js["']/i.test(patched) &&
-      !/\bid\s*=\s*["']content["']/i.test(patched)) {
+  if (
+    /<script\b[^>]*\bsrc=["']motox3m\.min\.js["']/i.test(patched) &&
+    !/\bid\s*=\s*["']content["']/i.test(patched)
+  ) {
     patched = patched.replace(/<body\b[^>]*>/i, '$&<div id="content"></div>');
   }
 
@@ -397,14 +398,24 @@ async function main() {
       // 7.7 GB.
       console.log("→ fetching upstream metadata");
       await run("git", [
-        "clone", "--depth", "1", "--filter=blob:none", "--no-checkout",
-        "--branch", UPSTREAM_REF, UPSTREAM, staging,
+        "clone",
+        "--depth",
+        "1",
+        "--filter=blob:none",
+        "--no-checkout",
+        "--branch",
+        UPSTREAM_REF,
+        UPSTREAM,
+        staging,
       ]);
 
       console.log("\n→ selecting catalogue directories");
       await run("git", ["-C", staging, "sparse-checkout", "init", "--cone"]);
       await run("git", [
-        "-C", staging, "sparse-checkout", "set",
+        "-C",
+        staging,
+        "sparse-checkout",
+        "set",
         THUMBNAILS_SOURCE,
         RUFFLE_SOURCE,
         ...games.map((game) => `${UPSTREAM_PREFIX}/${game.slug}`),
@@ -463,7 +474,9 @@ async function main() {
       if (!game.path) throw new Error(`${game.slug} has no bucket path.`);
       const other = paths.get(game.path);
       if (other) {
-        throw new Error(`${game.slug} and ${other} both map to bucket path ${game.path}.`);
+        throw new Error(
+          `${game.slug} and ${other} both map to bucket path ${game.path}.`,
+        );
       }
       paths.set(game.path, game.slug);
     }
@@ -498,13 +511,16 @@ async function main() {
     };
 
     const flags = [
-      "--transfers", "32",
-      "--checkers", "32",
+      "--transfers",
+      "32",
+      "--checkers",
+      "32",
       // R2 bills per class-A operation; the default per-file HEAD before each
       // copy doubles that for no benefit on a first upload.
       "--size-only",
       "--progress",
-      "--stats", "10s",
+      "--stats",
+      "10s",
       ...(DRY_RUN ? ["--dry-run"] : []),
     ];
 
@@ -587,7 +603,9 @@ async function main() {
         );
         copied += 1;
       }
-      console.log(`  ${copied} upstream strips refreshed; our .webp art is left as committed`);
+      console.log(
+        `  ${copied} upstream strips refreshed; our .webp art is left as committed`,
+      );
     }
 
     console.log(
@@ -601,7 +619,9 @@ async function main() {
   // expensive half of this script, and keeping it is what makes a retry after
   // a widened patch rule cost seconds instead of another five gigabytes.
   console.log(`\nCheckout kept at ${staging}`);
-  console.log("  reused automatically next run; --fresh re-clones; delete it to reclaim ~5 GB.");
+  console.log(
+    "  reused automatically next run; --fresh re-clones; delete it to reclaim ~5 GB.",
+  );
 
   if (!DRY_RUN) {
     // Learned the hard way. R2 returns `cache-control: max-age=14400` on a

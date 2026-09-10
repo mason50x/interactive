@@ -278,8 +278,10 @@ export function RailConstellation({
         const ay = point.y - cy;
         const distance = Math.hypot(ax, ay) || 1;
         const speed = reach * random(0.6, 1.4);
-        point.sx = (ax / distance + random(-SCATTER_NOISE, SCATTER_NOISE)) * speed;
-        point.sy = (ay / distance + random(-SCATTER_NOISE, SCATTER_NOISE)) * speed;
+        point.sx =
+          (ax / distance + random(-SCATTER_NOISE, SCATTER_NOISE)) * speed;
+        point.sy =
+          (ay / distance + random(-SCATTER_NOISE, SCATTER_NOISE)) * speed;
       }
     };
     // The two halves of "is anyone actually looking at this", and their
@@ -338,7 +340,14 @@ export function RailConstellation({
       if (vignette) {
         const cx = width / 2;
         const cy = height / 2;
-        const gradient = context.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(cx, cy));
+        const gradient = context.createRadialGradient(
+          cx,
+          cy,
+          0,
+          cx,
+          cy,
+          Math.hypot(cx, cy),
+        );
         gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
         gradient.addColorStop(0.45, "rgba(0, 0, 0, 0)");
         gradient.addColorStop(1, "rgba(0, 0, 0, 1)");
@@ -397,7 +406,10 @@ export function RailConstellation({
           aim();
         }
         if (flung < 1) {
-          const t = Math.min(1, (performance.now() - scatterStart) / SCATTER_MS);
+          const t = Math.min(
+            1,
+            (performance.now() - scatterStart) / SCATTER_MS,
+          );
           flung = 1 - (1 - t) ** 2;
           gone = t;
           moving = true;

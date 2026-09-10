@@ -125,7 +125,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       suppressHydrationWarning
       className={cn(
-        "h-full scroll-smooth antialiased font-sans",
+        "h-full scroll-smooth font-sans antialiased",
         inter.variable,
         displaySerif.variable,
       )}

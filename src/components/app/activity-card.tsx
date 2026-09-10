@@ -58,7 +58,6 @@ export function ActivityCard({
   const art = artFailed ? null : thumbnailSrc(activity);
   const meta = GENRES[activity.genre];
 
-
   const hue = { "--hue": meta.hue } as React.CSSProperties;
 
   const shell = cn(

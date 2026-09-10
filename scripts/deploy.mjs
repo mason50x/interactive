@@ -38,7 +38,9 @@ const subject = git("log", "-1", "--format=%s");
 
 if (git("status", "--porcelain")) {
   console.log(
-    dim("Working tree is dirty. This deploys HEAD, so uncommitted changes stay behind."),
+    dim(
+      "Working tree is dirty. This deploys HEAD, so uncommitted changes stay behind.",
+    ),
   );
 }
 

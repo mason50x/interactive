@@ -38,7 +38,12 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { isChatAdmin } from "../../../../config/chat-admin";
-import { Tooltip as AdminTooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip as AdminTooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { CenteredSpinner, Spinner } from "@/components/ui/spinner";
 import { GroupPanel } from "@/components/app/chat/group-panel";
@@ -153,10 +158,7 @@ export function Thread({
   // conversation, so opening another one always starts live rather than on the
   // archive page the previous room was left on.
   return (
-    <ConversationThread
-      key={conversationId}
-      conversationId={conversationId}
-    />
+    <ConversationThread key={conversationId} conversationId={conversationId} />
   );
 }
 
@@ -296,11 +298,7 @@ function ConversationThread({
   /** Whether a drag is something this thread would take. */
   function droppable(event: DragEvent) {
     const archived = detail?.kind === "global" && daysAgo > 0;
-    return (
-      pictures &&
-      !archived &&
-      event.dataTransfer.types.includes("Files")
-    );
+    return pictures && !archived && event.dataTransfer.types.includes("Files");
   }
 
   function onDragEnter(event: DragEvent) {
@@ -353,7 +351,6 @@ function ConversationThread({
   useEffect(() => {
     if (emptyBotDm) void welcomeBot({ conversationId });
   }, [conversationId, emptyBotDm, welcomeBot]);
-
 
   useEffect(() => {
     if (!unread || daysAgo > 0) return;
@@ -605,11 +602,7 @@ function ConversationThread({
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
       >
         {global ? (
-          <DayPager
-            now={now}
-            daysAgo={daysAgo}
-            onChange={setDaysAgo}
-          />
+          <DayPager now={now} daysAgo={daysAgo} onChange={setDaysAgo} />
         ) : null}
 
         {status === "LoadingFirstPage" ? (
@@ -626,7 +619,10 @@ function ConversationThread({
           </div>
         ) : null}
 
-        {status === "Exhausted" && results.length === 0 && !isBotDm && typists.length === 0 ? (
+        {status === "Exhausted" &&
+        results.length === 0 &&
+        !isBotDm &&
+        typists.length === 0 ? (
           <Quiet archived={!live} />
         ) : null}
 
@@ -774,10 +770,7 @@ function DayPager({
   }
 
   return (
-    <nav
-      aria-label="Everyone by day"
-      className="flex justify-center pb-2"
-    >
+    <nav aria-label="Everyone by day" className="flex justify-center pb-2">
       <div className="grid grid-cols-[2rem_minmax(9rem,auto)_2rem] items-center">
         {daysAgo < GLOBAL_DAY_PAGES - 1 ? (
           <Button
@@ -865,7 +858,7 @@ function Outside({ conversationId }: { conversationId: Id<"conversations"> }) {
           className="mx-auto size-12 text-[1.125rem]"
         />
 
-        <h1 className="mt-4 text-display text-[1.5rem]">{preview.title}</h1>
+        <h1 className="text-display mt-4 text-[1.5rem]">{preview.title}</h1>
         <p className="mt-1 text-[0.875rem] text-muted-foreground">
           {preview.members} {preview.members === 1 ? "person" : "people"} in
           here
@@ -1183,7 +1176,7 @@ function MessageRow({
     <div
       id={`message-${message._id}`}
       data-message-id={message._id}
-      onContextMenu={event => {
+      onContextMenu={(event) => {
         if (!canAct || !choosable || (gone && !isAdmin)) return;
         event.preventDefault();
         setChoosing(true);
@@ -1225,7 +1218,7 @@ function MessageRow({
 
       <div
         className={cn(
-          "flex min-w-0 max-w-[min(32rem,78%)] flex-col",
+          "flex max-w-[min(32rem,78%)] min-w-0 flex-col",
           mine && "items-end",
         )}
       >
@@ -1347,7 +1340,12 @@ function MessageRow({
                   aria-label="Admin with elevated privileges"
                   className="-ml-1 inline-flex shrink-0 items-center rounded-sm text-yellow-500 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="size-3.5" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="size-3.5"
+                    aria-hidden="true"
+                  >
                     <path d="M3.5 14 2 5.5 6.5 9 10 3l3.5 6L18 5.5 16.5 14h-13Zm0 1.5h13V17h-13v-1.5Z" />
                   </svg>
                 </TooltipTrigger>
@@ -1369,13 +1367,17 @@ function MessageRow({
               "text-[0.6875rem] text-faint transition-opacity duration-150",
               menuOpen
                 ? "opacity-100"
-                : "opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100 pointer-coarse:opacity-100",
+                : "opacity-0 group-focus-within/message:opacity-100 group-hover/message:opacity-100 pointer-coarse:opacity-100",
             )}
           >
             {time}
           </span>
 
-          {adminError ? <span role="alert" className="text-xs text-destructive">{adminError}</span> : null}
+          {adminError ? (
+            <span role="alert" className="text-xs text-destructive">
+              {adminError}
+            </span>
+          ) : null}
           {(gone && !isAdmin) || !canAct ? null : (
             <div
               className={cn(
@@ -1458,7 +1460,9 @@ function MessageRow({
                               try {
                                 await adminRemove({ messageId: message._id });
                               } catch {
-                                setAdminError("Could not delete this message. Please try again.");
+                                setAdminError(
+                                  "Could not delete this message. Please try again.",
+                                );
                               } finally {
                                 setAdminDeleting(false);
                               }
@@ -1580,7 +1584,7 @@ function ReplyPreview({
       type="button"
       onClick={() => onJumpToMessage(reply.messageId)}
       className={cn(
-        "mb-1 w-full rounded-xl border border-border bg-surface-muted/70 px-3 py-2 text-left outline-none transition-colors hover:bg-foreground/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60",
+        "mb-1 w-full rounded-xl border border-border bg-surface-muted/70 px-3 py-2 text-left transition-colors outline-none hover:bg-foreground/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60",
         mine && "text-right",
       )}
       aria-label={`Go to message from ${name}`}
@@ -1629,7 +1633,7 @@ function ReactionPill({
               if (canAct) onReact();
             }}
             className={cn(
-              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.75rem] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60",
+              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.75rem] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
               reaction.mine
                 ? "border-primary/50 bg-primary/10"
                 : "border-border hover:bg-foreground/[0.05]",
@@ -2179,8 +2183,7 @@ function Composer({
 
   const ready = attached.filter((entry) => entry.state === "ready");
   const waiting = ready.length !== attached.length;
-  const canSend =
-    !waiting && (shown.trim() !== "" || ready.length > 0);
+  const canSend = !waiting && (shown.trim() !== "" || ready.length > 0);
 
   async function submit() {
     if (!canSend) return;
@@ -2529,16 +2532,16 @@ function Composer({
               }
               placeholder={
                 live
-                    ? "Listening…"
-                    : attached.length > 0
-                      ? "Add a caption, or just send"
-                      : "Say something"
+                  ? "Listening…"
+                  : attached.length > 0
+                    ? "Add a caption, or just send"
+                    : "Say something"
               }
               // Transparent ink and a visible caret: the words are drawn by
               // the layer behind. No scrollbar, so the field and that layer
               // wrap at the same width — the box is eight lines at most and
               // still scrolls under the wheel and the arrows.
-              className="relative block w-full resize-none overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed text-transparent caret-foreground outline-none transition-[height] duration-150 ease-out [scrollbar-width:none] placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none dark:placeholder:text-muted-foreground [&::-webkit-scrollbar]:hidden"
+              className="relative block w-full resize-none [scrollbar-width:none] overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed text-transparent caret-foreground transition-[height] duration-150 ease-out outline-none placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none dark:placeholder:text-muted-foreground [&::-webkit-scrollbar]:hidden"
             />
           </div>
           {/* Absent where the browser has no recogniser (Firefox) and on the
@@ -2727,7 +2730,7 @@ function Thumb({
         disabled={onRemove === undefined}
         tabIndex={onRemove === undefined ? -1 : undefined}
         aria-label="Remove picture"
-        className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/90 text-foreground shadow-[0_1px_3px_rgba(15,15,15,0.2)] outline-none transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-ring/60"
+        className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/90 text-foreground shadow-[0_1px_3px_rgba(15,15,15,0.2)] transition-colors outline-none hover:bg-background focus-visible:ring-2 focus-visible:ring-ring/60"
       >
         <XMarkIcon strokeWidth={2.5} className="size-3" />
       </button>
@@ -2864,7 +2867,7 @@ function Lightbox({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full bg-white/10 text-white outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
+        className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors outline-none hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
       >
         <XMarkIcon strokeWidth={2} className="size-5" />
       </button>

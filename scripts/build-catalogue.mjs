@@ -46,9 +46,26 @@ const THUMBNAILS = join(ROOT, "public", "thumbnails");
  * without its ROM is a tile that loads to a black screen.
  */
 const EXCLUDED_EXTENSIONS = [
-  ".nds", ".gba", ".gbc", ".gb", ".z64", ".n64", ".v64", ".smc", ".sfc",
-  ".nes", ".iso", ".cso", ".pce", ".ws", ".wsc", ".rom", ".sms", ".gg",
-  ".32x", ".gen",
+  ".nds",
+  ".gba",
+  ".gbc",
+  ".gb",
+  ".z64",
+  ".n64",
+  ".v64",
+  ".smc",
+  ".sfc",
+  ".nes",
+  ".iso",
+  ".cso",
+  ".pce",
+  ".ws",
+  ".wsc",
+  ".rom",
+  ".sms",
+  ".gg",
+  ".32x",
+  ".gen",
 ];
 
 /**
@@ -86,7 +103,19 @@ const EMULATOR_MARKERS = ["EJS_core", "EJS_gameUrl", "emulatorjs"];
  * wants its leading capital — so only a letter counts.
  */
 const MINOR_WORDS = new Set([
-  "a", "an", "and", "at", "for", "in", "of", "on", "or", "the", "to", "vs", "with",
+  "a",
+  "an",
+  "and",
+  "at",
+  "for",
+  "in",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "vs",
+  "with",
 ]);
 
 function titleCase(value) {
@@ -113,36 +142,36 @@ function titleCase(value) {
  * each entry is a call made on the game itself. Err on the side of dropping.
  */
 const EXCLUDED_SLUGS = new Set([
-  "superhot",              // Super Hot
-  "rooftop",               // Rooftop Snipers
-  "rooftop2",              // Rooftop Snipers 2
-  "gunmayhem",             // Gun Mayhem
-  "gunmayhem2",            // Gun Mayhem 2
-  "gunmayhemredux",        // Gun Mayhem Redux
-  "getawayshootout",       // Getaway Shootout
-  "1v1lol",                // 1v1.LOL
-  "10minutestilldawn",     // 10 Minutes Till Dawn
-  "timeshooter1",          // Time Shooter
-  "timeshooter2",          // Time Shooter 2
-  "timeshooter3",          // Time Shooter 3
-  "doom",                  // Doom
-  "funnyshooter2",         // Funny Shooter 2
-  "gunfest",               // Gun Fest
-  "recoil",                // Recoil
-  "zombocalypse",          // Zombocalypse
-  "zombotron",             // Zombotron
-  "zombotron2",            // Zombotron 2
-  "amazingropepolice",     // Amazing Rope Police
-  "grandtheftgrotto",      // Grand Theft Grotto
-  "defendthetank",         // Defend the Tank
-  "raftwars",              // Raft Wars
-  "raftwars2",             // Raft Wars 2
-  "chooseyourweapon",      // Choose Your Weapon
-  "chooseyourweapon2",     // Choose Your Weapon 2
-  "chooseyourweapon3",     // Choose Your Weapon 3
-  "nitromemustdie",        // Nitrome Must Die
-  "skibiditoiletattack",   // Skibidi Toilet Attack
-  "thebindingofisaac",     // The Binding of Isaac — twin-stick shooter, tears for bullets
+  "superhot", // Super Hot
+  "rooftop", // Rooftop Snipers
+  "rooftop2", // Rooftop Snipers 2
+  "gunmayhem", // Gun Mayhem
+  "gunmayhem2", // Gun Mayhem 2
+  "gunmayhemredux", // Gun Mayhem Redux
+  "getawayshootout", // Getaway Shootout
+  "1v1lol", // 1v1.LOL
+  "10minutestilldawn", // 10 Minutes Till Dawn
+  "timeshooter1", // Time Shooter
+  "timeshooter2", // Time Shooter 2
+  "timeshooter3", // Time Shooter 3
+  "doom", // Doom
+  "funnyshooter2", // Funny Shooter 2
+  "gunfest", // Gun Fest
+  "recoil", // Recoil
+  "zombocalypse", // Zombocalypse
+  "zombotron", // Zombotron
+  "zombotron2", // Zombotron 2
+  "amazingropepolice", // Amazing Rope Police
+  "grandtheftgrotto", // Grand Theft Grotto
+  "defendthetank", // Defend the Tank
+  "raftwars", // Raft Wars
+  "raftwars2", // Raft Wars 2
+  "chooseyourweapon", // Choose Your Weapon
+  "chooseyourweapon2", // Choose Your Weapon 2
+  "chooseyourweapon3", // Choose Your Weapon 3
+  "nitromemustdie", // Nitrome Must Die
+  "skibiditoiletattack", // Skibidi Toilet Attack
+  "thebindingofisaac", // The Binding of Isaac — twin-stick shooter, tears for bullets
 ]);
 
 /**
@@ -227,7 +256,8 @@ async function fetchTree() {
 
 function isRom(path) {
   const lower = path.toLowerCase();
-  if (EXCLUDED_EXTENSIONS.some((extension) => lower.endsWith(extension))) return true;
+  if (EXCLUDED_EXTENSIONS.some((extension) => lower.endsWith(extension)))
+    return true;
   return SCENE_NAMING.test(path);
 }
 
@@ -280,7 +310,9 @@ async function findEmulatorGames(slugs, concurrency = 16) {
     );
   }
   if (failures.length > 0) {
-    console.log(`  ${failures.length} pages unreachable, excluded as a precaution`);
+    console.log(
+      `  ${failures.length} pages unreachable, excluded as a precaution`,
+    );
   }
 
   return emulator;
@@ -410,14 +442,22 @@ async function main() {
       excludedByContent.push(entry.title);
       continue;
     }
-    games.push({ ...entry, rank: index, bytes: bytesByDirectory.get(entry.slug) ?? 0 });
+    games.push({
+      ...entry,
+      rank: index,
+      bytes: bytesByDirectory.get(entry.slug) ?? 0,
+    });
   }
 
   // A listed slug that upstream no longer ships is stale, and the list should
   // say so rather than carry it forever.
-  const stale = [...EXCLUDED_SLUGS].filter((slug) => !entries.some((e) => e.slug === slug));
+  const stale = [...EXCLUDED_SLUGS].filter(
+    (slug) => !entries.some((e) => e.slug === slug),
+  );
   if (stale.length > 0) {
-    console.log(`excluded slugs not upstream (drop from EXCLUDED_SLUGS): ${stale.join(", ")}`);
+    console.log(
+      `excluded slugs not upstream (drop from EXCLUDED_SLUGS): ${stale.join(", ")}`,
+    );
   }
 
   // A bucket key that two games share would have the second upload clobber
@@ -426,7 +466,9 @@ async function main() {
   for (const game of games) {
     const other = paths.get(game.path);
     if (other) {
-      throw new Error(`${game.slug} and ${other} both map to bucket path ${game.path}.`);
+      throw new Error(
+        `${game.slug} and ${other} both map to bucket path ${game.path}.`,
+      );
     }
     paths.set(game.path, game.slug);
   }
@@ -438,13 +480,19 @@ async function main() {
   console.log(`excluded, ROM file  : ${excludedByFile.length}`);
   console.log(`excluded, emulator  : ${excludedByEmulator.length}`);
   console.log(`excluded, content   : ${excludedByContent.length}`);
-  console.log(`local 16:9 art      : ${games.filter((g) => g.thumbnail.endsWith(".webp")).length}`);
-  console.log(`written             : ${games.length} games, ${(total / 1e9).toFixed(2)} GB`);
+  console.log(
+    `local 16:9 art      : ${games.filter((g) => g.thumbnail.endsWith(".webp")).length}`,
+  );
+  console.log(
+    `written             : ${games.length} games, ${(total / 1e9).toFixed(2)} GB`,
+  );
   console.log(`                    -> ${OUT}`);
   if (excludedByEmulator.length > 0) {
-    console.log(`\nemulator pages dropped: ${excludedByEmulator.slice(0, 8).join(", ")}${
-      excludedByEmulator.length > 8 ? ", …" : ""
-    }`);
+    console.log(
+      `\nemulator pages dropped: ${excludedByEmulator.slice(0, 8).join(", ")}${
+        excludedByEmulator.length > 8 ? ", …" : ""
+      }`,
+    );
   }
 }
 

@@ -73,7 +73,7 @@ export function ImportPanel({
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="Untitled HTML"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               />
               <label className="text-sm font-medium" htmlFor="html-code">
                 HTML code
@@ -85,7 +85,7 @@ export function ImportPanel({
                 onChange={(e) => setCode(e.target.value)}
                 spellCheck={false}
                 placeholder="<!doctype html>"
-                className="h-64 w-full resize-none overflow-y-auto rounded-xl border border-border bg-background p-4 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                className="h-64 w-full resize-none overflow-y-auto rounded-xl border border-border bg-background p-4 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               />
               <div className="flex justify-end">
                 <Button type="submit" disabled={busy || !code.trim()}>

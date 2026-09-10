@@ -95,9 +95,7 @@ export function Monogram({
       // them — see `.monogram` there.
       style={{ "--monogram-hue": hue } as CSSProperties}
     >
-      {bot
-        ? null
-        : (emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase())}
+      {bot ? null : (emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase())}
       {bot ? (
         // The old man has no profile row, so his app-owned portrait is fixed
         // here. The image itself moves inside the clipped circle; every place
