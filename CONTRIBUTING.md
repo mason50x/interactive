@@ -18,9 +18,10 @@ coding agents; this version of Next.js includes local API documentation.
 
 ## Review and ownership
 
-Every change goes through a PR and required CI. CODEOWNERS routes review to the
-maintainer, including README, license, workflows, and CODEOWNERS changes. Owner
-authored PRs use the documented review-only bypass; required checks still apply.
+Contributor changes go through a PR and required CI. CODEOWNERS routes review
+to the maintainer, including README, license, workflows, and CODEOWNERS changes.
+Repository administrators may push or merge directly into `main` using the
+documented bypass; CI still runs after those pushes.
 Outside-contributor Actions runs need maintainer approval. A PR template is a
 review aid, not a substitute for enforced branch rules.
 

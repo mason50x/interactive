@@ -3,16 +3,19 @@
 The repository uses two separate main-branch rulesets:
 
 - **Main integrity**: PRs, passing CI, resolved conversations, linear history,
-  no force pushes, and no deletion. No bypass actors.
+  no force pushes, and no deletion for contributors without an administrator bypass.
 - **Maintainer review**: one approval from a code owner, dismiss stale approvals,
-  and require approval of the latest reviewable push. Repository administrators
-  may bypass this review requirement only through a PR, so the sole maintainer
-  can merge their own changes. The separate integrity rules still apply.
+  and require approval of the latest reviewable push.
+
+Repository administrators can bypass both main-branch rulesets to push or merge
+directly into `main`, without a PR, approval, or waiting for CI. Other contributors
+must use the protected PR workflow. CI still runs after administrator pushes.
 
 `CODEOWNERS` covers every tracked path, explicitly including itself, README,
 license, workflows, environment examples, and deployment configuration.
 Required checks use the CI job names: `Lint`, `Typecheck`, `Tests`, `Build`,
-`Experience`, `Dependencies`, and `Secrets`. Checks must pass on an up-to-date PR.
+`Experience`, `Dependencies`, and `Secrets`. Checks must pass on an up-to-date PR
+unless a repository administrator uses the bypass.
 Release tags matching `v*` cannot be force-updated or deleted.
 
 Actions uses a read-only token by default, cannot approve PRs, and requires
