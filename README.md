@@ -590,7 +590,7 @@ Three origins now, and only two of them are boundaries:
 
 ```
 convex/                 the backend; Convex bundles it on its own terms
-config/                 hand-laid tables: domains, the experience allowlist, the chat admins
+config/                 hand-laid tables: domains and the chat admins
 scripts/                catalogue and asset tooling, deploy, and the vitest suite under tests/
 src/
   proxy.ts              host dispatch; clerkMiddleware; signed-out-only redirects

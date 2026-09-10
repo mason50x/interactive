@@ -14,7 +14,7 @@ convex/
 # Hand-laid tables: one entry per line reads better than Prettier's expansion.
 config/*.json
 
-# The experience worker is its own package with its own conventions.
+# A separate package with its own conventions.
 experience/
 
 # Prose is written by hand and wrapped by hand.

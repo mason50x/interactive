@@ -3,7 +3,7 @@ import { useSyncExternalStore, type RefObject } from "react";
 /**
  * Element fullscreen, for a stage with its own controls on it.
  *
- * `ActivityFrame` and `ExperienceChrome` both fullscreen a wrapper rather
+ * Every frame that fills the screen fullscreens a wrapper rather
  * than the iframe inside it, so the controls come along — fullscreening the
  * frame alone would hand the whole screen to the framed document with no way
  * back but Escape — and both need the same three things about it.
