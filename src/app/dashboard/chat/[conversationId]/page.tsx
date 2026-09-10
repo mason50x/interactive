@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { Thread } from "@/components/app/chat/thread";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * One conversation.

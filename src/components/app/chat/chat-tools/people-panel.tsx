@@ -11,7 +11,7 @@ import { FaceEditor, type Face } from "@/components/app/chat/face-editor";
 import { Group, PersonRow, RowMenu } from "@/components/app/chat/people-rows";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { useHeld } from "@/lib/use-held";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { FieldError } from "@/components/ui/alert";
 
 /**

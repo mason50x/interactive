@@ -14,7 +14,7 @@
  * page can report, and a stale default would fail silently.
  */
 
-import allowlist from "../../config/experience-allowlist.json";
+import allowlist from "@config/experience-allowlist.json";
 import { originFromEnv } from "@/lib/origin";
 
 /** One line of the allowlist, as the Worker also reads it. */

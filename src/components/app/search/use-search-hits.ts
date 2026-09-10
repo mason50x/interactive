@@ -14,7 +14,7 @@ import {
   searchEntries,
 } from "@/lib/search";
 import { useDebounced } from "@/lib/use-debounced";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * How long a keystroke sits before chat is asked about it.

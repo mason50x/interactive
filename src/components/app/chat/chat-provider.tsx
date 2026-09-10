@@ -2,9 +2,9 @@
 
 import { useMutation } from "convex/react";
 import { createContext, use, useEffect, useRef, type ReactNode } from "react";
-import { api } from "../../../../convex/_generated/api";
-import type { ConversationSummary } from "../../../../convex/chat/conversations";
-import type { MyProfile } from "../../../../convex/chat/profiles";
+import { api } from "@convex/_generated/api";
+import type { ConversationSummary } from "@convex/chat/conversations";
+import type { MyProfile } from "@convex/chat/profiles";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { useConvexAuth } from "convex/react";
 

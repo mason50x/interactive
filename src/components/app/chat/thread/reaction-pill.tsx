@@ -7,9 +7,9 @@ import { popupVariants } from "@/components/ui/popup";
 import { CenteredSpinner } from "@/components/ui/spinner";
 import { personName } from "@/lib/chat";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { ChatReaction } from "../../../../../convex/chat/messages";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import type { ChatReaction } from "@convex/chat/messages";
 
 /**
  * One reaction under a message: the emoji, how many, and — on hover — who.

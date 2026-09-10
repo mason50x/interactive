@@ -25,13 +25,13 @@ import { useDropFiles } from "@/components/app/chat/thread/use-drop-files";
 import { Typing, useTypists } from "@/components/app/chat/typing";
 import { useChat } from "@/components/app/chat/chat-provider";
 import type { Refusal } from "@/lib/chat";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import type {
   ChatImage,
   ChatMention,
   ChatMessage,
-} from "../../../../convex/chat/messages";
+} from "@convex/chat/messages";
 
 export type { ComposerHandle };
 

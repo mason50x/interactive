@@ -23,7 +23,7 @@ import {
   type Preferences,
 } from "@/lib/preferences";
 import { tabMaskAssets, watchTabMask } from "@/lib/tab-mask";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type PreferencesContextValue = {
   preferences: Preferences;

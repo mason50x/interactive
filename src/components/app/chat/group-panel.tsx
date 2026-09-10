@@ -13,7 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { requestGroupPanel, type GroupPanelMode } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 import { AddView } from "@/components/app/chat/group-panel/add-view";
 import { SettingsView } from "@/components/app/chat/group-panel/settings-view";
 

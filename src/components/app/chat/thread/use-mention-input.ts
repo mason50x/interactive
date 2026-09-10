@@ -13,7 +13,7 @@ import {
   type MentionPerson,
 } from "@/components/app/chat/mentions";
 import { EVERYONE, completeMention, mentionQueryAt } from "@/lib/mentions";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * The `@` in the composer: where the caret is, whether there is an `@word`

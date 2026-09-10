@@ -4,7 +4,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type FunctionArgs } from "convex/server";
 import { fetchAction } from "convex/nextjs";
-import { api, internal } from "../../convex/_generated/api";
+import { api, internal } from "@convex/_generated/api";
 
 /** The caller cannot supply a user id or profile fields. Clerk is authoritative. */
 export async function syncChatAccount() {

@@ -11,8 +11,9 @@ import { RowMenu } from "@/components/app/chat/people-rows";
 import { isBot, openDmError, personName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { FieldError } from "@/components/ui/alert";
+import { popupVariants } from "@/components/ui/popup";
 
 /**
  * A person, when their name is pressed.
@@ -86,8 +87,11 @@ export function PersonCard({
         >
           <Popover.Popup
             className={cn(
-              side === "bottom" ? "popup-drop" : "popup-slide",
-              "w-[17rem] rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none",
+              popupVariants({
+                motion: side === "bottom" ? "drop" : "slide",
+                padding: "lg",
+              }),
+              "w-[17rem]",
             )}
           >
             {open ? (

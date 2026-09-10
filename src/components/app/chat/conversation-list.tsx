@@ -22,7 +22,7 @@ import {
 } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 import { CountBadge } from "@/components/ui/badge";
 
 /**

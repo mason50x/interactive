@@ -44,13 +44,13 @@ import { MAX_IMAGES_PER_MESSAGE, rememberPreview } from "@/lib/images";
 import { EVERYONE, findMentionTokens } from "@/lib/mentions";
 import { useDictation } from "@/lib/use-dictation";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import type {
   ChatImage,
   ChatMention,
   ChatMessage,
-} from "../../../../../convex/chat/messages";
+} from "@convex/chat/messages";
 
 /**
  * The box at the bottom of a conversation.

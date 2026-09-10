@@ -8,7 +8,7 @@ import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 import { Group, PersonRow } from "@/components/app/chat/people-rows";
 import { useDebounced } from "@/lib/use-debounced";
 import { Searching } from "@/components/app/chat/searching";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * One field over the conversation list, for both things a field there is for:

@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { Card } from "@/components/ui/card";
 import { splitDuration } from "@/lib/time";
 import { useTzOffset } from "@/lib/use-tz-offset";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * Four numbers about your own use of the place.

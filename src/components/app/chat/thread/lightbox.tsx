@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Photo } from "@/components/app/chat/photo";
 import { previewFor } from "@/lib/images";
-import type { ChatImage } from "../../../../../convex/chat/messages";
+import type { ChatImage } from "@convex/chat/messages";
 
 /**
  * Where a picture is drawn from: the preview this browser uploaded when it

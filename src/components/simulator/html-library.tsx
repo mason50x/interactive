@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import {
   identifyHtml,

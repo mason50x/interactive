@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { popupVariants } from "@/components/ui/popup";
 
 /**
  * A name, and a pencil that opens the one field that changes it.
@@ -166,7 +167,12 @@ export function NameEditor({
           sideOffset={8}
           className="z-50 outline-none"
         >
-          <Popover.Popup className="popup-drop w-[17rem] rounded-xl border border-border bg-popover p-2.5 text-popover-foreground shadow-lg shadow-black/[0.08] outline-none">
+          <Popover.Popup
+            className={cn(
+              popupVariants({ motion: "drop", padding: "md" }),
+              "w-[17rem]",
+            )}
+          >
             <Popover.Title
               render={<p />}
               className="text-[0.875rem] font-semibold"

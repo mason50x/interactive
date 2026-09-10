@@ -4,7 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { Photo } from "@/components/app/chat/photo";
 import { Lightbox, sourceOf } from "@/components/app/chat/thread/lightbox";
 import { cn } from "@/lib/utils";
-import type { ChatImage } from "../../../../../convex/chat/messages";
+import type { ChatImage } from "@convex/chat/messages";
 
 /**
  * The pictures on a message.

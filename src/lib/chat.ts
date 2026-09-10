@@ -1,5 +1,5 @@
 import type { FunctionReturnType } from "convex/server";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { channel } from "@/lib/events";
 
 /**

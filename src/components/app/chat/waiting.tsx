@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { GlideList } from "@/components/app/chat/glide-list";
 import { PersonRow, RowMenu } from "@/components/app/chat/people-rows";
 import { Separator } from "@/components/ui/separator";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * What is waiting on you, at the top of the conversation list.

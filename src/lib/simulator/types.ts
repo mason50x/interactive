@@ -1,4 +1,4 @@
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "@convex/_generated/dataModel";
 export type Entry = Doc<"simulatorEntries">;
 export type Slot = "auto" | "previous" | "manual1" | "manual2" | "manual3";
 export type WriteSlot = Exclude<Slot, "previous">;

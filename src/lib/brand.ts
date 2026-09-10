@@ -14,7 +14,7 @@
  * mail. See `config/domains.md`.
  */
 
-import domains from "../../config/domains.json";
+import domains from "@config/domains.json";
 import { withoutTrailingSlash } from "@/lib/origin";
 
 /** The site's own origin, most-explicit first. Preview deployments set nothing

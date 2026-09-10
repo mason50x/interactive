@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import type { Activity } from "@/lib/activity";
 import { formatSince } from "@/lib/time";
 import { useNow } from "@/lib/use-now";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * Everything on the home page that depends on what you have opened.

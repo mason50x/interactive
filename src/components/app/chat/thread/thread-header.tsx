@@ -8,9 +8,9 @@ import { PersonCard } from "@/components/app/chat/person-card";
 import { Present } from "@/components/app/chat/presence";
 import { conversationName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { ConversationDetail } from "../../../../../convex/chat/conversations";
-import type { Typist } from "../../../../../convex/chat/typing";
+import type { Id } from "@convex/_generated/dataModel";
+import type { ConversationDetail } from "@convex/chat/conversations";
+import type { Typist } from "@convex/chat/typing";
 
 /**
  * The bar over a conversation: who it is with, who is here, and the way

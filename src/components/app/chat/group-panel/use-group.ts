@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import type {
   ConversationDetail,
   ConversationMember,
-} from "../../../../../convex/chat/conversations";
+} from "@convex/chat/conversations";
 
 /**
  * The two subscriptions a group panel is drawn from, and why they are two.

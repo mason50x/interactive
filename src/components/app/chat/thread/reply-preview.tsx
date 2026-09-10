@@ -2,8 +2,8 @@
 
 import { personName } from "@/lib/chat";
 import { cn } from "@/lib/utils";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { ChatMessage } from "../../../../../convex/chat/messages";
+import type { Id } from "@convex/_generated/dataModel";
+import type { ChatMessage } from "@convex/chat/messages";
 
 /**
  * The quoted message above a reply.

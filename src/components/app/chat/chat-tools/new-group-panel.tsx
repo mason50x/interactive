@@ -6,7 +6,7 @@ import { FieldError } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { groupNameError } from "@/lib/chat";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /** A name and a button. Everything else about a group is set from inside it. */
 export function NewGroupPanel({

@@ -3,7 +3,7 @@
 import { useConvexAuth, useMutation } from "convex/react";
 import { useEffect, useRef } from "react";
 import { useTzOffset } from "@/lib/use-tz-offset";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * Records that an activity was opened, and how long it stayed open.

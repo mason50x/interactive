@@ -16,9 +16,9 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { REACTIONS } from "@/lib/chat";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { ChatMessage } from "../../../../../convex/chat/messages";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import type { ChatMessage } from "@convex/chat/messages";
 
 /**
  * The two menus on a message: a row of reactions, and everything else.

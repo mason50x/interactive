@@ -3,7 +3,7 @@
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { isChatAdmin } from "../../../../../config/chat-admin";
+import { isChatAdmin } from "@config/chat-admin";
 import {
   Tooltip as AdminTooltip,
   TooltipProvider,
@@ -23,9 +23,9 @@ import { ReplyPreview } from "@/components/app/chat/thread/reply-preview";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { DELETE_WINDOW_MS, isBot, personName } from "@/lib/chat";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { ChatMessage } from "../../../../../convex/chat/messages";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import type { ChatMessage } from "@convex/chat/messages";
 
 /**
  * One message in the thread.

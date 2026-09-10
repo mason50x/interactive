@@ -15,10 +15,11 @@ import {
 } from "@/lib/chat";
 import { EVERYONE, segmentMentions } from "@/lib/mentions";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import type { ChatMention } from "../../../../convex/chat/messages";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import type { ChatMention } from "@convex/chat/messages";
 import { useDebounced } from "@/lib/use-debounced";
+import { popupVariants } from "@/components/ui/popup";
 
 /**
  * Naming somebody in a message, on screen.
@@ -240,7 +241,10 @@ export function MentionPicker({
       id={id}
       role="listbox"
       aria-label="People to mention"
-      className="animate-notice-in absolute bottom-full left-0 z-30 mb-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg shadow-black/[0.08]"
+      className={cn(
+        popupVariants({ motion: "none", padding: "xs" }),
+        "animate-notice-in absolute bottom-full left-0 z-30 mb-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col",
+      )}
     >
       {candidates.map((candidate, index) => {
         const current = index === active;

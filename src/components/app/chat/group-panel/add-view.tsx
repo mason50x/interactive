@@ -14,8 +14,8 @@ import {
 } from "@/components/app/chat/group-panel/use-group";
 import { FoundNobody, Searching } from "@/components/app/chat/searching";
 import { useDebounced } from "@/lib/use-debounced";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * Bringing people in, and letting waiting people through.

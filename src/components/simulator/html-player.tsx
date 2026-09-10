@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useConvexAuth, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { CenteredSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { htmlDocument } from "@/lib/simulator/html-document";

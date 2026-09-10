@@ -22,8 +22,8 @@ import { OptionTiles } from "@/components/app/chat/option-tiles";
 import { CHAT_HREF } from "@/lib/nav";
 import { useTransientFlag } from "@/lib/use-transient-flag";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * What the group is, for the people who may change it.

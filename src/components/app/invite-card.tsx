@@ -11,7 +11,7 @@ import { Pips } from "@/components/ui/pips";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { useClickOutside } from "@/lib/use-click-outside";
 import { cn } from "@/lib/utils";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * The allowance, live.

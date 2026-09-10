@@ -14,8 +14,8 @@ import {
   isImageFile,
   prepareImage,
 } from "@/lib/images";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * Pictures in the composer, from the moment one is chosen until it is sent.

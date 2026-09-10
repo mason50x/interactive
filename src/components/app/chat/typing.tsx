@@ -11,9 +11,9 @@ import {
 import { Monogram } from "@/components/app/chat/monogram";
 import { TYPING_BEAT_MS, typingLabel } from "@/lib/chat";
 import { cn } from "@/lib/utils";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import type { Typist } from "../../../../convex/chat/typing";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import type { Typist } from "@convex/chat/typing";
 
 /**
  * Who is writing, and the row of dots that says so.

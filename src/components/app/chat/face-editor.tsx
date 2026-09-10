@@ -7,6 +7,7 @@ import { Monogram } from "./monogram";
 import { OptionTiles } from "./option-tiles";
 import { AVATAR_EMOJI, AVATAR_HUES, MAX_INITIALS } from "@/lib/chat";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 export type Face = { emoji?: string; initials?: string; hue?: number };
 
@@ -128,7 +129,7 @@ export function FaceEditor({
                 ))}
               </div>
             ) : (
-              <input
+              <Input
                 aria-label="Text on the picture"
                 value={letters}
                 maxLength={MAX_INITIALS}
@@ -140,7 +141,7 @@ export function FaceEditor({
                   setLetters(initials);
                   onChange({ hue: face.hue, initials });
                 }}
-                className="my-3 h-9 w-full rounded-lg border border-border bg-background px-3 text-sm"
+                className="my-3 text-sm"
               />
             )}
             {mode !== "account" && (

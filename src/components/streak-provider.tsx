@@ -12,7 +12,7 @@ import {
 } from "react";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { useTransientFlag } from "@/lib/use-transient-flag";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 /**
  * The streak, and the moment it grows.
