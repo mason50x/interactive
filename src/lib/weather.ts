@@ -1,3 +1,5 @@
+import { readStoredJson, writeStoredJson } from "@/lib/storage";
+
 /**
  * The weather where the visitor actually is.
  *
@@ -308,32 +310,22 @@ type Cached = { at: number; lat: number; lon: number; weather: Weather };
  * navigating inside the app remounts the card, and without this every one of
  * those is two network calls to draw a number that has not changed.
  *
- * Every access is guarded. Storage throws outright in a handful of real
- * situations — a browser set to block site data, Safari's private mode — and a
- * weather card is not worth taking a page down over.
+ * Storage is best-effort throughout (see `src/lib/storage.ts`): the card
+ * works without a cache, it is just two network calls slower.
  */
 function readCache(lat: number, lon: number): Weather | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-
-    const cached = JSON.parse(raw) as Cached;
-    if (cached.lat !== lat || cached.lon !== lon) return null;
-    if (Date.now() - cached.at > MAX_AGE_MS) return null;
-
-    return cached.weather;
-  } catch {
-    return null;
-  }
+  const cached = readStoredJson<Cached>(CACHE_KEY);
+  if (!cached) return null;
+  if (cached.lat !== lat || cached.lon !== lon) return null;
+  if (Date.now() - cached.at > MAX_AGE_MS) return null;
+  return cached.weather;
 }
 
 function writeCache(lat: number, lon: number, weather: Weather): void {
-  try {
-    localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ at: Date.now(), lat, lon, weather } satisfies Cached),
-    );
-  } catch {
-    // Full, blocked, or unavailable. The card works without a cache.
-  }
+  writeStoredJson(CACHE_KEY, {
+    at: Date.now(),
+    lat,
+    lon,
+    weather,
+  } satisfies Cached);
 }

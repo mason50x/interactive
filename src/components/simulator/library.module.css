@@ -101,7 +101,6 @@
   border-radius: 11px;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.015em;
   color: var(--muted-foreground);
   cursor: pointer;
   transition: color 200ms ease;

@@ -1,5 +1,6 @@
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
+import { channel } from "@/lib/events";
 
 /**
  * The client's half of chat: types, copy, and nothing that decides anything.
@@ -153,21 +154,6 @@ export function personName(person: {
 }
 
 /**
- * Why a display name did not take. The filter refusals stay vague on purpose,
- * the same as the composer's — see `refusalMessage` above.
- */
-export function displayNameError(reason: Refusal | "no-profile"): string {
-  switch (reason) {
-    case "no-profile":
-      return "Pick a handle first.";
-    case "too-long":
-      return "That name is too long.";
-    default:
-      return "That name will not work. Try another.";
-  }
-}
-
-/**
  * The wheel a person may draw their own disc on, the faces they may wear, and
  * how much they may write instead.
  *
@@ -245,56 +231,6 @@ export function typingLabel(
   }
   const others = names.length - 2;
   return `${names[0]}, ${names[1]} and ${others} others are typing`;
-}
-
-/** Shape only. Everything else about a handle is decided on the server. */
-export function handleShapeError(handle: string): string | null {
-  const wanted = handle.trim().toLowerCase();
-  if (wanted.length < 3) return "At least three characters.";
-  if (wanted.length > 20) return "At most twenty characters.";
-  if (!/^[a-z]/.test(wanted)) return "Start with a letter.";
-  if (!/^[a-z0-9_]+$/.test(wanted)) {
-    return "Letters, numbers and underscores only.";
-  }
-  if (wanted.includes("__")) return "One underscore at a time.";
-  if (wanted.endsWith("_")) return "Cannot end with an underscore.";
-  return null;
-}
-
-/** Why a handle was refused, once the server has looked at it properly. */
-export function claimError(reason: string): string {
-  switch (reason) {
-    case "taken":
-      return "Someone already has that one, or something close enough to it.";
-    case "reserved":
-      return "That one is reserved.";
-    case "language":
-      return "Pick something else.";
-    case "already":
-      return "You already have a handle.";
-    case "limit":
-      return "You have used both of your changes.";
-    case "same":
-      return "That is already your handle.";
-    case "no-profile":
-      return "You do not have a handle yet.";
-    default:
-      return "That handle will not work.";
-  }
-}
-
-/**
- * How much of the rename allowance is left, in the words somebody would use.
- *
- * Takes what has been spent rather than what remains, because that is the
- * number the server keeps — deriving it here means there is one subtraction in
- * the app and it is next to the sentence that depends on it.
- */
-export function changesLeftLabel(spent: number): string {
-  const left = Math.max(0, MAX_HANDLE_CHANGES - spent);
-  if (left === 0) return "No changes left. This handle is yours for good.";
-  if (left === 1) return "One change left.";
-  return "Two changes left.";
 }
 
 /**
@@ -417,27 +353,22 @@ export type GroupPanelRequest = {
   mode: GroupPanelMode;
 };
 
+const groupPanelChannel = channel<GroupPanelRequest>(GROUP_PANEL_EVENT);
+
 /** Ask for one. Nothing happens where the conversation column is not mounted,
  *  which is everywhere outside chat. */
 export function requestGroupPanel(
   conversationId: string,
   mode: GroupPanelMode,
 ) {
-  window.dispatchEvent(
-    new CustomEvent<GroupPanelRequest>(GROUP_PANEL_EVENT, {
-      detail: { conversationId, mode },
-    }),
-  );
+  groupPanelChannel.request({ conversationId, mode });
 }
 
 /** The column's side of it. Returns the unsubscribe, for an effect's cleanup. */
 export function onGroupPanelRequest(
   handler: (request: GroupPanelRequest) => void,
 ) {
-  const listener = (event: Event) =>
-    handler((event as CustomEvent<GroupPanelRequest>).detail);
-  window.addEventListener(GROUP_PANEL_EVENT, listener);
-  return () => window.removeEventListener(GROUP_PANEL_EVENT, listener);
+  return groupPanelChannel.subscribe(handler);
 }
 
 /**

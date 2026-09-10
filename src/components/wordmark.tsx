@@ -24,29 +24,6 @@ export function LogoMark({ className = "" }: { className?: string }) {
 }
 
 /**
- * The monogram in its container — black on white, always, in both themes.
- * This is the icon form: the favicon, the app icon, the avatar.
- */
-export function LogoTile({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox={monogram.viewBox}
-      role="img"
-      aria-label={brand.name}
-      className={className}
-    >
-      <rect
-        width="100"
-        height="100"
-        rx={monogram.tileRadius}
-        fill={brand.colors.paper}
-      />
-      <path d={monogram.path} fill={brand.colors.ink} />
-    </svg>
-  );
-}
-
-/**
  * The horizontal lockup: monogram plus name, sharing one cap line.
  *
  * `items-baseline` puts the SVG's bottom edge on the text baseline, and the

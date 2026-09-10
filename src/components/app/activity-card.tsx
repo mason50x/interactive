@@ -119,7 +119,7 @@ export function ActivityCard({
             className="size-3.5 shrink-0"
             style={{ color: "color-mix(in oklab, var(--hue) 70%, white)" }}
           />
-          <span className="label-small text-white/75">{meta.label}</span>
+          <span className="text-xs text-white/75">{meta.label}</span>
         </div>
 
         <p className="mt-1 truncate text-[0.9375rem] font-medium text-white">
@@ -128,7 +128,7 @@ export function ActivityCard({
 
         {/* Sits in the space the plate's bottom padding keeps for it, so
             revealing it is opacity and nothing else. */}
-        <p className="label-small absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+        <p className="text-xs absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
           {note ?? popularityLabel(activity)}
         </p>
       </div>

@@ -31,6 +31,8 @@ import {
   TAB_MASK_SCRIPT_CONSTANTS,
   type TabMaskId,
 } from "@/lib/tab-mask";
+import { channel } from "@/lib/events";
+import { readStorage, removeStorage, writeStoredJson } from "@/lib/storage";
 
 export type Preferences = {
   /** The drifting mesh behind the dashboard rail. */
@@ -252,16 +254,9 @@ export const PREFERENCES_STORAGE_KEY = "il-preferences";
  * `useSyncExternalStore` compares snapshots by identity and calls this on every
  * render; parsing here would hand it a new object each time and spin. The
  * parse belongs in a `useMemo` on the other side.
- *
- * Storage access is wrapped because it throws outright — not returns null — in
- * a browser set to block site data, exactly as in `src/lib/theme.ts`.
  */
 export function readCachedPreferences(): string | null {
-  try {
-    return window.localStorage.getItem(PREFERENCES_STORAGE_KEY);
-  } catch {
-    return null;
-  }
+  return readStorage(PREFERENCES_STORAGE_KEY);
 }
 
 /** `null` for nothing cached, or for anything that is not the shape we wrote. */
@@ -277,24 +272,14 @@ export function parseCachedPreferences(raw: string | null): Preferences | null {
   }
 }
 
+/** Best-effort: the settings still apply for this page view either way, and
+ *  the only cost of a lost write is the next refresh starting on the defaults. */
 export function cachePreferences(preferences: Preferences): void {
-  try {
-    window.localStorage.setItem(
-      PREFERENCES_STORAGE_KEY,
-      JSON.stringify(preferences),
-    );
-  } catch {
-    // Ignored: the settings still apply for this page view, and the only cost
-    // is the next refresh starting on the defaults again.
-  }
+  writeStoredJson(PREFERENCES_STORAGE_KEY, preferences);
 }
 
 export function clearCachedPreferences(): void {
-  try {
-    window.localStorage.removeItem(PREFERENCES_STORAGE_KEY);
-  } catch {
-    // Ignored, as above.
-  }
+  removeStorage(PREFERENCES_STORAGE_KEY);
 }
 
 /**
@@ -565,17 +550,16 @@ const SETTINGS_EVENT = "50x:settings-request";
  */
 export type SettingsPage = "settings" | "account";
 
+const settingsChannel = channel<SettingsPage>(SETTINGS_EVENT);
+
 /** Ask the account modal to open, on the settings page unless told
  *  otherwise. Nothing happens if the rail is not mounted, which is every page
  *  outside `/dashboard`. */
 export function requestSettings(page: SettingsPage = "settings") {
-  window.dispatchEvent(new CustomEvent(SETTINGS_EVENT, { detail: page }));
+  settingsChannel.request(page);
 }
 
 /** The menu's side of it. Returns the unsubscribe, for an effect's cleanup. */
 export function onSettingsRequest(handler: (page: SettingsPage) => void) {
-  const listen = (event: Event) =>
-    handler((event as CustomEvent<SettingsPage>).detail ?? "settings");
-  window.addEventListener(SETTINGS_EVENT, listen);
-  return () => window.removeEventListener(SETTINGS_EVENT, listen);
+  return settingsChannel.subscribe((page) => handler(page ?? "settings"));
 }

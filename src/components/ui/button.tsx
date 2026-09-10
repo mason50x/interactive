@@ -43,10 +43,17 @@ const buttonVariants = cva(
         md: "h-11 rounded-full px-5 text-[0.9375rem]",
         xl: "h-[3.25rem] rounded-full px-7 text-base",
       },
+      /** `circle` for an icon button that sits in a round well — the chrome
+       *  over a framed activity, the plus on a composer. */
+      shape: {
+        default: "",
+        circle: "rounded-full",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      shape: "default",
     },
   },
 );
@@ -55,12 +62,13 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  shape = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   );
@@ -71,12 +79,13 @@ function ButtonLink({
   className,
   variant = "default",
   size = "default",
+  shape = "default",
   ...props
 }: ComponentProps<typeof Link> & VariantProps<typeof buttonVariants>) {
   return (
     <Link
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   );

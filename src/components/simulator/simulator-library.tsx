@@ -7,6 +7,7 @@ import { CodeBracketSquareIcon, CpuChipIcon } from "@heroicons/react/24/solid";
 import styles from "./library.module.css";
 import { GameBoyLibrary } from "./library";
 import { CenteredSpinner } from "@/components/ui/spinner";
+import { readStorage, writeStorage } from "@/lib/storage";
 const HtmlLibrary = dynamic(() => import("./html-library"), {
   loading: () => <CenteredSpinner />,
 });
@@ -18,13 +19,11 @@ function Library() {
     mode = selected === "gb" ? "gb" : "html";
   useEffect(() => {
     if (!userId) return;
-    try {
-      const key = `simulator-tab:${userId}`;
-      if (!selected && localStorage.getItem(key) === "gb")
-        router.replace("?mode=gb", { scroll: false });
-      else if (selected) localStorage.setItem(key, mode);
-    } catch {
-      /* Device preference is optional. */
+    const key = `simulator-tab:${userId}`;
+    if (!selected && readStorage(key) === "gb") {
+      router.replace("?mode=gb", { scroll: false });
+    } else if (selected) {
+      writeStorage(key, mode);
     }
   }, [selected, mode, userId, router]);
   return (

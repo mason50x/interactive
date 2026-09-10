@@ -458,21 +458,6 @@
     line-height: 1.05;
   }
 
-  /* Hero keyword underline — thick, offset, drawn in the brand colour. */
-  .underline-marker {
-    text-decoration: underline;
-    text-decoration-thickness: 0.07em;
-    text-underline-offset: 0.1em;
-    text-decoration-color: var(--primary);
-  }
-
-  /* The dashboard content shell: recessed into the page rather than raised
-     off it, so the bar above reads as the surface and the content sits in a
-     well below it. Two inner shadows do the work — a soft one for depth, a
-     tight one for the lip at the top edge — with a single hairline highlight
-     underneath to catch the far side of the rim. Both themes get their own
-     values: the light one is a grey shadow on white, the dark one has to be
-     near-black to read at all. */
   /*
    * The selected rail item: a real button, not a tint.
    *
@@ -513,8 +498,6 @@
         );
   }
 
-  /* Dark rails take less light, so the face is pulled down a step and the
-     specular line thinned — the light-theme values glare against #0f0f0f. */
   /*
    * A light travelling across a word, for a wait too short to deserve a
    * skeleton and too long to leave silent.
@@ -633,6 +616,8 @@
     color: oklch(0.86 0.09 var(--monogram-hue));
   }
 
+  /* Dark rails take less light, so the face is pulled down a step and the
+     specular line thinned — the light-theme values glare against #0f0f0f. */
   :root[data-theme="dark"] .nav-pill {
     background-image: linear-gradient(
       to bottom,
@@ -910,10 +895,6 @@
       animation: none;
     }
   }
-
-  .label-small {
-    font-size: 0.75rem;
-  }
 }
 
 /*
@@ -950,21 +931,6 @@
   }
 }
 
-@keyframes pulse-ring {
-  0% {
-    r: 5;
-    opacity: 0.55;
-  }
-  70% {
-    r: 18;
-    opacity: 0;
-  }
-  100% {
-    r: 18;
-    opacity: 0;
-  }
-}
-
 @keyframes rise-in {
   from {
     opacity: 0;
@@ -983,10 +949,6 @@
 .animate-dash-flow {
   stroke-dasharray: 6 6;
   animation: dash-flow 1.6s linear infinite;
-}
-
-.animate-pulse-ring {
-  animation: pulse-ring 2.6s ease-out infinite;
 }
 
 .animate-rise-in {
@@ -1178,60 +1140,6 @@
 
 .streak-flare {
   animation: streak-flare 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* ---------------------------------------------------------------------------
- * The handle ceremony.
- *
- * Two halves of one dissolve: the account's photograph goes out of focus and
- * away, the letter that replaces it in chat arrives out of the same blur. They
- * are stacked on each other and run together, so what you see is one thing
- * turning into another rather than two things swapping places.
- *
- * A blur *is* the expensive filter this file otherwise refuses — see the note
- * on the flame — and it is affordable here for the one reason it is not there:
- * this runs once, for three quarters of a second, on a screen nobody ever
- * returns to. Nothing in chat animates a filter.
- *
- * `both` matters more than usual. Under reduced motion the blanket rule at the
- * foot of this file collapses both of these to a single instant, and the fill
- * is what makes that instant land on the *end* of the animation: the picture
- * gone, the letter there. Without it the reduced-motion path would leave the
- * photograph on screen and the monogram invisible, which is not a quieter
- * version of the moment but the wrong one.
- * ------------------------------------------------------------------------- */
-@keyframes handle-dissolve {
-  from {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    filter: blur(18px);
-    transform: scale(1.08);
-  }
-}
-
-@keyframes handle-resolve {
-  from {
-    opacity: 0;
-    filter: blur(18px);
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
-  }
-}
-
-.animate-handle-dissolve {
-  animation: handle-dissolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.animate-handle-resolve {
-  animation: handle-resolve 0.76s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Rail icon microanimations.
@@ -1912,7 +1820,6 @@
   margin: 0;
   color: color-mix(in srgb, var(--foreground) 48%, transparent);
   font-size: 12px;
-  letter-spacing: 0.02em;
 }
 .packet-reveal {
   opacity: 0;

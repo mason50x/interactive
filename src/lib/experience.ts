@@ -15,6 +15,7 @@
  */
 
 import allowlist from "../../config/experience-allowlist.json";
+import { originFromEnv } from "@/lib/origin";
 
 /** One line of the allowlist, as the Worker also reads it. */
 type ExperienceSite = {
@@ -56,18 +57,10 @@ export function findExperienceApp(id: string): ExperienceApp | null {
 
 /** The experience origin, or `null` when none is configured. */
 export function experienceOrigin(): string | null {
-  for (const candidate of [
+  return originFromEnv(
     process.env.EXPERIENCE_ORIGIN,
     process.env.NEXT_PUBLIC_EXPERIENCE_ORIGIN,
-  ]) {
-    if (!candidate) continue;
-    try {
-      return new URL(candidate.replace(/\/$/, "")).origin;
-    } catch {
-      continue;
-    }
-  }
-  return null;
+  );
 }
 
 /** The `src` that frames `target` through the experience, or `null` with no origin. */

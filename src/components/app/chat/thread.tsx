@@ -1653,7 +1653,7 @@ function ReactionPill({
           className="z-50"
         >
           <Tooltip.Popup className="popup-slide max-h-64 w-max max-w-64 overflow-y-auto rounded-xl border border-border bg-popover p-2.5 text-popover-foreground shadow-lg shadow-black/[0.1] outline-none">
-            <p className="mb-1.5 text-[0.6875rem] font-semibold tracking-wide text-faint uppercase">
+            <p className="mb-1.5 text-[0.6875rem] font-semibold text-faint">
               Reacted with {reaction.emoji}
             </p>
             {people === undefined ? (

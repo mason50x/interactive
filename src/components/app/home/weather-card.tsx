@@ -167,7 +167,7 @@ function Forecast({ weather }: { weather: Weather }) {
               °{weather.unit}
             </span>
           </p>
-          <p className="label-small mt-1.5 flex items-center gap-1 text-faint">
+          <p className="text-xs mt-1.5 flex items-center gap-1 text-faint">
             <MapPinIcon className="size-3 shrink-0" />
             <span className="truncate">{weather.city}</span>
           </p>
@@ -182,7 +182,7 @@ function Forecast({ weather }: { weather: Weather }) {
 
       <div>
         <p className="text-[0.875rem] text-foreground">{weather.description}</p>
-        <p className="label-small mt-1 text-faint">
+        <p className="text-xs mt-1 text-faint">
           Feels like {weather.apparent}° · {weather.low}° to {weather.high}°
         </p>
       </div>

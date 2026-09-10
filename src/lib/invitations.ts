@@ -75,16 +75,6 @@ export async function inviteUser({
   });
 }
 
-/** Pending invitations, newest first. */
-export async function listPendingInvitations(limit = 100) {
-  const client = await clerkClient();
-  return await client.invitations.getInvitationList({
-    status: "pending",
-    orderBy: "-created_at",
-    limit,
-  });
-}
-
 /** Revokes a pending invitation, which makes its emailed link stop working. */
 export async function revokeInvitation(invitationId: string) {
   const client = await clerkClient();

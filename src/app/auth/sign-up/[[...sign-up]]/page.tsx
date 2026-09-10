@@ -22,7 +22,7 @@ export default async function SignUpPage({
       {/* Confirms the invitation was recognised. Without it the form looks
           identical to the one that rejects an uninvited stranger. */}
       {invited && (
-        <p className="label-small text-primary">You&rsquo;ve been invited</p>
+        <p className="text-xs text-primary">You&rsquo;ve been invited</p>
       )}
       <SignUp
         routing="path"

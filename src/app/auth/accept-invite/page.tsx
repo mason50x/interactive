@@ -117,7 +117,7 @@ function Panel({
 }) {
   return (
     <div className="w-full max-w-md">
-      <p className="label-small text-muted-foreground">{eyebrow}</p>
+      <p className="text-xs text-muted-foreground">{eyebrow}</p>
       <h1 className="text-display mt-4 text-[2rem] leading-tight">{heading}</h1>
       <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
         {body}

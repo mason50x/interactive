@@ -1,3 +1,5 @@
+import { withoutTrailingSlash } from "@/lib/origin";
+
 /**
  * The public origin of the deployment that is currently running.
  *
@@ -34,8 +36,4 @@ export function siteUrl(): string {
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
 
   return `http://localhost:${process.env.PORT ?? 3000}`;
-}
-
-function withoutTrailingSlash(url: string): string {
-  return url.endsWith("/") ? url.slice(0, -1) : url;
 }
