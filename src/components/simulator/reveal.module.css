@@ -1,0 +1,25 @@
+/* The one collapse animation the simulator pages share. A grid row that goes
+   from 0fr to 1fr is the only way CSS will animate to an unknown height, and
+   the inner element has to be allowed to shrink (min-height: 0) and clip
+   (overflow: hidden) for the row to actually close over it. */
+.reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
+}
+.reveal[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.content {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    transition: none;
+  }
+}

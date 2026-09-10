@@ -1,0 +1,117 @@
+/*
+ * The leave is three fades, not one. An `opacity` on the dialog would make
+ * the compositor resolve the whole screen — the canvas behind it, dirty on
+ * every frame of the scatter, and the blur reading that canvas — into a
+ * texture per frame, which is what made the exit stutter. So the ground
+ * fades by colour, the words fade by opacity on their own small layer, and
+ * the constellation fades inside its own drawing. The timing matches the
+ * scatter, so the particles have the whole fade to fly.
+ */
+.leaving,
+.leaving::backdrop {
+  animation: ground-away 900ms ease-in-out forwards;
+}
+
+.leaving .content {
+  animation: fade-away 900ms ease-in-out forwards;
+}
+
+@keyframes ground-away {
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes fade-away {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+ * The trace draws the stroke, then the water rises through the letter. The
+ * dialog listens for the rise's end to begin fading, so the moment the I is
+ * full is the moment the page starts to go.
+ */
+/*
+ * The dash is a touch longer than the path (`pathLength` is 100). At exactly
+ * the path's length, the browser's own measure of the outline and the
+ * declared one disagree by a rounding error, and the trace stops a hair
+ * short of where it began — a visible nick at the top left. The extra
+ * length covers it; the offset starts at the same value so the whole path
+ * is still gap on the first frame.
+ */
+.trace {
+  stroke-dasharray: 102;
+  stroke-dashoffset: 102;
+  animation: trace-letter 4.5s ease-in-out forwards;
+}
+
+@keyframes trace-letter {
+  from {
+    stroke-dashoffset: 102;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * The rise carries the whole sheet up through the outline. It starts with
+ * the wave crests just under the letter's foot and ends with the troughs
+ * just over its head, so the fill is complete when the animation ends.
+ * `px` here is SVG user units, not screen pixels.
+ */
+.fill {
+  transform: translateY(62px);
+  animation: fill-letter 1.5s ease-in-out 4.5s both;
+}
+
+@keyframes fill-letter {
+  from {
+    transform: translateY(62px);
+  }
+  to {
+    transform: translateY(2px);
+  }
+}
+
+/*
+ * The sway slides the crests sideways by exactly one wavelength per loop,
+ * so the motion is seamless and the surface reads as moving water rather
+ * than a wavy line being lifted.
+ */
+.water {
+  fill: currentColor;
+  stroke: none;
+  animation: water-sway 1.2s linear infinite;
+}
+
+@keyframes water-sway {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaving,
+  .leaving::backdrop {
+    animation-duration: 1ms;
+  }
+
+  .trace {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .fill,
+  .water {
+    animation: none;
+  }
+}

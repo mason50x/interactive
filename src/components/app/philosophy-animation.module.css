@@ -1,0 +1,198 @@
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100%;
+  overflow: hidden;
+  padding: 0 24px 76px;
+  color: var(--foreground);
+}
+
+.stage {
+  position: relative;
+  width: min(220px, 28%);
+  margin-top: -210px;
+  aspect-ratio: 1;
+  isolation: isolate;
+}
+
+.puppets {
+  position: relative;
+  width: min(1000px, 100%);
+  aspect-ratio: 1000 / 470;
+  flex-shrink: 0;
+  container-type: inline-size;
+  contain: layout style;
+}
+
+.hand {
+  position: absolute;
+  width: 33%;
+  aspect-ratio: 768 / 1024;
+  left: 3%;
+  top: -8cqw;
+  will-change: transform;
+}
+.hand[data-hand="1"] {
+  left: auto;
+  right: 3%;
+}
+.handImage {
+  position: absolute;
+  inset: 0;
+  background: url("/images/6eb34ee789e68827.png") left top / 200% 100% no-repeat;
+  pointer-events: none;
+}
+.hand[data-hand="1"] .handImage {
+  background-position: right top;
+}
+.pendulum {
+  position: absolute;
+  width: 4.8cqw;
+  height: calc(var(--string-length) * 0.1cqw);
+  margin-left: -2.4cqw;
+  transform-origin: 50% 0;
+  will-change: transform;
+}
+.string {
+  position: absolute;
+  height: 100%;
+  width: 1px;
+  left: calc(50% - 0.5px);
+  background: #777;
+}
+.puppetPhone {
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  height: 10cqw;
+  background: url("/images/8780df12a3142aeb.png") 50.46% top / 209% 100%
+    no-repeat;
+}
+
+@media (max-width: 800px) {
+  .puppets {
+    aspect-ratio: 650 / 470;
+  }
+  .hand {
+    width: 33.0769%;
+    left: 6.1538%;
+    top: -6.1538cqw;
+  }
+  .hand[data-hand="1"] {
+    right: 6.1538%;
+  }
+  .pendulum {
+    width: 6.5723cqw;
+    margin-left: -3.2862cqw;
+    height: calc(var(--string-length) * 0.153846cqw);
+  }
+  .puppetPhone {
+    height: 13.6923cqw;
+  }
+  .stage {
+    width: min(180px, 70%);
+    margin-top: 4px;
+  }
+}
+
+.ban {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  color: #ef4444;
+  pointer-events: none;
+}
+
+.ban svg {
+  width: 100%;
+  height: 100%;
+}
+
+.slot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  will-change: transform, filter, opacity;
+}
+
+.phoneGlyph {
+  width: 44%;
+  height: 69%;
+}
+.chatgptGlyph {
+  width: 61%;
+  height: 61%;
+}
+.funGlyph {
+  width: 77%;
+  height: auto;
+  overflow: visible;
+}
+
+.stillBan {
+  display: none;
+}
+
+.sound {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.sound:hover {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+.sound[data-audible="false"] {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 5%, transparent);
+}
+.sound svg {
+  width: 20px;
+  height: 20px;
+}
+.sound:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Keep the complete sequence available without motion. */
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    display: flex;
+    gap: 16px;
+    width: min(450px, 100%);
+    margin-top: 0;
+    aspect-ratio: auto;
+  }
+  .stage > .ban {
+    display: none;
+  }
+  .slot {
+    position: relative;
+    flex: 1;
+    aspect-ratio: 1;
+    opacity: 1;
+    will-change: auto;
+  }
+  .stillBan {
+    display: block;
+  }
+}

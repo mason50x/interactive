@@ -1,0 +1,11 @@
+title = "Interactive Learning secret scanning"
+
+[extend]
+useDefault = true
+
+# Two historical moderation enum rows are mistaken for generic credentials.
+# Match the entire source line; never exempt a file, commit, or real key format.
+[[allowlists]]
+description = "OpenAI moderation category enum is not an API credential"
+regexTarget = "line"
+regexes = ['''^\s*\{ key: "sexual/minors", refusal: "exploitation"(?:, banOnSight: true)? \},$''']

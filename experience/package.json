@@ -1,0 +1,28 @@
+{
+  "name": "il-experience",
+  "private": true,
+  "type": "module",
+  "description": "Allowlisted experience: rewriting engine frontend + Bare v3 server, one Cloudflare Worker.",
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@mercuryworkshop/bare-as-module3": "^2.2.5",
+    "@mercuryworkshop/bare-mux": "^2.1.7",
+    "@titaniumnetwork-dev/ultraviolet": "^3.2.10"
+  },
+  "devDependencies": {
+    "wrangler": "^4.131.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260908.1": true
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

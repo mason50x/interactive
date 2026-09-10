@@ -1,0 +1,285 @@
+/**
+ * Every number this system can be argued about, in one file.
+ *
+ * The rest of this directory decides *what* is wrong. This decides how wrong,
+ * how often, and for how long — which is the half that needs changing when the
+ * room turns out calmer or nastier than it was designed for, and the half that
+ * should never require reading a regular expression to adjust.
+ *
+ * Nothing here is imported from `src/`. See `convex/moderation/lexicon.ts` for
+ * why that matters and what enforces it.
+ */
+
+/** The three places a message can be sent. */
+export type Surface = "global" | "dm" | "group";
+
+/**
+ * The longest a message may be, per surface.
+ *
+ * The global room is capped far lower than a private one on purpose. A wall of
+ * text in a room of strangers is a denial of service on everyone else's screen,
+ * and nothing that genuinely needs two thousand characters needs to be said to
+ * everybody at once.
+ */
+export const MAX_BODY: Record<Surface, number> = {
+  global: 500,
+  dm: 2000,
+  group: 2000,
+};
+
+/** Anything shorter than this, after trimming, is not a message. */
+export const MIN_BODY = 1;
+
+/** Newlines past this are a stretched-out shout rather than a paragraph. */
+export const MAX_NEWLINES = 12;
+
+/**
+ * The longest run of one repeated character that survives.
+ *
+ * Not a violation — the run is collapsed before matching, so `fuuuuck` and
+ * `fuck` are the same word to the lexicon. This cap is only about the message
+ * as *rendered*: two hundred exclamation marks is a layout attack.
+ */
+export const MAX_CHAR_RUN = 16;
+
+/**
+ * Combining marks stacked deeper than this on one base character is Zalgo, and
+ * Zalgo is never anything else. Two is enough for every real language that
+ * stacks (Thai, Devanagari, Vietnamese all fit).
+ */
+export const MAX_COMBINING_RUN = 2;
+
+/**
+ * Distinct reports needed on one message before it is hidden.
+ *
+ * One report per account is enforced separately, so this is a count of people
+ * rather than presses of the same button.
+ */
+export const REPORTS_TO_HIDE = 3;
+
+/** The most reports one account's opinion is worth in a day. */
+export const MAX_REPORTS_PER_DAY = 10;
+
+/**
+ * How long after sending a message may still be deleted outright.
+ *
+ * Short on purpose. Long enough to cover the whole of why anybody wants it —
+ * the wrong thread, the wrong words, sent before it was finished — and too
+ * short to be a way of editing a conversation after the fact. Past this the
+ * message belongs to the conversation as much as to the person who wrote it,
+ * and the people replying to it deserve it to stay put.
+ */
+export const DELETE_WINDOW_MS = 30 * 1000;
+
+/**
+ * How many recent sends are remembered on the sender's own profile.
+ *
+ * This one bounded array is the entire cross-message memory of the system —
+ * rate windows, duplicate detection, broadcast detection and repeat-targeting
+ * all read it, and none of them needs a table or a second document because of
+ * it. Twenty covers the longest window below with room to spare.
+ */
+export const RECENT_RING = 20;
+
+/**
+ * The rate windows, by trust tier. Each is "at most `count` in `ms`".
+ *
+ * Two windows per tier rather than one: the short window stops a paste-bomb,
+ * the long one stops a patient flood that stays under it. A tier only ever
+ * relaxes these — there is no tier that can send faster than `trusted`.
+ */
+export const RATES = {
+  fresh: [
+    { count: 3, ms: 10_000 },
+    { count: 20, ms: 5 * 60_000 },
+  ],
+  regular: [
+    { count: 5, ms: 10_000 },
+    { count: 40, ms: 5 * 60_000 },
+  ],
+  trusted: [
+    { count: 8, ms: 10_000 },
+    { count: 80, ms: 5 * 60_000 },
+  ],
+} as const;
+
+export type Tier = keyof typeof RATES;
+
+/** What it takes to stop being new, and what it takes to be trusted. */
+export const TRUST = {
+  freshUntilMs: 24 * 60 * 60 * 1000,
+  freshUntilMessages: 10,
+  trustedAfterMs: 7 * 24 * 60 * 60 * 1000,
+  trustedAfterMessages: 200,
+};
+
+/** Saying the same thing twice inside this window is saying it twice. */
+export const DUPLICATE_WINDOW_MS = 10 * 60_000;
+
+/** The same text into this many conversations this fast is a broadcast. */
+export const BROADCAST = { conversations: 3, ms: 5 * 60_000 };
+
+/**
+ * Hosts a link may point at. Ships empty, which means no links at all.
+ *
+ * Kept as a set rather than a boolean so that relaxing this is a list of hosts
+ * somebody chose, not a switch somebody flipped. See the link rule in
+ * `convex/moderation/rules.ts` for why the default is nothing.
+ */
+export const ALLOWED_LINK_HOSTS: ReadonlySet<string> = new Set<string>([]);
+
+/**
+ * How long the global room keeps what was said in it.
+ *
+ * Every other table here is bounded by the number of accounts or the number of
+ * conversations. This one is bounded by nothing at all, so it is bounded by
+ * time instead, and thirty days is well past the point where anyone scrolls.
+ */
+export const GLOBAL_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Reaction emoji, fixed here so there is nothing about them to moderate. */
+export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as const;
+
+/** The most distinct reactions one message may carry. */
+export const MAX_REACTION_KINDS = 6;
+
+/** The most reactors recorded per emoji. Past this, only the count moves. */
+export const MAX_REACTORS = 100;
+
+/** The longest a group may be called. */
+export const MAX_TITLE = 40;
+
+/** The longest a display name may be. Mirrored in `src/lib/chat.ts`. */
+export const MAX_DISPLAY_NAME = 30;
+
+/**
+ * The faces a group may wear, fixed for the same reason the reactions are.
+ *
+ * A closed set is what makes a group's picture unmoderatable in the good sense:
+ * there is no upload, no text, and nothing a person can put here that was not
+ * already chosen. Anything outside this list is refused rather than sanitised —
+ * see `setLook` in `convex/chat/groups.ts`.
+ */
+export const GROUP_EMOJI = [
+  "🎮", "🎵", "⚽", "🎨", "📚", "🍕", "🌟", "🚀",
+  "🐙", "🌵", "🍀", "🧩", "🎲", "🛹", "🪐", "🦊",
+] as const;
+
+/** The hues a group may be drawn on. Twelve steps around the wheel. */
+export const GROUP_HUES = [
+  10, 40, 70, 100, 130, 160, 190, 220, 250, 280, 310, 340,
+] as const;
+
+
+/**
+ * The same wheel, for a person.
+ *
+ * Shared with `GROUP_HUES` on purpose: a person and a group drawn from two
+ * different palettes would read as two different kinds of object in a list
+ * that is deliberately one list.
+ */
+export const AVATAR_HUES = GROUP_HUES;
+
+/**
+ * The same faces, for a person.
+ *
+ * Shared with `GROUP_EMOJI` for the reason the wheel is shared, and closed for
+ * the reason that one is closed: a picture somebody picks out of a list is a
+ * picture nobody has to look at afterwards. This is as far as "choose your
+ * avatar" goes on a site with thirteen-year-olds on it and no upload path — see
+ * `monogram.tsx` in the app for the longer version of that argument.
+ */
+export const AVATAR_EMOJI = GROUP_EMOJI;
+
+/**
+ * What a picture may be, before anybody looks at what is in it.
+ *
+ * Four formats, which are the four a browser can both decode and display
+ * everywhere. Anything else is refused at the claim, unread: the check in
+ * `convex/moderation/images.ts` costs a request per picture and a file that
+ * is not an image is not worth one. SVG is deliberately not here — it is a
+ * document that can carry script, and "image" is the last thing it is.
+ */
+export const IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+
+/**
+ * The most bytes one picture may be, as stored.
+ *
+ * The client shrinks everything to `MAX_IMAGE_EDGE` pixels on its longest
+ * side before uploading — see `src/lib/images.ts` — so a real upload is a few
+ * hundred kilobytes and this is only the ceiling for a client that did not
+ * bother. Six megabytes is under the classifier's own limit with room to spare.
+ */
+export const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+
+/**
+ * The longest edge a picture is allowed to claim, in pixels.
+ *
+ * A sanity bound on the dimensions the client reports, which are only ever
+ * used to draw a box of the right shape. Past this the numbers are not a
+ * picture anybody took; they are an attempt to make the thread lay out a box
+ * the height of a building.
+ */
+export const MAX_IMAGE_EDGE = 8192;
+
+/** Pictures on one message. Four is a grid; more is an album. */
+export const MAX_IMAGES_PER_MESSAGE = 4;
+
+/**
+ * Pictures one account may have uploaded and not yet sent.
+ *
+ * The bound on storage an account can consume without ever saying anything:
+ * every picture past this is refused an upload URL until some are sent or
+ * discarded, or the sweep takes them. Two messages' worth is plenty for a
+ * composer that holds one message at a time.
+ */
+export const MAX_UNSENT_IMAGES = 8;
+
+/**
+ * How long an unsent picture survives.
+ *
+ * An hour is far past how long a composer stays open with something in it,
+ * and it is the window `sweep` in `convex/chat/attachments.ts` reclaims after.
+ * Nothing correct depends on it: an expired-but-unswept picture is still a
+ * valid `ready` row, and sending it works.
+ */
+export const IMAGE_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * How many letters somebody may put on their own disc.
+ *
+ * Two, because that is initials. It is also the whole of why this is not a
+ * display name: two characters cannot carry a sentence, an address, or an
+ * insult, so the field needs no moderation pass — only a shape check. See
+ * `setAvatar` in `convex/chat/profiles.ts`.
+ */
+export const MAX_INITIALS = 2;
+
+/**
+ * How many times an account may change its handle. Ever, not per period.
+ *
+ * The old rule was none, and the reason was good: somebody who has made
+ * themselves unpleasant should not be able to shed the name people know them
+ * by. Two is the compromise — enough for a name typed wrong or regretted early,
+ * few enough that it cannot be used to keep moving. There is no reset.
+ *
+ * Note that renaming does not rewrite history: `authorHandle` is stored on
+ * every message and stays as it was, so old messages keep the name they were
+ * sent under. That is a feature of this limit rather than a defect of it.
+ */
+export const MAX_HANDLE_CHANGES = 2;
+
+/**
+ * How many different people one message may name.
+ *
+ * Past this the message is refused rather than trimmed, and for free: it is a
+ * shape nobody reaches by talking, and the only thing it can be is somebody
+ * pasting a member list to make everyone's list light up. `@everyone` is one
+ * name and covers the room — see `convex/moderation/mentions.ts`.
+ */
+export const MAX_MENTIONS = 20;

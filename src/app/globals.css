@@ -1,0 +1,1939 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * `dark:` follows the resolved theme on <html>, not the OS. Without this it
+ * would still compile to `prefers-color-scheme`, and a user who picked light
+ * on a dark machine would get half a light page.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * The rail's two widths, as variants.
+ *
+ * `AppSidebar` is 15rem of labelled rows at `lg` and up, 4.5rem of icons below
+ * it, and — since it can be collapsed — 4.5rem of icons at `lg` too when
+ * somebody has asked for that. Everything in the rail with two shapes has to
+ * switch on the whole condition, and a bare `lg:` only knows half of it. So
+ * the rail writes its state to `data-rail` on its `<nav>` (see
+ * `src/lib/rail.ts`), and these are what its contents use in place of `lg:`
+ * and `max-lg:`:
+ *
+ *   wide:       `lg` and up, and not collapsed. The labelled rail.
+ *   narrow:     everything else — below `lg`, or collapsed. The complement of
+ *               `wide:`, so an element is always in exactly one of the two.
+ *   collapsed:  `lg` and up *and* collapsed. Only the control that opens the
+ *               rail back up needs to tell the two narrow cases apart, because
+ *               below `lg` there is no wide rail to open.
+ *
+ * `64rem` is Tailwind's `lg`, restated because a variant cannot name a
+ * breakpoint. Anything portalled out of the nav — the account popup — cannot
+ * see the attribute and takes the state from `RailContext` instead.
+ */
+@custom-variant wide {
+  @media (width >= 64rem) {
+    &:where([data-rail="open"], [data-rail="open"] *) {
+      @slot;
+    }
+  }
+}
+@custom-variant narrow {
+  @media (width < 64rem) {
+    @slot;
+  }
+  &:where([data-rail="closed"], [data-rail="closed"] *) {
+    @slot;
+  }
+}
+@custom-variant collapsed {
+  @media (width >= 64rem) {
+    &:where([data-rail="closed"], [data-rail="closed"] *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * The rail's swapped elements: the things that exist at one width only and
+ * have a counterpart at the other. The search box and its icon button, the
+ * invite cards and theirs, the account row's name, the two
+ * halves of the collapse control.
+ *
+ * The rail changes width over 300ms and these cannot follow it: a box that
+ * is 14.25rem wide is 14.25rem wide, and while the column shrinks past it
+ * there is nothing for it to be but overhanging the shell. So they do not
+ * follow it. Whichever set is leaving goes in the first frame; the column
+ * moves with only the rows and the mark on it, which *can* follow it; and the
+ * arriving set fades in over the second half, by which time the column is
+ * nearly where it is going. The eye reads one thing changing shape and its
+ * contents settling, which is a smaller lie than a box sliding over the page.
+ *
+ * Each is a `display` toggle — `hidden wide:block`, or the reverse — with the
+ * timing stated per property. `display` flips at once in both directions, so
+ * an arriving element is in the layout (and, for the search box, focusable)
+ * from the first frame, and a leaving one is gone regardless of the fade it
+ * never finishes. Opacity is what waits, then fades. Hover colours ride along
+ * because a utility that names `transition-property` cannot share an element
+ * with `transition-colors`; the buttons that take these drop it.
+ *
+ * One knob. An element whose parent clips it — the name in the header — has
+ * nothing to overhang, and can afford to fade *out* as well as in. Setting
+ * `--rail-leave` to the fade's length holds `display` for that long on the
+ * way out, so the fade gets to finish before the element is removed.
+ *
+ * `@starting-style` is what lets an element fade *in* from `display: none`,
+ * and it also applies to an element's very first render. Ungated, every one
+ * of these would fade in on every full page load, 150ms behind the rows
+ * beside them, which reads as the chrome arriving late. So it waits for
+ * `data-rail-moved`, which `AppSidebar` sets on the first toggle and never
+ * clears.
+ */
+@utility rail-wide {
+  opacity: 0;
+  transition-property: opacity, display, background-color, color;
+  transition-duration: 150ms, var(--rail-leave, 0s), 150ms, 150ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  transition-behavior: allow-discrete;
+  @media (width >= 64rem) {
+    [data-rail="open"] & {
+      opacity: 1;
+      transition-delay: 150ms, 0s, 0s, 0s;
+    }
+    [data-rail="open"][data-rail-moved] & {
+      @starting-style {
+        opacity: 0;
+      }
+    }
+  }
+}
+@utility rail-narrow {
+  opacity: 0;
+  transition-property: opacity, display, background-color, color;
+  transition-duration: 150ms, 0s, 150ms, 150ms;
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  transition-behavior: allow-discrete;
+  @media (width < 64rem) {
+    opacity: 1;
+  }
+  [data-rail="closed"] & {
+    opacity: 1;
+    transition-delay: 150ms, 0s, 0s, 0s;
+  }
+  [data-rail="closed"][data-rail-moved] & {
+    @starting-style {
+      opacity: 0;
+    }
+  }
+}
+
+/*
+ * shadcn's token vocabulary, mapped onto our palette rather than its neutral
+ * defaults. Two mappings are worth knowing:
+ *   --primary  is the brand blue. shadcn components use it for their main
+ *              action, which is exactly what we want it for.
+ *   --accent   is shadcn's *subtle hover* surface, not the brand colour. We
+ *              tint it blue so menu and item hovers stay on-brand.
+ * Tokens below the shadcn block (--surface, --faint, --panel-*) are ours.
+ */
+:root {
+  --background: #f7f7f7;
+  --foreground: #0f0f0f;
+
+  --card: #ffffff;
+  --card-foreground: #0f0f0f;
+  --popover: #ffffff;
+  --popover-foreground: #0f0f0f;
+
+  --primary: #3c85f7;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2a72e4;
+
+  --secondary: #efefef;
+  --secondary-foreground: #0f0f0f;
+
+  --muted: #efefef;
+  --muted-foreground: #5b5b5b;
+
+  --accent: #e7f0fe;
+  --accent-foreground: #1b4fa8;
+
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #ffffff;
+
+  /* The other half of the answer a field can give. Only ever ink — there is no
+     green surface anywhere in this app — so it is cut dark enough to be read
+     as text on the background rather than as a fill, which is the same rule
+     the accents follow and the reason this is not the brighter green a tick
+     usually is. */
+  --success: #058c56;
+
+  --border: #e3e3e3;
+  --input: #e3e3e3;
+  --ring: #3c85f7;
+
+  --chart-1: #3c85f7;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #ef4444;
+
+  --radius: 0.75rem;
+
+  /* The app chrome: the rail, and the margin all the way around the shell.
+     A step darker than the shell it surrounds, in both themes. */
+  --sidebar: #f3f3f3;
+  --sidebar-foreground: #0f0f0f;
+  --sidebar-primary: #3c85f7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7f0fe;
+  --sidebar-accent-foreground: #1b4fa8;
+  --sidebar-border: #e3e3e3;
+  --sidebar-ring: #3c85f7;
+
+  /* Ours: extra surface steps the shadcn scale has no slot for. */
+  --surface: #ffffff;
+  --surface-muted: #efefef;
+  --faint: #8a8a8a;
+  --border-strong: #d2d2d2;
+
+  /* Card elevation, as three shadows rather than one.
+
+     A single blur reads as a glow around the card; what makes an object look
+     like it is resting on a page is the *contact* — a tight, nearly opaque
+     shadow right under the edge — with the wide, faint one further out doing
+     the ambient occlusion. The middle layer only exists to keep the two from
+     showing a seam. All three are pulled up by their spread so nothing leaks
+     out of the top edge: light in this app comes from above.
+
+     Cast in the foreground ink rather than pure black, so the shadow is the
+     same hue as the page rather than a grey the palette never uses. */
+  --elevation-card:
+    0 1px 2px -1px rgb(15 15 15 / 0.07), 0 5px 12px -6px rgb(15 15 15 / 0.09),
+    0 20px 36px -20px rgb(15 15 15 / 0.16);
+  --elevation-card-hover:
+    0 2px 4px -2px rgb(15 15 15 / 0.09), 0 12px 24px -10px rgb(15 15 15 / 0.12),
+    0 36px 64px -28px rgb(15 15 15 / 0.24);
+
+  /* The inverted panel. Stays dark in both themes by design. */
+  --panel: #0f0f0f;
+  --panel-elevated: #1a1a1a;
+  --panel-foreground: #f7f7f7;
+  --panel-muted: #a3a3a3;
+  --panel-border: #2a2a2a;
+
+  /* The streak fire. The only warm colour in the app, and deliberately not
+     an accent: the accent is a preference and six of them are selectable,
+     while the flame has to stay the colour of fire under all of them.
+
+     Two values because one cannot do both jobs. `--fire` is the flame itself
+     and the tint under the chip, and is the same in both themes because a
+     flame that changed hue with the page would stop reading as one.
+     `--fire-ink` is the number beside it, which is type and therefore has to
+     meet the background it is set on: a burnt orange on white, and a much
+     lighter one on black. */
+  --fire: #ff6a00;
+  --fire-ink: #b8430b;
+
+  /* The brand blue as it reads on the inverted panel: a step lighter, so a
+     label or a link set in it clears the dark ground. */
+  --primary-soft: #9cc0fb;
+}
+
+/*
+ * Dark is keyed to the attribute rather than to `prefers-color-scheme`,
+ * because the OS is only the *default* answer now — `src/lib/theme.ts` reads
+ * the user's choice, falls back to the OS when they have not made one, and
+ * writes the winner to <html> before the first paint. Nothing in this file
+ * ever has to know which of the two it was.
+ */
+:root[data-theme="dark"] {
+  --background: #0f0f0f;
+  --foreground: #f2f2f2;
+
+  --card: #171717;
+  --card-foreground: #f2f2f2;
+  --popover: #171717;
+  --popover-foreground: #f2f2f2;
+
+  --primary: #3c85f7;
+  --primary-foreground: #ffffff;
+  --primary-hover: #5a99f8;
+
+  --secondary: #1f1f1f;
+  --secondary-foreground: #f2f2f2;
+
+  --muted: #1f1f1f;
+  --muted-foreground: #a0a0a0;
+
+  --accent: #14243d;
+  --accent-foreground: #cfe0fb;
+
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: #ffffff;
+
+  --success: #34d399;
+
+  --border: #272727;
+  --input: #272727;
+  --ring: #3c85f7;
+
+  --sidebar: #0f0f0f;
+  --sidebar-foreground: #f2f2f2;
+  --sidebar-primary: #3c85f7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #14243d;
+  --sidebar-accent-foreground: #cfe0fb;
+  --sidebar-border: #272727;
+  --sidebar-ring: #3c85f7;
+
+  --surface: #171717;
+  --surface-muted: #1f1f1f;
+  --faint: #767676;
+  --border-strong: #383838;
+
+  /* Dark cards get the same three layers, cast much harder — a shadow at
+     light-theme opacity is invisible against #0f0f0f — plus a fourth the
+     light theme has no need of: a hairline of white along the top edge. On a
+     dark page a shadow alone cannot lift anything, because there is nothing
+     below the card to darken; the lift comes from the card's own top edge
+     catching the light. */
+  --elevation-card:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.045), 0 1px 2px -1px rgb(0 0 0 / 0.6),
+    0 6px 14px -6px rgb(0 0 0 / 0.55), 0 24px 44px -22px rgb(0 0 0 / 0.7);
+  --elevation-card-hover:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.65),
+    0 14px 26px -10px rgb(0 0 0 / 0.6), 0 40px 72px -30px rgb(0 0 0 / 0.8);
+
+  --panel: #171717;
+  --panel-elevated: #202020;
+  --panel-foreground: #f2f2f2;
+  --panel-muted: #9c9c9c;
+  --panel-border: #303030;
+
+  --fire: #ff6a00;
+  --fire-ink: #ffa457;
+
+  --primary-soft: #9cc0fb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-faint: var(--faint);
+  --color-border-strong: var(--border-strong);
+  --color-panel: var(--panel);
+  --color-panel-elevated: var(--panel-elevated);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-border: var(--panel-border);
+  --color-fire: var(--fire);
+  --color-fire-ink: var(--fire-ink);
+  --color-primary-soft: var(--primary-soft);
+
+  /* `shadow-card` / `shadow-card-hover`. Named off the raw tokens rather than
+     declared here, so both themes can answer the same utility differently. */
+  --shadow-card: var(--elevation-card);
+  --shadow-card-hover: var(--elevation-card-hover);
+
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-display-serif);
+  --font-heading: var(--font-inter);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  /* Kills the rubber-band bounce at the top and bottom of the page (and the
+     horizontal one on trackpads). It has to be set on both elements: the
+     viewport takes its value from <body> only when <html> leaves it at the
+     default, so declaring it on both is the unambiguous form. */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* `--primary-foreground` rather than a bare white, so a retuned palette
+     carries the highlight with it — though every accent is cut deep enough
+     that white is what this resolves to. See `src/lib/preferences.ts`. */
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* No scrollbars anywhere. Every scroller in the app is paged by arrows,
+     by touch, or by the wheel, and a permanent gutter down the side of each
+     one is a stripe across the layout. Scrolling itself is untouched — only
+     the bar is gone. Both forms are needed: Firefox honours
+     `scrollbar-width`, WebKit only the pseudo-element. */
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  /* Display type: the oversized grotesque used for the hero + section heads. */
+  .text-display {
+    line-height: 0.95;
+    font-weight: 600;
+  }
+
+  /* Half a step down from `.text-display`, for the two headings that carry it
+     at full page-title size — 600 reads heavy at 2.75rem in a way it does not
+     at the 1.5rem the utility is also used at. Inter is loaded as a variable
+     font with no pinned weight, so 550 is a real instance rather than a
+     rounded one.
+
+     It lives here rather than as `font-medium` on the element because this
+     block is emitted after Tailwind's own weight utilities and `.text-display`
+     would win the cascade against them. */
+  .text-display-title {
+    font-weight: 550;
+  }
+
+  .text-serif-display {
+    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    line-height: 1.05;
+  }
+
+  /*
+   * The selected rail item: a real button, not a tint.
+   *
+   * Three things do the work, and all three have to move together. The
+   * gradient runs light-to-dark down the face, so the surface reads as lit
+   * from above; the inset highlight on the top edge is the specular line that
+   * light would leave there; and the border is a shade darker than the darkest
+   * point of the gradient, which is what keeps the whole thing sitting on the
+   * rail rather than glowing off it. Drop any one and the other two look like
+   * a mistake.
+   *
+   * Written here rather than as utilities on the element because the gradient
+   * stops are not palette tokens — they are two steps either side of
+   * `--primary`, mixed off it rather than written out, so the face follows the
+   * account's accent instead of being a second, permanent blue. The mix
+   * percentages are what was picked by eye; the hue is not.
+   *
+   * This face belongs to one element that `AppSidebar` slides between rows,
+   * not to the rows themselves. A gradient cannot be interpolated, so a face
+   * drawn on each row can only cut from one to the next, and a cut across the
+   * gap between two rows reads as the selection jumping.
+   */
+  .nav-pill {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 88%, #ffffff),
+      color-mix(in oklab, var(--primary) 93%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--primary) 84%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+      0 1px 2px
+        color-mix(
+          in oklab,
+          color-mix(in oklab, var(--primary) 50%, #000000) 30%,
+          transparent
+        );
+  }
+
+  /*
+   * A light travelling across a word, for a wait too short to deserve a
+   * skeleton and too long to leave silent.
+   *
+   * The gradient is painted on the text itself — `background-clip: text` with
+   * transparent ink — and slid, rather than an overlay swept across an opaque
+   * word: an overlay has to know the colour behind it, and this sits on the
+   * panel, on white and on #171717 alike. The band is narrow and the two ends
+   * of the gradient are the same faint grey, so what moves is a highlight and
+   * not an edge.
+   */
+  /* Registered so `.text-shimmer-periodic` can transition its base colour
+     with the row it sits in; an unregistered custom property snaps. */
+  @property --shimmer-base {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+
+  @keyframes text-shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+
+  .text-shimmer {
+    /* The two colours the band is made of, named so a caller on a surface the
+       theme knows nothing about can say what "unlit" and "lit" mean there —
+       see `.packet-caption`, which shimmers on a black cover. Everywhere else
+       they resolve to the theme's own pair and nothing changes. */
+    --shimmer-base: var(--faint);
+    --shimmer-crest: var(--foreground);
+    background-image: linear-gradient(
+      100deg,
+      var(--shimmer-base) 0%,
+      var(--shimmer-base) 42%,
+      var(--shimmer-crest) 50%,
+      var(--shimmer-base) 58%,
+      var(--shimmer-base) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: text-shimmer 1.5s linear infinite;
+  }
+
+  /* The same idea as `.text-shimmer`, passed once and then rested: the sweep
+     takes the first third of the cycle and the rest is the word sitting
+     still in its base colour. For something that wants to be noticed now and
+     then, not watched — the rail's unread row. The band is wider than the
+     loop's and the pass slower, since a glint that is over in a frame on a
+     word this short is a flicker, and the crest is the brand colour rather
+     than the foreground so the pass reads as a signal and not a highlight.
+     The base is left to the caller: it has to be whatever the word's own
+     ink is where it sits. */
+  @keyframes text-shimmer-periodic {
+    0% {
+      background-position: 150% 0;
+    }
+    36%,
+    100% {
+      background-position: -50% 0;
+    }
+  }
+
+  .text-shimmer-periodic {
+    --shimmer-crest: var(--primary);
+    background-image: linear-gradient(
+      100deg,
+      var(--shimmer-base) 0%,
+      var(--shimmer-base) 28%,
+      var(--shimmer-crest) 46%,
+      var(--shimmer-crest) 54%,
+      var(--shimmer-base) 72%,
+      var(--shimmer-base) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    /* The base is a custom property, so the row's hover has to be told it
+       can fade — see the `@property` above. */
+    transition: --shimmer-base 150ms;
+    animation: text-shimmer-periodic 5s linear infinite;
+  }
+
+  /* Still a word, just no longer a moving one. */
+  @media (prefers-reduced-motion: reduce) {
+    .text-shimmer,
+    .text-shimmer-periodic {
+      animation: none;
+      background-image: none;
+      color: var(--shimmer-base);
+    }
+  }
+
+  /* A person, as a letter on a colour. The hue is set inline from the handle
+     (see `handleHue` in `src/lib/chat.ts`); the lightness and chroma live here
+     because an inline style cannot carry a dark variant, and a monogram that
+     stays pale on a dark surface is a bright disc in the middle of a thread.
+
+     Chroma is deliberately low. A list of these is a column of forty coloured
+     circles, and at full saturation it reads as a bag of sweets rather than as
+     a set of people. */
+  .monogram {
+    background-color: oklch(0.92 0.045 var(--monogram-hue));
+    color: oklch(0.42 0.11 var(--monogram-hue));
+  }
+
+  :root[data-theme="dark"] .monogram {
+    background-color: oklch(0.32 0.05 var(--monogram-hue));
+    color: oklch(0.86 0.09 var(--monogram-hue));
+  }
+
+  /* Dark rails take less light, so the face is pulled down a step and the
+     specular line thinned — the light-theme values glare against #0f0f0f. */
+  :root[data-theme="dark"] .nav-pill {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 94%, #ffffff),
+      color-mix(in oklab, var(--primary) 90%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--primary) 72%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+
+  /*
+   * Message bubbles, built the way the rail's selected pill is built.
+   *
+   * Same three parts, same order, for the same reason: a face lit from above,
+   * a specular line along the top edge, and a border a shade darker than the
+   * foot of the gradient so the bubble sits on the thread rather than glows
+   * off it. A thread is a column of small objects and the rail is a column of
+   * small objects, and one of them looking pressed out of plastic while the
+   * other is a flat tint is the kind of difference nobody names and everybody
+   * sees.
+   *
+   * Yours mixes off `--primary`, so it is the account's accent and moves when
+   * that does — the same mix percentages as `.nav-pill`, because your messages
+   * and your selected page are the same object in two places.
+   *
+   * Everybody else's mixes off `--surface-muted`, and is quieter on purpose:
+   * the same construction with the contrast taken out of it. The highlight is
+   * nearly white in the light theme because it is a light grey catching light,
+   * and almost nothing in the dark one, where a 30% white line on #1f1f1f is
+   * a stripe rather than a rim.
+   *
+   * The `bg-*` utility stays on the element under all of this. The gradient
+   * covers it, but it is what the bubble is if the gradient does not paint —
+   * and it is what the text colour was picked against.
+   */
+  .bubble-mine {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 88%, #ffffff),
+      color-mix(in oklab, var(--primary) 93%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--primary) 84%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+      0 1px 2px
+        color-mix(
+          in oklab,
+          color-mix(in oklab, var(--primary) 50%, #000000) 30%,
+          transparent
+        );
+  }
+
+  .bubble-theirs {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--surface-muted) 86%, #ffffff),
+      color-mix(in oklab, var(--surface-muted) 97%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--surface-muted) 87%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(15, 15, 15, 0.07);
+  }
+
+  :root[data-theme="dark"] .bubble-mine {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--primary) 94%, #ffffff),
+      color-mix(in oklab, var(--primary) 90%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--primary) 72%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 1px 2px rgba(0, 0, 0, 0.45);
+  }
+
+  :root[data-theme="dark"] .bubble-theirs {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--surface-muted) 92%, #ffffff),
+      color-mix(in oklab, var(--surface-muted) 94%, #000000)
+    );
+    border-color: color-mix(in oklab, var(--surface-muted) 60%, #000000);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+      0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  /*
+   * Somebody else's bubble that says your name.
+   *
+   * The rim goes to the accent and nothing else moves: the bubble is still
+   * theirs, still grey, still on the left. A tinted fill was tried and read
+   * as a different kind of message rather than the same message with your
+   * name in it. Declared after both `.bubble-theirs` rules and with a dark
+   * rule of its own, because the dark rule above outranks a lone class.
+   */
+  .bubble-theirs.bubble-named,
+  :root[data-theme="dark"] .bubble-theirs.bubble-named {
+    border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+  }
+
+  /*
+   * A person named in a message, drawn as a chip.
+   *
+   * No padding and no change of weight, and that is the whole design. The
+   * same chip is drawn *under* the composer's textarea — the textarea lays out
+   * its own glyphs, transparent, and this is the coloured copy behind them —
+   * so anything here that moved a glyph, even by the width of a bold stroke,
+   * would put the caret beside the wrong letter. The tint that would have
+   * been padding is a box-shadow instead, which paints outside the box
+   * without taking any room in the line; `box-decoration-break: clone` gives
+   * a chip that wraps a rounded end on each line.
+   *
+   * `-me` is a mention of the reader, a shade stronger. `-mine` is a mention
+   * inside the reader's own bubble, which is white text on the accent, so the
+   * accent tint would vanish into it: a white wash instead.
+   */
+  .mention-chip {
+    color: var(--primary);
+    background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 14%, transparent);
+    border-radius: 3px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .mention-chip-me {
+    background-color: color-mix(in oklab, var(--primary) 26%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 26%, transparent);
+  }
+
+  .mention-chip-mine {
+    color: inherit;
+    background-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+  }
+
+  /*
+   * The composer at the foot of a thread.
+   *
+   * Its lift is `--elevation-card`, the same object the cards rest on, rather
+   * than a shadow of its own: the token already knows that a grey shadow does
+   * nothing on a black page and swaps in the hairline top edge instead.
+   *
+   * In the dark theme the field also steps up to the muted surface and the
+   * strong border. `--surface` is one step above the page there, which is
+   * enough for a card with a title and a body, and not enough for an empty
+   * pill with three words of placeholder in it — the field read as a slightly
+   * different black, and the eye could not find the edge to click.
+   */
+  :root[data-theme="dark"] .composer,
+  :root[data-theme="dark"] .composer-skin {
+    background-color: var(--surface-muted);
+    border-color: var(--border-strong);
+    box-shadow: var(--elevation-card);
+  }
+
+  /* Lit by the field alone: the plus, the microphone and Send take focus
+     too, and the box turning blue for a menu opening reads as the wrong
+     thing being pressed. */
+  :root[data-theme="dark"] .composer:has(textarea:focus) {
+    border-color: var(--primary);
+  }
+
+  /*
+   * The account popup and its submenu, on the way in and out.
+   *
+   * Written here rather than as Tailwind utilities because the two vocabularies
+   * disagree about what a translation is. Base UI's transition hook targets the
+   * `transform` property; Tailwind v4 compiles `translate-y-*` to the separate
+   * `translate` longhand, so the class and the transition end up naming
+   * different properties and the popup arrives with no motion at all.
+   *
+   * It slides along the axis it is anchored on — up out of the trigger, back
+   * down into it — because that reads as one object moving. A scale reads as a
+   * second object appearing on top of the first, which at this size is a pop.
+   * `[data-starting-style]` and `[data-ending-style]` are Base UI's own hooks,
+   * and sharing one declaration between them is what makes the exit the
+   * entrance run backwards.
+   */
+  .popup-slide,
+  .popup-drop {
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* The popup is a bordered, shadowed panel full of text. Without a layer of
+       its own the browser re-rasterises all of that on every frame, and what
+       you see is a sequence of positions rather than a movement. `will-change`
+       hands it to the compositor for the length of the transition, which is
+       all it exists for — the element is unmounted when the menu closes, so
+       the hint never outlives the motion it is for. */
+    will-change: transform, opacity;
+  }
+
+  /* Both curves are the same, so the fade and the slide arrive together: two
+     different easings over the same 250ms read as the panel catching up with
+     itself. The travel is far enough to be a movement — at 6px there are too
+     few distinct positions to read as one. */
+  .popup-slide[data-starting-style],
+  .popup-slide[data-ending-style] {
+    opacity: 0;
+    transform: translateY(0.625rem);
+  }
+
+  /* The same thing for a popup that hangs below its trigger instead of above
+     it: it starts a little higher and settles downward, so it still reads as
+     having come out of the thing that was pressed rather than up off the page.
+     Everything else about it is `.popup-slide`, which is why the two share the
+     declaration above. */
+  .popup-drop[data-starting-style],
+  .popup-drop[data-ending-style] {
+    opacity: 0;
+    transform: translateY(-0.625rem);
+  }
+
+  /*
+   * The bot allowance bar in the composer's plus menu.
+   *
+   * It grows from the left to where it stands on the popup's way in, and
+   * glides between values after that — a tag spent while the menu is open is
+   * a bar getting shorter, not a bar being swapped for a shorter one. Scaled
+   * rather than resized so the compositor can carry it on the same frames as
+   * the popup's slide. `@starting-style` is the entrance: the popup unmounts
+   * on close, so every opening starts from empty again.
+   */
+  .quota-fill {
+    position: relative;
+    overflow: hidden;
+    transition:
+      width 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 400ms ease-out;
+    @starting-style {
+      width: 0;
+    }
+  }
+
+  /* A dot-matrix grid drifting through the fill. The dots are a tile of the
+     bar's own size and the animation moves exactly one tile, so the loop has
+     no seam. Width-based rather than scaled so the dots stay round while the
+     bar changes length. */
+  .quota-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+      circle,
+      rgb(255 255 255 / 0.55) 1px,
+      transparent 1.6px
+    );
+    background-size: 6px 6px;
+    background-position: 0 0;
+    animation: quota-flow 900ms linear infinite;
+  }
+
+  @keyframes quota-flow {
+    to {
+      background-position: 6px 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quota-fill {
+      transition: none;
+    }
+    .quota-fill::after {
+      animation: none;
+    }
+  }
+}
+
+/*
+ * Clerk's card draws the logo uploaded to the Clerk dashboard, and there is
+ * only one of those — a black mark, which is right on the light card and
+ * all but gone on the dark one. Inverting it is the whole fix: the mark is
+ * monochrome, so a flip is the light-on-dark version of the same artwork.
+ *
+ * Keyed to the same attribute as everything else in this file. Clerk follows
+ * the `color-scheme` that `src/lib/theme.ts` writes alongside it, so the card
+ * and the mark on it turn over together — including when the user has
+ * overridden their OS.
+ *
+ * Unlayered on purpose: Clerk injects its own stylesheet, and a rule written
+ * inside one of our layers would be the one that loses.
+ */
+:root[data-theme="dark"] .cl-logoImage {
+  filter: invert(1);
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-drift {
+  animation: drift 7s ease-in-out infinite;
+}
+
+.animate-dash-flow {
+  stroke-dasharray: 6 6;
+  animation: dash-flow 1.6s linear infinite;
+}
+
+.animate-rise-in {
+  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A refusal arriving over the chat composer. Short and slightly under-scaled
+   at the start, so it reads as having come up out of the input it is about
+   rather than as a thing that was always there and just became visible. */
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-notice-in {
+  animation: notice-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------------------------------------------------------------------------
+ * Somebody is typing.
+ *
+ * Three dots in a bubble, doing what three dots in a bubble do — but the
+ * wave is drawn with care, because this is the one animation in the thread
+ * that runs for as long as somebody is thinking. Each dot lifts, brightens
+ * and swells together on the way up and settles on the way down, with a long
+ * rest at the bottom so the loop reads as a ripple travelling through the
+ * three rather than three things bouncing. The stagger is `--i`, one delay
+ * per dot, so the keyframes are written once.
+ *
+ * Everything is transform and opacity, on three elements, for the same reason
+ * the streak flame is: it stays on the compositor and asks the main thread
+ * for nothing while a conversation sits open.
+ *
+ * The row itself arrives from the bottom-left corner of the bubble, slightly
+ * under-scaled, on the same spring the composer's notices use — it should
+ * read as having come up out of the thread, not faded in over it. The faces
+ * beside it take the same entrance a beat apart, `--i` again.
+ *
+ * Under `prefers-reduced-motion` the blanket rule at the foot of this file
+ * collapses all of it to the final keyframe, which for the dots is their
+ * resting state: three still dots in a bubble, which still reads as "typing"
+ * to anybody who has used a phone.
+ * ------------------------------------------------------------------------ */
+
+@keyframes typing-dot {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0) scale(0.82);
+    opacity: 0.4;
+  }
+  22% {
+    transform: translateY(-4px) scale(1.08);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typing-dot 1.35s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation-delay: calc(var(--i, 0) * 0.16s);
+  will-change: transform, opacity;
+}
+
+@keyframes typing-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.typing-in {
+  transform-origin: bottom left;
+  animation: typing-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.06s);
+}
+
+/* ---------------------------------------------------------------------------
+ * The streak fire.
+ *
+ * All of it is transform and opacity, on a handful of elements, so a flame
+ * burning in the corner of the rail for an entire session stays on the
+ * compositor and never asks the main thread for anything. Nothing here uses a
+ * blur filter for the same reason — the glow is a radial gradient scaling in
+ * place, which costs the same whether it is 8px across or 300.
+ *
+ * `transform-box: fill-box` is what makes the SVG halves usable at all: an
+ * SVG element's transform origin is the *viewport's* corner by default, so a
+ * flame asked to sway about its own base would instead swing about the top
+ * left of the icon. The box has to be the shape's own, and then the origin
+ * can be its foot.
+ *
+ * The reduced-motion block at the foot of this file already stops every one
+ * of these dead, so none of them repeat the media query.
+ * ------------------------------------------------------------------------ */
+
+/* The flame body: a slow lean, never quite repeating on the same beat as the
+   core inside it. The scale pair is deliberately reciprocal-ish — taller is
+   narrower — because a flame that grew in both directions reads as a throb. */
+@keyframes flame-sway {
+  0%,
+  100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05, 0.96) rotate(-1.8deg);
+  }
+  50% {
+    transform: scale(0.96, 1.06) rotate(1deg);
+  }
+  75% {
+    transform: scale(1.03, 0.98) rotate(1.6deg);
+  }
+}
+
+/* The hot core, on a faster and less regular cycle than the body. The two
+   periods are picked not to divide into each other, so the flame takes about
+   a minute to repeat a frame it has already shown. */
+@keyframes flame-core {
+  0%,
+  100% {
+    opacity: 0.92;
+    transform: scale(1) translateY(0);
+  }
+  30% {
+    opacity: 0.68;
+    transform: scale(0.84) translateY(0.35px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.14) translateY(-0.5px);
+  }
+  78% {
+    opacity: 0.84;
+    transform: scale(0.94) translateY(0);
+  }
+}
+
+.flame-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: flame-sway 2.9s ease-in-out infinite;
+}
+
+.flame-core {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: flame-core 1.13s ease-in-out infinite;
+}
+
+/* Rail icon microanimations.
+
+   Each of the rail's icons does one small thing on hover, and the thing is
+   its own: the roof lifts off the house, the controller's buttons press, the
+   bubbles take turns, the globe rolls, the chip's pins seat and its die
+   blinks, the brain thinks a side at a time. Nothing spins or bounces as a
+   whole — a glyph that turns on hover could be any glyph — and everything
+   lands back exactly where it started, so a hover that ends mid-way snaps to
+   a frame the eye has already seen.
+
+   The parts are drawn in `nav-icons.tsx`. Every animation here is keyed off
+   `.nav-row:hover` (the toggle has its own scope), fires once, and lasts
+   under a second; the reduced-motion rule at the foot of this file collapses
+   all of them to nothing. Guarded by `(hover: hover)` for the reason
+   Tailwind's own `hover:` is — a touch that lands as a hover is a tap, and
+   the icon should not twitch on the way to a page.
+
+   Every moving piece uses `fill-box` so its origin is its own centre (or its
+   own edge) and not the icon's; the globe's meridians are the exception, and
+   say so. */
+
+@keyframes ni-home-lift {
+  0% {
+    transform: translateY(0);
+  }
+  38% {
+    transform: translateY(-1.1px);
+  }
+  70% {
+    transform: translateY(0.2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* A press is a hole getting smaller: the button sinks into the body. */
+@keyframes ni-press {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.5);
+  }
+}
+
+@keyframes ni-pad-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(-0.6px);
+  }
+  60% {
+    transform: translateX(0.15px);
+  }
+}
+
+/* Rumble: sub-pixel and quick, so the body shivers rather than moves. */
+@keyframes ni-rumble {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-0.35px);
+  }
+  40% {
+    transform: translateX(0.35px);
+  }
+  60% {
+    transform: translateX(-0.25px);
+  }
+  80% {
+    transform: translateX(0.2px);
+  }
+}
+
+@keyframes ni-chat-back {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  40% {
+    transform: translate(-0.5px, -0.7px);
+  }
+}
+
+/* The front bubble grows from its tail, the way a reply arrives. */
+@keyframes ni-chat-front {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(0.4px, 0.5px) scale(1.07);
+  }
+}
+
+/* A meridian at longitude θ projects to the pole-to-pole arc scaled in x by
+   sin θ. Each one carries its own three stops as custom properties — where
+   it is, where it is half-way, where it ends up — so this one set of frames
+   rolls all five; the two crossing the limb also carry an opacity, since a
+   meridian past 90° is on the far side and has to go. `--k1` is the sine of
+   the half-way longitude and not the average of the ends, which is what
+   keeps the roll from looking linear. */
+@keyframes ni-globe-roll {
+  0% {
+    transform: scaleX(var(--k0));
+    opacity: var(--o0, 1);
+  }
+  50% {
+    transform: scaleX(var(--k1));
+    opacity: var(--o1, 1);
+  }
+  100% {
+    transform: scaleX(var(--k2));
+    opacity: var(--o2, 1);
+  }
+}
+
+@keyframes ni-pin-seat {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  40% {
+    transform: translate(var(--dx, 0), var(--dy, 0));
+  }
+}
+
+@keyframes ni-die-blink {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.72);
+  }
+  70% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes ni-think {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.09);
+  }
+}
+
+.ni-home-roof,
+.ni-pad,
+.ni-btn-a,
+.ni-btn-b,
+.ni-chat-back,
+.ni-chat-front,
+.ni-die,
+.ni-pins-t,
+.ni-pins-r,
+.ni-pins-b,
+.ni-pins-l,
+.ni-brain-l,
+.ni-brain-r,
+.ni-rail-pane {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ni-chat-front {
+  /* Its tail. */
+  transform-origin: 100% 100%;
+}
+.ni-brain-l {
+  transform-origin: 100% 50%;
+}
+.ni-brain-r {
+  transform-origin: 0% 50%;
+}
+
+/* The meridians scale about the globe's own centre, not their own box — a
+   pole-to-pole arc scaled about itself would drift off the poles. `view-box`
+   makes 50% the middle of the 24-unit grid. Longitudes, front to back:
+   -67.5°, -22.5°, 22.5°, 67.5°, and a fifth waiting at -112.5° to come round.
+   Never exactly zero: a singular transform is not drawn at all. */
+.ni-globe-m {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transform: scaleX(var(--k0));
+  opacity: var(--o0, 1);
+}
+.ni-globe-m1 {
+  --k0: -0.924;
+  --k1: -0.707;
+  --k2: -0.383;
+}
+.ni-globe-m2 {
+  --k0: -0.383;
+  --k1: 0.02;
+  --k2: 0.383;
+}
+.ni-globe-m3 {
+  --k0: 0.383;
+  --k1: 0.707;
+  --k2: 0.924;
+}
+.ni-globe-m4 {
+  --k0: 0.924;
+  --k1: 1;
+  --k2: 0.924;
+  --o0: 1;
+  --o1: 1;
+  --o2: 0;
+}
+.ni-globe-m5 {
+  --k0: -0.924;
+  --k1: -1;
+  --k2: -0.924;
+  --o0: 0;
+  --o1: 0;
+  --o2: 1;
+}
+
+/* The pane's left edge moves the way the rail is about to: out over the
+   column when it is closing, back when it is opening. Scaled about its right
+   edge so the frame on that side stays the width it is. Transitioned rather
+   than keyed, because here the hover state is a different picture — the
+   column already narrower — and should hold while the pointer does. */
+.ni-rail-pane {
+  transform-origin: 100% 50%;
+  transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (hover: hover) {
+  .nav-row:hover .ni-home-roof {
+    animation: ni-home-lift 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .nav-row:hover .ni-pad {
+    animation: ni-pad-nudge 0.5s ease-out;
+  }
+  .nav-row:hover .ni-btn-a {
+    animation: ni-press 0.32s ease-in-out 0.12s;
+  }
+  .nav-row:hover .ni-btn-b {
+    animation: ni-press 0.32s ease-in-out 0.3s;
+  }
+  .nav-row:hover .ni-controller {
+    animation: ni-rumble 0.45s linear 0.12s;
+  }
+
+  .nav-row:hover .ni-chat-back {
+    animation: ni-chat-back 0.5s ease-out;
+  }
+  .nav-row:hover .ni-chat-front {
+    animation: ni-chat-front 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.16s;
+  }
+
+  .nav-row:hover .ni-globe-m {
+    animation: ni-globe-roll 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-row:hover .ni-pins-t {
+    --dy: -0.6px;
+    animation: ni-pin-seat 0.45s ease-out;
+  }
+  .nav-row:hover .ni-pins-r {
+    --dx: 0.6px;
+    animation: ni-pin-seat 0.45s ease-out 0.07s;
+  }
+  .nav-row:hover .ni-pins-b {
+    --dy: 0.6px;
+    animation: ni-pin-seat 0.45s ease-out 0.14s;
+  }
+  .nav-row:hover .ni-pins-l {
+    --dx: -0.6px;
+    animation: ni-pin-seat 0.45s ease-out 0.21s;
+  }
+  .nav-row:hover .ni-die {
+    animation: ni-die-blink 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+  }
+
+  .nav-row:hover .ni-brain-l {
+    animation: ni-think 0.55s ease-in-out;
+  }
+  .nav-row:hover .ni-brain-r {
+    animation: ni-think 0.55s ease-in-out 0.14s;
+  }
+
+  .rail-toggle[data-to="closed"]:hover .ni-rail-pane {
+    transform: scaleX(1.14);
+  }
+  .rail-toggle[data-to="open"]:hover .ni-rail-pane {
+    transform: scaleX(0.86);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    /* Delays have to go too, not just durations: a transition held back to
+       wait for a motion that no longer happens is just a stall. */
+    transition-delay: 0ms !important;
+  }
+}
+
+/* The orb of pixels that turns in the rail's search panel before anything has
+   been typed.
+
+   Fifty square dots placed on an actual sphere and spun, rather than a circle
+   of dots pretending. Each dot's transform is the standard spherical
+   placement — swing by longitude, tilt by latitude, push out by the radius —
+   inside a `preserve-3d` shell under a short `perspective`, so the browser
+   does the projection. That projection is most of what sells it: the dots
+   bunch up at the silhouette and thin out across the middle on their own, and
+   the near face spreads wider than the far one, neither of which is written
+   anywhere here.
+
+   ## The shading is stepped, not smooth
+
+   A dot cannot be dimmed by its own depth in CSS — there is no way to read a
+   computed z back out. But the depth is knowable in advance: a dot at
+   longitude L faces the camera exactly when the shell has turned by -L, so its
+   brightness over one revolution is a fixed cycle that is merely *offset* by
+   where it sits. That offset is `--phase`, and it is the whole mechanism —
+   every dot runs the identical animation and only the delay differs.
+
+   The cycle steps through eight fixed levels rather than fading between them,
+   which is deliberate and is what keeps this in the same world as the square,
+   whole-pixel dots: quantised shading is how a sphere is drawn with a limited
+   palette, and eight bands read as banding on purpose rather than as a
+   gradient that failed.
+
+   Latitude is left out of the brightness on purpose. A dot near a pole is
+   genuinely closer to the axis and would shade to nothing, which is correct
+   and looks worse — the poles are the part that makes the shape legible as a
+   ball rather than a barrel, and they are worth keeping lit.
+
+   ## Stilled
+
+   Under `prefers-reduced-motion` the blanket rule at the foot of this file
+   collapses both animations, and every dot falls back to the `--rest` opacity
+   written on it: the same eight-level shading, frozen at the rotation the
+   sphere starts at. So the still version is a lit orb rather than a flat
+   scatter of identical dots — which is the difference between a stilled
+   animation and a broken one. */
+@keyframes pixel-orb-spin {
+  from {
+    transform: rotateX(-16deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-16deg) rotateY(360deg);
+  }
+}
+
+@keyframes pixel-orb-face {
+  0% {
+    opacity: 1;
+  }
+  12.5% {
+    opacity: 0.85;
+  }
+  25% {
+    opacity: 0.6;
+  }
+  37.5% {
+    opacity: 0.38;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  62.5% {
+    opacity: 0.38;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  87.5% {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pixel-orb {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  /* Shallow enough to be visible and long enough not to fish-eye the near
+     face. The sphere is 44px across inside a 56px box; anything under about
+     150px here starts bending it. */
+  perspective: 200px;
+}
+
+.pixel-orb-shell {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* Written as a base as well as animated, so the tilt survives the animation
+     being collapsed. A sphere seen exactly edge-on at the equator has its two
+     poles hidden behind the middle, which is the one angle at which a point
+     cloud reads as a ring again. */
+  transform: rotateX(-16deg);
+  animation: pixel-orb-spin 6s linear infinite;
+}
+
+.pixel-orb-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  /* Half the dot, so the placement below measures from the sphere's centre
+     rather than from the dot's top-left corner. */
+  margin: -1.5px 0 0 -1.5px;
+  background: currentColor;
+  opacity: var(--rest);
+  transform: rotateY(calc(var(--lon) * 1deg)) rotateX(calc(var(--lat) * 1deg))
+    translateZ(1.375rem);
+  animation: pixel-orb-face 6s steps(1, end) infinite;
+  /* Negative, so every dot is already lit correctly on the first frame. The
+     positive form of the same offset would open with a dark sphere that
+     brightens into place over six seconds. */
+  animation-delay: calc((var(--phase) - 1) * 6s);
+}
+
+/* The speech bubble that stands in for a conversation nobody has started yet,
+   in the empty thread.
+
+   It is a pixel drawing extruded into a solid and turned all the way round. The
+   outline is a small piece of art on a 4px grid — see `BUBBLE_ART` in
+   `thread.tsx`, which is the shape written out as characters — and every dot in
+   it is repeated across five planes 4px apart, so the depth is on the same
+   pitch as the width and the height and the whole thing is built out of one
+   cube. What turns is the shell; the browser does the projection, and the far
+   planes fall behind the near one on their own.
+
+   ## It goes all the way round
+
+   A rock rather than a swing. Twenty pixels of depth is enough that the edge-on
+   quarter of the turn is a wall rather than a line, and the back half is the
+   same drawing seen from behind — which is what a solid does and what a swing
+   is always avoiding having to prove. It turns at a constant rate, like the orb
+   in the rail: an eased rotation reads as something being shown to you, and a
+   linear one reads as something that is simply turning.
+
+   ## The shading has to turn with it
+
+   A brightness fixed to a plane is only right for as long as that plane is the
+   near one. Halfway through a revolution the front of this is at the back, and
+   a wall whose brightest row is the one furthest away is a wall that reads
+   inside out. So each plane is given the two ends of its own cycle — `--near`
+   for the moment it faces the camera, `--far` for the moment it is hidden
+   behind the rest — and half of them run that cycle half a revolution late.
+   The amplitude is widest for the outer planes and nothing at all for the one
+   on the axis, which does not move in depth and so never changes.
+
+   The eased timing is the point: brightness over a turn follows a cosine, and
+   `ease-in-out` between the two ends of the cycle is that curve to within what
+   anybody can see on a 3px square.
+
+   ## The three dots
+
+   The typing dots, on the near plane, lifting toward the reader in turn. They
+   are the one part of this that means something: the bubble is empty, and the
+   dots are the state a conversation is in just before it is not. Bigger than
+   the outline pixels because they are the subject and the outline is the frame.
+
+   Their lift and their shading are two animations on one element, which is only
+   possible because they are on two different properties — the lift is entirely
+   a transform, the shading entirely an opacity. So the dots keep time with the
+   rotation while bouncing to their own.
+
+   ## Stilled
+
+   The blanket rule above collapses every animation to a single instant, and an
+   animation with no fill leaves the element at the style it had underneath. So
+   both the tilt and the shading are written as base values as well as animated:
+   the shell rests at a three-quarter turn, and each plane rests at the
+   brightness that angle earns it. A stilled version is a bubble held where you
+   would hold one to show somebody it has a back, which is a picture rather than
+   a broken animation. */
+@keyframes dot-bubble-turn {
+  from {
+    transform: rotateX(-16deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-16deg) rotateY(360deg);
+  }
+}
+
+@keyframes dot-bubble-face {
+  from {
+    opacity: var(--near);
+  }
+  50% {
+    opacity: var(--far);
+  }
+  to {
+    opacity: var(--near);
+  }
+}
+
+/* The lift is written into every keyframe rather than layered on top of the
+   placement, because a transform is one value and this one is carrying both:
+   where the dot is on the face, and how far it has come off it. */
+@keyframes dot-bubble-lift {
+  from {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  }
+  16% {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 16px);
+  }
+  38% {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  }
+  to {
+    transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  }
+}
+
+.dot-bubble {
+  position: relative;
+  width: 3.75rem;
+  height: 3rem;
+  /* One revolution. Named, because the shading has to be timed against it and
+     two numbers that must agree should be one number. */
+  --turn: 8s;
+  /* Short enough that the near face spreads and the far one shrinks — which is
+     most of what makes the turn legible — and long enough not to bend the
+     48px-wide drawing as it passes broadside. */
+  perspective: 240px;
+}
+
+.dot-bubble-shell {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* The angle it rests at when the animation is collapsed. Not the angle it
+     starts the revolution at: a bubble seen exactly face-on has its five planes
+     in a stack behind each other and reads as one flat drawing, which is the
+     one view of this that is worth nothing. */
+  transform: rotateX(-16deg) rotateY(-26deg);
+  animation: dot-bubble-turn var(--turn) linear infinite;
+}
+
+.dot-bubble-pixel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  /* Half the dot, so the coordinates below measure from the middle of the art
+     rather than from a corner of the dot. */
+  margin: -1.5px 0 0 -1.5px;
+  background: currentColor;
+  /* What this plane is worth at the resting angle, and so what it falls back to
+     when the animation below is collapsed. */
+  opacity: var(--rest);
+  transform: translate3d(
+    calc(var(--x) * 1px),
+    calc(var(--y) * 1px),
+    calc(var(--z) * 1px)
+  );
+  animation: dot-bubble-face var(--turn) ease-in-out infinite;
+  /* Negative, so the back planes are already half a revolution into their cycle
+     on the first frame rather than waiting to fall behind. */
+  animation-delay: calc(var(--phase) * var(--turn) * -1);
+}
+
+.dot-bubble-say {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: currentColor;
+  /* The near plane's cycle, because that is the plane they sit on. */
+  --near: 1;
+  --far: 0.22;
+  opacity: var(--near);
+  transform: translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 8px);
+  animation:
+    dot-bubble-lift 1.7s ease-in-out infinite,
+    dot-bubble-face var(--turn) ease-in-out infinite;
+  /* One delay per animation, in the order they are named: the stagger belongs
+     to the bounce, and the shading is in step with the turn. */
+  animation-delay: calc(var(--i) * 0.17s), 0s;
+}
+
+/* Flowing dot waves and a thick, softly glowing prismatic rim. */
+@property --packet-light-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.packet-cover {
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: opacity 400ms ease-out;
+}
+.packet-grid {
+  position: absolute;
+  inset: -48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, transparent 5%, #000 65%);
+}
+.packet-grid-row {
+  display: block;
+  flex: 1 0 24px;
+  background: radial-gradient(circle, currentColor 1.7px, transparent 2px)
+    center / 24px 24px;
+  opacity: 0.2;
+  animation: packet-grid-flow 2.8s ease-in-out infinite;
+}
+.packet-border {
+  position: absolute;
+  inset: 12px;
+  border-radius: 24px;
+  padding: 6px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--packet-light-angle),
+    transparent 0deg,
+    #a4dfff33 35deg,
+    #86eaff 65deg,
+    #b4a2ff 90deg,
+    #ffb9e8 112deg,
+    #ffe8b0 134deg,
+    #b6ffe433 165deg,
+    transparent 195deg,
+    transparent 245deg,
+    #c4b5fd55 280deg,
+    #b5f3ffbb 308deg,
+    transparent 345deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation:
+    packet-light-travel 3.5s linear infinite,
+    packet-rim-flow 3s ease-in-out infinite;
+  opacity: 0.85;
+}
+.packet-border-halo {
+  inset: 8px;
+  padding: 20px;
+  border-radius: 28px;
+  filter: blur(16px);
+  opacity: 0.4;
+}
+.packet-caption {
+  position: relative;
+  --shimmer-base: color-mix(in srgb, var(--foreground) 48%, transparent);
+  --shimmer-crest: var(--foreground);
+}
+.packet-detail {
+  position: relative;
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 48%, transparent);
+  font-size: 12px;
+}
+.packet-reveal {
+  opacity: 0;
+}
+@keyframes packet-grid-flow {
+  0%,
+  100% {
+    transform: translate3d(-14px, -7px, 0) scaleX(0.98);
+  }
+  25% {
+    transform: translate3d(0, -14px, 0) scaleX(1.015);
+  }
+  50% {
+    transform: translate3d(14px, 7px, 0) scaleX(1.025);
+  }
+  75% {
+    transform: translate3d(0, 14px, 0) scaleX(0.99);
+  }
+}
+@keyframes packet-rim-flow {
+  0%,
+  100% {
+    border-radius: 24px 38px 26px 42px;
+    transform: scale(1);
+  }
+  50% {
+    border-radius: 42px 24px 38px 26px;
+    transform: scale(0.99);
+  }
+}
+/* The wavy rule in the release sheet, drawn from left to right as the sheet
+   arrives. Starts a beat after the panel so the line is seen being drawn on
+   a page that is already there. */
+@keyframes squiggle-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.squiggle-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: squiggle-draw 6000ms cubic-bezier(0.45, 0, 0.25, 1) 200ms forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .squiggle-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* A thin comet of light follows the outline of the version card while its
+   release has not been opened here. */
+@property --release-rim-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.release-unread-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--release-rim-angle),
+    transparent 0deg 215deg,
+    color-mix(in oklch, var(--primary) 8%, transparent) 255deg,
+    color-mix(in oklch, var(--primary) 40%, transparent) 300deg,
+    color-mix(in oklch, var(--primary) 85%, white) 333deg,
+    white 344deg,
+    color-mix(in oklch, var(--primary) 30%, transparent) 352deg,
+    transparent 360deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(
+    0 0 3px color-mix(in oklch, var(--primary) 45%, transparent)
+  );
+  animation: release-rim-travel 5s linear infinite;
+}
+
+@keyframes release-rim-travel {
+  to {
+    --release-rim-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .release-unread-glow::after {
+    animation: none;
+    --release-rim-angle: 35deg;
+  }
+}
+
+@keyframes packet-light-travel {
+  to {
+    --packet-light-angle: 360deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .packet-cover *,
+  .packet-cover {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/*
+ * The public site's grounds.
+ *
+ * `.bg-dots` is the faint dot lattice under the hero and behind the product
+ * mock's canvas: a hint of graph paper, drawn in the strong border colour so
+ * it follows the theme. `.bg-glow` is the one soft wash of brand colour on
+ * the site, masked so it fades to nothing well before the edges of its box.
+ */
+@layer utilities {
+  .bg-dots {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      var(--border-strong) 1px,
+      transparent 0
+    );
+    background-size: 24px 24px;
+  }
+
+  .bg-glow {
+    background-image: radial-gradient(
+      60% 55% at 50% 0%,
+      color-mix(in oklab, var(--primary) 18%, transparent),
+      transparent 70%
+    );
+  }
+
+  /* The serif set as an accent inside a sans headline. Sized up a touch,
+     because Instrument Serif's x-height sits below Inter's at the same
+     nominal size and the word would otherwise read as smaller. */
+  .serif-accent {
+    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.08em;
+    line-height: 0.9;
+  }
+}

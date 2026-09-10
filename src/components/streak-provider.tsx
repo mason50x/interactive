@@ -1,0 +1,87 @@
+"use client";
+
+import { useConvexAuth, useMutation } from "convex/react";
+import {
+  createContext,
+  use,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useAuthedQuery } from "@/lib/use-authed-query";
+import { api } from "@convex/_generated/api";
+
+/**
+ * The streak: the account's run as the server has it, and the claim that
+ * extends it.
+ *
+ * `useStreak` is a subscription any card can read. The provider also claims
+ * today's visit once per session, which is what makes the number move; the
+ * card reads the new value off the same subscription a moment later. Mounted
+ * by the dashboard layout, because arriving at the app is a day's activity
+ * and reading the pricing page is not.
+ */
+
+export type Streak = {
+  current: number;
+  best: number;
+  countedToday: boolean;
+};
+
+/** `null` is "not known yet", which is not the same as a streak of zero. */
+const StreakContext = createContext<Streak | null>(null);
+
+export function useStreak() {
+  return use(StreakContext);
+}
+
+/** Claims one weekday visit, once, and retries while the user row is still
+ *  being written. */
+export function StreakProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useConvexAuth();
+
+  // Read once and kept. This is a query argument, so a fresh value every
+  // render would mean a fresh subscription every render. A tab left open
+  // across a timezone change keeps the offset it started with, which is the
+  // right trade for not tearing down a subscription to find out.
+  const [tzOffsetMinutes] = useState(() => new Date().getTimezoneOffset());
+
+  const streak = useAuthedQuery(api.streaks.mine, { tzOffsetMinutes });
+  const claimToday = useMutation(api.streaks.claimToday);
+
+  const claimed = useRef(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || claimed.current) return;
+    claimed.current = true;
+
+    let retry: ReturnType<typeof setTimeout> | undefined;
+
+    // `StoreUser` writes the row this counts against, and on a first ever
+    // sign-in the two mount together — so this can arrive at a user that does
+    // not exist yet. The server says so rather than inventing a row, and the
+    // fix is to ask again in a moment. Three tries and then leave it: the next
+    // page load claims the day, and a day claimed a navigation late is not
+    // worth a poll that never stops.
+    const claim = (attempt: number) => {
+      void claimToday({ tzOffsetMinutes }).then((result) => {
+        if (result.deferred && attempt < 2) {
+          retry = setTimeout(() => claim(attempt + 1), 800 * (attempt + 1));
+        }
+      });
+    };
+
+    claim(0);
+
+    // Only the pending timer. Deliberately no `cancelled` flag around the
+    // response: this effect is torn down and re-run on every mount in
+    // StrictMode, and a flag would have the second pass skip the claim (the
+    // ref has already been taken) while the first pass throws its answer away.
+    // A retry that lands after a real unmount is one more idempotent write,
+    // which is the cheaper of the two failures by a distance.
+    return () => clearTimeout(retry);
+  }, [isAuthenticated, claimToday, tzOffsetMinutes]);
+
+  return <StreakContext value={streak ?? null}>{children}</StreakContext>;
+}

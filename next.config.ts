@@ -1,0 +1,129 @@
+import type { NextConfig } from "next";
+
+/**
+ * Files that exist only on a developer's machine.
+ *
+ * Two rules, one convention:
+ *
+ * - A route file named `page.dev.tsx` is a page under `next dev` and nothing
+ *   at all under `next build`. The extension is not registered, so the folder
+ *   has no page, the route does not exist, and none of its imports reach a
+ *   bundle.
+ * - A module `foo.dev.ts` is what `import "./foo"` resolves to under `next
+ *   dev`, and `foo.ts` is what it resolves to in a build, because `.dev.ts`
+ *   is tried first only in development. That lets a production module be the
+ *   empty answer and its `.dev.ts` sibling the real one, with neither the
+ *   importer nor the build ever naming what the sibling contains.
+ *
+ * Both conditions are read once at startup, not at request time, and neither
+ * leaves a runtime check behind in the output. Previews are builds, so they
+ * are excluded like production. `src/lib/nav-extras.ts` is the one user of
+ * the second rule; the pages under `src/app/dashboard` that end in `.dev.tsx`
+ * are the users of the first.
+ */
+const dev = process.env.NODE_ENV === "development";
+
+/** Turbopack's defaults, which `resolveExtensions` replaces rather than extends. */
+const defaultExtensions = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"];
+
+/**
+ * Response headers: who may crawl this site (nobody) and who may frame it.
+ *
+ * Framing policy for one origin:
+ *
+ * A activity is framed twice over: a dashboard page frames `/learn/<slug>`, and
+ * that page in turn frames the bundle on the asset origin. The first of those
+ * is same-origin now that the player host is gone (see `src/lib/learn.ts`), so
+ * `/learn` has to permit being framed by this same origin — `frame-ancestors
+ * 'none'`, which the rest of the app uses to refuse embedding outright, would
+ * block our own dashboard from framing it.
+ *
+ * The bundle itself sends no `frame-ancestors`; it is a static file on the
+ * asset origin and is contained by the iframe `sandbox` (see `ActivityFrame`
+ * and `HostedActivity`), not by a header it does not emit.
+ */
+
+const nextConfig: NextConfig = {
+  pageExtensions: ["tsx", "ts", "jsx", "js", ...(dev ? ["dev.tsx"] : [])],
+
+  turbopack: {
+    resolveExtensions: dev
+      ? [".dev.tsx", ".dev.ts", ...defaultExtensions]
+      : defaultExtensions,
+  },
+
+  experimental: {
+    /**
+     * How long the router may reuse what it has already fetched.
+     *
+     * The pair matters more than either number. Every route under `/dashboard`
+     * reads cookies through `auth.protect()` and is therefore dynamic, and a
+     * dynamic route's client cache is off by default — `dynamic: 0` means the
+     * router throws away the payload the moment it has rendered it, so leaving
+     * a page and coming back is a second full server render of the same thing.
+     * Thirty seconds is enough to cover the round trip of opening an activity
+     * and closing it again, and short enough that a streak or an unread count
+     * cannot be caught out by it. Nothing on these pages is server-rendered
+     * anyway: the numbers are Convex subscriptions and refresh themselves.
+     *
+     * `static` is the one `src/lib/warm.ts` fills. A `router.prefetch` lands
+     * under this bucket rather than the dynamic one, which is what makes the
+     * rail's warming last past the next click; at the default `dynamic: 0` a
+     * warmed route would go cold on arrival and the whole thing would be a
+     * server render for nothing. Five minutes is the default, written out
+     * because the warming reads as deliberate only next to a number.
+     */
+    staleTimes: { dynamic: 30, static: 300 },
+  },
+
+  async headers() {
+    return [
+      {
+        /**
+         * The site's opt-out, on every response it serves.
+         *
+         * `src/app/robots.ts` is a request a crawler may decline to read, and
+         * the `robots` meta tag in `src/app/layout.tsx` only reaches responses
+         * that have a `<head>` — which leaves the OG images, the icons, the
+         * manifest, and every static asset covered by nothing. This header
+         * rides on all of them, and a crawler that has already fetched the URL
+         * cannot claim not to have seen it.
+         *
+         * `noai` and `noimageai` are a convention rather than a standard;
+         * nothing is obliged to honour them. They cost a few bytes and they
+         * make the intent unambiguous to anything that does look.
+         */
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value:
+              "noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai",
+          },
+        ],
+      },
+      {
+        // The one route framed by this app. `sandbox` on the iframe governs
+        // what the framed activity may do; this governs who may embed it, and
+        // the answer is this origin and nobody else.
+        source: "/learn/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // A activity URL is the only referrer a third-party asset could leak,
+          // and it identifies nothing useful. Send nothing.
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+      {
+        // Everything else is never framed by anything.
+        source: "/((?!learn).*)",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
