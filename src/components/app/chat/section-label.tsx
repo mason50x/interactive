@@ -19,9 +19,7 @@ export function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-center gap-2.5">
       <span aria-hidden className="h-px flex-1 bg-border" />
-      <p className="text-xs font-semibold text-muted-foreground">
-        {children}
-      </p>
+      <p className="text-xs font-semibold text-muted-foreground">{children}</p>
       <span aria-hidden className="h-px flex-1 bg-border" />
     </div>
   );

@@ -79,7 +79,7 @@ function Stat({
           {unit}
         </span>
       </p>
-      <p className="text-xs mt-1 text-faint">{label}</p>
+      <p className="mt-1 text-xs text-faint">{label}</p>
     </div>
   );
 }

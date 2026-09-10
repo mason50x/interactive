@@ -155,7 +155,7 @@ export function ActivitiesBrowser({
            number already sitting in the placeholder of the field above it, and
            the grid itself is the answer. */
         filtered && (
-          <p className="text-xs -mb-2 text-faint">
+          <p className="-mb-2 text-xs text-faint">
             {shown.length} of {catalogue.length}
             {searching ? ` match “${needle}”` : ""}
             {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}

@@ -430,7 +430,7 @@ export function InviteCard() {
                         </span>
 
                         {invite.status === "accepted" ? (
-                          <span className="text-xs shrink-0 text-muted-foreground">
+                          <span className="shrink-0 text-xs text-muted-foreground">
                             Joined
                           </span>
                         ) : (
@@ -438,7 +438,7 @@ export function InviteCard() {
                             {/* Swapped rather than shown side by side: the label
                               is the resting state and the action replaces it,
                               so the row never changes width on hover. */}
-                            <span className="text-xs shrink-0 text-faint group-hover/invite:hidden">
+                            <span className="shrink-0 text-xs text-faint group-hover/invite:hidden">
                               Pending
                             </span>
                             <Button

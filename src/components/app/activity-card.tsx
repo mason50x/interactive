@@ -128,7 +128,7 @@ export function ActivityCard({
 
         {/* Sits in the space the plate's bottom padding keeps for it, so
             revealing it is opacity and nothing else. */}
-        <p className="text-xs absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
+        <p className="absolute inset-x-3.5 bottom-3.5 translate-y-1 truncate text-xs text-white/65 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
           {note ?? popularityLabel(activity)}
         </p>
       </div>
