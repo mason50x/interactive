@@ -1,8 +1,15 @@
-import { CheckIcon } from "@heroicons/react/16/solid";
-import { educators } from "@/lib/content";
+import { accent } from "@/components/landing/palette";
 import { ButtonLink } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { Card } from "@/components/ui/card";
+import { CheckList } from "@/components/ui/check-list";
 import { Section, SectionHeading } from "@/components/ui/section";
+import { educators } from "@/lib/content";
+
+/**
+ * The band for teaching teams, on the inverted panel: the pitch on the
+ * left, and a cohort heatmap on the right that shows the thing a teacher
+ * gets from it — which concept a whole class has not connected yet.
+ */
 
 /** Cohort heatmap: rows are students, columns are concepts. */
 function CohortHeatmap() {
@@ -19,13 +26,15 @@ function CohortHeatmap() {
   ];
   const fills = [
     "var(--panel-border)",
-    "color-mix(in oklab, var(--primary) 30%, transparent)",
-    "color-mix(in oklab, var(--primary) 62%, transparent)",
-    "var(--primary)",
+    `color-mix(in oklab, ${accent} 30%, transparent)`,
+    `color-mix(in oklab, ${accent} 62%, transparent)`,
+    accent,
   ];
 
   return (
-    <div className="rounded-[1.25rem] border border-panel-border bg-panel-elevated p-6 sm:p-7">
+    // No resting shadow: the card sits on the dark panel, and the hairline
+    // is what lifts it there.
+    <Card radius="lg" surface="panel" className="p-6 shadow-none sm:p-7">
       <div className="flex items-baseline justify-between">
         <p className="text-[0.9375rem] font-medium text-panel-foreground">
           Biology 201 · Section 4
@@ -66,48 +75,38 @@ function CohortHeatmap() {
           is unconnected for 19 of 28 students.
         </p>
       </div>
-    </div>
+    </Card>
   );
 }
 
 export function Educators() {
   return (
-    <Section id="educators" className="bg-panel text-panel-foreground">
-      <Container>
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <div className="flex flex-col items-start gap-6">
-            <SectionHeading
-              tone="inverted"
-              eyebrow={educators.eyebrow}
-              title={educators.heading}
-              body={educators.body}
-            />
-            <ul className="flex flex-col gap-3">
-              {educators.bullets.map((b) => (
-                <li
-                  key={b}
-                  className="flex items-start gap-3 text-[0.9375rem] text-panel-foreground/85"
-                >
-                  <span className="mt-1 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <CheckIcon className="size-3" />
-                  </span>
-                  {b}
-                </li>
-              ))}
-            </ul>
-            <ButtonLink
-              href="/contact"
-              variant="inverted"
-              size="md"
-              className="mt-2"
-            >
-              {educators.cta}
-            </ButtonLink>
-          </div>
-
-          <CohortHeatmap />
+    <Section
+      id="educators"
+      width="default"
+      className="bg-panel text-panel-foreground"
+    >
+      <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+        <div className="flex flex-col items-start gap-6">
+          <SectionHeading
+            tone="inverted"
+            eyebrow={educators.eyebrow}
+            title={educators.heading}
+            body={educators.body}
+          />
+          <CheckList tone="inverted" items={educators.bullets} />
+          <ButtonLink
+            href="/contact"
+            variant="inverted"
+            size="md"
+            className="mt-2"
+          >
+            {educators.cta}
+          </ButtonLink>
         </div>
-      </Container>
+
+        <CohortHeatmap />
+      </div>
     </Section>
   );
 }

@@ -632,3 +632,18 @@ export const privacy: LegalDocument = {
     },
   ],
 };
+
+/**
+ * The two documents by the route that serves them, each with the other as
+ * its sibling. `/pp` and `/tos` are the same page with these two values
+ * swapped, and this is the one place that swap is written down.
+ */
+export type LegalSlug = "pp" | "tos";
+
+export const legalDocuments: Record<
+  LegalSlug,
+  { document: LegalDocument; sibling: { title: string; href: string } }
+> = {
+  pp: { document: privacy, sibling: { title: terms.title, href: "/tos" } },
+  tos: { document: terms, sibling: { title: privacy.title, href: "/pp" } },
+};

@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal/legal-document";
-import { privacy, terms } from "@/lib/legal";
+import { legalDocuments } from "@/lib/legal";
+
+const { document, sibling } = legalDocuments.tos;
 
 export const metadata: Metadata = {
-  title: terms.title,
+  title: document.title,
   description:
     "The agreement between you and Interactive Learning for your use of the site and everything on it.",
 };
 
 export default function TermsPage() {
-  return (
-    <LegalDocument
-      doc={terms}
-      sibling={{ title: privacy.title, href: "/pp" }}
-    />
-  );
+  return <LegalDocument doc={document} sibling={sibling} />;
 }

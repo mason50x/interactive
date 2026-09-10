@@ -1,9 +1,15 @@
+import type { ReactElement } from "react";
+import { accent, ink, muted, stroke } from "@/components/landing/palette";
 import type { Feature } from "@/lib/content";
 
-const stroke = "var(--border-strong)";
-const ink = "var(--foreground)";
-const muted = "var(--muted-foreground)";
-const accent = "var(--primary)";
+/**
+ * The drawing at the top of each feature card, one per `Feature["visual"]`.
+ *
+ * Six small SVGs on one viewBox, so they take the same space whatever card
+ * they land in, drawn in the palette's four colours plus the surface tints.
+ * `FeatureVisual` is the only export: the card asks for a visual by name and
+ * the registry at the foot maps names to drawings.
+ */
 
 const shell = "h-full w-full";
 
@@ -339,7 +345,7 @@ function GroupVisual() {
   );
 }
 
-const registry: Record<Feature["visual"], () => React.JSX.Element> = {
+const registry: Record<Feature["visual"], () => ReactElement> = {
   map: MapVisual,
   frames: FramesVisual,
   recall: RecallVisual,

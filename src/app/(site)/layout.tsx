@@ -1,6 +1,4 @@
-import { AppProviders } from "@/components/app-providers";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { SiteChrome } from "@/components/site-chrome";
 
 /**
  * The public site's chrome: header above, footer below, the page between.
@@ -16,13 +14,5 @@ import { SiteHeader } from "@/components/site-header";
  * lift off a page, so it went with the rest of the SEO surface.
  */
 export default function SiteLayout({ children }: LayoutProps<"/">) {
-  return (
-    <AppProviders>
-      <div className="flex min-h-dvh flex-col bg-background text-foreground">
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
-      </div>
-    </AppProviders>
-  );
+  return <SiteChrome>{children}</SiteChrome>;
 }

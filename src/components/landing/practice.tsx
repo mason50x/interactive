@@ -1,9 +1,17 @@
 import { CheckIcon } from "@heroicons/react/16/solid";
-import { practice } from "@/lib/content";
+import { ink, stroke } from "@/components/landing/palette";
 import { ButtonLink } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { Card } from "@/components/ui/card";
+import { CheckList } from "@/components/ui/check-list";
 import { Section, SectionHeading } from "@/components/ui/section";
+import { practice } from "@/lib/content";
 import { cn } from "@/lib/utils";
+
+/**
+ * The practice band: the argument on the left, and on the right two cards
+ * that show it — a recall session with the answer just checked, and the
+ * map with the edge the student keeps missing lit up.
+ */
 
 /** A recall session, mid-way through, with the answer just checked. */
 function RecallCard() {
@@ -14,7 +22,7 @@ function RecallCard() {
   ] as const;
 
   return (
-    <div className="rounded-[1.25rem] border border-border bg-surface p-5 shadow-card sm:p-6">
+    <Card radius="lg" className="p-5 sm:p-6">
       <div className="flex items-center justify-between text-[0.8125rem]">
         <p className="font-medium text-foreground">Cellular respiration</p>
         <p className="text-faint">Card 7 of 12</p>
@@ -68,20 +76,20 @@ function RecallCard() {
         <span>Next review in 6 days</span>
         <span className="text-success">Correct</span>
       </div>
-    </div>
+    </Card>
   );
 }
 
 /** The map, with the weak edge lit. */
 function WeakSpot() {
   return (
-    <div className="rounded-[1.25rem] border border-border bg-surface p-5 shadow-card">
+    <Card radius="lg" className="p-5">
       <div className="flex items-center justify-between text-[0.8125rem]">
         <p className="font-medium text-foreground">Weak spots on your map</p>
         <p className="text-faint">This week</p>
       </div>
       <svg viewBox="0 0 320 120" className="mt-4 h-auto w-full" aria-hidden>
-        <g fill="none" stroke="var(--border-strong)" strokeWidth="1.5">
+        <g fill="none" stroke={stroke} strokeWidth="1.5">
           <path d="M70 32 H130" />
           <path d="M190 32 H250" />
           <path d="M160 46 V74" />
@@ -107,7 +115,7 @@ function WeakSpot() {
               height="28"
               rx="9"
               fill="var(--surface-muted)"
-              stroke="var(--border-strong)"
+              stroke={stroke}
             />
             <text
               x={n.x + n.w / 2}
@@ -115,7 +123,7 @@ function WeakSpot() {
               textAnchor="middle"
               fontSize="11.5"
               fontWeight="500"
-              fill="var(--foreground)"
+              fill={ink}
             >
               {n.label}
             </text>
@@ -146,54 +154,40 @@ function WeakSpot() {
         <span className="text-foreground">Oxygen to ATP</span> missed 3 times in
         a row. Scheduled for tonight.
       </p>
-    </div>
+    </Card>
   );
 }
 
 export function Practice() {
   return (
-    <Section id="practice" className="border-t border-border">
-      <Container>
-        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
-          <div className="flex flex-col items-start gap-6 lg:col-span-5">
-            <SectionHeading
-              eyebrow={practice.eyebrow}
-              title={practice.heading}
-              body={practice.body}
-            />
-            <ul className="flex flex-col gap-3">
-              {practice.bullets.map((bullet) => (
-                <li
-                  key={bullet}
-                  className="flex items-start gap-3 text-[0.9375rem] text-foreground/85"
-                >
-                  <span className="mt-1 flex size-4 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                    <CheckIcon className="size-3" />
-                  </span>
-                  {bullet}
-                </li>
-              ))}
-            </ul>
-            <ButtonLink
-              href="#product"
-              variant="outline"
-              size="md"
-              className="mt-2"
-            >
-              {practice.cta}
-            </ButtonLink>
-          </div>
+    <Section id="practice" divider width="default">
+      <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
+        <div className="flex flex-col items-start gap-6 lg:col-span-5">
+          <SectionHeading
+            eyebrow={practice.eyebrow}
+            title={practice.heading}
+            body={practice.body}
+          />
+          <CheckList items={practice.bullets} />
+          <ButtonLink
+            href="#product"
+            variant="outline"
+            size="md"
+            className="mt-2"
+          >
+            {practice.cta}
+          </ButtonLink>
+        </div>
 
-          <div className="grid gap-4 lg:col-span-7 lg:grid-cols-5">
-            <div className="lg:col-span-3">
-              <RecallCard />
-            </div>
-            <div className="lg:col-span-2 lg:self-end">
-              <WeakSpot />
-            </div>
+        <div className="grid gap-4 lg:col-span-7 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <RecallCard />
+          </div>
+          <div className="lg:col-span-2 lg:self-end">
+            <WeakSpot />
           </div>
         </div>
-      </Container>
+      </div>
     </Section>
   );
 }
