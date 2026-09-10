@@ -1,4 +1,4 @@
-# 50x
+# Interactive
 
 Next.js + Convex + Clerk + Tailwind foundation. Clerk owns authentication;
 every signed-in user is mirrored into the Convex `users` table.
@@ -274,59 +274,14 @@ curl -sI https://clerk.interactivelearningresources.org/.well-known/jwks.json
 
 ## Deployments
 
-`main` is connected to `mason50x/interactive-learning` (private), but the git
-integration does not currently build anything. Deploy with `npm run deploy`.
+`main` is connected to the private repository `mason50x/interactive`.
+Vercel Git deployments are working; recent production deployments were verified
+as `READY` on 2026-09-10. The Vercel project remains
+`cognify/interactive-learning`, with the same project ID and production domains.
+Renaming the GitHub repository does not require renaming the Vercel project.
 
-### Why pushing does not deploy
-
-`cognify` is a Hobby team and the repository is private, and the Hobby plan does
-not support collaboration on private repositories — so Vercel builds a commit
-only when it can match the author to the team owner. It compares the GitHub
-account under **Login Connections**, or, when no account is connected, the
-verified addresses on the Vercel account.
-
-Neither matches here, and no local git setting changes that. Every git deploy
-since 2026-08-31 07:55 CDT has been `BLOCKED` regardless of who authored it —
-`masonsyzn@` / `mason50x` and `masonsingel20@` / `Msingelhassio` alike — while
-CLI deploys of those same commits went `READY` minutes apart. The block is on
-the account, not in the commit. It arrives with no build and no log to read; the
-only trace is the deployment's `errorLink`, which points at
-[troubleshoot-project-collaboration][collab].
-
-[collab]: https://vercel.com/docs/deployments/troubleshoot-project-collaboration#team-configuration
-
-The connection went stale rather than missing, which is why the account looked
-connected while nothing built. `/v2/user` kept reporting
-`importFlowGitProvider: github`, but
-`/v1/integrations/git-namespaces?provider=github` returned `[]` — the connection
-reached no GitHub account at all. With no namespace to resolve the author
-against, every commit fails the ownership check equally, which is what made the
-blocks look indifferent to who authored them.
-
-That endpoint is the one to check, because it is the only one that distinguishes
-a live connection from a stale one. Reconnecting repopulates it:
-
-```json
-[{ "provider": "github", "slug": "mason50x", "id": 69379218, "ownerType": "user" }]
-```
-
-The `id` there is Vercel's own namespace id, not a GitHub user id — looking it up
-against GitHub's user API returns an unrelated account.
-
-The fix is at [vercel.com/account/authentication][auth] — avatar → **Settings** →
-**Authentication** in the left sidebar. Remove the GitHub connection there and
-add it back as `mason50x`. It has to be removed first: a Hobby team allows only
-one login connection per provider, so there is no way to add the second GitHub
-account alongside the first. Confirm a passkey or email login works before
-removing it, since that connection may be how the account signs in.
-
-[auth]: https://vercel.com/account/authentication
-
-Fixing the account does not rescue anything already blocked. A blocked
-deployment can never be rebuilt — the API refuses it with
-`deployment_can_never_deploy`, "Please try again from a fresh commit" — so the
-only way to confirm the account is working again is to push a new commit and
-watch what the deploy does.
+The previous GitHub account connection issue is resolved. `npm run deploy`
+remains available for a manual CLI deployment of the committed tree.
 
 ### Deploying
 

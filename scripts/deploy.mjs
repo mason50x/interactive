@@ -5,15 +5,7 @@
  *   npm run deploy               production
  *   npm run deploy -- --preview  a preview URL
  *
- * The git integration on this project is blocked. `cognify` is a Hobby team and
- * the repository is private, and the Hobby plan will only build a commit whose
- * author it can match to the team owner — against the GitHub account under
- * Login Connections, or, with no account connected, against the verified
- * addresses on the Vercel account. Neither currently matches, so every
- * push-triggered deploy is created and immediately BLOCKED, with no build and
- * no log to read. See the Deployments section of the README for the account fix.
- *
- * A CLI deploy carries no commit author, so the check does not apply. This
+ * Git-triggered deployments are working. This is the manual alternative and
  * exports HEAD with `git archive` rather than uploading the working directory,
  * which keeps the two honest: what ships is exactly what is committed, and
  * `.cache`, `node_modules` and `.env*` stay out because they are not tracked.
