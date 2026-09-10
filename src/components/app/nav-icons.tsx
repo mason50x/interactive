@@ -267,3 +267,27 @@ export function RailIconSolid(props: IconProps) {
     </SolidIcon>
   );
 }
+
+/**
+ * Sign out, drawn here rather than imported.
+ *
+ * Every row in the account menu is a solid Heroicon, and Heroicons' own
+ * `arrow-right-start-on-rectangle` breaks that: its solid cut is the outline
+ * cut — a hairline door and a hairline arrow — so next to a filled gear it
+ * reads as the one unfinished row in the popup. This is the same idea at the
+ * weight the rest of the menu is set in: a filled door with the handle knocked
+ * out of it, and a solid arrow leaving through the side it opens.
+ */
+export function SignOutIconSolid(props: IconProps) {
+  return (
+    <SolidIcon {...props}>
+      <path
+        fillRule="evenodd"
+        d="M4.5 3h3.75a2.25 2.25 0 0 1 2.25 2.25v13.5a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V5.25A2.25 2.25 0 0 1 4.5 3Zm3.375 8.1a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z"
+        clipRule="evenodd"
+      />
+      <path d="M13.65 10.95h3.75v2.1h-3.75a1.05 1.05 0 0 1 0-2.1Z" />
+      <path d="M16.65 8.25 21.75 12l-5.1 3.75Z" />
+    </SolidIcon>
+  );
+}

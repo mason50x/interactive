@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { RailButton } from "@/components/app/rail/rail-button";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import { Card } from "@/components/ui/card";
 import {
@@ -95,25 +96,25 @@ export function VersionCard() {
           above it. Text rather than an icon because there is no glyph for
           "version" that would not have to be learned, and the number is
           shorter than any of them. */}
-      <button
-        type="button"
+      <RailButton
         onClick={show}
         aria-label={`${label}: ${currentRelease.title}. See what's new`}
-        className="relative flex h-11 w-full cursor-pointer items-center justify-center rounded-lg text-[0.75rem] font-medium text-muted-foreground tabular-nums rail-narrow outline-none hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:hidden"
+        className="relative text-[0.75rem] font-medium tabular-nums"
       >
         {label}
         {!seen && (
           <span className="absolute top-2.5 right-3 size-1.5 rounded-full bg-primary" />
         )}
-      </button>
+      </RailButton>
 
       {/* The wide rail: the number, and nothing else. Unread, it shimmers
           and wears the rim; read, it is a number sitting still. The shimmer
           is the continuous one, faint to foreground and back, so the card is
           alive without being coloured; the colour is the rim alone. */}
       <Card
+        radius="sm"
         className={cn(
-          "relative hidden overflow-hidden rounded-xl rail-wide wide:block wide:w-[14.25rem]",
+          "relative hidden overflow-hidden rail-wide wide:block wide:w-[14.25rem]",
           !seen && "release-unread-glow",
         )}
       >

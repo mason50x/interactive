@@ -10,6 +10,12 @@ import type { SettingsPage } from "@/lib/preferences";
 /**
  * Clerk's account modal, with this site's settings as its first page.
  *
+ * A hook, not a component, though the file is named for the modal: the modal
+ * is Clerk's and is opened imperatively, so what this module exports is
+ * `useAccountModal` — the `open` that launches it and the `pages` that have
+ * to be rendered somewhere for the settings page to be React — and nothing
+ * else. The name stays because it names the thing the hook is the door to.
+ *
  * The modal is Clerk's and so is everything on its Account and Security
  * pages — profile, email addresses, password, connected accounts, devices —
  * none of which is worth rebuilding. What is ours is one page ahead of those,
