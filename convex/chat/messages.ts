@@ -1,3 +1,4 @@
+import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
@@ -16,7 +17,7 @@ import { EVERYONE, findMentionTokens } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screen, type SendContext } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
-import { BOT_HANDLE, BOT_ID, botRateLimiter } from "./botConfig";
+import { BOT_HANDLE, BOT_ID, BOT_NAME, botRateLimiter } from "./botConfig";
 import {
   avatarAppearance,
   blockedBy,
@@ -254,7 +255,7 @@ export const send = mutation({
       // let the handle itself turn into a leetspeak match when `@` folds to
       // `a` during normalisation.
       lexiconExemptMentions: named.bot
-        ? new Set([BOT_HANDLE])
+        ? BOT_MENTION_HANDLES
         : undefined,
     };
 
@@ -451,7 +452,7 @@ async function resolveMentions(
     // right answer everywhere but the room, the one place he lives. He is
     // put in `people` so the thread draws him as a chip; `send` knows not to
     // write him a mention row. See `convex/chat/bot.ts`.
-    if (token.handle === BOT_HANDLE) {
+    if (BOT_MENTION_HANDLES.has(token.handle)) {
       if (member.kind !== "global" && member.dmPeer !== BOT_ID) return { ok: false, refusal: "mention" };
       bot = true;
       tokens.add(token.handle);
@@ -561,7 +562,7 @@ async function replyOf(
     unavailable: false,
     authorClerkId: target.authorClerkId,
     authorHandle: author?.handle ?? target.authorHandle,
-    authorName: author ? author.displayName : target.authorName,
+    authorName: target.authorClerkId === BOT_ID ? BOT_NAME : author ? author.displayName : target.authorName,
     preview,
   };
 }
@@ -649,7 +650,7 @@ export const list = query({
         _creationTime: message._creationTime,
         authorClerkId: message.authorClerkId,
         authorHandle: avatar.handle ?? message.authorHandle,
-        authorName: avatar.handle === undefined ? message.authorName : avatar.displayName,
+        authorName: message.authorClerkId === BOT_ID ? BOT_NAME : avatar.handle === undefined ? message.authorName : avatar.displayName,
         authorAvatarUrl: avatar.avatarUrl,
         authorAvatarHue: avatar.avatarHue,
         authorAvatarEmoji: avatar.avatarEmoji,

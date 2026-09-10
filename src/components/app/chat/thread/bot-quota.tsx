@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Monogram } from "@/components/app/chat/monogram";
-import { BOT_HANDLE, BOT_TAGS_PER_DAY } from "@/lib/chat";
+import { BOT_HANDLE, BOT_NAME, BOT_TAGS_PER_DAY } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 
 /**
@@ -81,7 +81,7 @@ export function BotQuota({
       <div className="flex items-baseline justify-between gap-3 text-[0.8125rem]">
         <span className="flex items-center gap-2 font-medium text-foreground">
           <Monogram handle={BOT_HANDLE} className="size-5 text-[0.5rem]" />
-          Bot Usage
+          {BOT_NAME} Usage
         </span>
         <span className="text-muted-foreground tabular-nums">
           {state === null ? "…" : `${state.whole} of ${capacity} left`}
@@ -89,7 +89,7 @@ export function BotQuota({
       </div>
       <div
         role="progressbar"
-        aria-label="Bot replies left today"
+        aria-label={`${BOT_NAME} replies left today`}
         aria-valuemin={0}
         aria-valuemax={capacity}
         aria-valuenow={state?.whole}

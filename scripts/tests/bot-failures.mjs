@@ -39,6 +39,7 @@ async function run({
     },
     clearTimeout,
     require(name) {
+      if (name === "./shared") return {};
       if (name === "@convex-dev/agent")
         return {
           Agent: class {
@@ -68,6 +69,8 @@ async function run({
         return { components: {}, internal: { chat: { bot } } };
       if (name === "../_generated/server")
         return {
+          mutation: (x) => x,
+          query: (x) => x,
           internalAction: (x) => x,
           internalMutation: (x) => x,
           internalQuery: (x) => x,
@@ -76,9 +79,10 @@ async function run({
         return { screen: (body) => ({ allow: true, body }) };
       if (name === "./botConfig")
         return {
+          botQuotaName: () => "botTags",
           BOT_ID: "bot",
           BOT_HANDLE: "bot",
-          BOT_NAME: "Bot",
+          BOT_NAME: "Verity",
           botRateLimiter: {
             async limit() {
               calls.push("refund");
@@ -100,7 +104,7 @@ async function run({
         },
         async runQuery() {
           if (contextError) throw new Error("query failed");
-          return { messages: [] };
+          return { messages: [], pictures: [] };
         },
       },
       {
@@ -119,12 +123,12 @@ async function run({
     assert.equal(calls.filter((c) => c.name === "finish").length, 1);
     assert.equal(calls.at(-1).name, "stopTyping");
     if (empty || providerError || timeout || contextError) {
-      assert.match(calls.find((c) => c.name === "finish").body, /telegraph/);
+      assert.match(calls.find((c) => c.name === "finish").body, /couldn't get an answer through/);
       assert.ok(
         calls.indexOf("refund") > calls.findIndex((c) => c.name === "finish"),
       );
     } else if (exhausted) {
-      assert.match(calls.find((c) => c.name === "finish").body, /rest/);
+      assert.match(calls.find((c) => c.name === "finish").body, /message me again/);
       assert.ok(!calls.includes("refund"));
     } else {
       assert.equal(

@@ -1,5 +1,7 @@
 "use client";
 
+import { BOT_MENTION_HANDLES } from "../../../../config/bot";
+
 import { useQuery } from "convex/react";
 import { Fragment, useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
@@ -172,7 +174,12 @@ export function useMentionPeople({
   const unseen = people.filter((person) => !known.has(person.handle));
   if (unseen.length > 0) {
     const next = new Map(known);
-    for (const person of unseen) next.set(person.handle, person);
+    for (const person of unseen) {
+      next.set(person.handle, person);
+      if (person.clerkId === BOT_ID) {
+        for (const handle of BOT_MENTION_HANDLES) next.set(handle, person);
+      }
+    }
     setKnown(next);
   }
 

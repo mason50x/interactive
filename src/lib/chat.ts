@@ -1,3 +1,5 @@
+import { BOT_ID } from "../../config/bot";
+export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "../../config/bot";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
 import { channel } from "@/lib/events";
@@ -362,22 +364,14 @@ export function onGroupPanelRequest(
 }
 
 /**
- * The old man in the room.
+ * The assistant in the room.
  *
  * `@bot` in the global room is answered by a character — see
  * `convex/chat/bot.ts` — whose replies are ordinary messages signed with
  * `BOT_ID` in `authorClerkId`. He has no profile, so the three things that
  * open one — the face in a message row, a mention chip, the name in a reply
- * preview — check `isBot` first and draw him plain. Mirrored from the server
- * for the reason `REACTIONS` above is: the two bundles do not share a
- * module. Change one, change the other.
+ * preview — check `isBot` first. Branding is shared with the server in config/bot.ts.
  */
-export const BOT_ID = "bot";
-export const BOT_HANDLE = "bot";
-/** His fixed, app-owned portrait. He has no profile row of his own. */
-export const BOT_AVATAR = "/chat/bot-avatar.webp";
-/** How he is introduced in the mention picker. */
-export const BOT_NAME = "Bot";
 export const BOT_TAGS_PER_DAY = 5;
 
 export function isBot(clerkId: string | undefined): boolean {

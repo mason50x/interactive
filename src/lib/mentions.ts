@@ -1,3 +1,4 @@
+import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
 /**
  * The client's half of mentions: finding `@words` in text, and nothing that
  * decides whether they are anybody.
@@ -97,7 +98,8 @@ export function segmentMentions(
   const segments: Segment[] = [];
   let last = 0;
   for (const token of findMentionTokens(body)) {
-    const who = resolve(token.handle);
+    const bot = BOT_MENTION_HANDLES.has(token.handle) && resolve(BOT_HANDLE) === BOT_ID;
+    const who = bot ? BOT_ID : resolve(token.handle);
     if (who === undefined) continue;
     if (token.start > last) {
       segments.push({ kind: "text", text: body.slice(last, token.start) });

@@ -37,12 +37,12 @@ test("everyone receives a private pinned bot DM, without duplicates or a bot pro
   expect(list[1]).toMatchObject({
     kind: "dm",
     peerClerkId: "bot",
-    peerName: "Bot",
-    peerAvatarUrl: "/chat/bot-avatar.webp",
+    peerName: "Verity",
+    peerAvatarUrl: "/chat/bot-avatar.png",
   });
   expect(
     await alice.query(api.chat.conversations.get, { conversationId: dm }),
-  ).toMatchObject({ peerName: "Bot" });
+  ).toMatchObject({ peerName: "Verity" });
   expect(
     await t
       .withIdentity({ subject: "bob" })
@@ -150,7 +150,7 @@ test("empty bot DMs get one delayed personalized welcome without generation", as
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({
       authorClerkId: "bot",
-      body: expect.stringContaining("Hello, alice!"),
+      body: expect.stringContaining("Hey, alice. I'm Verity."),
     });
     expect(await t.run((ctx) => ctx.db.query("typing").take(10))).toHaveLength(
       0,
@@ -345,4 +345,53 @@ test("context hands the bot the newest readable pictures, numbered in reading or
       askerClerkId: "bob",
     }),
   ).toBeNull();
+});
+
+
+test("historical bot messages and reply previews use current branding without changing identity", async () => {
+  const { t, alice, dm } = await setup();
+  await t.run(async (ctx) => {
+    const original = await ctx.db.insert("messages", {
+      conversationId: dm, authorClerkId: "bot", authorHandle: "bot",
+      authorName: "Bot", body: "An existing answer.", status: "visible", flags: [],
+    });
+    await ctx.db.insert("messages", {
+      conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
+      body: "Thanks!", replyToId: original, status: "visible", flags: [],
+    });
+  });
+  const result = await alice.query(api.chat.messages.list, {
+    conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER, paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(result.page.find(message => message.authorClerkId === "bot"))
+    .toMatchObject({ authorName: "Verity", authorHandle: "bot", body: "An existing answer." });
+  expect(result.page.find(message => message.replyTo)?.replyTo)
+    .toMatchObject({ authorName: "Verity", authorHandle: "bot", preview: "An existing answer." });
+});
+
+
+test.each(["@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot"])("%s resolves to one bot request", async (tag) => {
+  const { t, alice, global } = await setup();
+  const result = await alice.mutation(api.chat.messages.send, {
+    conversationId: global, body: `${tag} What is 10 plus three?`,
+  });
+  expect(result).toMatchObject({ ok: true });
+  const messages = await t.run(ctx => ctx.db.query("messages").take(10));
+  expect(messages[0].mentions).toEqual([{ clerkId: "bot", handle: "bot" }]);
+  const jobs = await t.run(ctx => ctx.db.system.query("_scheduled_functions").take(20));
+  expect(jobs.filter(job => job.name.includes("bot:ask"))).toHaveLength(1);
+});
+
+test("bot replies bypass text moderation while preserving prompt visibility checks", async () => {
+  const { t, dm } = await setup();
+  const messageId = await t.run(ctx => ctx.db.insert("messages", {
+    conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
+    body: "Explain this phrase", status: "visible", flags: [],
+  }));
+  const body = "The phrase ‘kill yourself’ is harmful. Please ask for support instead.";
+  expect(await t.mutation(internal.chat.bot.finish, { conversationId: dm, messageId, body })).toBe(true);
+  const reply = await t.run(ctx => ctx.db.query("messages").withIndex("byConversation", q => q.eq("conversationId", dm)).order("desc").first());
+  expect(reply?.body).toBe(body);
+  await t.run(ctx => ctx.db.delete(messageId));
+  expect(await t.mutation(internal.chat.bot.finish, { conversationId: dm, messageId, body })).toBe(false);
 });

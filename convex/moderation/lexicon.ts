@@ -1,4 +1,4 @@
-import { encodeRuns, matchRuns, tokenStartsWith, type Forms, type Run } from "./normalize";
+import { encodeRuns, matchRuns, type Forms, type Run } from "./normalize";
 
 /**
  * The words, and what each one costs.
@@ -22,11 +22,8 @@ import { encodeRuns, matchRuns, tokenStartsWith, type Forms, type Run } from "./
  *
  * ## Terms are whole words
  *
- * Not stems. `tokenStartsWith` already catches every suffix — one entry for
- * `fuck` covers `fucking`, `fucker`, `fucked` — so a stem buys nothing and
- * costs a great deal: `nig` as an entry would flag `night`, `nigeria` and
- * `niggle`, and the allowlist needed to rescue them would be longer than this
- * file. Complete words, and the matcher does the rest.
+ * Match complete tokens and bounded phrases, including stretched letters.
+ * Never treat a prohibited word as a prefix of an unrelated word.
  *
  * ## The three tiers
  *
@@ -36,13 +33,8 @@ import { encodeRuns, matchRuns, tokenStartsWith, type Forms, type Run } from "./
  * Tier two covers telling someone to kill themselves and threats to expose
  * them.
  *
- * Tier three is ordinary swearing. It is still refused, but it stays separate
- * so the targeting rule can return `harassment` when the language is aimed at
- * somebody.
- *
- * `this is shit` is a profanity refusal; `you are shit` is the same word aimed
- * at a person, and the targeting rule in `convex/moderation/rules.ts` returns
- * harassment.
+ * Tier three is ordinary swearing, allowed in conversation but still screened
+ * in public names and handles.
  */
 
 export type Category =
@@ -78,25 +70,6 @@ const SLURS_SEVERE: Source = {
     "raghead", "towelhead", "sandnigger", "beaner", "beaners",
     "paki", "pakis", "abo", "abos", "gypo", "gyppo",
     "retard", "retards", "retarded", "tard", "tards",
-  ],
-};
-
-/**
- * The same class of word, still refused. Mostly the softened or ambiguous
- * forms, and the ones that are genuinely used as insults rather than as
- * identifiers.
- */
-const SLURS: Source = {
-  category: "slur",
-  tier: 1,
-  terms: [
-    "queer", "homo", "fairy", "poof", "poofter", "batty",
-    "midget", "cripple", "spastic", "spaz", "mongoloid",
-    "wop", "dago", "mick", "kraut", "jap", "slant",
-    "redskin", "injun", "halfbreed",
-    "cracker", "honky", "whitey",
-    "hitler", "nazi", "nazis", "heil", "gaschamber", "holocaust",
-    "whitepower", "whitepride", "kkk", "klan",
   ],
 };
 
@@ -137,10 +110,10 @@ const EXPLOITATION: Source = {
   category: "exploitation",
   tier: 1,
   terms: [
-    "cp", "childporn", "childpornography", "kiddieporn", "jailbait",
+    "childporn", "childpornography", "kiddieporn", "jailbait",
     "loli", "lolicon", "shota", "shotacon", "pedo", "pedophile",
     "paedo", "paedophile", "hebephile", "mapminor",
-    "cheesepizza", "underagenudes",
+    "underagenudes",
   ],
 };
 
@@ -200,13 +173,7 @@ const DEGRADING: Source = {
   ],
 };
 
-/**
- * Ordinary profanity. Refused like every other listed category.
- *
- * See the note at the top of this file for why. Everything here is one edit
- * away from being allowed again — drop the tier-three branch in
- * `convex/moderation/verdict.ts` and these words post with a flag on them.
- */
+/** Ordinary profanity is allowed in chat but screened in names and handles. */
 const PROFANITY: Source = {
   category: "profanity",
   tier: 3,
@@ -226,7 +193,6 @@ const PROFANITY: Source = {
 
 const SOURCES = [
   SLURS_SEVERE,
-  SLURS,
   SEXUAL,
   EXPLOITATION,
   THREATS,
@@ -277,7 +243,7 @@ type Entry = {
   term: string;
   category: Category;
   tier: Tier;
-  /** A phrase matches without the boundary test — see `scan`. */
+  /** Whether the source term contains multiple words. */
   phrase: boolean;
   runs: Run[];
 };
@@ -330,16 +296,9 @@ export type Match = {
 /**
  * Every term in a message, each reported once.
  *
- * Two passes, and the difference between them is the whole Scunthorpe
- * argument. The first walks the message's words and asks whether any of them
- * *begins* with a term, skipping the words in `HOSTS`. The second walks the
- * message with its separators removed and asks whether a term appears there —
- * but only counts a hit if a separator was actually inside the span it matched,
- * which means the only thing the second pass can find is somebody who broke a
- * word up on purpose.
- *
- * Phrases skip the second test, because a phrase always has separators in it
- * and requiring one to be suspicious would refuse every phrase ever written.
+ * Match whole tokens first, then bounded spans with separators removed.
+ * Both ends must be word boundaries so neighboring words cannot accidentally
+ * contribute a prefix or suffix to a prohibited term.
  */
 export function scan(forms: Forms): Match[] {
   const found = new Map<string, Match>();
@@ -349,7 +308,8 @@ export function scan(forms: Forms): Match[] {
     for (const entry of ALL) {
       if (entry.phrase) continue;
       if (found.has(entry.term)) continue;
-      if (tokenStartsWith(token, entry.runs)) {
+      const span = matchRuns(encodeRuns(token), entry.runs);
+      if (span?.start === 0 && span.end === token.length) {
         found.set(entry.term, {
           term: entry.term,
           category: entry.category,
@@ -369,6 +329,9 @@ export function scan(forms: Forms): Match[] {
       if (found.has(entry.term)) continue;
       const span = matchRuns(forms.runs, entry.runs, position);
       if (span === null || span.start !== forms.runs[position].at) continue;
+      // Never assemble a prohibited term out of pieces of ordinary words.
+      if (span.start > 0 && !forms.sepBefore[span.start]) continue;
+      if (span.end < forms.squashed.length && !forms.sepBefore[span.end]) continue;
 
       if (!entry.phrase) {
         // Only a hit if taking the separators out is what revealed it. A word

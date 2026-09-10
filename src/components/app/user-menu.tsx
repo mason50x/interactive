@@ -1,13 +1,14 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { ChevronRightIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
+import { ChevronRightIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccountModal } from "@/components/app/account-modal";
 import { useRail } from "@/components/app/rail-context";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import { useTheme } from "@/components/theme-provider";
 import {
   Menu,
@@ -99,7 +100,10 @@ export function UserMenu() {
               the only thing left to do is put it away. Wrapped so the swap's
               transition list and the turn's are on different elements. */}
           <span className="hidden shrink-0 rail-wide wide:block">
-            <ChevronUpIcon className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180" />
+            <ChevronUpIcon
+              strokeWidth={3}
+              className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180"
+            />
           </span>
         </MenuTrigger>
 
@@ -143,10 +147,38 @@ export function UserMenu() {
               <Avatar src={user.imageUrl} name={name} size={16} />
               Settings
             </span>
-            <ChevronRightIcon className="size-4 shrink-0 text-faint" />
+            <ChevronRightIcon
+              strokeWidth={3}
+              className="size-4 shrink-0 text-faint"
+            />
           </MenuItem>
 
           <ThemeSubmenu preference={preference} onChange={setPreference} />
+
+          <MenuItem
+            render={<a href="https://github.com/mason50x/interactive" />}
+            nativeButton={false}
+            tone="muted"
+            size="tall"
+            className="justify-between"
+          >
+            <span className="flex items-center gap-2.5">
+              <GitHubIcon className="size-4 shrink-0" />
+              OSS
+            </span>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-4 shrink-0 text-faint"
+            >
+              <path d="M6 18 18 6M6 6h12v12" />
+            </svg>
+          </MenuItem>
 
           <MenuSeparator className="-mx-1.5 my-1.5" />
 

@@ -1,4 +1,4 @@
-import { BOT_ID, BOT_HANDLE, BOT_NAME } from "./botConfig";
+import { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "./botConfig";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { MAX_TITLE } from "../moderation/limits";
@@ -225,7 +225,7 @@ export const list = query({
         peerClerkId: member.dmPeer,
         peerHandle,
         peerName,
-        peerAvatarUrl: member.dmPeer === BOT_ID ? "/chat/bot-avatar.webp" : peerAvatar.avatarUrl,
+        peerAvatarUrl: member.dmPeer === BOT_ID ? BOT_AVATAR : peerAvatar.avatarUrl,
         peerAvatarHue: peerAvatar.avatarHue,
         peerAvatarEmoji: peerAvatar.avatarEmoji,
         peerAvatarInitials: peerAvatar.avatarInitials,
@@ -439,7 +439,7 @@ export const get = query({
       peerClerkId: member.dmPeer,
       peerHandle,
       peerName,
-      peerAvatarUrl: member.dmPeer === BOT_ID ? "/chat/bot-avatar.webp" : peerAvatar.avatarUrl,
+      peerAvatarUrl: member.dmPeer === BOT_ID ? BOT_AVATAR : peerAvatar.avatarUrl,
       peerAvatarHue: peerAvatar.avatarHue,
       peerAvatarEmoji: peerAvatar.avatarEmoji,
       peerAvatarInitials: peerAvatar.avatarInitials,

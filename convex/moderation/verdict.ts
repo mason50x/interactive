@@ -7,7 +7,6 @@ import {
   hashBody,
   isBroadcast,
   isDuplicate,
-  isTargeted,
   refusalForCategory,
   refusalForPattern,
   type RecentSend,
@@ -150,24 +149,12 @@ export function screen(raw: string, context: SendContext): Verdict {
   // The lexicon above read the whole thing, on purpose.
   const masked =
     context.mentions === undefined ? clean : maskMentions(clean, context.mentions);
-  const maskedForms = masked === clean ? forms : buildForms(masked);
-  const patterns = findPatterns(masked, maskedForms.tokens);
+  const patterns = findPatterns(masked);
   if (patterns.length > 0) {
     return refuse(refusalForPattern(patterns[0].category));
   }
 
-  // Everything left is tier three: ordinary swearing, which does not go
-  // through. The arrangement decides the returned category: pointed at
-  // somebody it is harassment, and on its own it is profanity.
-  const profanity = matches.filter((match) => match.tier === 3);
-  if (profanity.length > 0) {
-    const tokens = profanity
-      .map((match) => match.token)
-      .filter((token): token is string => token !== undefined);
-    if (isTargeted(forms.tokens, tokens)) return refuse("harassment");
-    return refuse("profanity");
-  }
-
+  // Casual profanity and mild insults do not block conversation.
   const hash = hashBody(forms.squashed);
 
   if (isDuplicate(context.recent, hash, context.now)) return refuse("duplicate");
@@ -206,7 +193,7 @@ export function screenStatic(
     return { ok: false, refusal: refusalForCategory(found.category) };
   }
 
-  const patterns = findPatterns(clean, forms.tokens);
+  const patterns = findPatterns(clean);
   if (patterns.length > 0) {
     return { ok: false, refusal: refusalForPattern(patterns[0].category) };
   }

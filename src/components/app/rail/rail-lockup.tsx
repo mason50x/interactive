@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { RailToggle } from "@/components/app/rail/rail-toggle";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
 import type { useWarmRoutes } from "@/lib/warm";
@@ -36,18 +37,28 @@ export function RailLockup({
 }) {
   return (
     <div className="flex h-16 items-center overflow-hidden pl-[2.0625rem] transition-[padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:pl-5">
-      <Link
-        href="/dashboard"
-        aria-label={`${brand.name} dashboard`}
-        {...warm("/dashboard")}
-        className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
-      >
-        <Wordmark
-          short
-          className="text-[1.375rem] transition-[font-size] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:text-[1.0625rem]"
-          nameClassName="rail-wide hidden wide:inline [--rail-leave:150ms]"
-        />
-      </Link>
+      <div className="flex flex-col items-start gap-1.5">
+        <Link
+          href="/dashboard"
+          aria-label={`${brand.name} dashboard`}
+          {...warm("/dashboard")}
+          className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
+        >
+          <Wordmark
+            short
+            className="text-[1.375rem] transition-[font-size] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:text-[1.0625rem]"
+            nameClassName="rail-wide hidden wide:inline [--rail-leave:150ms]"
+          />
+        </Link>
+        <a
+          href="https://github.com/mason50x/interactive"
+          className="hidden items-center gap-1.5 rounded-sm text-[0.6875rem] leading-none text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 wide:inline-flex"
+          aria-label="OSS — source code on GitHub"
+        >
+          <GitHubIcon className="size-3" />
+          OSS
+        </a>
+      </div>
 
       {/* Flush to the rail's right edge like every row below it, and for
           the same reason: the shell's margin is the chrome on that side. */}

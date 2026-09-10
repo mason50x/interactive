@@ -1,9 +1,9 @@
 "use client";
 
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import {
   CheckIcon,
-  ChevronRightIcon,
   ComputerDesktopIcon,
   MoonIcon,
   SunIcon,
@@ -67,7 +67,10 @@ export function ThemeSubmenu({
           <span className="text-[0.8125rem] text-faint">
             {themeOptions[preference].label}
           </span>
-          <ChevronRightIcon className="size-4 shrink-0 text-faint" />
+          <ChevronRightIcon
+            strokeWidth={3}
+            className="size-4 shrink-0 text-faint"
+          />
         </span>
       </MenuSubmenuTrigger>
 

@@ -2,10 +2,7 @@ import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { isChatAdmin } from "../../config/chat-admin";
 import { components } from "../_generated/api";
 
-/** A synthetic id. No Clerk account or chat profile may use the reserved handle. */
-export const BOT_ID = "bot";
-export const BOT_HANDLE = "bot";
-export const BOT_NAME = "Bot";
+export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "../../config/bot";
 
 /** Five immediately, then one use returns every 4.8 hours. */
 export const BOT_TAGS_PER_DAY = 5;
