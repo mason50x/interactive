@@ -14,7 +14,8 @@
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",
     "deploy": "node scripts/deploy.mjs",
-    "test:simulator": "node scripts/build-simulator-core.mjs && node scripts/check-simulator.mjs && vitest run"
+    "test:simulator": "node scripts/build-simulator-core.mjs && node scripts/check-simulator.mjs && vitest run",
+    "test": "npm run test:simulator"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.63",
@@ -51,5 +52,9 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=24 <25"
   }
 }

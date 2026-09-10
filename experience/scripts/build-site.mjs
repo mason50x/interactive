@@ -47,4 +47,20 @@ const noMaps = { recursive: true, filter: (src) => !/\.(map|d\.ts)$/.test(src) }
 cpSync(join(modules, "@mercuryworkshop", "bare-mux", "dist"), join(dist, "bridge"), noMaps);
 cpSync(join(modules, "@mercuryworkshop", "bare-as-module3", "dist"), join(dist, "transport"), noMaps);
 
+// Preserve upstream copyright and license text alongside redistributed bundles.
+const licenseDir = join(dist, "licenses");
+mkdirSync(licenseDir, { recursive: true });
+for (const [packageName, label] of [
+  ["@titaniumnetwork-dev/ultraviolet", "ultraviolet"],
+  ["@mercuryworkshop/bare-mux", "bare-mux"],
+  ["@mercuryworkshop/bare-as-module3", "bare-as-module3"],
+]) {
+  const packageDir = join(modules, packageName);
+  const licenses = readdirSync(packageDir).filter((name) => /^licen[sc]e(?:\.|$)/i.test(name));
+  if (!licenses.length) throw new Error(`Missing upstream license: ${packageName}`);
+  for (const name of licenses) {
+    copyFileSync(join(packageDir, name), join(licenseDir, `${label}-${name}`));
+  }
+}
+
 console.log(`built ${dist}`);

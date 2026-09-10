@@ -43,3 +43,11 @@ next-env.d.ts
 
 # Fonts fetched by scripts/generate-brand-assets.py
 .cache/
+
+# Local credentials and tooling state
+.dev.vars*
+*.key
+*.p12
+*.pfx
+credentials*.json
+.gitleaks-report*

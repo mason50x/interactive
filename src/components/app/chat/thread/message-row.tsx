@@ -3,7 +3,7 @@
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { isChatAdmin } from "@config/chat-admin";
+import { hasChatAdminBadge } from "@config/chat-admin";
 import {
   Tooltip as AdminTooltip,
   TooltipProvider,
@@ -293,7 +293,7 @@ export function MessageRow({
             </PersonCard>
           )}
 
-          {!mine && endsGroup && isChatAdmin(message.authorClerkId) ? (
+          {!mine && endsGroup && hasChatAdminBadge(message.authorClerkId) ? (
             <TooltipProvider delay={250}>
               <AdminTooltip>
                 <TooltipTrigger

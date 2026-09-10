@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
     // otherwise a lint run walks ~18,000 files and takes minutes.
     ".cache/**",
     "public/simulator/core/**",
+    "experience/site/dist/**",
+    "experience/.wrangler/**",
   ]),
 
   /**

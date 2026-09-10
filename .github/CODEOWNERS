@@ -1,0 +1,19 @@
+# Owner approval is enforced by the Maintainer review ruleset.
+* @mason50x
+
+# Keep the policy and the files that enforce it explicitly owned.
+/README.md @mason50x
+/LICENSE @mason50x
+/THIRD_PARTY_NOTICES.md @mason50x
+/SECURITY.md @mason50x
+/CONTRIBUTING.md @mason50x
+/CODE_OF_CONDUCT.md @mason50x
+/.github/ @mason50x
+/.github/CODEOWNERS @mason50x
+/.env.example @mason50x
+/.gitignore @mason50x
+/vercel.json @mason50x
+/scripts/deploy.mjs @mason50x
+/experience/wrangler.toml @mason50x
+/config/ @mason50x
+/convex/ @mason50x
