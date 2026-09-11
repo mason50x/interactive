@@ -374,7 +374,19 @@ export const send = mutation({
 
     // Your own message is read. Written on your own row, so it conflicts with
     // nothing.
-    await ctx.db.patch(member._id, { lastReadAt: now });
+    //
+    // Read up to the message's own `_creationTime` rather than to `now`. The
+    // two are not the same number: `now` is the instant this mutation began,
+    // and the row is stamped a fraction of a millisecond after it — so a
+    // reading position set to `now` sits *before* the message it was meant
+    // to cover, and `conversations.list` counted the sender's own words as
+    // one unread. The sender saw that as their row and the rail's dot
+    // lighting for the beat it took the open thread to write `markRead`, and
+    // then going out again.
+    const inserted = await ctx.db.get(messageId);
+    await ctx.db.patch(member._id, {
+      lastReadAt: inserted?._creationTime ?? now,
+    });
 
     // Deliberately not the global room. See `lastMessageAt` in
     // `convex/schema.ts` for why one shared counter is worse than no counter.

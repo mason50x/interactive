@@ -1,8 +1,18 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { createContext, use, useEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import type { ConversationSummary } from "@convex/chat/conversations";
 import type { MyProfile } from "@convex/chat/profiles";
 import { useAuthedQuery } from "@/lib/use-authed-query";
@@ -22,6 +32,18 @@ import { useConvexAuth } from "convex/react";
  * server comes back `null`, which is the same value `profiles.mine` returns for
  * "this account has no handle" — so without the skip, every sign-in would flash
  * the handle screen at somebody who already has one. The invite card uses the same authentication guard.
+ *
+ * ## The conversation being read
+ *
+ * `reading` is the conversation whose thread is open at its live end, and
+ * nothing here ever counts it as unread. The server does, for a beat: a
+ * message that arrives in it is one the reading position has not been moved
+ * past until the thread has written `markRead` and the list has come back —
+ * a round trip during which the row's count, the rail's dot and its glint all
+ * lit and then went out again. Somebody looking at a conversation has read
+ * what is in it, so this settles the answer here rather than waiting for the
+ * server to agree. The thread still needs the server's own view to know
+ * whether there is a reading position to move — that is `behind`.
  */
 
 export type Chat = {
@@ -49,6 +71,18 @@ export type Chat = {
    */
   images: boolean;
   isAdmin: boolean;
+  /**
+   * The conversation whose thread is open at its live end, or `null`. Set by
+   * `Thread`, and never counted as unread by anything above.
+   */
+  reading: Id<"conversations"> | null;
+  setReading: Dispatch<SetStateAction<Id<"conversations"> | null>>;
+  /**
+   * Whether the server still has something unread in `reading` — or has not
+   * answered about it yet, which the thread treats the same way. This is the
+   * one place the mask above is lifted: `markRead` is written from it.
+   */
+  behind: boolean;
 };
 
 const EMPTY: Chat = {
@@ -61,6 +95,9 @@ const EMPTY: Chat = {
   waiting: 0,
   images: false,
   isAdmin: false,
+  reading: null,
+  setReading: () => {},
+  behind: false,
 };
 
 const ChatContext = createContext<Chat>(EMPTY);
@@ -92,7 +129,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     void joinGlobal({});
   }, [isAuthenticated, profile, joinGlobal]);
 
-  const list = conversations ?? [];
+  const [reading, setReading] = useState<Id<"conversations"> | null>(null);
+
+  // What the server said, and then the same list with the conversation being
+  // read shown as read. See the note on `reading` above. The thread's own
+  // question — is there anything to mark — is answered from the unmasked row.
+  const served = conversations ?? [];
+  const open =
+    reading === null ? undefined : served.find((row) => row._id === reading);
+  const behind = reading !== null && (open === undefined || open.unread > 0);
+  const list =
+    open === undefined || open.unread === 0
+      ? served
+      : served.map((row) =>
+          row === open ? { ...row, unread: 0, mentioned: false } : row,
+        );
 
   // The room contributes a dot and never a number — see `unreadExact` in
   // `convex/chat/conversations.ts` for why counting it would be the one query
@@ -118,6 +169,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     waiting,
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,
+    reading,
+    setReading,
+    behind,
   };
 
   return <ChatContext value={value}>{children}</ChatContext>;

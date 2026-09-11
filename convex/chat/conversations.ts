@@ -187,9 +187,11 @@ export const list = query({
       // `lastMessageAt` is the `Date.now()` of the mutation that inserted the
       // message, but the message's own `_creationTime` is that instant plus a
       // fraction of a millisecond — so a row whose two numbers are equal is the
-      // one case where a message exists that this comparison cannot see. It
-      // happens on every send: the sender's own `lastReadAt` is written from the
-      // same `now`. Equal means look.
+      // one case where a message exists that this comparison cannot see. Equal
+      // means look. The sender's own row clears the bar by more than that: a
+      // send writes their `lastReadAt` from the message's `_creationTime`, not
+      // from `now`, so their own words are never the something to count — see
+      // `send` in `convex/chat/messages.ts`.
       const read =
         conversation.lastMessageAt !== undefined &&
         conversation.lastMessageAt < member.lastReadAt;
