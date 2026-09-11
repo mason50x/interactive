@@ -103,7 +103,7 @@ function ConversationThread({
   conversationId: Id<"conversations">;
 }) {
   const { userId } = useAuth();
-  const { profile, conversations, images: pictures } = useChat();
+  const { profile, behind, setReading, images: pictures } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
 
   /**
@@ -226,7 +226,25 @@ function ConversationThread({
   }
 
   /**
-   * Whether there is a reading position to move.
+   * This is the conversation being read, for as long as it is open at its
+   * live end — an archive day of the room is not reading the room. The
+   * provider stops counting it as unread from here on, so neither its row nor
+   * the rail's dot lights for the beat between a message arriving and
+   * `markRead` below catching up with it. See `reading` in `chat-provider.tsx`.
+   *
+   * The cleanup only lets go of its own claim: two threads are never mounted
+   * at once, but the next one's effect may run before this one's cleanup,
+   * and clearing unconditionally would wipe the claim it had just made.
+   */
+  useEffect(() => {
+    if (daysAgo > 0) return;
+    setReading(conversationId);
+    return () =>
+      setReading((current) => (current === conversationId ? null : current));
+  }, [conversationId, daysAgo, setReading]);
+
+  /**
+   * Whether there is a reading position to move — `behind`, from the provider.
    *
    * The list already knows — it is the same subscription the unread badge is
    * drawn from, and Convex hands both it and the page of messages below over at
@@ -236,12 +254,13 @@ function ConversationThread({
    * recomputes the conversation list of whoever made it, to set a number that
    * was already zero.
    *
-   * `undefined` is a conversation the list has not answered about — the first
-   * paint of a thread opened by its URL, or one past the fifty the list draws.
-   * Both mean ask, which is what this did unconditionally before.
+   * It is read off the provider rather than off `conversations` because the
+   * provider hands out this conversation as already read — see above — and
+   * the unmasked answer is the one that says whether the server agrees. A
+   * conversation the list has not answered about — the first paint of a
+   * thread opened by its URL, or one past the fifty the list draws — counts as
+   * behind, which is what this did unconditionally before.
    */
-  const summary = conversations.find((row) => row._id === conversationId);
-  const unread = summary === undefined || summary.unread > 0;
   const isBotDm = detail?.kind === "dm" && detail.peerClerkId === "bot";
   const emptyBotDm = isBotDm && status === "Exhausted" && results.length === 0;
 
@@ -250,9 +269,9 @@ function ConversationThread({
   }, [conversationId, emptyBotDm, welcomeBot]);
 
   useEffect(() => {
-    if (!unread || daysAgo > 0) return;
+    if (!behind || daysAgo > 0) return;
     void markRead({ conversationId });
-  }, [conversationId, daysAgo, newest, unread, markRead]);
+  }, [conversationId, daysAgo, newest, behind, markRead]);
 
   // Opening a conversation always lands at its live end, whatever the last one
   // was left at.
