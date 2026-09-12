@@ -14,6 +14,7 @@
   "preview_urls": true,
   "keep_vars": true,
   "observability": {
+    "redact_query_string": true,
     "enabled": true,
     "traces": {
       "enabled": true,

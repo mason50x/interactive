@@ -45,7 +45,7 @@ process (do not replace your development `.env.local`). For example, Node's
 values with the same Worker version. Never commit or print that file.
 
 The Worker preserves dashboard-managed variables (`keep_vars`) and enables logs
-and traces. Static assets are separate from dynamic rendering. The wrapper in
+and traces, with query strings redacted so invitation tickets do not enter invocation logs. Static assets are separate from dynamic rendering. The wrapper in
 `worker.ts` sets framing/crawler policy and prevents shared caching on auth,
 dashboard and learn routes. `public/_headers` covers static responses.
 
