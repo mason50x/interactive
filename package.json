@@ -3,19 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/dev-urls.mjs && concurrently -n next,convex -c cyan,magenta --kill-others \"npm:dev:next\" \"npm:dev:convex\"",
+    "dev": "node scripts/dev-urls.mjs && concurrently -n app,convex -c cyan,magenta --kill-others \"npm:dev:app\" \"npm:dev:convex\"",
     "domains": "node scripts/domains.mjs",
-    "dev:next": "next dev",
     "dev:convex": "convex dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "vinext build",
+    "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "next typegen && tsc --noEmit",
-    "deploy": "node scripts/deploy.mjs",
+    "typecheck": "vinext typegen && wrangler types && tsc --noEmit && tsc -p tsconfig.worker.json",
+    "deploy": "wrangler deploy --config dist/server/wrangler.json",
     "test:simulator": "node scripts/build-simulator-core.mjs && node scripts/check-simulator.mjs && vitest run",
-    "test": "npm run test:simulator"
+    "test": "npm run test:simulator",
+    "dev:app": "vinext dev --port 3000",
+    "build:production": "convex deploy --cmd \"npm run build\" --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL",
+    "deploy:preview": "wrangler versions upload --config dist/server/wrangler.json",
+    "cf:typegen": "wrangler types",
+    "test:workers": "playwright test"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.63",
@@ -24,6 +28,8 @@
     "@convex-dev/agent": "^0.7.1",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@heroicons/react": "^2.2.0",
+    "@vinext/cloudflare": "1.0.0-beta.7",
+    "@vitejs/plugin-react": "5.2.0",
     "ai": "^7.0.92",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -31,17 +37,22 @@
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-server-dom-webpack": "19.2.8",
     "server-only": "^0.0.1",
     "shadcn": "^4.19.0",
     "svix": "^2.1.0",
     "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
+    "tw-animate-css": "^1.4.0",
+    "vinext": "1.0.0-beta.9"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.54.8",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-rsc": "^0.5.34",
     "concurrently": "^10.0.5",
     "convex-test": "^0.0.56",
     "eslint": "^9",
@@ -51,10 +62,13 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.11"
+    "vite": "^8.3.0",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.131.1"
   },
   "license": "MIT",
   "engines": {
     "node": ">=24 <25"
-  }
+  },
+  "type": "module"
 }

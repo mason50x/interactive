@@ -13,7 +13,10 @@
 /.env.example @mason50x
 /.gitignore @mason50x
 /vercel.json @mason50x
-/scripts/deploy.mjs @mason50x
+/wrangler.jsonc @mason50x
+/vite.config.ts @mason50x
+/worker.ts @mason50x
+
 /experience/wrangler.toml @mason50x
 /config/ @mason50x
 /convex/ @mason50x

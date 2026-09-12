@@ -73,14 +73,7 @@ export function resolveDomains(env = { ...readEnvFile(), ...process.env }) {
 
   const site = env.NEXT_PUBLIC_SITE_URL
     ? { url: trim(env.NEXT_PUBLIC_SITE_URL), from: "NEXT_PUBLIC_SITE_URL" }
-    : env.VERCEL_PROJECT_PRODUCTION_URL && env.VERCEL_ENV === "production"
-      ? {
-          url: `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`,
-          from: "VERCEL_PROJECT_PRODUCTION_URL",
-        }
-      : env.VERCEL_URL
-        ? { url: `https://${env.VERCEL_URL}`, from: "VERCEL_URL" }
-        : { url: trim(defaults.site), from: "config/domains.json" };
+    : { url: trim(defaults.site), from: "config/domains.json" };
 
   const asset = usable(env.ASSET_ORIGIN)
     ? { url: usable(env.ASSET_ORIGIN), from: "ASSET_ORIGIN" }
@@ -127,7 +120,7 @@ function isDeploymentHost(host) {
     host === "localhost" ||
     host.startsWith("localhost:") ||
     host.startsWith("127.0.0.1") ||
-    host.endsWith(".vercel.app")
+    (host.endsWith(".workers.dev") || host.endsWith(".vercel.app"))
   );
 }
 

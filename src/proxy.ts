@@ -81,8 +81,14 @@ export const config = {
     "/dashboard/:path*",
     "/learn/:path*",
     "/auth/:path*",
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    // Public route trees that mount ClerkProvider also need Clerk context.
+    "/",
+    "/about",
+    "/contact",
+    "/tos",
+    "/pp",
+    "/api/:path*",
+    "/trpc/:path*",
     "/__clerk/:path*",
   ],
 };

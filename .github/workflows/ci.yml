@@ -29,7 +29,7 @@ jobs:
           - name: Tests
             command: npm test
           - name: Build
-            command: npm run build
+            command: npm run build && npm run test:workers && npm run deploy -- --dry-run
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       # Inert public build fixtures. No real account, backend, or secret is used.
@@ -64,7 +64,7 @@ jobs:
         working-directory: experience
       - run: npm run build
         working-directory: experience
-      - run: npx --no-install wrangler deploy --dry-run --outdir .wrangler/ci
+      - run: npx --no-install wrangler deploy --config wrangler.toml --dry-run --outdir .wrangler/ci
         working-directory: experience
         env:
           WRANGLER_SEND_METRICS: "false"

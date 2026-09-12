@@ -29,8 +29,15 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".cache",
+    "worker.ts",
+    "worker-configuration.d.ts",
+    ".next/types/validator.ts",
+    ".next/dev"
+  ]
 }

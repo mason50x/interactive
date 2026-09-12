@@ -67,7 +67,7 @@ if (assets) {
     dim(
       `  All ${activities.length} hosted activities are hidden — every one loads`,
     ),
-    dim("  from the bucket. Run `vercel env pull`."),
+    dim("  from the bucket. Set ASSET_ORIGIN in .env.local."),
   );
 }
 

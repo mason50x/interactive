@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import { HostedActivity } from "@/components/activity/hosted-activity";
 import { activityBundleUrl } from "@/lib/assets";
@@ -28,6 +29,7 @@ export async function generateMetadata({
 export default async function LearnPage({
   params,
 }: PageProps<"/learn/[slug]">) {
+  await auth.protect();
   const { slug } = await params;
 
   const activity = findActivity(slug);

@@ -1,9 +1,9 @@
 # Environment configuration
 
 Copy `.env.example` to `.env.local` and fill it with your own development values.
-The example is the only tracked env file. `vercel env pull` is optional and only
-works after linking to a Vercel project you can access; it replaces the destination
-file, so preserve any local overrides first.
+The example is the only tracked env file. Cloudflare's Vite plugin loads local
+variables from `.env.local` or `.dev.vars`; do not commit either. Existing Vercel
+exports are migration backups, not automatically uploaded Worker configuration.
 
 ## App environment
 
@@ -15,6 +15,7 @@ file, so preserve any local overrides first.
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Public key from your Clerk instance |
 | `CLERK_SECRET_KEY` | Server-side Clerk operations; never public |
 | `NEXT_PUBLIC_CLERK_*_URL` | Sign-in/up routes and fallback redirects from the example |
+| `SITE_URL` | Optional runtime invitation origin override for staging |
 | `NEXT_PUBLIC_SITE_URL` | App origin; use localhost locally and your HTTPS domain in production |
 | `NEXT_PUBLIC_BRAND_DOMAIN` | Optional email/brand domain override |
 | `NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS` | Optional comma-separated IDs for visual badges only |
@@ -25,7 +26,7 @@ file, so preserve any local overrides first.
 | `CONVEX_DEPLOY_KEY` | Production deployment and runtime administrative account-sync credential |
 
 Public variables are embedded at build time; changing them requires rebuilding.
-Leave `NEXT_PUBLIC_SITE_URL` unset on Vercel previews to use that deployment's URL.
+Set `SITE_URL` or `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.
 Public variables must never contain secrets.
 
 ## Convex deployment environment
@@ -62,3 +63,16 @@ fork workflows. `GITHUB_TOKEN` optionally raises catalogue API rate limits.
 
 Use separate development data and credentials. Rotate a credential if it is
 committed; removing the file from the latest commit does not remove Git history.
+
+## Cloudflare build and runtime placement
+
+Configure public variables in Workers Builds before bundling. Configure
+`CLERK_SECRET_KEY`, `CONVEX_DEPLOY_KEY` and `ASSET_ORIGIN` as Worker runtime values
+(secrets for credentials). The Convex deploy key must also be available to the
+trusted production build. Public Clerk keys, route settings and the Convex URL
+are also needed by server code, so retain their runtime values. Use the same
+Clerk instance for each environment's public and secret keys.
+
+Do not migrate `VERCEL_*` system values, OIDC tokens, or maintenance credentials.
+Convex-only secrets stay in Convex. The Cloudflare account token used by a CI
+runner is a deployment credential, not a Worker binding.
