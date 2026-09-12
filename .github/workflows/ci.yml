@@ -64,7 +64,7 @@ jobs:
         working-directory: experience
       - run: npm run build
         working-directory: experience
-      - run: npx --no-install wrangler deploy --dry-run --outdir .wrangler/ci
+      - run: npx --no-install wrangler deploy --config wrangler.toml --dry-run --outdir .wrangler/ci
         working-directory: experience
         env:
           WRANGLER_SEND_METRICS: "false"
