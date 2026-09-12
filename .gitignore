@@ -51,3 +51,12 @@ next-env.d.ts
 *.pfx
 credentials*.json
 .gitleaks-report*
+/dist/
+.vinext/
+.wrangler/
+
+# Cloudflare local state
+/.wrangler/
+worker-configuration.d.ts
+test-results/
+playwright-report/
