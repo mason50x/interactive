@@ -1,17 +1,13 @@
-/// <reference types="vite/client" />
 import { expect, test } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../../convex/schema";
-import { api } from "../../convex/_generated/api";
-import { list } from "../../convex/chat/messages";
-import type { Id } from "../../convex/_generated/dataModel";
-import type { QueryCtx } from "../../convex/_generated/server";
-
-const modules = import.meta.glob("../../convex/**/*.ts");
+import { api } from "@convex/_generated/api";
+import { list } from "@convex/chat/messages";
+import type { Id } from "@convex/_generated/dataModel";
+import type { QueryCtx } from "@convex/_generated/server";
+import { makeConvexTest } from "../helpers/convex";
 
 for (const inPage of [true, false]) {
   test(`reply lookup reuse, visibility and membership (original in page: ${inPage})`, async () => {
-    const t = convexTest(schema, modules);
+    const t = makeConvexTest();
     const ids = await t.run(async (ctx) => {
       const room = await ctx.db.insert("conversations", {
         kind: "global",

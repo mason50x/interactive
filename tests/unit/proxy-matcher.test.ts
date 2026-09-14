@@ -45,7 +45,12 @@ for (const path of [
         url: path,
       }),
     ).toBe(true);
-    expect(matchesMiddleware(new URL(path, "https://test.invalid").pathname, moduleExports.config.matcher)).toBe(true);
+    expect(
+      matchesMiddleware(
+        new URL(path, "https://test.invalid").pathname,
+        moduleExports.config.matcher,
+      ),
+    ).toBe(true);
   });
 }
 for (const path of [
@@ -62,6 +67,11 @@ for (const path of [
         url: path,
       }),
     ).toBe(false);
-    expect(matchesMiddleware(new URL(path, "https://test.invalid").pathname, moduleExports.config.matcher)).toBe(false);
+    expect(
+      matchesMiddleware(
+        new URL(path, "https://test.invalid").pathname,
+        moduleExports.config.matcher,
+      ),
+    ).toBe(false);
   });
 }

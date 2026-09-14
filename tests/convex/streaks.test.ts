@@ -1,15 +1,12 @@
-/// <reference types="vite/client" />
 import { afterEach, expect, test, vi } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../../convex/schema";
-import { api } from "../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
+import { makeConvexTest } from "../helpers/convex";
 
-const modules = import.meta.glob("../../convex/**/*.ts");
 afterEach(() => vi.useRealTimers());
 
 async function setup(last = "2026-09-04") {
   vi.useFakeTimers();
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   await t.run((ctx) =>
     ctx.db.insert("users", {
       clerkId: "alice",

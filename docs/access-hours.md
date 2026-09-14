@@ -10,7 +10,7 @@ calling the app. `assets.run_worker_first` in `wrangler.jsonc` ensures static
 assets also pass through the gate. No scheduler, external lookup, or database
 is needed. The same policy applies when running the built Worker locally.
 
-Tests in `scripts/tests/access-hours.test.ts` cover boundaries, weekdays,
+Tests in `tests/worker/access-hours.test.ts` cover boundaries, weekdays,
 weekends, daylight saving, and Worker enforcement with a controlled clock.
 The Workers browser tests check the appropriate behavior for the current time.
 

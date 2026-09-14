@@ -1,32 +1,10 @@
-/// <reference types="vite/client" />
 import { expect, test, vi } from "vitest";
-import { convexTest } from "convex-test";
-import rateLimiter from "@convex-dev/rate-limiter/test";
-import schema from "../../convex/schema";
-import { api } from "../../convex/_generated/api";
-const modules = import.meta.glob("../../convex/**/*.ts");
+import { api } from "@convex/_generated/api";
+import { makeConvexTest, seedChatPair } from "../helpers/convex";
 
 async function setup() {
-  const t = convexTest(schema, modules);
-  rateLimiter.register(t);
-  for (const name of ["alice", "bob"]) {
-    await t.run((ctx) =>
-      ctx.db.insert("chatProfiles", {
-        clerkId: name,
-        handle: name,
-        handleKey: name,
-        createdAt: 0,
-        messagesSent: 100,
-      }),
-    );
-    await t
-      .withIdentity({ subject: name })
-      .mutation(api.chat.profiles.joinGlobal, {});
-  }
-  const alice = t.withIdentity({ subject: "alice" });
-  const bob = t.withIdentity({ subject: "bob" });
-  const list = await alice.query(api.chat.conversations.list, {});
-  return { t, alice, bob, global: list[0]._id, dm: list[1]._id };
+  const t = makeConvexTest({ rateLimited: true });
+  return { t, ...(await seedChatPair(t)) };
 }
 
 // The clock is held still on purpose: a message is then stamped a fraction of

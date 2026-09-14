@@ -12,7 +12,7 @@ import {
   renameHtml,
   saveHtml,
   validateHtmlSave,
-} from "../../src/lib/simulator/html-store";
+} from "@/lib/simulator/html-store";
 const program = (source = "<!doctype html><h1>Local lesson</h1>") =>
   identifyHtml(new TextEncoder().encode(source).buffer, "Lesson");
 describe("HTML device persistence", () => {

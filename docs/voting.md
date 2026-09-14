@@ -71,12 +71,12 @@ result. No delivered invitation is revoked by cleanup.
 
 ## Verification
 
-- `scripts/tests/voting.test.ts`: ballot threshold, rejection, expiry, deletion,
+- `tests/convex/voting.test.ts`: ballot threshold, rejection, expiry, deletion,
   cooldown, authorization, privacy, name checks, unread state, account cleanup.
-- `scripts/tests/voting-actions.test.ts`: sending through the existing helper,
+- `tests/unit/voting-actions.test.ts`: sending through the existing helper,
   reconciliation, permission failures, definitive refusals, and uncertain
   delivery/confirmation failures. Clerk is mocked; tests send no email.
-- Existing `scripts/tests/chat-admin.test.ts` remains passing.
+- Existing `tests/convex/chat-admin.test.ts` remains passing.
 - TypeScript, targeted ESLint, and the production build passed during development.
 - Convex functions were pushed to the development deployment and smoke checked.
 - Signed-in visual verification remains outstanding: the available browser

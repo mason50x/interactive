@@ -1,15 +1,13 @@
-/// <reference types="vite/client" />
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../../convex/schema";
-import { api } from "../../convex/_generated/api";
-const modules = import.meta.glob("../../convex/**/*.ts");
+import { api } from "@convex/_generated/api";
+import { botQuotaName, botRateLimiter } from "@convex/chat/botConfig";
+import { makeConvexTest } from "../helpers/convex";
 const mason = "user_test_admin";
 beforeEach(() => vi.stubEnv("CHAT_ADMIN_CLERK_IDS", mason));
 afterEach(() => vi.unstubAllEnvs());
 
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   const ids = await t.run(async (ctx) => {
     await ctx.db.insert("users", { clerkId: mason, name: "Renamed" });
     await ctx.db.insert("users", {
@@ -108,12 +106,7 @@ test("admin must retain access to the conversation", async () => {
 });
 
 test("verified admin gets 50 bot uses; other accounts get five, with refunds in the same bucket", async () => {
-  const { default: rateLimiter } =
-    await import("@convex-dev/rate-limiter/test");
-  const { botRateLimiter, botQuotaName } =
-    await import("../../convex/chat/botConfig");
-  const t = convexTest(schema, modules);
-  rateLimiter.register(t);
+  const t = makeConvexTest({ rateLimited: true });
   vi.useFakeTimers();
   try {
     for (const [clerkId, allowance] of [

@@ -1,17 +1,17 @@
-/// <reference types="vite/client" />
 import { beforeEach, expect, test } from "vitest";
-import { convexTest } from "convex-test";
-import rateLimiter from "@convex-dev/rate-limiter/test";
-import schema from "../../convex/schema";
-import { api, internal } from "../../convex/_generated/api";
+import { api, internal } from "@convex/_generated/api";
 import {
   ENGINE_BUILD,
   STATE_BYTES,
   STATE_HEADER,
-} from "../../convex/simulator/model";
-const modules = import.meta.glob("../../convex/**/*.ts");
-const makeTest = () => convexTest(schema, modules);
-let t: ReturnType<typeof makeTest>;
+} from "@convex/simulator/model";
+import {
+  actor,
+  type ConvexHarness,
+  makeConvexTest,
+  seedUsers,
+} from "../helpers/convex";
+let t: ConvexHarness;
 const hash = "a".repeat(64);
 function progress(id = crypto.randomUUID()) {
   const checkpoint = new ArrayBuffer(STATE_BYTES);
@@ -25,16 +25,11 @@ function progress(id = crypto.randomUUID()) {
   };
 }
 beforeEach(async () => {
-  t = makeTest();
-  rateLimiter.register(t);
-  await t.run(async (ctx) => {
-    for (const clerkId of ["alice", "bob"]) {
-      await ctx.db.insert("users", { clerkId });
-    }
-  });
+  t = makeConvexTest({ rateLimited: true });
+  await seedUsers(t, ["alice", "bob"]);
 });
-const alice = () => t.withIdentity({ subject: "alice" }),
-  bob = () => t.withIdentity({ subject: "bob" });
+const alice = () => actor(t, "alice"),
+  bob = () => actor(t, "bob");
 test("owner isolation for list, read, write, rename, restore and delete", async () => {
   const a = alice(),
     b = bob();

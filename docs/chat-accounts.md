@@ -18,6 +18,6 @@ The new Convex functions must already be deployed before invoking the backfill s
 
 ## Verification
 
-`scripts/tests/chat-account.test.ts` covers migration in place, repeat sync, stale webhook delivery, exact username lookup, avatar switching, upload rejection, account creation, and sending/reading messages after an identity change. `scripts/tests/chat-performance.test.ts` checks reply visibility and lookup reuse.
+`tests/convex/chat-account.test.ts` covers migration in place, repeat sync, stale webhook delivery, exact username lookup, avatar switching, upload rejection, account creation, and sending/reading messages after an identity change. `tests/convex/chat-performance.test.ts` checks reply visibility and lookup reuse.
 
 Browser verification covered account → emoji → text → reload → account, plus changing the first name in Clerk and observing chat update. The development first name and account-avatar selection were restored after testing. Production verification confirmed eight matching profiles, loaded direct Clerk images, existing conversations/messages, the new picker, and no browser console errors.

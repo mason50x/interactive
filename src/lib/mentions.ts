@@ -98,7 +98,8 @@ export function segmentMentions(
   const segments: Segment[] = [];
   let last = 0;
   for (const token of findMentionTokens(body)) {
-    const bot = BOT_MENTION_HANDLES.has(token.handle) && resolve(BOT_HANDLE) === BOT_ID;
+    const bot =
+      BOT_MENTION_HANDLES.has(token.handle) && resolve(BOT_HANDLE) === BOT_ID;
     const who = bot ? BOT_ID : resolve(token.handle);
     if (who === undefined) continue;
     if (token.start > last) {

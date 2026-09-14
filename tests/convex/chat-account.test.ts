@@ -1,13 +1,10 @@
-/// <reference types="vite/client" />
 import { expect, test } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../../convex/schema";
-import { api, internal } from "../../convex/_generated/api";
-import { profileByHandle } from "../../convex/chat/shared";
-const modules = import.meta.glob("../../convex/**/*.ts");
+import { api, internal } from "@convex/_generated/api";
+import { profileByHandle } from "@convex/chat/shared";
+import { makeConvexTest } from "../helpers/convex";
 
 test("Clerk cutover preserves profile identity, history and privacy; repeat sync preserves avatar choice", async () => {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   const id = await t.run((ctx) =>
     ctx.db.insert("chatProfiles", {
       clerkId: "account",
@@ -74,7 +71,7 @@ test("Clerk cutover preserves profile identity, history and privacy; repeat sync
 });
 
 test("new account receives one profile and global membership; Clerk identities do not use confusable folding", async () => {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   for (const [id, username] of [
     ["one", "alice"],
     ["two", "al1ce"],
@@ -105,7 +102,7 @@ test("new account receives one profile and global membership; Clerk identities d
 });
 
 test("messages keep their ids and show the current Clerk identity after rename", async () => {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   const account = {
     id: "sender",
     username: "before",
@@ -152,7 +149,7 @@ test("messages keep their ids and show the current Clerk identity after rename",
 });
 
 test("first names are formatted and collisions use the shortest available surname prefix", async () => {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   const accounts = [
     {
       id: "a",
@@ -199,7 +196,7 @@ test("first names are formatted and collisions use the shortest available surnam
 });
 
 test("sync automatically rejoins Everyone for an existing account without duplicating membership", async () => {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   const data = {
     id: "returning",
     username: "returning",

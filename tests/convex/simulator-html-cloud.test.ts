@@ -1,19 +1,12 @@
-/// <reference types="vite/client" />
 import { expect, test } from "vitest";
-import { convexTest } from "convex-test";
-import rateLimiter from "@convex-dev/rate-limiter/test";
-import schema from "../../convex/schema";
-import { api, internal } from "../../convex/_generated/api";
-const modules = import.meta.glob("../../convex/**/*.ts");
+import { api, internal } from "@convex/_generated/api";
+import { actor, makeConvexTest, seedUsers } from "../helpers/convex";
+
 test("HTML metadata is owner scoped, bounded and purged with accounts", async () => {
-  const t = convexTest(schema, modules);
-  rateLimiter.register(t);
-  await t.run(async (ctx) => {
-    await ctx.db.insert("users", { clerkId: "alice" });
-    await ctx.db.insert("users", { clerkId: "bob" });
-  });
-  const a = t.withIdentity({ subject: "alice" }),
-    b = t.withIdentity({ subject: "bob" });
+  const t = makeConvexTest({ rateLimited: true });
+  await seedUsers(t, ["alice", "bob"]);
+  const a = actor(t, "alice"),
+    b = actor(t, "bob");
   const contentHash = "a".repeat(64);
   await a.mutation(api.simulator.html.register, {
     contentHash,

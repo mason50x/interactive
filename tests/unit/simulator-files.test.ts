@@ -1,15 +1,11 @@
-import { createTestProgram } from "./simulator-fixture.mjs";
+import { createTestProgram } from "../fixtures/simulator-fixture.mjs";
 import { describe, expect, it } from "vitest";
-import {
-  identify,
-  openProgram,
-  programLabel,
-} from "../../src/lib/simulator/files";
+import { identify, openProgram, programLabel } from "@/lib/simulator/files";
 import {
   importProgress,
   makeProgress,
   STATE_BYTES,
-} from "../../src/lib/simulator/progress";
+} from "@/lib/simulator/progress";
 const sample = () => new Uint8Array(createTestProgram()).buffer;
 const header = (data: Uint8Array) => {
   let sum = 0;

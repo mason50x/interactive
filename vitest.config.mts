@@ -17,5 +17,13 @@ export default defineConfig({
       "@config/": root("./config/"),
     },
   },
-  test: { include: ["scripts/tests/*.test.ts"], environment: "node" },
+  test: {
+    /**
+     * `tests/unit` exercises pure modules under `src/`, `tests/convex` runs
+     * the backend in `convex-test`, and `tests/worker` boots the Cloudflare
+     * entry point. `tests/e2e` belongs to Playwright and is left out here.
+     */
+    include: ["tests/{unit,convex,worker}/**/*.test.ts"],
+    environment: "node",
+  },
 });

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "@convex/_generated/dataModel";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -16,8 +16,8 @@ vi.mock("@clerk/nextjs/errors", () => ({
     Boolean(error && typeof error === "object" && "status" in error),
 }));
 vi.mock("convex/nextjs", () => ({ fetchMutation: mocks.fetchMutation }));
-vi.mock("../../src/lib/invitations", () => ({ inviteUser: mocks.inviteUser }));
-import { approveNomination } from "../../src/lib/voting-actions";
+vi.mock("@/lib/invitations", () => ({ inviteUser: mocks.inviteUser }));
+import { approveNomination } from "@/lib/voting-actions";
 const id = "nomination-test" as Id<"nominations">;
 afterEach(() => vi.unstubAllEnvs());
 

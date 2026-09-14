@@ -1,11 +1,11 @@
 import { beforeEach, afterEach, expect, test, vi } from "vitest";
 import "fake-indexeddb/auto";
-import { ProgressSync } from "../../src/lib/simulator/sync";
-import { makeProgress } from "../../src/lib/simulator/progress";
-import { clearLocal, readLocal } from "../../src/lib/simulator/local-store";
+import { ProgressSync } from "@/lib/simulator/sync";
+import { makeProgress } from "@/lib/simulator/progress";
+import { clearLocal, readLocal } from "@/lib/simulator/local-store";
 import { getFunctionName } from "convex/server";
 import type { ConvexReactClient } from "convex/react";
-import type { Entry } from "../../src/lib/simulator/types";
+import type { Entry } from "@/lib/simulator/types";
 const hash = "b".repeat(64),
   owner = "sync-test";
 function capture() {

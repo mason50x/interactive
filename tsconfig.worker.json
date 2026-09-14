@@ -12,6 +12,6 @@
   "include": [
     "worker.ts",
     "worker-configuration.d.ts",
-    "scripts/tests/access-hours.test.ts"
+    "tests/worker/**/*.ts"
   ]
 }

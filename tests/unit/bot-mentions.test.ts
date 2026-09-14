@@ -1,9 +1,11 @@
 import { expect, test } from "vitest";
-import { segmentMentions } from "../../src/lib/mentions";
+import { segmentMentions } from "@/lib/mentions";
 
 test("typed and sent bot aliases render as bot chips with their original text", () => {
-  const segments = segmentMentions("@Verity and @bot", handle => handle === "bot" ? "bot" : undefined);
-  expect(segments.filter(segment => segment.kind === "mention")).toEqual([
+  const segments = segmentMentions("@Verity and @bot", (handle) =>
+    handle === "bot" ? "bot" : undefined,
+  );
+  expect(segments.filter((segment) => segment.kind === "mention")).toEqual([
     { kind: "mention", text: "@Verity", handle: "verity", clerkId: "bot" },
     { kind: "mention", text: "@bot", handle: "bot", clerkId: "bot" },
   ]);

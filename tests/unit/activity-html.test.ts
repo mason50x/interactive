@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertPatched, patchGameHtml } from "../migrate-to-r2.mjs";
+import { assertPatched, patchGameHtml } from "../../scripts/migrate-to-r2.mjs";
 
 const frameBuster = `<style id="antiClickjack">body{display:none !important;}</style><br><script type="text/javascript">if (self === top) { var antiClickjack = document.getElementById("antiClickjack"); antiClickjack.parentNode.removeChild(antiClickjack); } else { top.location = self.location; } </script>`;
 const game = `<!DOCTYPE html><html><head><title>MotoX3M Pool</title></head><body><div id="content"></div><script src="motox3m.min.js"></script></body></html>`;

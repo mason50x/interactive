@@ -4,7 +4,7 @@ import {
   releases,
   releaseSeenVersion,
   type Release,
-} from "../../src/lib/releases";
+} from "@/lib/releases";
 
 function release(version: string, importance?: Release["importance"]): Release {
   return { version, importance, date: "2026-09-13", title: "", body: "" };

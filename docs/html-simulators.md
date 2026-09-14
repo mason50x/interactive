@@ -50,4 +50,4 @@ Native localStorage/IndexedDB access in opaque frames is unavailable. Existing H
 
 ## Verification
 
-`npx vitest run scripts/tests/simulator-html*.test.ts` covers local identity/retention, owner isolation, slot rotation, limits, deletion, progress validation, and metadata ownership/account cleanup. GB regression tests remain separate. Backend deployment uses the normal development `npx convex dev --once`; production release is separate.
+`npx vitest run simulator-html` covers local identity/retention, owner isolation, slot rotation, limits, deletion, progress validation, and metadata ownership/account cleanup. GB regression tests remain separate. Backend deployment uses the normal development `npx convex dev --once`; production release is separate.

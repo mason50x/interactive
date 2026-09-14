@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
-import { createTestProgram } from "./simulator-fixture.mjs";
-import { identify } from "../../src/lib/simulator/files";
+import { createTestProgram } from "../fixtures/simulator-fixture.mjs";
+import { identify } from "@/lib/simulator/files";
 import {
   accountKey,
   clearLocal,
@@ -10,7 +10,7 @@ import {
   removeLocal,
   writeLocal,
   writeProgram,
-} from "../../src/lib/simulator/local-store";
+} from "@/lib/simulator/local-store";
 
 describe("local ROM cache", () => {
   it("upgrades existing save storage without losing progress", async () => {

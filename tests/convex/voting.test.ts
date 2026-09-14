@@ -1,11 +1,8 @@
-/// <reference types="vite/client" />
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { convexTest } from "convex-test";
-import schema from "../../convex/schema";
-import { api, internal } from "../../convex/_generated/api";
-import { matchesOwnName, THREE_DAYS } from "../../convex/voting/model";
+import { api, internal } from "@convex/_generated/api";
+import { matchesOwnName, THREE_DAYS } from "@convex/voting/model";
+import { makeConvexTest } from "../helpers/convex";
 
-const modules = import.meta.glob("../../convex/**/*.ts");
 beforeEach(() => {
   vi.stubEnv("VOTING_ENABLED", "1");
   vi.stubEnv("CHAT_ADMIN_CLERK_IDS", "admin");
@@ -16,7 +13,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = makeConvexTest();
   await t.run(async (ctx) => {
     for (const clerkId of ["author", "admin", "b", "c", "d", "e", "f"]) {
       await ctx.db.insert("users", {

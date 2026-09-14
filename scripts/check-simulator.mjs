@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
-import { createTestProgram } from "./tests/simulator-fixture.mjs";
+import { createTestProgram } from "../tests/fixtures/simulator-fixture.mjs";
 const root = new URL("../", import.meta.url);
 const wasm = await readFile(
   new URL("public/simulator/core/c60e138/runtime.wasm", root),
