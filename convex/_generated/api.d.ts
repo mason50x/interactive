@@ -53,6 +53,8 @@ import type * as simulator_shared from "../simulator/shared.js";
 import type * as streaks from "../streaks.js";
 import type * as users from "../users.js";
 import type * as views from "../views.js";
+import type * as voting from "../voting.js";
+import type * as voting_model from "../voting/model.js";
 
 import type {
   ApiFromModules,
@@ -106,6 +108,8 @@ declare const fullApi: ApiFromModules<{
   streaks: typeof streaks;
   users: typeof users;
   views: typeof views;
+  voting: typeof voting;
+  "voting/model": typeof voting_model;
 }>;
 
 /**

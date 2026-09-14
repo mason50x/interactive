@@ -29,6 +29,19 @@ function useMaskId() {
   return `ni-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
 }
 
+/** Voting. The filled hand gives a small approving lift; its cuff stays put. */
+export function VoteIconSolid(props: IconProps) {
+  return (
+    <SolidIcon {...props}>
+      <path
+        className="ni-vote-hand"
+        d="M7.493 18.5c-.425 0-.82-.236-.975-.632A7.48 7.48 0 0 1 6 15.125c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75A.75.75 0 0 1 15 2a2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23h-.777Z"
+      />
+      <path d="M2.331 10.727a11.969 11.969 0 0 0-.831 4.398 12 12 0 0 0 .52 3.507C2.28 19.482 3.105 20 3.994 20H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 0 1-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.832 0-1.612.453-1.918 1.227Z" />
+    </SolidIcon>
+  );
+}
+
 /**
  * Home. Heroicons' `HomeModernIcon`, which already comes as two paths: the
  * roof slab with its chimney, and the house under it with the door cut out.
@@ -192,42 +205,6 @@ export function ChipIconSolid(props: IconProps) {
         <rect x="2.25" y="15" width="2.25" height="1.5" {...pin} />
       </g>
     </SolidIcon>
-  );
-}
-
-/**
- * Philosophy. The brain from `brain-icon.tsx`, its two halves grouped apart
- * with their own folds so each can swell from the midline on its own. On
- * hover they think: left, then right.
- */
-export function BrainIconSolid(props: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      fillOpacity={0.2}
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <g className="ni-brain-l">
-        <path d="M12 5a3 3 0 0 0-5.8-1A3.5 3.5 0 0 0 3 9a4 4 0 0 0 0 7 3.5 3.5 0 0 0 4 4 2.75 2.75 0 0 0 5-1.5Z" />
-        <path
-          fill="none"
-          d="M6.2 4A3 3 0 0 0 7 7m-4 2a3 3 0 0 1 3 3m-3 4a3 3 0 0 0 3-2m1 6a3 3 0 0 1 1-4"
-        />
-      </g>
-      <g className="ni-brain-r">
-        <path d="M12 5a3 3 0 0 1 5.8-1A3.5 3.5 0 0 1 21 9a4 4 0 0 1 0 7 3.5 3.5 0 0 1-4 4 2.75 2.75 0 0 1-5-1.5Z" />
-        <path
-          fill="none"
-          d="M17.8 4A3 3 0 0 1 17 7m4 2a3 3 0 0 0-3 3m3 4a3 3 0 0 1-3-2m-1 6a3 3 0 0 0-1-4"
-        />
-      </g>
-    </svg>
   );
 }
 

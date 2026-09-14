@@ -198,6 +198,7 @@ export const deleteFromClerk = internalMutation({
     await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
 
     await ctx.scheduler.runAfter(0, internal.simulator.cleanup.purgeOwner, { clerkId });
+    await ctx.scheduler.runAfter(0, internal.voting.purgeAccount, { clerkId });
 
     // Add deletes for any other table keyed by this user above this line.
 

@@ -1,5 +1,6 @@
-import { GlobeAltIcon } from "@heroicons/react/24/outline";
-import { GlobeIconSolid } from "@/components/app/nav-icons";
+import { GlobeAltIcon, HandThumbUpIcon } from "@heroicons/react/24/outline";
+import { GlobeIconSolid, VoteIconSolid } from "@/components/app/nav-icons";
+import { VotingBadge } from "@/components/app/voting/voting-badge";
 import type { NavItem } from "@/lib/nav";
 
 /**
@@ -14,5 +15,11 @@ export const extraNavItems: NavItem[] = [
     label: "Experience",
     href: "/dashboard/experience",
     icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
+  },
+  {
+    label: "Voting",
+    href: "/dashboard/voting",
+    icon: { outline: HandThumbUpIcon, solid: VoteIconSolid },
+    badge: VotingBadge,
   },
 ];

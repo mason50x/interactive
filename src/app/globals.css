@@ -1253,16 +1253,6 @@
   }
 }
 
-@keyframes ni-think {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.09);
-  }
-}
-
 .ni-home-roof,
 .ni-pad,
 .ni-btn-a,
@@ -1274,8 +1264,6 @@
 .ni-pins-r,
 .ni-pins-b,
 .ni-pins-l,
-.ni-brain-l,
-.ni-brain-r,
 .ni-rail-pane {
   transform-box: fill-box;
   transform-origin: center;
@@ -1284,12 +1272,6 @@
 .ni-chat-front {
   /* Its tail. */
   transform-origin: 100% 100%;
-}
-.ni-brain-l {
-  transform-origin: 100% 50%;
-}
-.ni-brain-r {
-  transform-origin: 0% 50%;
 }
 
 /* The meridians scale about the globe's own centre, not their own box — a
@@ -1392,13 +1374,6 @@
   }
   .nav-row:hover .ni-die {
     animation: ni-die-blink 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
-  }
-
-  .nav-row:hover .ni-brain-l {
-    animation: ni-think 0.55s ease-in-out;
-  }
-  .nav-row:hover .ni-brain-r {
-    animation: ni-think 0.55s ease-in-out 0.14s;
   }
 
   .rail-toggle[data-to="closed"]:hover .ni-rail-pane {

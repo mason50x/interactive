@@ -22,6 +22,11 @@ export function imagesEnabled(): boolean {
   return process.env.IMAGES_ENABLED === "1";
 }
 
+/** Opt in on a development deployment only; production stays unset/off. */
+export function votingEnabled(): boolean {
+  return process.env.VOTING_ENABLED === "1";
+}
+
 export type Features = { images: boolean };
 
 /** What the app may offer. Public: nothing here is worth hiding. */

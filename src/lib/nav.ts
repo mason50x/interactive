@@ -3,11 +3,10 @@ import {
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
 } from "@heroicons/react/24/outline";
+import type { ComponentType } from "react";
 import type { IconPair } from "@/lib/icons";
-import { BrainIcon } from "@/components/app/brain-icon";
 import { ControllerIcon } from "@/components/app/controller-icon";
 import {
-  BrainIconSolid,
   ChatIconSolid,
   ChipIconSolid,
   ControllerIconSolid,
@@ -28,6 +27,7 @@ export type NavItem = {
    * more line here rather than a different shape.
    */
   unread?: boolean;
+  badge?: ComponentType;
 };
 
 /** The catalogue. Has a search box of its own, separate from the rail's. */
@@ -36,8 +36,6 @@ export const ACTIVITIES_HREF = "/dashboard/activities";
 const SIMULATOR_HREF = "/dashboard/learning-simulator";
 
 export const CHAT_HREF = "/dashboard/chat";
-
-export const PHILOSOPHY_HREF = "/dashboard/our-philosophy";
 
 /**
  * Every destination inside the signed-in app, in the order the rail shows
@@ -74,11 +72,6 @@ export const navItems: NavItem[] = [
     label: "Simulators",
     href: SIMULATOR_HREF,
     icon: { outline: CpuChipIcon, solid: ChipIconSolid },
-  },
-  {
-    label: "Philosophy",
-    href: PHILOSOPHY_HREF,
-    icon: { outline: BrainIcon, solid: BrainIconSolid },
   },
 ];
 

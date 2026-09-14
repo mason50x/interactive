@@ -3,8 +3,29 @@ import { v } from "convex/values";
 
 import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
+import { nominationFields } from "./voting/model";
 
 export default defineSchema({
+  nominations: defineTable(nominationFields)
+    .index("by_status", ["status"])
+    .index("by_status_and_delivery", ["status", "delivery"])
+    .index("by_email", ["email"])
+    .index("by_nameKey", ["nameKey"])
+    .index("by_authorClerkId", ["authorClerkId"]),
+  nominationVotes: defineTable({
+    nominationId: v.id("nominations"),
+    clerkId: v.string(),
+    yes: v.boolean(),
+  })
+    .index("by_nominationId_and_clerkId", ["nominationId", "clerkId"])
+    .index("by_clerkId", ["clerkId"]),
+  nominationCooldowns: defineTable({
+    email: v.string(),
+    nameKey: v.string(),
+    until: v.number(),
+  }).index("by_email", ["email"]).index("by_nameKey_and_until", ["nameKey", "until"]),
+  votingReads: defineTable({ clerkId: v.string(), seenAt: v.number() })
+    .index("by_clerkId", ["clerkId"]),
   htmlSimulatorEntries: defineTable(htmlFields)
     .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"]),
   simulatorEntries: defineTable(entryFields)

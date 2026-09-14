@@ -6,6 +6,12 @@ import { fileURLToPath } from "node:url";
 
 export default defineConfig(({ command }) => ({
   optimizeDeps: {
+    // Base UI is excluded below, but its CommonJS hook dependency still needs
+    // pre-bundling to expose named exports to browser ES modules.
+    include: [
+      "use-sync-external-store/shim",
+      "use-sync-external-store/shim/with-selector",
+    ],
     // RSC client boundaries load Clerk directly. Keep hooks on the same module
     // instances instead of creating a second context in the optimized bundle.
     exclude: [
