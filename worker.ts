@@ -7,7 +7,16 @@ export default {
     if (process.env.NODE_ENV === "production" && !isAccessOpen()) {
       return accessClosedResponse(request);
     }
-    const response = await handler.fetch(request, env, ctx);
+    // run_worker_first keeps the access-hours policy ahead of static files.
+    // Vinext expects the asset layer to have served matching files already.
+    let assetResponse: Response | undefined;
+    if (request.method === "GET" || request.method === "HEAD") {
+      const asset = await env.ASSETS.fetch(request);
+      if (asset.status !== 404) assetResponse = asset;
+      else await asset.body?.cancel();
+    }
+    const response: Response =
+      assetResponse ?? (await handler.fetch(request, env, ctx));
     const headers = new Headers(response.headers);
     const path = new URL(request.url).pathname;
     const learn = path === "/learn" || path.startsWith("/learn/");

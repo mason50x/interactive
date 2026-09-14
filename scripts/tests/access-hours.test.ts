@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isAccessOpen } from "../../src/lib/access-hours";
 
-const { fetchApp } = vi.hoisted(() => ({ fetchApp: vi.fn() }));
+const { fetchApp, fetchAsset } = vi.hoisted(() => ({
+  fetchApp: vi.fn(),
+  fetchAsset: vi.fn(),
+}));
+const env = { ASSETS: { fetch: fetchAsset } } as unknown as Cloudflare.Env;
 vi.mock("vinext/server/fetch-handler", () => ({
   default: { fetch: fetchApp },
 }));
@@ -41,6 +45,9 @@ describe("Central access hours", () => {
 describe("Worker access enforcement", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "production");
+    fetchAsset.mockImplementation(
+      async () => new Response(null, { status: 404 }),
+    );
   });
 
   it("allows development requests outside access hours", async () => {
@@ -50,7 +57,7 @@ describe("Worker access enforcement", () => {
     fetchApp.mockResolvedValue(new Response("app"));
     const response = await worker.fetch(
       new Request("http://localhost:3000/dashboard"),
-      {} as Cloudflare.Env,
+      env,
       {} as ExecutionContext,
     );
     expect(fetchApp).toHaveBeenCalledOnce();
@@ -78,7 +85,7 @@ describe("Worker access enforcement", () => {
             RSC: "1",
           },
         }),
-        {} as Cloudflare.Env,
+        env,
         {} as ExecutionContext,
       );
       expect(response.status).toBe(403);
@@ -87,6 +94,7 @@ describe("Worker access enforcement", () => {
         "7:30 a.m.–2:55 p.m. Central time",
       );
       expect(fetchApp).not.toHaveBeenCalled();
+      expect(fetchAsset).not.toHaveBeenCalled();
     },
   );
 
@@ -96,7 +104,7 @@ describe("Worker access enforcement", () => {
     fetchApp.mockResolvedValue(new Response("app"));
     const response = await worker.fetch(
       new Request("https://example.com/dashboard"),
-      {} as Cloudflare.Env,
+      env,
       {} as ExecutionContext,
     );
     expect(fetchApp).toHaveBeenCalledOnce();
@@ -105,12 +113,35 @@ describe("Worker access enforcement", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
+  it.each(["GET", "HEAD"])(
+    "serves assets during access hours for %s",
+    async (method) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-09-14T07:30:00-05:00"));
+      fetchAsset.mockResolvedValue(
+        new Response(method === "HEAD" ? null : "body{}", {
+          headers: { "Content-Type": "text/css" },
+        }),
+      );
+      const response = await worker.fetch(
+        new Request("https://example.com/_next/static/layout.css", { method }),
+        env,
+        {} as ExecutionContext,
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBe("text/css");
+      expect(response.headers.get("x-robots-tag")).toContain("noindex");
+      expect(await response.text()).toBe(method === "HEAD" ? "" : "body{}");
+      expect(fetchApp).not.toHaveBeenCalled();
+    },
+  );
+
   it("returns no body for blocked HEAD requests", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
     const response = await worker.fetch(
       new Request("https://example.com", { method: "HEAD" }),
-      {} as Cloudflare.Env,
+      env,
       {} as ExecutionContext,
     );
     expect(response.status).toBe(403);

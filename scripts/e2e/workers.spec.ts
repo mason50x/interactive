@@ -1,5 +1,30 @@
 import { expect, test } from "@playwright/test";
 import { isAccessOpen } from "../../src/lib/access-hours";
+import { readdir } from "node:fs/promises";
+
+test("generated scripts, styles and fonts are served by the Worker", async ({
+  request,
+}) => {
+  test.skip(!isAccessOpen(), "The live clock is outside access hours.");
+  const files = await readdir("dist/client/_next/static", { recursive: true });
+  for (const extension of [".js", ".css", ".woff2"]) {
+    const paths = files.filter((file) => file.endsWith(extension));
+    expect(paths.length, extension).toBeGreaterThan(0);
+    for (const file of paths) {
+      const path = `/_next/static/${file}`;
+      const response = await request.get(path);
+      expect(response.status(), path).toBe(200);
+      expect(response.headers()["content-type"], path).toMatch(
+        extension === ".js"
+          ? /javascript/
+          : extension === ".css"
+            ? /text\/css/
+            : /font\/woff2/,
+      );
+      expect(response.headers()["x-robots-tag"], path).toContain("noindex");
+    }
+  }
+});
 
 test("outside access hours all routes and assets are blocked", async ({
   request,
