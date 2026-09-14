@@ -19,6 +19,7 @@ import {
   MAX_UNSENT_IMAGES,
 } from "../moderation/limits";
 import type { Refusal } from "../moderation/rules";
+import { attachmentPurpose } from "./model";
 import { callerProfile, deleteAttachment, profileFor } from "./shared";
 
 /**
@@ -131,7 +132,7 @@ async function maySend(
  */
 export const uploadUrl = mutation({
   args: {
-    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
+    purpose: v.optional(attachmentPurpose),
   },
   handler: async (ctx, { purpose }): Promise<UploadResult> => {
     if (purpose === "avatar") return { ok: false, refusal: "image" };

@@ -1,5 +1,11 @@
 import { botQuotaName } from "./botConfig";
-import { callerId, callerProfile, dmKeyFor, membership } from "./shared";
+import {
+  callerId,
+  callerProfile,
+  dmKeyFor,
+  globalRoom,
+  membership,
+} from "./shared";
 import type { QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { Agent } from "@convex-dev/agent";
@@ -20,6 +26,25 @@ import {
   BOT_NAME,
   botRateLimiter,
 } from "./botConfig";
+
+/**
+ * The bot's own "typing" row in a conversation, if it has one.
+ *
+ * Every phase of an answer — starting the dots, the heartbeat that keeps them
+ * up, and the finish that takes them down — finds the same row by the same
+ * key, so the lookup is written once here.
+ */
+async function botTypingRow(
+  ctx: QueryCtx,
+  conversationId: Id<"conversations">,
+): Promise<Doc<"typing"> | null> {
+  return await ctx.db
+    .query("typing")
+    .withIndex("byConversationUser", (q) =>
+      q.eq("conversationId", conversationId).eq("clerkId", BOT_ID),
+    )
+    .unique();
+}
 
 /**
  * How many of the caller's `@bot` tags are left, for the composer's plus menu.
@@ -191,12 +216,7 @@ export const beginTyping = internalMutation({
       return false;
     }
 
-    const existing = await ctx.db
-      .query("typing")
-      .withIndex("byConversationUser", (q) =>
-        q.eq("conversationId", args.conversationId).eq("clerkId", BOT_ID),
-      )
-      .unique();
+    const existing = await botTypingRow(ctx, args.conversationId);
     const row = {
       handle: BOT_HANDLE,
       displayName: BOT_NAME,
@@ -225,12 +245,7 @@ export const beat = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("typing")
-      .withIndex("byConversationUser", (q) =>
-        q.eq("conversationId", args.conversationId).eq("clerkId", BOT_ID),
-      )
-      .unique();
+    const existing = await botTypingRow(ctx, args.conversationId);
 
     if (existing === null) {
       await ctx.db.insert("typing", {
@@ -369,12 +384,7 @@ export const stopTyping = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const row = await ctx.db
-      .query("typing")
-      .withIndex("byConversationUser", (q) =>
-        q.eq("conversationId", args.conversationId).eq("clerkId", BOT_ID),
-      )
-      .unique();
+    const row = await botTypingRow(ctx, args.conversationId);
     if (row?.token === args.messageId) await ctx.db.delete(row._id);
     return null;
   },
@@ -401,12 +411,7 @@ export const finish = internalMutation({
       prompt.status !== "visible" ||
       prompt.conversationId !== args.conversationId
     ) {
-      const row = await ctx.db
-        .query("typing")
-        .withIndex("byConversationUser", (q) =>
-          q.eq("conversationId", args.conversationId).eq("clerkId", BOT_ID),
-        )
-        .unique();
+      const row = await botTypingRow(ctx, args.conversationId);
       if (row?.token === args.messageId) await ctx.db.delete(row._id);
       return false;
     }
@@ -431,12 +436,7 @@ export const finish = internalMutation({
     if (conversation?.kind === "dm") {
       await ctx.db.patch(conversation._id, { lastMessageAt: Date.now() });
     }
-    const row = await ctx.db
-      .query("typing")
-      .withIndex("byConversationUser", (q) =>
-        q.eq("conversationId", args.conversationId).eq("clerkId", BOT_ID),
-      )
-      .unique();
+    const row = await botTypingRow(ctx, args.conversationId);
     if (row?.token === args.messageId) await ctx.db.delete(row._id);
     return true;
   },
@@ -465,8 +465,7 @@ export const morningGreetingDue = internalQuery({
   handler: async (ctx) => {
     const { day, due } = centralMorning(Date.now());
     if (!due) return null;
-    const room = await ctx.db.query("conversations")
-      .withIndex("byKind", (q) => q.eq("kind", "global")).unique();
+    const room = await globalRoom(ctx);
     return room && room.lastMorningGreetingDay !== day ? day : null;
   },
 });
@@ -477,8 +476,7 @@ export const publishMorningGreeting = internalMutation({
   returns: v.boolean(),
   handler: async (ctx, { day, body }) => {
     if (centralMorning(Date.now()).day !== day || !body.trim()) return false;
-    const room = await ctx.db.query("conversations")
-      .withIndex("byKind", (q) => q.eq("kind", "global")).unique();
+    const room = await globalRoom(ctx);
     if (!room || room.lastMorningGreetingDay === day) return false;
     await ctx.db.insert("messages", {
       conversationId: room._id,
@@ -748,8 +746,7 @@ export const welcome = mutation({
     const message = await ctx.db.query("messages")
       .withIndex("byConversation", q => q.eq("conversationId", conversationId)).first();
     if (message) return null;
-    const typing = await ctx.db.query("typing")
-      .withIndex("byConversationUser", q => q.eq("conversationId", conversationId).eq("clerkId", BOT_ID)).unique();
+    const typing = await botTypingRow(ctx, conversationId);
     if (typing && typing.until > Date.now()) return null;
     if (typing) await ctx.db.delete(typing._id);
     const typingId = await ctx.db.insert("typing", {

@@ -1,4 +1,5 @@
 import { syncAccountProfile } from "./chat/account";
+import { userByClerkId } from "./identity";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import {
@@ -48,13 +49,6 @@ async function upsertUser(
   if (existing !== null) await ctx.db.patch(id, fields);
   if (fields.username) await syncAccountProfile(ctx, clerkId, fields.username, fields.firstName, fields.lastName);
   return id;
-}
-
-async function userByClerkId(ctx: QueryCtx, clerkId: string) {
-  return await ctx.db
-    .query("users")
-    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-    .unique();
 }
 
 /**

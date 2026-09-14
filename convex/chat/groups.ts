@@ -4,15 +4,18 @@ import type { Id } from "../_generated/dataModel";
 import {
   GROUP_EMOJI,
   GROUP_HUES,
-  MAX_INITIALS,
+  MAX_MEMBERS,
   MAX_TITLE,
 } from "../moderation/limits";
 import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type MutationCtx } from "../_generated/server";
+import { pickLook } from "./look";
+import { joinPolicy } from "./model";
 import {
   avatarAppearance,
   blockedEitherWay,
   callerProfile,
+  heirOf,
   membership,
   profileFor,
 } from "./shared";
@@ -43,9 +46,6 @@ import {
  * grant. `leave` clears the role on the way out too, which makes this the
  * second of two locks on the same door rather than the only one.
  */
-
-/** The most people one group may hold. */
-const MAX_MEMBERS = 100;
 
 const MAX_PENDING = 100;
 
@@ -353,11 +353,8 @@ export const leave = mutation({
     }
 
     if (member.role === "owner") {
-      const heir = [...rest].sort((first, second) => {
-        if (first.role !== second.role) return first.role === "admin" ? -1 : 1;
-        return first.joinedAt - second.joinedAt;
-      })[0];
-      await ctx.db.patch(heir._id, { role: "owner" });
+      const heir = heirOf(rest);
+      if (heir !== undefined) await ctx.db.patch(heir._id, { role: "owner" });
     }
 
     await ctx.db.patch(member._id, { status: "left", role: "member" });
@@ -379,11 +376,7 @@ async function activeMembers(
 export const setJoinPolicy = mutation({
   args: {
     conversationId: v.id("conversations"),
-    joinPolicy: v.union(
-      v.literal("invite"),
-      v.literal("request"),
-      v.literal("open"),
-    ),
+    joinPolicy,
   },
   handler: async (ctx, { conversationId, joinPolicy }) => {
     const profile = await callerProfile(ctx);
@@ -448,28 +441,11 @@ export const setLook = mutation({
     if (profile === null) return;
     if ((await asAdmin(ctx, conversationId, profile.clerkId)) === null) return;
 
-    const wheel: readonly number[] = GROUP_HUES;
-    const nextHue = hue !== undefined && wheel.includes(hue) ? hue : undefined;
-
-    const faces: readonly string[] = GROUP_EMOJI;
-    const nextEmoji =
-      emoji !== undefined && faces.includes(emoji) ? emoji : undefined;
-
-    // Only when there is no emoji: the disc has room for one thing, and an
-    // emoji is the more deliberate of the two to have chosen.
-    const wanted = (initials ?? "").trim();
-    const nextInitials =
-      nextEmoji === undefined &&
-      wanted.length >= 1 &&
-      wanted.length <= MAX_INITIALS &&
-      /^[a-z0-9]+$/i.test(wanted)
-        ? wanted
-        : undefined;
-
+    const look = pickLook(GROUP_HUES, GROUP_EMOJI, { hue, emoji, initials });
     await ctx.db.patch(conversationId, {
-      emoji: nextEmoji,
-      initials: nextInitials,
-      hue: nextHue,
+      emoji: look.emoji,
+      initials: look.initials,
+      hue: look.hue,
     });
   },
 });

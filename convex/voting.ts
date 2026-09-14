@@ -1,54 +1,14 @@
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { internal } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
-import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { isChatAdmin } from "../config/chat-admin";
+import { looksLikeEmail, normalizeEmail } from "./email";
 import { votingEnabled } from "./features";
-import { delivery, matchesOwnName, MIN_VOTES, nameKey, status, THREE_DAYS } from "./voting/model";
-
-async function member(ctx: QueryCtx) {
-  if (!votingEnabled()) throw new ConvexError("Voting is not available.");
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Sign in to participate.");
-  const user = await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
-  if (!user) throw new ConvexError("Your account is still syncing. Please try again.");
-  return user;
-}
-
-async function admin(ctx: QueryCtx) {
-  const user = await member(ctx);
-  if (!isChatAdmin(user.clerkId)) throw new ConvexError("Admin access required.");
-  return user;
-}
-
-async function reject(ctx: MutationCtx, nomination: Doc<"nominations">, at: number) {
-  await ctx.db.patch(nomination._id, { status: "rejected", closedAt: at });
-  // Keep the cooldown separate so deleting a suggestion cannot erase it.
-  const existing = await ctx.db.query("nominationCooldowns").withIndex("by_email", q => q.eq("email", nomination.email)).first();
-  const fields = { email: nomination.email, nameKey: nomination.nameKey, until: at + THREE_DAYS };
-  if (existing) await ctx.db.patch(existing._id, fields);
-  else await ctx.db.insert("nominationCooldowns", fields);
-}
-
-const row = v.object({
-  id: v.id("nominations"), name: v.string(), email: v.union(v.string(), v.null()),
-  status, yes: v.number(), no: v.number(), closesAt: v.number(),
-  closedAt: v.union(v.number(), v.null()), createdAt: v.number(),
-  delivery, canDelete: v.boolean(), myVote: v.union(v.boolean(), v.null()),
-});
-
-async function present(ctx: QueryCtx, nomination: Doc<"nominations">, clerkId: string) {
-  const ballot = await ctx.db.query("nominationVotes").withIndex("by_nominationId_and_clerkId", q => q.eq("nominationId", nomination._id).eq("clerkId", clerkId)).unique();
-  const isAdmin = isChatAdmin(clerkId);
-  return {
-    id: nomination._id, name: nomination.name, email: isAdmin ? nomination.email : null,
-    status: nomination.status, yes: nomination.yes, no: nomination.no,
-    closesAt: nomination.closesAt, closedAt: nomination.closedAt ?? null,
-    createdAt: nomination._creationTime, delivery: nomination.delivery,
-    canDelete: isAdmin || nomination.authorClerkId === clerkId, myVote: ballot?.yes ?? null,
-  };
-}
+import { callerId } from "./identity";
+import { admin, member } from "./voting/access";
+import { matchesOwnName, MIN_VOTES, nameKey, status, THREE_DAYS } from "./voting/model";
+import { present, reject, row } from "./voting/nominations";
 
 export const list = query({
   args: { status, paginationOpts: paginationOptsValidator },
@@ -91,11 +51,11 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const user = await member(ctx);
     const name = args.name.normalize("NFC").trim().replace(/\s+/gu, " ");
-    const email = args.email.trim().toLowerCase();
+    const email = normalizeEmail(args.email);
     const key = nameKey(name);
     if (name.length < 2 || name.length > 100 || !/\p{L}/u.test(name) || /[\p{Cc}\p{Cf}<>]/u.test(name)) throw new ConvexError("Enter a name between 2 and 100 characters.");
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ConvexError("Enter a valid email address.");
-    if (email === user.email?.trim().toLowerCase() || matchesOwnName(name, [user.name, user.username, [user.firstName, user.lastName].filter(Boolean).join(" ")])) throw new ConvexError("You cannot nominate yourself.");
+    if (email.length > 254 || !looksLikeEmail(email)) throw new ConvexError("Enter a valid email address.");
+    if ((user.email !== undefined && email === normalizeEmail(user.email)) || matchesOwnName(name, [user.name, user.username, [user.firstName, user.lastName].filter(Boolean).join(" ")])) throw new ConvexError("You cannot nominate yourself.");
     const now = Date.now();
     // Duplicate identity checks also serialize simultaneous submissions.
     for (const candidate of [
@@ -174,9 +134,9 @@ export const unread = query({
   args: {}, returns: v.boolean(),
   handler: async ctx => {
     if (!votingEnabled()) return false;
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return false;
-    const seen = await ctx.db.query("votingReads").withIndex("by_clerkId", q => q.eq("clerkId", identity.subject)).unique();
+    const clerkId = await callerId(ctx);
+    if (clerkId === null) return false;
+    const seen = await ctx.db.query("votingReads").withIndex("by_clerkId", q => q.eq("clerkId", clerkId)).unique();
     const latest = await ctx.db.query("nominations").order("desc").first();
     return Boolean(latest && latest._creationTime > (seen?.seenAt ?? 0));
   },

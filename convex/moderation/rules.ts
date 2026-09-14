@@ -64,49 +64,6 @@ export function refusalForPattern(category: PatternCategory): Refusal {
 }
 
 /**
- * The ways of writing "you" that a fourteen-year-old actually writes.
- *
- * Folded and lowercased by the time they get here, so this is only about
- * spelling, not about case or accents.
- */
-const SECOND_PERSON = new Set([
-  "you",
-  "u",
-  "ur",
-  "your",
-  "youre",
-  "ure",
-  "yours",
-  "yourself",
-  "urself",
-  "yall",
-  "yalls",
-  "ya",
-]);
-
-/**
- * Whether a tier-three word is pointed at somebody.
- *
- * This is the rule that decides what swearing costs. `this game is shit` and
- * `you are shit` contain the same word and are not the same message: both are
- * refused, and only the second goes on a record. The only thing separating them
- * is a pronoun four tokens away. Four is wide enough for `you are such a shit`
- * and narrow enough not to reach into the next sentence.
- */
-export function isTargeted(tokens: string[], flaggedTokens: string[]): boolean {
-  const flagged = new Set(flaggedTokens);
-  for (let index = 0; index < tokens.length; index += 1) {
-    if (!flagged.has(tokens[index])) continue;
-    const from = Math.max(0, index - 4);
-    const to = Math.min(tokens.length, index + 5);
-    for (let nearby = from; nearby < to; nearby += 1) {
-      if (nearby !== index && SECOND_PERSON.has(tokens[nearby])) return true;
-    }
-  }
-  return false;
-}
-
-/**
  * One earlier send, as the ring on the sender's profile remembers it.
  *
  * `flagged` is a leftover from when tier three posted: the ring only ever holds

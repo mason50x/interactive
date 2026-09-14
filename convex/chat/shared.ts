@@ -1,6 +1,7 @@
-import { BOT_ID } from "./botConfig";
+import { BOT_AVATAR, BOT_HANDLE, BOT_ID, BOT_NAME } from "./botConfig";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { callerId } from "../identity";
 import { RECENT_RING } from "../moderation/limits";
 
 import type { RecentSend } from "../moderation/rules";
@@ -13,11 +14,9 @@ import type { RecentSend } from "../moderation/rules";
  * sorts to.
  */
 
-/** The caller's Clerk id, or `null` when signed out. */
-export async function callerId(ctx: QueryCtx): Promise<string | null> {
-  const identity = await ctx.auth.getUserIdentity();
-  return identity?.subject ?? null;
-}
+// The chat modules take the caller's id from here; the lookup itself is the
+// one every module shares, in `convex/identity.ts`.
+export { callerId };
 
 export async function profileFor(
   ctx: QueryCtx,
@@ -51,6 +50,41 @@ export async function avatarAppearance(
     avatarHue: profile.avatarHue,
     avatarEmoji: profile.avatarEmoji,
     avatarInitials: profile.avatarInitials,
+  };
+}
+
+/**
+ * The other side of a direct message, as a row or a header names them.
+ *
+ * The bot has no profile row, so its handle, name and picture come from
+ * `botConfig` rather than the table; for anyone else the handle and display
+ * name are read off their profile and the picture through `avatarAppearance`.
+ * A peer whose profile has gone reads as nobody, which the client draws as a
+ * bare handle-less row rather than an error.
+ */
+export type PeerIdentity = {
+  peerHandle?: string;
+  peerName?: string;
+  peerAvatarUrl?: string;
+  peerAvatarHue?: number;
+  peerAvatarEmoji?: string;
+  peerAvatarInitials?: string;
+};
+
+export async function peerIdentity(
+  ctx: QueryCtx,
+  peerClerkId: string,
+): Promise<PeerIdentity> {
+  const peer = await profileFor(ctx, peerClerkId);
+  const avatar = peer === null ? {} : await avatarAppearance(ctx, peer);
+  const bot = peerClerkId === BOT_ID;
+  return {
+    peerHandle: bot ? BOT_HANDLE : peer?.handle,
+    peerName: bot ? BOT_NAME : peer?.displayName,
+    peerAvatarUrl: bot ? BOT_AVATAR : avatar.avatarUrl,
+    peerAvatarHue: avatar.avatarHue,
+    peerAvatarEmoji: avatar.avatarEmoji,
+    peerAvatarInitials: avatar.avatarInitials,
   };
 }
 
@@ -274,6 +308,20 @@ export async function membership(
     .unique();
 }
 
+/**
+ * Who takes a group over when its owner goes: the longest-standing admin,
+ * and failing that the longest-standing member. `undefined` for nobody left,
+ * which is a group to purge rather than to hand on.
+ */
+export function heirOf<
+  Row extends { role: "owner" | "admin" | "member"; joinedAt: number },
+>(rows: readonly Row[]): Row | undefined {
+  return [...rows].sort((first, second) => {
+    if (first.role !== second.role) return first.role === "admin" ? -1 : 1;
+    return first.joinedAt - second.joinedAt;
+  })[0];
+}
+
 export async function friendship(
   ctx: QueryCtx,
   a: string,
@@ -330,14 +378,20 @@ export async function blockedBy(
  * makes finding it a single lookup, which is why there is no table holding its
  * id.
  */
+export async function globalRoom(
+  ctx: QueryCtx,
+): Promise<Doc<"conversations"> | null> {
+  return await ctx.db
+    .query("conversations")
+    .withIndex("byKind", (q) => q.eq("kind", "global"))
+    .first();
+}
+
 export async function ensureGlobalRoom(
   ctx: MutationCtx,
   clerkId: string,
 ): Promise<Id<"conversations">> {
-  const existing = await ctx.db
-    .query("conversations")
-    .withIndex("byKind", (q) => q.eq("kind", "global"))
-    .first();
+  const existing = await globalRoom(ctx);
   if (existing !== null) return existing._id;
 
   return await ctx.db.insert("conversations", {

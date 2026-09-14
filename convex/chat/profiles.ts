@@ -1,11 +1,8 @@
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import {
-  AVATAR_EMOJI,
-  AVATAR_HUES,
-  MAX_INITIALS,
-} from "../moderation/limits";
+import { AVATAR_EMOJI, AVATAR_HUES } from "../moderation/limits";
 import { mutation, query } from "../_generated/server";
+import { pickLook } from "./look";
 import {
   blockedEitherWay,
   avatarAppearance,
@@ -28,7 +25,7 @@ export type MyProfile = {
   handle: string;
   displayName?: string;
   createdAt: number;
-  /** Renames spent. The allowance itself is `MAX_HANDLE_CHANGES`. */
+  /** Renames spent. Clerk owns the handle now, so nothing spends these. */
   handleChanges: number;
   avatarMode?: "account" | "custom";
   avatarHue?: number;
@@ -233,34 +230,21 @@ export const setAvatar = mutation({
     const profile = await callerProfile(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
 
-    const wheel: readonly number[] = AVATAR_HUES;
-    const nextHue = hue !== undefined && wheel.includes(hue) ? hue : undefined;
-
-    const faces: readonly string[] = AVATAR_EMOJI;
-    const nextEmoji =
-      mode === "custom" && emoji !== undefined && faces.includes(emoji)
-        ? emoji
-        : undefined;
-
-    // Only when there is no emoji: the disc has room for one thing, and an
-    // emoji is the more deliberate of the two to have chosen. Same rule, same
-    // order, as a group's face.
-    const wanted = (initials ?? "").trim();
-    const nextInitials =
-      mode === "custom" &&
-      nextEmoji === undefined &&
-      wanted.length >= 1 &&
-      wanted.length <= MAX_INITIALS &&
-      /^[a-z0-9]+$/i.test(wanted)
-        ? wanted
-        : undefined;
+    // Same rule, same order, as a group's face. The account picture keeps
+    // only its hue: an emoji or initials are a custom face by definition.
+    const custom = mode === "custom";
+    const look = pickLook(AVATAR_HUES, AVATAR_EMOJI, {
+      hue,
+      emoji: custom ? emoji : undefined,
+      initials: custom ? initials : undefined,
+    });
 
     await ctx.db.patch(profile._id, {
       avatarMode: mode,
       avatarAttachmentId: undefined,
-      avatarHue: nextHue,
-      avatarEmoji: nextEmoji,
-      avatarInitials: nextInitials,
+      avatarHue: look.hue,
+      avatarEmoji: look.emoji,
+      avatarInitials: look.initials,
     });
     return { ok: true };
   },

@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { caller, hash, label } from "./shared";
-import { htmlDoc } from "./htmlModel";
+import { htmlDoc } from "./model";
 import { limits } from "./limits";
 // Metadata only: no endpoint accepts HTML, assets, or progress.
 export const list = query({

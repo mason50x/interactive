@@ -53,22 +53,6 @@ export function utcDayKey(atMs: number): string {
 }
 
 /**
- * The `count` day keys ending at `endDay`, oldest first.
- *
- * Built by stepping the *instant* rather than by decrementing the date string,
- * because month and year ends make string arithmetic a calendar
- * implementation. Parsing back through `Date.UTC` is safe here: both ends of
- * the trip are the same fictional UTC midnight, so the offset that produced
- * the key never has to be applied again.
- */
-export function dayWindow(endDay: string, count: number): string[] {
-  const end = Date.parse(`${endDay}T00:00:00.000Z`);
-  return Array.from({ length: count }, (_, index) =>
-    utcDayKey(end - (count - 1 - index) * DAY_MS),
-  );
-}
-
-/**
  * The Monday-to-Sunday week that `day` falls in, oldest first.
  *
  * A calendar week rather than the seven days behind you. The two draw the same

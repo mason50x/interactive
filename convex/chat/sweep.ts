@@ -2,7 +2,13 @@ import { v } from "convex/values";
 import { GLOBAL_RETENTION_MS } from "../moderation/limits";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
-import { clearSender, deleteAttachment, deleteMessage } from "./shared";
+import {
+  clearSender,
+  deleteAttachment,
+  deleteMessage,
+  globalRoom,
+  heirOf,
+} from "./shared";
 
 /**
  * The housekeeping, done in pieces small enough to finish.
@@ -30,10 +36,7 @@ const BATCH = 200;
 export const trimGlobal = internalMutation({
   args: { cutoff: v.optional(v.number()) },
   handler: async (ctx, { cutoff }) => {
-    const room = await ctx.db
-      .query("conversations")
-      .withIndex("byKind", (q) => q.eq("kind", "global"))
-      .first();
+    const room = await globalRoom(ctx);
     if (room === null) return 0;
 
     const before = cutoff ?? Date.now() - GLOBAL_RETENTION_MS;
@@ -279,13 +282,7 @@ export const purgeAuthor = internalMutation({
               .eq("status", "active"),
           )
           .collect();
-        const heir = rest
-          .filter((row) => row.clerkId !== clerkId)
-          .sort((first, second) => {
-            if (first.role !== second.role)
-              return first.role === "admin" ? -1 : 1;
-            return first.joinedAt - second.joinedAt;
-          })[0];
+        const heir = heirOf(rest.filter((row) => row.clerkId !== clerkId));
 
         if (heir === undefined) {
           await ctx.db.delete(member._id);
@@ -375,10 +372,7 @@ export const purgeAuthor = internalMutation({
     // the one id about this person that would otherwise stay behind after
     // everything else went, stamped on a row that is never deleted. Cleared to
     // the empty string, which is what "nobody" looks like in a required field.
-    const room = await ctx.db
-      .query("conversations")
-      .withIndex("byKind", (q) => q.eq("kind", "global"))
-      .first();
+    const room = await globalRoom(ctx);
     if (room !== null && room.createdBy === clerkId) {
       await ctx.db.patch(room._id, { createdBy: "" });
     }

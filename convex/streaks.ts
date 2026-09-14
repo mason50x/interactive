@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { callerUser } from "./identity";
 import {
   clampOffset,
   dayKey,
@@ -51,13 +52,9 @@ function previousWeekday(day: string): string {
   return previous;
 }
 
+/** No identity, no streak: signed-out callers and unsynced accounts read as none. */
 async function callerRow(ctx: QueryCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (identity === null) return null;
-  return await ctx.db
-    .query("users")
-    .withIndex("byClerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
+  return await callerUser(ctx);
 }
 
 /** What the badge draws. Shared by the query and the mutation's return. */

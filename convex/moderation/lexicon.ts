@@ -358,14 +358,3 @@ export function scan(forms: Forms): Match[] {
 
   return [...found.values()];
 }
-
-/**
- * Whether a handle may be claimed.
- *
- * A handle is a message that everyone in every room reads every time its owner
- * says anything, so it is held to tier three as well as tiers one and two —
- * `fuckyou` is a fine thing to say and not a fine thing to be called.
- */
-export function handleIsClean(forms: Forms): boolean {
-  return scan(forms).length === 0;
-}
