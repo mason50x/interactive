@@ -91,7 +91,7 @@ const CORS = {
   "access-control-max-age": "7200",
 };
 
-export default {
+const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
 
@@ -121,6 +121,8 @@ export default {
     return env.ASSETS.fetch(request);
   },
 };
+
+export default worker;
 
 /** One proxied HTTP request. */
 async function relayHttp(request) {

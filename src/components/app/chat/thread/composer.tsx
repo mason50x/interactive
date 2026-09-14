@@ -26,11 +26,13 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import {
-  MentionPicker,
   MentionText,
-  optionId,
   type MentionPerson,
 } from "@/components/app/chat/mentions";
+import {
+  MentionPicker,
+  optionId,
+} from "@/components/app/chat/mentions/mention-picker";
 import { AttachmentTray } from "@/components/app/chat/thread/attachment-tray";
 import { BotQuota } from "@/components/app/chat/thread/bot-quota";
 import { replyFromMessage } from "@/components/app/chat/thread/reply-preview";

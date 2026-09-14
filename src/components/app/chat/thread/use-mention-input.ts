@@ -7,11 +7,11 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
-import {
-  useMentionPeople,
-  type MentionCandidate,
-  type MentionPerson,
+import type {
+  MentionCandidate,
+  MentionPerson,
 } from "@/components/app/chat/mentions";
+import { useMentionPeople } from "@/components/app/chat/mentions/use-mention-people";
 import { EVERYONE, completeMention, mentionQueryAt } from "@/lib/mentions";
 import type { Id } from "@convex/_generated/dataModel";
 

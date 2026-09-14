@@ -7,8 +7,9 @@ services and follow the setup in the README. Never use production data in tests.
 
 1. Fork the repository and create a focused branch.
 2. Make the change and add regression coverage when behavior changes.
-3. Run `npm run lint`, `npm run typecheck`, and `npm test`. For Worker changes,
-   also run `npm --prefix experience ci` and `npm --prefix experience run build`.
+3. Run `npm run lint`, `npm run typecheck`, and `npm test`. Tests live under
+   `tests/` (see `docs/repository-layout.md`). For Worker changes, also run
+   `npm --prefix experience ci` and `npm --prefix experience run build`.
 4. Open a PR explaining the problem, resulting behavior, and verification.
    Include screenshots for visible changes and note environment/schema changes.
 
