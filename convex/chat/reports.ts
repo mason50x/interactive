@@ -3,6 +3,7 @@ import type { Id } from "../_generated/dataModel";
 import { MAX_REPORTS_PER_DAY, REPORTS_TO_HIDE } from "../moderation/limits";
 import { mutation, type MutationCtx } from "../_generated/server";
 import { BOT_ID } from "./botConfig";
+import { reportReason } from "./model";
 import {
   callerProfile,
   clearMentions,
@@ -39,15 +40,7 @@ export const report = mutation({
     messageId: v.optional(v.id("messages")),
     targetClerkId: v.string(),
     conversationId: v.optional(v.id("conversations")),
-    reason: v.union(
-      v.literal("abuse"),
-      v.literal("harassment"),
-      v.literal("sexual"),
-      v.literal("self-harm"),
-      v.literal("spam"),
-      v.literal("contact"),
-      v.literal("other"),
-    ),
+    reason: reportReason,
   },
   handler: async (ctx, args): Promise<ReportResult> => {
     const profile = await callerProfile(ctx);

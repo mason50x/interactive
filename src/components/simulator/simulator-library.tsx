@@ -6,16 +6,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { CodeBracketSquareIcon, CpuChipIcon } from "@heroicons/react/24/solid";
 import styles from "./library.module.css";
-import { GameBoyLibrary } from "./library";
+import { GameBoyLibrary } from "@/components/simulator/library";
 import { CenteredSpinner } from "@/components/ui/spinner";
 import { readStorage, writeStorage } from "@/lib/storage";
 
 // The HTML library is the default view, and the Game Boy one is small; only
 // the HTML library is split out because its store and its player pull in
 // code the Game Boy tab never needs.
-const HtmlLibrary = dynamic(() => import("./html-library"), {
-  loading: () => <CenteredSpinner />,
-});
+const HtmlLibrary = dynamic(
+  () => import("@/components/simulator/html-library"),
+  {
+    loading: () => <CenteredSpinner />,
+  },
+);
 
 const MODES = [
   { value: "html", label: "HTML", Icon: CodeBracketSquareIcon },

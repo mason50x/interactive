@@ -8,6 +8,7 @@ import {
   utcDayKey,
   weekWindow,
 } from "./days";
+import { callerId } from "./identity";
 import {
   mutation,
   query,
@@ -72,11 +73,6 @@ const MAX_LIMIT = 24;
  */
 function validSlug(slug: string): boolean {
   return slug.length > 0 && slug.length <= 128 && /^[a-z0-9-]+$/.test(slug);
-}
-
-async function callerId(ctx: QueryCtx): Promise<string | null> {
-  const identity = await ctx.auth.getUserIdentity();
-  return identity?.subject ?? null;
 }
 
 async function viewRow(ctx: QueryCtx, clerkId: string, slug: string) {

@@ -1,12 +1,13 @@
-import { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "./botConfig";
+import { BOT_ID } from "./botConfig";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { MAX_TITLE } from "../moderation/limits";
+import { MAX_MEMBERS, MAX_TITLE } from "../moderation/limits";
 import { EVERYONE } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
+import { joinPolicy } from "./model";
 import {
   avatarAppearance,
   blockedBy,
@@ -16,7 +17,9 @@ import {
   dmKeyFor,
   friendship,
   membership,
+  peerIdentity,
   profileFor,
+  type PeerIdentity,
 } from "./shared";
 
 /**
@@ -206,15 +209,10 @@ export const list = query({
       const mentioned =
         unread === 0 ? false : await mentionedIn(ctx, member, blocked);
 
-      let peerHandle: string | undefined;
-      let peerName: string | undefined;
-      let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
-      if (member.dmPeer !== undefined) {
-        const peer = await profileFor(ctx, member.dmPeer);
-        peerHandle = member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle;
-        peerName = member.dmPeer === BOT_ID ? BOT_NAME : peer?.displayName;
-        if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
-      }
+      const peer: PeerIdentity =
+        member.dmPeer === undefined
+          ? {}
+          : await peerIdentity(ctx, member.dmPeer);
 
       summaries.push({
         _id: conversation._id,
@@ -225,12 +223,7 @@ export const list = query({
         unreadExact: exact,
         mentioned,
         peerClerkId: member.dmPeer,
-        peerHandle,
-        peerName,
-        peerAvatarUrl: member.dmPeer === BOT_ID ? BOT_AVATAR : peerAvatar.avatarUrl,
-        peerAvatarHue: peerAvatar.avatarHue,
-        peerAvatarEmoji: peerAvatar.avatarEmoji,
-        peerAvatarInitials: peerAvatar.avatarInitials,
+        ...peer,
         role: member.role,
         emoji: conversation.emoji,
         initials: conversation.initials,
@@ -321,11 +314,7 @@ export type CreateResult =
 export const createGroup = mutation({
   args: {
     title: v.string(),
-    joinPolicy: v.union(
-      v.literal("invite"),
-      v.literal("request"),
-      v.literal("open"),
-    ),
+    joinPolicy,
   },
   handler: async (ctx, { title, joinPolicy }): Promise<CreateResult> => {
     const profile = await callerProfile(ctx);
@@ -388,9 +377,6 @@ export type ConversationMember = {
   status: "active" | "invited" | "requested";
 };
 
-/** How many members a panel will draw, and the ceiling on a group. */
-const MAX_MEMBERS = 100;
-
 /**
  * One conversation, as its own header describes it.
  *
@@ -422,15 +408,10 @@ export const get = query({
     const conversation = await ctx.db.get(conversationId);
     if (conversation === null) return null;
 
-    let peerHandle: string | undefined;
-    let peerName: string | undefined;
-    let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
-    if (member.dmPeer !== undefined) {
-      const peer = await profileFor(ctx, member.dmPeer);
-      peerHandle = member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle;
-      peerName = member.dmPeer === BOT_ID ? BOT_NAME : peer?.displayName;
-      if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
-    }
+    const peer: PeerIdentity =
+      member.dmPeer === undefined
+        ? {}
+        : await peerIdentity(ctx, member.dmPeer);
 
     return {
       _id: conversation._id,
@@ -439,12 +420,7 @@ export const get = query({
       joinPolicy: conversation.joinPolicy,
       role: member.role,
       peerClerkId: member.dmPeer,
-      peerHandle,
-      peerName,
-      peerAvatarUrl: member.dmPeer === BOT_ID ? BOT_AVATAR : peerAvatar.avatarUrl,
-      peerAvatarHue: peerAvatar.avatarHue,
-      peerAvatarEmoji: peerAvatar.avatarEmoji,
-      peerAvatarInitials: peerAvatar.avatarInitials,
+      ...peer,
       emoji: conversation.emoji,
       initials: conversation.initials,
       hue: conversation.hue,

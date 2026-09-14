@@ -1,3 +1,4 @@
+import { sha256Hex } from "./content-hash";
 import type { Program } from "./types";
 export async function identify(bytes: ArrayBuffer): Promise<Program> {
   const data = new Uint8Array(bytes);
@@ -28,12 +29,9 @@ export async function identify(bytes: ArrayBuffer): Promise<Program> {
         )[declared];
   if (!expected || expected !== data.length)
     throw new Error("The file is incomplete or has an unsupported size.");
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
   return {
     bytes,
-    contentHash: Array.from(new Uint8Array(digest), (b) =>
-      b.toString(16).padStart(2, "0"),
-    ).join(""),
+    contentHash: await sha256Hex(bytes),
     mode: data[0x143] & 0x80 ? "color" : "mono",
   };
 }

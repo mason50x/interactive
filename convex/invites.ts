@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { looksLikeEmail, normalizeEmail } from "./email";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalMutation,
@@ -40,7 +41,7 @@ const INVITE_LIMIT: number = 0;
  * Clerk's application invitations are Backend API only — they need the secret
  * key, so a browser can never create one directly, and Clerk itself has no
  * per-user allowance to enforce. That splits the job in two: this module owns
- * the accounting, transactionally, and `src/lib/invite-actions.ts` owns the
+ * the accounting, transactionally, and `src/lib/server/invite-actions.ts` owns the
  * Clerk call. The handshake between them is `reserve` -> Clerk -> `confirm`,
  * with `release` for the failure leg.
  *
@@ -53,22 +54,6 @@ const INVITE_LIMIT: number = 0;
 /** Rows in any state but `revoked` are spent credits. */
 function isLive(invite: Doc<"invites">): boolean {
   return invite.status !== "revoked";
-}
-
-/**
- * Addresses are compared, not just stored: this is the key the duplicate check
- * and the `user.created` webhook both look rows up by, so an invitation to
- * `Sam@Example.com` has to be the same row Clerk later reports as
- * `sam@example.com`.
- */
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-/** Enough to catch a typo before spending a round trip on Clerk, which does
- *  the authoritative validation and would reject a malformed address anyway. */
-function looksLikeEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 async function invitesByInviter(ctx: QueryCtx, inviterClerkId: string) {

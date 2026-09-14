@@ -1,4 +1,4 @@
-import { PixelArt } from "./pixel-art";
+import { PixelArt } from "@/components/simulator/pixel-art";
 
 /** A game pad with a d-pad and two buttons: the Game Boy library's empty
  *  state. */

@@ -1,8 +1,18 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-import { htmlFields } from "./simulator/htmlModel";
-import { entryFields, saveFields } from "./simulator/model";
+import {
+  attachmentPurpose,
+  attachmentStatus,
+  conversationKind,
+  joinPolicy,
+  memberRole,
+  memberStatus,
+  messageStatus,
+  recentSend,
+  reportReason,
+} from "./chat/model";
+import { entryFields, htmlFields, saveFields } from "./simulator/model";
 import { nominationFields } from "./voting/model";
 
 export default defineSchema({
@@ -197,7 +207,7 @@ export default defineSchema({
    */
   views: defineTable({
     clerkId: v.string(),
-    /** A slug from `src/lib/activities.ts`. Not validated against the
+    /** A slug from `src/lib/server/activities.ts`. Not validated against the
      *  catalogue here — see `convex/views.ts` for why the shape is the check. */
     slug: v.string(),
     /** Times this account has opened it. */
@@ -350,16 +360,7 @@ export default defineSchema({
      * writes either field again.
     */
     messagesSent: v.optional(v.number()),
-    recent: v.optional(
-      v.array(
-        v.object({
-          at: v.number(),
-          conversationId: v.string(),
-          hash: v.string(),
-          flagged: v.boolean(),
-        }),
-      ),
-    ),
+    recent: v.optional(v.array(recentSend)),
   })
     .index("byClerkId", ["clerkId"])
     .index("byHandleKey", ["handleKey"])
@@ -413,14 +414,7 @@ export default defineSchema({
     clerkId: v.string(),
     /** Feeds the trust tier, and the one number the settings panel shows. */
     messagesSent: v.number(),
-    recent: v.array(
-      v.object({
-        at: v.number(),
-        conversationId: v.string(),
-        hash: v.string(),
-        flagged: v.boolean(),
-      }),
-    ),
+    recent: v.array(recentSend),
   }).index("byClerkId", ["clerkId"]),
 
   /**
@@ -446,7 +440,7 @@ export default defineSchema({
    * is pinned to the top of the list instead, which is where it belongs anyway.
    */
   conversations: defineTable({
-    kind: v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
+    kind: conversationKind,
     /** Set only on direct messages: both Clerk ids, sorted, joined. */
     dmKey: v.optional(v.string()),
     /** Groups only. Screened like a message before it is accepted. */
@@ -458,9 +452,7 @@ export default defineSchema({
     /** Central calendar date of the last scheduled greeting in Everyone. */
     lastMorningGreetingDay: v.optional(v.string()),
     /** Groups only. `request` is the one that needs an owner to approve. */
-    joinPolicy: v.optional(
-      v.union(v.literal("invite"), v.literal("request"), v.literal("open")),
-    ),
+    joinPolicy: v.optional(joinPolicy),
     /**
      * A group's face: one of a fixed set of emoji *or* up to two letters, on
      * one of a fixed set of hues. Groups only, and all three optional — a group
@@ -507,15 +499,9 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     clerkId: v.string(),
     /** Copied from the conversation, which never changes kind. */
-    kind: v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
-    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
-    status: v.union(
-      v.literal("active"),
-      v.literal("invited"),
-      v.literal("requested"),
-      v.literal("banned"),
-      v.literal("left"),
-    ),
+    kind: conversationKind,
+    role: memberRole,
+    status: memberStatus,
     joinedAt: v.number(),
     /** Everything after this is unread. Written only by its own owner. */
     lastReadAt: v.number(),
@@ -683,7 +669,7 @@ export default defineSchema({
       v.array(v.object({ clerkId: v.string(), handle: v.string() })),
     ),
     mentionsEveryone: v.optional(v.boolean()),
-    status: v.union(v.literal("visible"), v.literal("hidden")),
+    status: messageStatus,
     flags: v.array(v.string()),
     /**
      * Kept on the document rather than in a table of its own, so drawing fifty
@@ -831,7 +817,7 @@ export default defineSchema({
    */
   attachmentUploadReservations: defineTable({
     ownerClerkId: v.string(),
-    purpose: v.union(v.literal("message"), v.literal("avatar")),
+    purpose: attachmentPurpose,
     expiresAt: v.number(),
   })
     .index("byOwner", ["ownerClerkId"])
@@ -840,13 +826,8 @@ export default defineSchema({
   attachments: defineTable({
     storageId: v.id("_storage"),
     ownerClerkId: v.string(),
-    status: v.union(
-      v.literal("checking"),
-      v.literal("ready"),
-      v.literal("sent"),
-      v.literal("avatar"),
-    ),
-    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
+    status: attachmentStatus,
+    purpose: v.optional(attachmentPurpose),
     /** The message it went out in. Set with `sent` and never cleared. */
     messageId: v.optional(v.id("messages")),
     contentType: v.string(),
@@ -922,15 +903,7 @@ export default defineSchema({
     messageId: v.optional(v.id("messages")),
     targetClerkId: v.string(),
     conversationId: v.optional(v.id("conversations")),
-    reason: v.union(
-      v.literal("abuse"),
-      v.literal("harassment"),
-      v.literal("sexual"),
-      v.literal("self-harm"),
-      v.literal("spam"),
-      v.literal("contact"),
-      v.literal("other"),
-    ),
+    reason: reportReason,
     createdAt: v.number(),
   })
     .index("byReporterMessage", ["reporterClerkId", "messageId"])

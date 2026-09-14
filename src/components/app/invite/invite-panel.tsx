@@ -2,7 +2,7 @@
 
 import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
 import type { FormEvent, Ref } from "react";
-import type { useInvites } from "@/components/app/invite-card";
+import type { useInvites } from "@/components/app/invite/use-invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

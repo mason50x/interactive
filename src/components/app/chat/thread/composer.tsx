@@ -26,11 +26,13 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import {
-  MentionPicker,
   MentionText,
-  optionId,
   type MentionPerson,
 } from "@/components/app/chat/mentions";
+import {
+  MentionPicker,
+  optionId,
+} from "@/components/app/chat/mentions/mention-picker";
 import { AttachmentTray } from "@/components/app/chat/thread/attachment-tray";
 import { BotQuota } from "@/components/app/chat/thread/bot-quota";
 import { replyFromMessage } from "@/components/app/chat/thread/reply-preview";
@@ -42,7 +44,7 @@ import { Waveform } from "@/components/app/chat/waveform";
 import { personName, refusalMessage, type Refusal } from "@/lib/chat";
 import { MAX_IMAGES_PER_MESSAGE, rememberPreview } from "@/lib/images";
 import { EVERYONE, findMentionTokens } from "@/lib/mentions";
-import { useDictation } from "@/lib/use-dictation";
+import { useDictation } from "@/lib/hooks/use-dictation";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";

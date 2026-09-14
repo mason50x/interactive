@@ -1,8 +1,8 @@
 /**
  * What this checkout resolves each domain to, for the plain-Node scripts.
  *
- * The app resolves the same origins in `src/lib/site-url.ts` and
- * `src/lib/assets.ts`. This is not a third opinion: it reads the same
+ * The app resolves the same origins in `src/lib/server/site-url.ts` and
+ * `src/lib/server/assets.ts`. This is not a third opinion: it reads the same
  * variables in the same order and falls back to the same
  * `config/domains.json`. It exists because `scripts/dev-urls.mjs` and
  * `scripts/domains.mjs` both run as plain Node, before the bundler exists, so
@@ -47,7 +47,7 @@ const trim = (value) => (value || "").replace(/\/$/, "");
  * `[SENSITIVE]` that `vercel env pull` writes for a variable stored as a
  * Secret. Treating one as "set" would report a domain nobody can reach and,
  * worse, hide the working value in the variable behind it. Mirrors the
- * candidate loop in `src/lib/assets.ts`.
+ * candidate loop in `src/lib/server/assets.ts`.
  */
 function usable(value) {
   if (!value) return null;
@@ -120,7 +120,8 @@ function isDeploymentHost(host) {
     host === "localhost" ||
     host.startsWith("localhost:") ||
     host.startsWith("127.0.0.1") ||
-    (host.endsWith(".workers.dev") || host.endsWith(".vercel.app"))
+    host.endsWith(".workers.dev") ||
+    host.endsWith(".vercel.app")
   );
 }
 

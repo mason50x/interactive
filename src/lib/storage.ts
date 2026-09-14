@@ -9,6 +9,20 @@
  * fallback is; nothing here guesses.
  */
 
+/**
+ * Whether storage can be reached at all. For the rare caller that must tell
+ * "nothing stored" apart from "cannot look", which `readStorage` folds
+ * together on purpose.
+ */
+export function storageAvailable(): boolean {
+  try {
+    void window.localStorage.length;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function readStorage(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -30,6 +44,20 @@ export function removeStorage(key: string): void {
     window.localStorage.removeItem(key);
   } catch {
     // As above.
+  }
+}
+
+/** Every key currently stored, or none when storage cannot be read. */
+export function storageKeys(): string[] {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const key = window.localStorage.key(i);
+      if (key !== null) keys.push(key);
+    }
+    return keys;
+  } catch {
+    return [];
   }
 }
 

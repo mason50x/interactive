@@ -1,5 +1,6 @@
 import handler from "vinext/server/fetch-handler";
 import { accessClosedResponse, isAccessOpen } from "./src/lib/access-hours";
+import { LEARN_PATH_PREFIX } from "./src/lib/learn";
 
 /** Apply policy to redirects and errors as well as rendered HTML. */
 export default {
@@ -19,7 +20,8 @@ export default {
       assetResponse ?? (await handler.fetch(request, env, ctx));
     const headers = new Headers(response.headers);
     const path = new URL(request.url).pathname;
-    const learn = path === "/learn" || path.startsWith("/learn/");
+    const learn =
+      path === LEARN_PATH_PREFIX || path.startsWith(`${LEARN_PATH_PREFIX}/`);
     headers.set(
       "X-Robots-Tag",
       "noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai",

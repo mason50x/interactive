@@ -40,7 +40,7 @@ const isSignedOutRoute = (path: string) =>
   inRouteTree(path, "/auth/sign-in") ||
   inRouteTree(path, "/auth/sign-up");
 
-/** `TICKET_PARAM` from `src/lib/invitations.ts`, inlined to keep this file's
+/** `TICKET_PARAM` from `src/lib/server/invitations.ts`, inlined to keep this file's
  *  edge bundle free of the Clerk Backend API client that module pulls in. */
 const TICKET_PARAM = "__clerk_ticket";
 

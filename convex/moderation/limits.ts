@@ -120,15 +120,6 @@ export const DUPLICATE_WINDOW_MS = 10 * 60_000;
 export const BROADCAST = { conversations: 3, ms: 5 * 60_000 };
 
 /**
- * Hosts a link may point at. Ships empty, which means no links at all.
- *
- * Kept as a set rather than a boolean so that relaxing this is a list of hosts
- * somebody chose, not a switch somebody flipped. See the link rule in
- * `convex/moderation/rules.ts` for why the default is nothing.
- */
-export const ALLOWED_LINK_HOSTS: ReadonlySet<string> = new Set<string>([]);
-
-/**
  * How long the global room keeps what was said in it.
  *
  * Every other table here is bounded by the number of accounts or the number of
@@ -149,8 +140,8 @@ export const MAX_REACTORS = 100;
 /** The longest a group may be called. */
 export const MAX_TITLE = 40;
 
-/** The longest a display name may be. Mirrored in `src/lib/chat.ts`. */
-export const MAX_DISPLAY_NAME = 30;
+/** The most people one group may hold, and how many a panel will draw. */
+export const MAX_MEMBERS = 100;
 
 /**
  * The faces a group may wear, fixed for the same reason the reactions are.
@@ -259,20 +250,6 @@ export const IMAGE_TTL_MS = 60 * 60 * 1000;
  * `setAvatar` in `convex/chat/profiles.ts`.
  */
 export const MAX_INITIALS = 2;
-
-/**
- * How many times an account may change its handle. Ever, not per period.
- *
- * The old rule was none, and the reason was good: somebody who has made
- * themselves unpleasant should not be able to shed the name people know them
- * by. Two is the compromise — enough for a name typed wrong or regretted early,
- * few enough that it cannot be used to keep moving. There is no reset.
- *
- * Note that renaming does not rewrite history: `authorHandle` is stored on
- * every message and stays as it was, so old messages keep the name they were
- * sent under. That is a feature of this limit rather than a defect of it.
- */
-export const MAX_HANDLE_CHANGES = 2;
 
 /**
  * How many different people one message may name.

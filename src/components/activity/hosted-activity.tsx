@@ -4,7 +4,7 @@ import {
   ACTIVITY_ALLOW,
   ACTIVITY_REFERRER_POLICY,
   ACTIVITY_SANDBOX,
-} from "@/components/app/activity-sandbox";
+} from "@/components/app/activities/activity-sandbox";
 
 /**
  * A third-party bundle, framed inside `/learn`.

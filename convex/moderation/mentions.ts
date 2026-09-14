@@ -30,7 +30,7 @@
 export const EVERYONE = "everyone";
 
 /**
- * `@` then three to twenty handle characters, not glued onto the word before
+ * `@` then two to sixty-four handle characters, not glued onto the word before
  * it (so an email address is not a mention) and not cut short by one after.
  * Case-insensitive because people type names with capitals; handles are
  * stored lowercase and matched that way.

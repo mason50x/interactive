@@ -2,7 +2,14 @@ import { v } from "convex/values";
 import { GLOBAL_RETENTION_MS } from "../moderation/limits";
 import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
-import { clearSender, deleteAttachment, deleteMessage } from "./shared";
+import {
+  clearSender,
+  clearTyping,
+  deleteAttachment,
+  deleteMessage,
+  globalRoom,
+  heirOf,
+} from "./shared";
 
 /**
  * The housekeeping, done in pieces small enough to finish.
@@ -30,10 +37,7 @@ const BATCH = 200;
 export const trimGlobal = internalMutation({
   args: { cutoff: v.optional(v.number()) },
   handler: async (ctx, { cutoff }) => {
-    const room = await ctx.db
-      .query("conversations")
-      .withIndex("byKind", (q) => q.eq("kind", "global"))
-      .first();
+    const room = await globalRoom(ctx);
     if (room === null) return 0;
 
     const before = cutoff ?? Date.now() - GLOBAL_RETENTION_MS;
@@ -248,6 +252,18 @@ export const purgeAuthor = internalMutation({
     const memberships = rows.filter((row) => row._creationTime < cutoff);
 
     for (const member of memberships) {
+      // The seat's live signals go with it. A "typing" or "here" row for an
+      // account that no longer exists would otherwise sit in any room that
+      // survives this pass until the hourly sweeps reached it.
+      await clearTyping(ctx, member.conversationId, clerkId);
+      const presence = await ctx.db
+        .query("presence")
+        .withIndex("byConversationUser", (q) =>
+          q.eq("conversationId", member.conversationId).eq("clerkId", clerkId),
+        )
+        .unique();
+      if (presence !== null) await ctx.db.delete(presence._id);
+
       // A direct message with a deleted account has no other party. The whole
       // conversation goes — including the messages the *other* person sent,
       // which is why this is a purge rather than a delete of the two member
@@ -279,13 +295,7 @@ export const purgeAuthor = internalMutation({
               .eq("status", "active"),
           )
           .collect();
-        const heir = rest
-          .filter((row) => row.clerkId !== clerkId)
-          .sort((first, second) => {
-            if (first.role !== second.role)
-              return first.role === "admin" ? -1 : 1;
-            return first.joinedAt - second.joinedAt;
-          })[0];
+        const heir = heirOf(rest.filter((row) => row.clerkId !== clerkId));
 
         if (heir === undefined) {
           await ctx.db.delete(member._id);
@@ -375,10 +385,7 @@ export const purgeAuthor = internalMutation({
     // the one id about this person that would otherwise stay behind after
     // everything else went, stamped on a row that is never deleted. Cleared to
     // the empty string, which is what "nobody" looks like in a required field.
-    const room = await ctx.db
-      .query("conversations")
-      .withIndex("byKind", (q) => q.eq("kind", "global"))
-      .first();
+    const room = await globalRoom(ctx);
     if (room !== null && room.createdBy === clerkId) {
       await ctx.db.patch(room._id, { createdBy: "" });
     }

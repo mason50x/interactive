@@ -15,7 +15,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ConversationSummary } from "@convex/chat/conversations";
 import type { MyProfile } from "@convex/chat/profiles";
-import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
 import { useConvexAuth } from "convex/react";
 
 /**

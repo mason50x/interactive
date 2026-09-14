@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
-import { RailConstellation } from "@/components/app/rail-constellation";
-import { AppProviders } from "@/components/app-providers";
+import { RailConstellation } from "@/components/app/rail/rail-constellation";
+import { AppProviders } from "@/components/providers/app-providers";
 
 export const metadata: Metadata = {
   // Every page under /auth resolves to a form or a redirect. Nothing here is

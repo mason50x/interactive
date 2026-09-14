@@ -17,7 +17,7 @@ Ran `npx --yes vinext check` using vinext `1.0.0-beta.9`: 15 supported checks, t
 | App hosting | Next.js 16.3.3, React 19.2.8, App Router on Vercel | Move rendering, proxy, Server Actions and static app files to Workers |
 | Authentication | Clerk middleware, server auth and browser provider | Keep Clerk; verify adapter compatibility and preview origins |
 | Data, subscriptions, uploads, AI | Convex functions and storage; external model providers | Keep existing services and endpoints |
-| Hosted activity bundles | Separate R2 origin via `src/lib/assets.ts` | Keep bucket and separate origin; no bulk copy needed |
+| Hosted activity bundles | Separate R2 origin via `src/lib/server/assets.ts` | Keep bucket and separate origin; no bulk copy needed |
 | App static assets | 326 files in `public/`, about 14 MB | Include in Workers static assets; largest file about 1.6 MB |
 | Experience | Separate Worker under `experience/`; app pages development-only | Keep independent; preserve exclusion from production |
 
@@ -37,7 +37,7 @@ Recommendation: evaluate vinext first under the current Cloudflare guidance; kee
 
 ### 2. Configuration: preserve explicit origins; replace generated preview URLs
 
-`src/lib/site-url.ts:26` uses `NEXT_PUBLIC_SITE_URL`, then Vercel-specific production/preview values, then localhost. Cloudflare previews following today's documented “leave site URL unset” practice will generate localhost invitation links.
+`src/lib/server/site-url.ts:26` uses `NEXT_PUBLIC_SITE_URL`, then Vercel-specific production/preview values, then localhost. Cloudflare previews following today's documented “leave site URL unset” practice will generate localhost invitation links.
 
 The migration includes moving the configured environment, as confirmed by the user. Preserving an explicit production `NEXT_PUBLIC_SITE_URL` resolves the production concern; missing credentials are not an assumed blocker. Establish a trusted preview-origin mechanism. A stable staging hostname is the simplest initial option. Do not derive emailed URLs from arbitrary request Host headers. Update preview guidance in `docs/environment.md`.
 
@@ -47,7 +47,7 @@ The migration includes moving the configured environment, as confirmed by the us
 
 `vercel.json` deploys Convex around the frontend build when `CONVEX_DEPLOY_KEY` exists. Cloudflare does not execute that Vercel configuration. Port the deployment sequence so the frontend receives the matching Convex endpoint and backend changes ship deliberately.
 
-The deploy key is also a runtime credential in `src/lib/account-actions.ts:13`, not just a CI secret. Preserve that behavior with a Worker secret, or explicitly validate the existing token-authenticated fallback before omitting it. Clerk's server key also belongs in runtime secrets. Public Clerk/Convex/site values must be available at build time. Keep Convex-only model keys and webhook secrets in Convex; R2 maintenance credentials are not required by the app host.
+The deploy key is also a runtime credential in `src/lib/server/account-actions.ts:13`, not just a CI secret. Preserve that behavior with a Worker secret, or explicitly validate the existing token-authenticated fallback before omitting it. Clerk's server key also belongs in runtime secrets. Public Clerk/Convex/site values must be available at build time. Keep Convex-only model keys and webhook secrets in Convex; R2 maintenance credentials are not required by the app host.
 
 Replace `scripts/deploy.mjs` and the package deploy command; preserve its committed-HEAD deployment behavior. Keep production and preview credentials isolated. Existing GitHub checks do not deploy; add a separate trusted deployment path and Workers build validation rather than assuming the current CI is sufficient.
 
@@ -100,9 +100,9 @@ Executed a synthetic test directly against the downloaded vinext header shim. It
 | Dashboard HTML/RSC | `src/app/dashboard/layout.tsx` plus individual pages call `auth.protect()` | Keep server checks and middleware context; test full render and RSC requests |
 | Activity wrapper | `src/app/learn/[slug]/page.tsx` and its layout have no server auth check; protection is exclusively in `src/proxy.ts` | Highest-priority resource to verify. Add page-level `auth.protect()` during migration; it does not require mounting the browser ClerkProvider |
 | Browser Convex access | `ConvexProviderWithClerk` uses Clerk `useAuth`; Convex validates the configured issuer and audience `convex` | Hosting-independent if Clerk instance, template and Convex endpoint remain matched |
-| Invitation actions | `src/lib/invite-actions.ts` checks `auth()`, obtains the `convex` template token, then invokes Convex | Verify token minting and forwarded identity in Server Actions, not just browser sign-in |
+| Invitation actions | `src/lib/server/invite-actions.ts` checks `auth()`, obtains the `convex` template token, then invokes Convex | Verify token minting and forwarded identity in Server Actions, not just browser sign-in |
 | Invitation ownership | `convex/invites.ts` reads verified identity and checks inviter ownership | Backend boundary stays in Convex; frontend hosting does not replace it |
-| Account synchronization | `src/lib/account-actions.ts` checks caller identity and fetches authoritative Clerk user before an admin mutation | Preserve server-only key placement; copied deploy key retains existing behavior |
+| Account synchronization | `src/lib/server/account-actions.ts` checks caller identity and fetches authoritative Clerk user before an admin mutation | Preserve server-only key placement; copied deploy key retains existing behavior |
 | Account-sync fallback | `convex/accountSync.ts:mine` verifies Convex identity and fetches that subject from Clerk | Alternative already exists, but changing to it is optional and needs separate validation |
 | Webhooks | `convex/http.ts` verifies Svix signature against raw request body at `/clerk-users-webhook` | Endpoint is on Convex, not Vercel; no webhook relocation or secret rotation required solely for this host move |
 | Invitation acceptance | `/auth/accept-invite` uses server auth, redirects and ticket query parameters; wrong-account flow signs out then returns | Preserve query strings and cookies across redirects; test existing, expired and wrong-account cases |

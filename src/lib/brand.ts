@@ -18,7 +18,7 @@ import domains from "@config/domains.json";
 import { withoutTrailingSlash } from "@/lib/origin";
 
 /** The site's own origin, most-explicit first. Preview deployments set nothing
- *  and resolve their own host at runtime — see `src/lib/site-url.ts`, which
+ *  and resolve their own host at runtime — see `src/lib/server/site-url.ts`, which
  *  does the same walk for the invitation links that must not guess wrong. */
 function resolveUrl(): string {
   return withoutTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL ?? domains.site);
@@ -40,7 +40,8 @@ function isDeploymentHost(host: string): boolean {
     host === "localhost" ||
     host.startsWith("localhost:") ||
     host.startsWith("127.0.0.1") ||
-    (host.endsWith(".workers.dev") || host.endsWith(".vercel.app"))
+    host.endsWith(".workers.dev") ||
+    host.endsWith(".vercel.app")
   );
 }
 

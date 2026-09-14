@@ -2,15 +2,15 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
-
+import { callerId, userByClerkId } from "../identity";
 import { isChatAdmin } from "../../config/chat-admin";
 
+/** The caller's id when the deployment lists them as an admin and their account has synced. */
 async function adminId(ctx: QueryCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity || !isChatAdmin(identity.subject)) return null;
-  const user = await ctx.db.query("users")
-    .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
-  return user ? identity.subject : null;
+  const clerkId = await callerId(ctx);
+  if (clerkId === null || !isChatAdmin(clerkId)) return null;
+  const user = await userByClerkId(ctx, clerkId);
+  return user ? clerkId : null;
 }
 
 export const mine = query({

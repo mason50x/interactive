@@ -1,4 +1,4 @@
-import { SiteChrome } from "@/components/site-chrome";
+import { SiteChrome } from "@/components/site/site-chrome";
 
 /**
  * The legal shell: the same chrome as the rest of the public site, around a

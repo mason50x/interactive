@@ -1,6 +1,6 @@
 import { SignUp } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { TICKET_PARAM } from "@/lib/invitations";
+import { TICKET_PARAM } from "@/lib/server/invitations";
 
 export const metadata: Metadata = { title: "Create your account" };
 

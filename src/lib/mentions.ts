@@ -1,4 +1,4 @@
-import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
+import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "@config/bot";
 /**
  * The client's half of mentions: finding `@words` in text, and nothing that
  * decides whether they are anybody.
@@ -19,7 +19,7 @@ import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
 /** The one mention that is not a person. Groups only. */
 export const EVERYONE = "everyone";
 
-/** `@` then three to twenty handle characters, standing on its own. */
+/** `@` then two to sixty-four handle characters, standing on its own. */
 const MENTION_PATTERN = /(^|[^a-z0-9_@-])@([a-z0-9_-]{2,64})(?![a-z0-9_-])/gi;
 
 /**
@@ -98,7 +98,8 @@ export function segmentMentions(
   const segments: Segment[] = [];
   let last = 0;
   for (const token of findMentionTokens(body)) {
-    const bot = BOT_MENTION_HANDLES.has(token.handle) && resolve(BOT_HANDLE) === BOT_ID;
+    const bot =
+      BOT_MENTION_HANDLES.has(token.handle) && resolve(BOT_HANDLE) === BOT_ID;
     const who = bot ? BOT_ID : resolve(token.handle);
     if (who === undefined) continue;
     if (token.start > last) {

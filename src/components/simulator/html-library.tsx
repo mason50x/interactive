@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
-import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
 import {
   identifyHtml,
   importHtml,
@@ -16,17 +16,20 @@ import {
   type HtmlEntry,
   type HtmlProgram,
 } from "@/lib/simulator/html-store";
-import { useFilePicker } from "./file-picker";
-import { ClearAllButton } from "./clear-all-button";
-import { HtmlImportPanel, ProgressSection } from "./library-parts";
+import { useFilePicker } from "@/components/simulator/file-picker";
+import { ClearAllButton } from "@/components/simulator/clear-all-button";
+import {
+  HtmlImportPanel,
+  ProgressSection,
+} from "@/components/simulator/library-parts";
 import {
   EntryList,
   EntryRow,
   LibraryEmpty,
   formatSavedAt,
-} from "./library-entries";
-import { LibraryShell } from "./library-shell";
-import { PixelCode } from "./pixel-code";
+} from "@/components/simulator/library-entries";
+import { LibraryShell } from "@/components/simulator/library-shell";
+import { PixelCode } from "@/components/simulator/pixel-code";
 
 const ROOT = "/dashboard/learning-simulator/html";
 

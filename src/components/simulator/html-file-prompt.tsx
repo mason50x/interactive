@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, ButtonLink } from "@/components/ui/button";
-import type { FilePicker } from "./file-picker";
+import type { FilePicker } from "@/components/simulator/file-picker";
 
 /**
  * What the HTML player shows instead of a frame when it has nothing to put

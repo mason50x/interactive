@@ -5,7 +5,7 @@ import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Reveal } from "./reveal";
+import { Reveal } from "@/components/simulator/reveal";
 import styles from "./library.module.css";
 
 /**

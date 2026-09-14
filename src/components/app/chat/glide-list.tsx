@@ -7,7 +7,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { useStillness } from "@/lib/motion";
+import { useStillness } from "@/lib/hooks/motion";
 import { cn } from "@/lib/utils";
 
 /**

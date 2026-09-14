@@ -9,7 +9,7 @@
  * with every hosted activity absent, which reads as a bug in the page rather
  * than a variable nobody pulled.
  *
- * See src/lib/assets.ts for where activity bundles load from, and
+ * See src/lib/server/assets.ts for where activity bundles load from, and
  * `npm run domains` for what moving any domain costs.
  */
 

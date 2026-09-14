@@ -2,11 +2,11 @@
 
 import { useQuery } from "convex/react";
 import { useCallback, useMemo, type ReactNode } from "react";
-import { ActivityRow } from "@/components/app/activity-row";
+import { ActivityRow } from "@/components/app/activities/activity-row";
 import { Spinner } from "@/components/ui/spinner";
 import type { Activity } from "@/lib/activity";
 import { formatSince } from "@/lib/time";
-import { useNow } from "@/lib/use-now";
+import { useNow } from "@/lib/hooks/use-now";
 import { api } from "@convex/_generated/api";
 
 /**
@@ -29,7 +29,7 @@ import { api } from "@convex/_generated/api";
  * boundary `ActivitiesBrowser` keeps: importing it into a `"use client"` module
  * puts all 318 entries in a `/_next/static` chunk that is served without a
  * session. Here it rides in the home page's RSC payload instead, behind
- * `auth.protect()`. See `src/lib/activities.ts`.
+ * `auth.protect()`. See `src/lib/server/activities.ts`.
  *
  * It needs the whole catalogue rather than a slice of it, because the slugs it
  * has to resolve come back from Convex and can be any activity the account has

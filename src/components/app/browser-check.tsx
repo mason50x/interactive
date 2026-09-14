@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "@/components/app/browser-check.module.css";
-import { RailConstellation } from "@/components/app/rail-constellation";
+import { RailConstellation } from "@/components/app/rail/rail-constellation";
+import { readStorage, writeStorage } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "50x:browser-check:v1";
@@ -60,12 +61,9 @@ export function BrowserCheck() {
     dialog.addEventListener("animationend", onAnimationEnd);
     const startTimer = setTimeout(() => {
       const today = localDay();
-      let lastShown = lastShownInMemory;
-      try {
-        lastShown = localStorage.getItem(STORAGE_KEY) || lastShown;
-      } catch {
-        // Restricted storage must never prevent access to the dashboard.
-      }
+      // Restricted storage must never prevent access to the dashboard, so
+      // the read falls back to the in-memory marker.
+      const lastShown = readStorage(STORAGE_KEY) || lastShownInMemory;
       if (lastShown === today) return;
 
       dialog.classList.remove(styles.leaving);
@@ -73,11 +71,8 @@ export function BrowserCheck() {
       setLeaving(false);
       setOpen(true);
       lastShownInMemory = today;
-      try {
-        localStorage.setItem(STORAGE_KEY, today);
-      } catch {
-        // The in-memory marker still covers navigation in this session.
-      }
+      // Best-effort: the in-memory marker still covers this session.
+      writeStorage(STORAGE_KEY, today);
       // Reduced motion shows the letter statically, so no trace animation ends.
       if (matchMedia("(prefers-reduced-motion: reduce)").matches)
         finishTimer = setTimeout(leave, 6_000);

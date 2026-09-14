@@ -44,7 +44,8 @@ export function parseCachedPreferences(raw: string | null): Preferences | null {
 
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+      return null;
     return resolvePreferences(parsed as Record<string, unknown>);
   } catch {
     return null;

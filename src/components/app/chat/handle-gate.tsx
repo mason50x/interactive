@@ -4,7 +4,7 @@ import { useClerk } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { syncChatAccount } from "@/lib/account-actions";
+import { syncChatAccount } from "@/lib/server/account-actions";
 
 /** A loading state, never a separate signup or consent step. */
 export function HandleGate() {

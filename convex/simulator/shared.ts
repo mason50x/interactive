@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { callerId, userByClerkId } from "../identity";
 import {
   ENGINE_BUILD,
   STATE_BYTES,
@@ -8,14 +9,12 @@ import {
   MAX_SAVE_BYTES,
 } from "./model";
 export async function caller(ctx: QueryCtx | MutationCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Sign in to access your progress.");
-  const user = await ctx.db
-    .query("users")
-    .withIndex("byClerkId", (q) => q.eq("clerkId", identity.subject))
-    .unique();
+  const clerkId = await callerId(ctx);
+  if (clerkId === null)
+    throw new ConvexError("Sign in to access your progress.");
+  const user = await userByClerkId(ctx, clerkId);
   if (!user) throw new ConvexError("Your account is not available.");
-  return identity.subject;
+  return clerkId;
 }
 export async function owned(
   ctx: QueryCtx | MutationCtx,

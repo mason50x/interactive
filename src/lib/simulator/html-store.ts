@@ -1,5 +1,17 @@
+/**
+ * The device's copy of every HTML simulation and its progress, in IndexedDB.
+ *
+ * A database of its own, separate from the cartridge library in
+ * `local-store.ts`, with the same owner-prefixed keys so two accounts on one
+ * machine never see each other's files. Every update is a read-modify-write
+ * transaction, so a rename and a save cannot overwrite each other.
+ */
+import { sha256Hex } from "./content-hash";
+import { keysUnder, openDatabase, whenComplete } from "./idb";
 import { accountKey } from "./local-store";
 const MAX_HTML_BYTES = 8 * 1024 * 1024;
+/** At most this many entries per owner, matching the cartridge library. */
+const MAX_HTML_ENTRIES = 20;
 export const MAX_HTML_SAVE_BYTES = 256 * 1024;
 export type HtmlSlot = "auto" | "previous" | "manual1" | "manual2" | "manual3";
 export type HtmlSave = {
@@ -20,46 +32,24 @@ export type HtmlProgram = {
   label: string;
 };
 const database = "50x-html-simulators-v1";
-async function connect(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const r = indexedDB.open(database, 1);
-    r.onupgradeneeded = () => {
-      r.result.createObjectStore("files");
-      r.result.createObjectStore("entries");
-    };
-    r.onsuccess = () => {
-      r.result.onversionchange = () => r.result.close();
-      resolve(r.result);
-    };
-    r.onerror = () => reject(r.error);
-    r.onblocked = () =>
-      reject(new Error("Close other simulator tabs to update local storage."));
+const STORES = ["entries", "files"] as const;
+function connect(): Promise<IDBDatabase> {
+  return openDatabase(database, 1, (db) => {
+    for (const name of STORES) db.createObjectStore(name);
   });
 }
 async function read<T>(
   owner: string,
-  store: string,
+  store: (typeof STORES)[number],
   hash?: string,
 ): Promise<T> {
   const db = await connect();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store),
-      s = tx.objectStore(store),
-      prefix = accountKey(owner);
-    const r = hash
-      ? s.get(prefix + hash)
-      : s.getAll(IDBKeyRange.bound(prefix, prefix + "\uffff"));
-    tx.oncomplete = () => {
-      db.close();
-      resolve(r.result);
-    };
-    tx.onabort = tx.onerror = () => {
-      db.close();
-      reject(tx.error);
-    };
-  });
+  const tx = db.transaction(store),
+    s = tx.objectStore(store),
+    prefix = accountKey(owner);
+  const r = hash ? s.get(prefix + hash) : s.getAll(keysUnder(prefix));
+  return whenComplete(db, tx, () => r.result as T);
 }
-// All updates use read-modify-write transactions, so rename/save cannot overwrite each other.
 async function update(
   owner: string,
   hash: string,
@@ -70,28 +60,19 @@ async function update(
   ) => void,
 ) {
   const db = await connect();
-  return new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(["entries", "files"], "readwrite"),
-      key = accountKey(owner) + hash;
-    let failure: unknown;
-    const r = tx.objectStore("entries").get(key);
-    r.onsuccess = () => {
-      try {
-        change(r.result, tx, key);
-      } catch (e) {
-        failure = e;
-        tx.abort();
-      }
-    };
-    tx.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    tx.onabort = tx.onerror = () => {
-      db.close();
-      reject(failure ?? tx.error ?? new Error("Local storage unavailable."));
-    };
-  });
+  const tx = db.transaction([...STORES], "readwrite"),
+    key = accountKey(owner) + hash;
+  let failure: unknown;
+  const r = tx.objectStore("entries").get(key);
+  r.onsuccess = () => {
+    try {
+      change(r.result, tx, key);
+    } catch (e) {
+      failure = e;
+      tx.abort();
+    }
+  };
+  await whenComplete(db, tx, () => undefined, { failure: () => failure });
 }
 export async function identifyHtml(
   bytes: ArrayBuffer,
@@ -102,13 +83,9 @@ export async function identifyHtml(
   const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   if (!text.trim() || text.includes("\0"))
     throw new Error("Use a UTF-8 HTML document.");
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  const contentHash = Array.from(new Uint8Array(digest), (b) =>
-    b.toString(16).padStart(2, "0"),
-  ).join("");
   return {
     bytes,
-    contentHash,
+    contentHash: await sha256Hex(bytes),
     label:
       label
         .replace(/[\x00-\x1f]/g, "")
@@ -145,10 +122,9 @@ export async function importHtml(owner: string, program: HtmlProgram) {
     };
     if (entry) put();
     else {
-      const prefix = accountKey(owner),
-        count = store.count(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      const count = store.count(keysUnder(accountKey(owner)));
       count.onsuccess = () => {
-        if (count.result >= 20) tx.abort();
+        if (count.result >= MAX_HTML_ENTRIES) tx.abort();
         else put();
       };
     }
@@ -233,20 +209,9 @@ export async function renameHtml(owner: string, hash: string, label: string) {
 }
 export async function removeHtml(owner: string, hash?: string) {
   const db = await connect();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(["entries", "files"], "readwrite"),
-      prefix = accountKey(owner);
-    const key = hash
-      ? prefix + hash
-      : IDBKeyRange.bound(prefix, prefix + "\uffff");
-    for (const name of ["entries", "files"]) tx.objectStore(name).delete(key);
-    tx.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    tx.onabort = tx.onerror = () => {
-      db.close();
-      reject(tx.error);
-    };
-  });
+  const tx = db.transaction([...STORES], "readwrite"),
+    prefix = accountKey(owner);
+  const key = hash ? prefix + hash : keysUnder(prefix);
+  for (const name of STORES) tx.objectStore(name).delete(key);
+  await whenComplete(db, tx, () => undefined);
 }

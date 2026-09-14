@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { revokeInvite, sendInvite } from "@/lib/invite-actions";
+import { revokeInvite, sendInvite } from "@/lib/server/invite-actions";
 
 /**
  * How long the receipt holds the panel after a send. Long enough to read two

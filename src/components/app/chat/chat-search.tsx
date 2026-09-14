@@ -6,7 +6,7 @@ import type { RefObject } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 import { Group, PersonRow } from "@/components/app/chat/people-rows";
-import { useDebounced } from "@/lib/use-debounced";
+import { useDebounced } from "@/lib/hooks/use-debounced";
 import { Searching } from "@/components/app/chat/searching";
 import { api } from "@convex/_generated/api";
 

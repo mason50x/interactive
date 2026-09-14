@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { VersionCard } from "@/components/app/version-card";
-import { InviteCard } from "@/components/app/invite-card";
-import { RailConstellation } from "@/components/app/rail-constellation";
-import { RailContext } from "@/components/app/rail-context";
+import { InviteCard } from "@/components/app/invite/invite-card";
+import { RailConstellation } from "@/components/app/rail/rail-constellation";
+import { RailContext } from "@/components/app/rail/rail-context";
 import { RailLockup } from "@/components/app/rail/rail-lockup";
 import { RailToggle } from "@/components/app/rail/rail-toggle";
 import { useActivePill } from "@/components/app/rail/use-active-pill";
@@ -15,13 +15,13 @@ import {
   useNavPending,
 } from "@/components/app/rail/use-nav-pending";
 import { useRailState } from "@/components/app/rail/use-rail-state";
-import { usePreferences } from "@/components/preferences-provider";
-import { RailSearch } from "@/components/app/rail-search";
+import { usePreferences } from "@/components/providers/preferences-provider";
+import { RailSearch } from "@/components/app/rail/rail-search";
 import { UserMenu } from "@/components/app/user-menu";
 import { NAV_HREFS, navItems } from "@/lib/nav";
 import type { RailState } from "@/lib/rail";
 import { cn } from "@/lib/utils";
-import { useWarmRoutes } from "@/lib/warm";
+import { useWarmRoutes } from "@/lib/hooks/warm";
 
 /**
  * The signed-in app's chrome: a vertical rail, not a header.

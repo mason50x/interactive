@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import { HostedActivity } from "@/components/activity/hosted-activity";
-import { activityBundleUrl } from "@/lib/assets";
-import { findActivity } from "@/lib/activities";
+import { activityBundleUrl } from "@/lib/server/assets";
+import { findActivity } from "@/lib/server/activities";
 
 /**
  * The framed activity, at `/learn/<slug>`.

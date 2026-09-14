@@ -260,9 +260,3 @@ export function matchRuns(
   }
   return null;
 }
-
-/** Whether a token begins with `term`, stretching allowed. Catches suffixes. */
-export function tokenStartsWith(token: string, termRuns: Run[]): boolean {
-  const found = matchRuns(encodeRuns(token), termRuns, 0);
-  return found !== null && found.start === 0;
-}

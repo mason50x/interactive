@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { callerId } from "./identity";
 
 /**
  * The account's copy of the settings in the account menu's sheet.
@@ -14,14 +15,6 @@ import { mutation, query } from "./_generated/server";
  * always found by the caller's own identity, never by an id from the client,
  * so there is no row to address but your own.
  */
-
-/** No identity, no preferences. Signed-out visitors run on the defaults. */
-async function callerId(ctx: {
-  auth: { getUserIdentity: () => Promise<{ subject: string } | null> };
-}) {
-  const identity = await ctx.auth.getUserIdentity();
-  return identity?.subject ?? null;
-}
 
 /**
  * `null` for a signed-out caller *and* for a signed-in one who has never

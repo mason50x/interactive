@@ -3,13 +3,13 @@
 import { useClerk, useUser } from "@clerk/nextjs";
 import { ChevronRightIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAccountModal } from "@/components/app/account-modal";
-import { useRail } from "@/components/app/rail-context";
+import { useAccountModal } from "@/components/app/settings/account-modal";
+import { useRail } from "@/components/app/rail/rail-context";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
 import { GitHubIcon } from "@/components/ui/github-icon";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/providers/theme-provider";
 import {
   Menu,
   MenuContent,
@@ -18,7 +18,7 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { onSettingsRequest } from "@/lib/preferences";
-import { useClickOutside } from "@/lib/use-click-outside";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { cn } from "@/lib/utils";
 
 /**

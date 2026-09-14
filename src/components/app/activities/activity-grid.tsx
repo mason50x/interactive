@@ -1,8 +1,8 @@
 "use client";
 
-import { ActivityCard } from "@/components/app/activity-card";
+import { ActivityCard } from "@/components/app/activities/activity-card";
 import type { Activity } from "@/lib/activity";
-import { useFlip } from "@/lib/use-flip";
+import { useFlip } from "@/lib/hooks/use-flip";
 
 /**
  * The grid the catalogue page is: every surviving card, three across, and

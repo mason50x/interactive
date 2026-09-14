@@ -16,7 +16,7 @@
  * files, and every byte served would bill as Fast Data Transfer against a
  * 100 GB monthly allowance — one visitor working through the larger titles
  * moves a quarter of a gigabyte. R2 charges nothing for egress, so the bundles
- * live there and the deployment stays small. `src/lib/assets.ts` is the only
+ * live there and the deployment stays small. `src/lib/server/assets.ts` is the only
  * part of the app that knows where "there" is.
  *
  * ## What gets staged
@@ -110,9 +110,9 @@ const PUBLIC_THUMBNAILS = join(ROOT, "public", "thumbnails");
 const UPSTREAM_PREFIX = "games";
 
 /** Prefix the bundles land under in the bucket. Must match `ACTIVITIES_PREFIX`
- *  in `src/lib/assets.ts`, which is what builds the URLs to read them back.
+ *  in `src/lib/server/assets.ts`, which is what builds the URLs to read them back.
  *  Deliberately not `games/`: the client carries no such path — see the note
- *  in `src/lib/assets.ts`. Beneath it, each game sits at its catalogue `path`,
+ *  in `src/lib/server/assets.ts`. Beneath it, each game sits at its catalogue `path`,
  *  not its slug — see `BUCKET_LAYOUT`. */
 const BUCKET_PREFIX = "activities";
 

@@ -66,7 +66,7 @@ const nextConfig: NextConfig = {
      * cannot be caught out by it. Nothing on these pages is server-rendered
      * anyway: the numbers are Convex subscriptions and refresh themselves.
      *
-     * `static` is the one `src/lib/warm.ts` fills. A `router.prefetch` lands
+     * `static` is the one `src/lib/hooks/warm.ts` fills. A `router.prefetch` lands
      * under this bucket rather than the dynamic one, which is what makes the
      * rail's warming last past the next click; at the default `dynamic: 0` a
      * warmed route would go cold on arrival and the whole thing would be a

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { RailContextValue } from "@/components/app/rail-context";
+import type { RailContextValue } from "@/components/app/rail/rail-context";
 import { type RailState, rememberRailState } from "@/lib/rail";
 
 /**

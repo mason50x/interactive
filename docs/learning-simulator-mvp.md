@@ -68,7 +68,7 @@ Paths below are relative to `/Users/mason/Desktop/50x`. This is the intended imp
 | `public/simulator/core/<build-id>/build.json` | Source commit, artifact checksums, ABI/save-format version. |
 | `scripts/build-simulator-core.mjs` | Reproducible build/download verification against a pinned source/artifact version. |
 | `scripts/check-simulator.mjs` | Save-format, file-validation, and reconciliation regression checks. |
-| `scripts/tests/simulator-cloud.test.ts` | Isolated Convex integration checks with two authenticated test identities, ownership, concurrency, limits and deletion. |
+| `tests/convex/simulator-cloud.test.ts` | Isolated Convex integration checks with two authenticated test identities, ownership, concurrency, limits and deletion. |
 | `docs/learning-simulator-mvp.md` | This plan; update implementation status as work lands. |
 
 Existing files to edit:
@@ -190,7 +190,7 @@ MVP excludes rewind, achievements, multiplayer/linking, screenshots, unlimited s
 
 ## Implementation and verification report
 
-Additional implemented files: `src/components/simulator/player-loader.tsx`, `src/lib/simulator/lock.ts`, `convex/simulator/model.ts`, `scripts/tests/simulator-sync.test.ts`, `scripts/tests/simulator-files.test.ts`, and `vitest.config.mts`. Vendored generated runtime code is excluded from ESLint; all first-party simulator code remains checked.
+Additional implemented files: `src/components/simulator/player-loader.tsx`, `src/lib/simulator/lock.ts`, `convex/simulator/model.ts`, `tests/unit/simulator-sync.test.ts`, `tests/unit/simulator-files.test.ts`, and `vitest.config.mts`. Vendored generated runtime code is excluded from ESLint; all first-party simulator code remains checked.
 
 The simulator ships without bundled games. Users open local files. Engine checks use a test-only idle-loop cartridge generated in memory. There is no runtime CDN, ROM upload function, file-handle persistence or service-worker cache.
 

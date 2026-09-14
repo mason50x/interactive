@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { RailButton } from "@/components/app/rail/rail-button";
-import { RailConstellation } from "@/components/app/rail-constellation";
+import { RailConstellation } from "@/components/app/rail/rail-constellation";
 import { Card } from "@/components/ui/card";
 import {
   Sheet,
@@ -19,6 +19,13 @@ import {
   versionLabel,
   type Release,
 } from "@/lib/releases";
+import {
+  readStorage,
+  removeStorage,
+  storageAvailable,
+  storageKeys,
+  writeStorage,
+} from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 /**
@@ -40,30 +47,24 @@ function subscribe(listener: () => void) {
   };
 }
 
+/**
+ * Blocked storage reads as "seen": a browser that cannot remember the card
+ * was opened would otherwise show the unread rim on every visit.
+ */
 function readSeen() {
-  try {
-    return localStorage.getItem(seenKey) !== null;
-  } catch {
-    return true;
-  }
+  if (!storageAvailable()) return true;
+  return readStorage(seenKey) !== null;
 }
 
 function markSeen() {
-  try {
-    localStorage.setItem(seenKey, "1");
-  } catch {}
+  writeStorage(seenKey, "1");
   for (const listener of listeners) listener();
 }
 
 function forgetOldReleases() {
-  try {
-    const stale: string[] = [];
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(SEEN_PREFIX) && key !== seenKey) stale.push(key);
-    }
-    for (const key of stale) localStorage.removeItem(key);
-  } catch {}
+  for (const key of storageKeys()) {
+    if (key.startsWith(SEEN_PREFIX) && key !== seenKey) removeStorage(key);
+  }
 }
 
 /**
