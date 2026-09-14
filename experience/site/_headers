@@ -1,6 +1,6 @@
 # Static-asset headers for the experience origin. These cover the frontend files
 # only; pages under /service/ are produced by the service worker, whose
-# responses carry what the rewriting engine gives them.
+# responses carry what the experience engine gives them.
 
 /*
   X-Robots-Tag: noindex, nofollow, noarchive

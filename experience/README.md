@@ -1,7 +1,7 @@
 # The experience
 
 An allowlisted experience for the app, as one Cloudflare Worker on the Free
-plan. A rewriting engine in the browser handles the pages; a small Bare v3 server in
+plan. A experience engine in the browser handles the pages; a small Bare v3 server in
 `src/worker.js` does the fetching, and refuses any host not listed in
 `config/experience-allowlist.json` at the repo root.
 
@@ -18,7 +18,7 @@ or any of this code in its bundles. Only `next dev` does.
 ## Layout
 
     src/worker.js          the Bare server and the allowlist check
-    site/                  the frontend: index.html, sw.js, engine.config.js, _headers
+    site/                  the frontend: index.html, sw.js, experience.config.js, _headers
     site/dist/             built output (gitignored): site/ plus the vendored
                            engine, bridge and transport bundles from node_modules
     scripts/build-site.mjs assembles site/dist from node_modules

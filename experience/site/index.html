@@ -21,15 +21,15 @@
   The experience frontend, in one page.
 
   The app frames this page with the destination in `?u=`. It registers the
-  rewriting engine's service worker over /service/, points the transport at the Bare
+  experience engine's service worker over /service/, points the transport at the Bare
   server on this same origin (/v3/), and frames the rewritten page. There is no
   address bar and no navigation UI on purpose: the app decides what is opened,
   and the Worker decides what is fetched. Editing this page cannot widen the
   allowlist, because the allowlist is enforced server-side in src/worker.js.
 -->
 <script src="/bridge/index.js"></script>
-<script src="/engine/bundle.js"></script>
-<script src="/engine/config.js"></script>
+<script src="/experience/bundle.js"></script>
+<script src="/experience/config.js"></script>
 <script>
   (async () => {
     const target = new URLSearchParams(location.search).get("u");

@@ -2,7 +2,7 @@
   "name": "il-experience",
   "private": true,
   "type": "module",
-  "description": "Allowlisted experience: rewriting engine frontend + Bare v3 server, one Cloudflare Worker.",
+  "description": "Allowlisted experience: experience engine frontend + Bare v3 server, one Cloudflare Worker.",
   "scripts": {
     "build": "node scripts/build-site.mjs",
     "dev": "npm run build && wrangler dev",

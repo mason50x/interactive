@@ -4,7 +4,7 @@
  * out under names of our own.
  *
  *   /                 site/index.html, sw.js, _headers
- *   /engine/          the rewriting engine (bundle, handler, client, sw), with
+ *   /experience/          the experience engine (bundle, handler, client, sw), with
  *                     our config as config.js
  *   /bridge/          the transport switchboard (index.js, worker.js)
  *   /transport/       the Bare v3 client (index.mjs)
@@ -25,23 +25,23 @@ rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
 for (const name of readdirSync(join(root, "site"))) {
-  if (name === "dist" || name === "engine.config.js") continue;
+  if (name === "dist" || name === "experience.config.js") continue;
   cpSync(join(root, "site", name), join(dist, name), { recursive: true });
 }
 
 // The engine, file by file, under our names. Its stock config is skipped and
 // ours copied in its place; the config names every one of these paths.
 const engineSrc = join(modules, "@titaniumnetwork-dev", "ultraviolet", "dist");
-mkdirSync(join(dist, "engine"));
+mkdirSync(join(dist, "experience"));
 for (const [from, to] of [
   ["uv.bundle.js", "bundle.js"],
   ["uv.handler.js", "handler.js"],
   ["uv.client.js", "client.js"],
   ["uv.sw.js", "sw.js"],
 ]) {
-  copyFileSync(join(engineSrc, from), join(dist, "engine", to));
+  copyFileSync(join(engineSrc, from), join(dist, "experience", to));
 }
-copyFileSync(join(root, "site", "engine.config.js"), join(dist, "engine", "config.js"));
+copyFileSync(join(root, "site", "experience.config.js"), join(dist, "experience", "config.js"));
 
 const noMaps = { recursive: true, filter: (src) => !/\.(map|d\.ts)$/.test(src) };
 cpSync(join(modules, "@mercuryworkshop", "bare-mux", "dist"), join(dist, "bridge"), noMaps);

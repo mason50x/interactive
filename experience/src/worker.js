@@ -4,7 +4,7 @@
  *
  * ## What a Bare server is
  *
- * The rewriting engine does all the URL and script rewriting in a service worker in the
+ * The experience engine does all the URL and script rewriting in a service worker in the
  * browser. What it cannot do from there is fetch a cross-origin page raw, so
  * it sends each request here with the real destination in `x-bare-url` and the
  * headers it wants sent in `x-bare-headers`, and gets the upstream response

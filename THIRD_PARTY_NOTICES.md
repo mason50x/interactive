@@ -7,8 +7,8 @@ logos, or trademarks. Dependencies retain their individual licenses.
 | Material | Source / terms | Status |
 | --- | --- | --- |
 | `public/simulator/core/c60e138/` | [binji/binjgb](https://github.com/binji/binjgb), commit `c60e138da5a795ebb55e56b11b7e90024e41112c`; MIT | License included as `LICENSE.txt`; runtime hashes verified by `npm test` |
-| Worker rewriting engine | `@titaniumnetwork-dev/ultraviolet`; MIT | Installed from the lockfile; build copies upstream license |
-| Worker transport and bridge | `@mercuryworkshop/bare-as-module3`, `@mercuryworkshop/bare-mux` | Installed from the lockfile; build copies upstream licenses |
+| Experience engine | `@titaniumnetwork-dev/ultraviolet`; MIT | Installed from the lockfile; build copies upstream license |
+| Experience transport and bridge | `@mercuryworkshop/bare-as-module3`, `@mercuryworkshop/bare-mux` | Installed from the lockfile; build copies upstream licenses |
 | `public/thumbnails/` | Catalogue imports from [a456pur/seraph](https://github.com/a456pur/seraph); individual games/art have different rightsholders | Per-image redistribution permission has not been established here; excluded from the MIT grant |
 | `public/chat/bot-avatar.png` | See [source attribution](public/chat/ASSETS.md) | Source recorded; character/art redistribution rights are not established by attribution alone; excluded from the MIT grant |
 | Hosted activity bundles | External asset bucket; maintenance scripts import from Seraph | Not part of the source distribution; upstream hosting does not establish rights to each game |

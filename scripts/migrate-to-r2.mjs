@@ -23,7 +23,7 @@
  *
  * Only the directories named in `src/lib/activities.catalogue.json`, the tile art,
  * and `storage/ruffle` — see `RUFFLE_SOURCE`. Not upstream's whole tree: its
- * `apps/` and `seraphim/` directories are the proxy and site chrome we do not
+ * `apps/` and `seraphim/` directories are the experience and site chrome we do not
  * serve, the rest of `storage/` is theirs, and the ROM-bearing game
  * directories were already dropped by the catalogue generator. Staging from
  * the catalogue rather than from a full clone is what makes those exclusions
