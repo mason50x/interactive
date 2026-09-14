@@ -3,7 +3,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityCard } from "@/components/app/activity-card";
-import type { Activity } from "@/lib/activity";
+import type { ActivityEntry } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 /**
@@ -34,8 +34,8 @@ export function ActivityRow({
    */
   note,
 }: {
-  activities: readonly Activity[];
-  note?: (activity: Activity) => string | undefined;
+  activities: readonly ActivityEntry[];
+  note?: (activity: ActivityEntry) => string | undefined;
 }) {
   const row = useRef<HTMLUListElement>(null);
 

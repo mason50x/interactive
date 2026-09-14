@@ -40,8 +40,7 @@
 import "server-only";
 
 import catalogue from "@/lib/activities.catalogue.json";
-import type { Activity, Genre } from "@/lib/activity";
-import type { ActivityEntry } from "@/components/app/search-provider";
+import type { Activity, ActivityEntry, Genre } from "@/lib/activity";
 
 // Re-exported so a Server Component that already needs the catalogue does not
 // have to import its type from a second module.
@@ -66,15 +65,20 @@ export function findActivity(slug: string): Activity | undefined {
 }
 
 /**
- * The catalogue, narrowed to what a search result row needs.
+ * The catalogue as a browser receives it — see `ActivityEntry`.
  *
- * This is the shape the dashboard layout hands `SearchProvider`, so the rail's
- * search can find an activity from any page of the app rather than only from
- * the one that already has the grid. Three fields rather than the whole
- * `Activity`, because the list travels in every dashboard page's RSC payload
- * and a result row draws none of the rest — see `ActivityEntry` for the same
- * argument from the other side.
+ * Built once, at module load, and not per request: the dashboard layout hands
+ * it to `ActivitiesProvider` on every full page load, and re-mapping 288
+ * entries on each render is work a Worker's CPU budget notices. The
+ * `Activity` list itself is never handed to a client component, so `path` and
+ * `bytes` do not leave the server.
  */
-export function searchableActivities(): ActivityEntry[] {
-  return ACTIVITIES.map(({ slug, title, genre }) => ({ slug, title, genre }));
-}
+export const CLIENT_ACTIVITIES: readonly ActivityEntry[] = ACTIVITIES.map(
+  ({ slug, title, genre, thumbnail, rank }) => ({
+    slug,
+    title,
+    genre,
+    thumbnail,
+    rank,
+  }),
+);

@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
-import { type Activity, popularityLabel, thumbnailSrc } from "@/lib/activity";
+import {
+  type ActivityEntry,
+  popularityLabel,
+  thumbnailSrc,
+} from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +52,7 @@ export function ActivityCard({
    */
   note,
 }: {
-  activity: Activity;
+  activity: ActivityEntry;
   note?: string;
 }) {
   // A handful of upstream tiles point at art that is not in the repo, and one

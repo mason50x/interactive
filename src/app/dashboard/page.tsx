@@ -6,7 +6,6 @@ import { StatsCard } from "@/components/app/home/stats-card";
 import { StreakCard } from "@/components/app/home/streak-card";
 import { WeatherCard } from "@/components/app/home/weather-card";
 import { Page } from "@/components/ui/page";
-import { ACTIVITIES } from "@/lib/activities";
 
 export const metadata: Metadata = { title: "Home" };
 
@@ -58,10 +57,10 @@ export default async function DashboardPage() {
         <StatsCard />
       </div>
 
-      {/* Handed the catalogue rather than importing it: that import inside a
-          client component would put all 318 entries in a public static chunk.
-          See `src/lib/activities.ts`. */}
-      <HomeBoard activities={ACTIVITIES} />
+      {/* Reads the catalogue from the dashboard layout's `ActivitiesProvider`
+          rather than being handed it here: a page prop is serialised on every
+          render of this page, the layout's once per load. */}
+      <HomeBoard />
     </Page>
   );
 }

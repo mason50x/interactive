@@ -2,7 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { ActivitiesBrowser } from "@/components/app/activities-browser";
 import { Page, PageTitle } from "@/components/ui/page";
-import { ACTIVITIES } from "@/lib/activities";
 
 export const metadata: Metadata = { title: "Activities" };
 
@@ -24,11 +23,11 @@ export default async function ActivitiesPage() {
     <Page>
       <PageTitle>Activities</PageTitle>
 
-      {/* The catalogue crosses to the browser here, as a prop, and not by
-          being imported on the other side — which is what keeps it inside this
-          route's RSC payload and behind the `auth.protect()` above.
-          `src/lib/activities.ts` has the reasoning. */}
-      <ActivitiesBrowser activities={ACTIVITIES} />
+      {/* The catalogue reaches the browser from the dashboard layout's
+          `ActivitiesProvider`, not as a prop here — once per full load,
+          behind the layout's own `auth.protect()`, and not again for this
+          page. `src/lib/activities.ts` has the reasoning. */}
+      <ActivitiesBrowser />
     </Page>
   );
 }

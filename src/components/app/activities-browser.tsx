@@ -1,13 +1,19 @@
 "use client";
 
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
-import { useDeferredValue, useMemo, useState } from "react";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { useActivities } from "@/components/app/activities-provider";
 import { ActivityGrid } from "@/components/app/activities/activity-grid";
 import { CategoryMenu } from "@/components/app/activities/category-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { type Activity, filterActivities, type Genre } from "@/lib/activity";
+import { filterActivities, type Genre } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +32,16 @@ import { cn } from "@/lib/utils";
  * whatever is left, so there is no separate results view to design and no
  * layout that appears only when you type.
  *
- * The catalogue arrives as a prop rather than as an import, and that is a
- * boundary, not a style choice. Importing it here would put all 318 entries
- * into a `/_next/static` chunk, which is served with no session in front of it
- * — the route would be gated and the data would not. As a prop it travels in
- * this page's RSC payload instead, behind the same `auth.protect()` as
- * everything else on it. See `src/lib/activities.ts`.
+ * The catalogue comes from `ActivitiesProvider` rather than from an import,
+ * and that is a boundary, not a style choice. Importing it here would put all
+ * 318 entries into a `/_next/static` chunk, which is served with no session in
+ * front of it — the route would be gated and the data would not. From the
+ * provider it travels in the dashboard layout's RSC payload instead, behind
+ * the layout's `auth.protect()`, once per load. See `src/lib/activities.ts`.
+ *
+ * The server does not render the whole grid. It renders the first
+ * `FIRST_PAINT` cards and the browser fills in the rest the moment it has
+ * hydrated — see `painted` below for why that is invisible and what it saves.
  *
  * What does not change is the filtering: the whole catalogue is still in the
  * browser once the page has loaded — six short fields per activity, about
@@ -48,19 +58,32 @@ import { cn } from "@/lib/utils";
 
 type Sort = "popular" | "title";
 
+/**
+ * How many cards the server renders before handing the rest to the browser.
+ *
+ * Ten rows at three across, which is more than two screens of a large
+ * monitor and a great many of a phone's one column, so no first paint ever
+ * ends before the cards do. What it saves is the server rendering of the
+ * other 258: each card is about two kilobytes of markup, and rendering all of
+ * them is the single most expensive thing this Worker does per request —
+ * around two thirds of the page's CPU — on a platform that bills by the
+ * millisecond and cuts a request off when it spends too many.
+ */
+const FIRST_PAINT = 30;
+
+/** `useSyncExternalStore` wants a subscription; there is nothing to watch. */
+const subscribeToNothing = () => () => {};
+
 /** Popular or alphabetical, as a two-stop segmented control. */
 const SORTS: readonly { value: Sort; label: string }[] = [
   { value: "popular", label: "Popular" },
   { value: "title", label: "A–Z" },
 ];
 
-export function ActivitiesBrowser({
-  activities: catalogue,
-}: {
-  activities: readonly Activity[];
-}) {
+export function ActivitiesBrowser() {
+  const catalogue = useActivities();
   // This page's own string, not the rail's. The two used to be one, and typing
-  // here filled the rail's box and opened it too. See `SearchProvider`.
+  // here filled the rail's box and opened it too. See `ActivitiesProvider`.
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState<Genre | "all">("all");
   const [sort, setSort] = useState<Sort>("popular");
@@ -100,6 +123,21 @@ export function ActivitiesBrowser({
   }, [catalogue, genre, needle, searching, sort]);
 
   const filtered = searching || genre !== "all";
+
+  /**
+   * `false` on the server and while hydrating, `true` from the first render
+   * after. React uses the server snapshot to hydrate and then re-renders with
+   * the client one if it differs, so this is hydrate-then-fill in one
+   * primitive: the markup the server sent and the markup the browser expects
+   * agree, and the remaining cards mount immediately afterwards, well below
+   * the fold, where `useFlip` leaves off-screen arrivals alone.
+   */
+  const hydrated = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
+  const painted = hydrated ? shown : shown.slice(0, FIRST_PAINT);
 
   return (
     <div className="flex flex-col gap-6">
@@ -175,7 +213,7 @@ export function ActivitiesBrowser({
         )
       )}
 
-      <ActivityGrid shown={shown} />
+      <ActivityGrid shown={painted} />
     </div>
   );
 }

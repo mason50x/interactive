@@ -49,6 +49,28 @@ and traces, with query strings redacted so invitation tickets do not enter invoc
 `worker.ts` sets framing/crawler policy and prevents shared caching on auth,
 dashboard and learn routes. `public/_headers` covers static responses.
 
+## CPU time
+
+Workers Free allows 10 ms of CPU per request. Workers Paid allows 30 seconds
+by default, and `limits.cpu_ms` in `wrangler.jsonc` can raise that to five
+minutes. Waiting on Clerk, Convex or the asset origin does not count; running
+JavaScript does.
+
+Rendering a dashboard page costs well over 10 ms of CPU: React server
+rendering, RSC serialisation and Clerk session verification together measure
+around 30 ms for the home page in a local workerd, and the activities page
+about twice that before the first-paint slicing described in
+`src/components/app/activities-browser.tsx`. On the Free plan the runtime
+tolerates an occasional overrun and terminates the Worker once overruns are
+consistent, which is exactly what a class loading the site at the same time
+produces: bursts of `Worker exceeded CPU time limit` (error 1102) in
+Observability, one per failed page, and a blank error for the visitor.
+
+Production must therefore run on Workers Paid. The default 30 s limit is
+ample; do not set `limits.cpu_ms` on the Free plan, where the API rejects it.
+Workers & Pages → the Worker → Metrics reports CPU time per invocation, and
+Observability lists each overrun with its URL.
+
 ## Preview environments
 
 Do not use `build:production` for untrusted PRs. Build with isolated Clerk/Convex

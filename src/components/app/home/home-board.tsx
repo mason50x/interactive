@@ -2,9 +2,10 @@
 
 import { useQuery } from "convex/react";
 import { useCallback, useMemo, type ReactNode } from "react";
+import { useActivities } from "@/components/app/activities-provider";
 import { ActivityRow } from "@/components/app/activity-row";
 import { Spinner } from "@/components/ui/spinner";
-import type { Activity } from "@/lib/activity";
+import type { ActivityEntry } from "@/lib/activity";
 import { formatSince } from "@/lib/time";
 import { useNow } from "@/lib/use-now";
 import { api } from "@convex/_generated/api";
@@ -40,7 +41,8 @@ import { api } from "@convex/_generated/api";
  *  what makes the row scroll and read as a row. */
 const ROW_SIZE = 18;
 
-export function HomeBoard({ activities }: { activities: readonly Activity[] }) {
+export function HomeBoard() {
+  const activities = useActivities();
   const favourites = useQuery(api.views.favourites, { limit: ROW_SIZE });
   const recent = useQuery(api.views.recent, { limit: ROW_SIZE });
   const popular = useQuery(api.views.popularToday, { limit: ROW_SIZE });
@@ -59,10 +61,12 @@ export function HomeBoard({ activities }: { activities: readonly Activity[] }) {
     /** Rows come back as slugs and counts; the catalogue is what turns them
      *  into something with art on it. A slug the catalogue no longer carries —
      *  an activity retired between one build and the next — simply drops out. */
-    (rows: readonly { slug: string }[]): Activity[] =>
+    (rows: readonly { slug: string }[]): ActivityEntry[] =>
       rows
         .map((row) => bySlug.get(row.slug))
-        .filter((activity): activity is Activity => activity !== undefined),
+        .filter(
+          (activity): activity is ActivityEntry => activity !== undefined,
+        ),
     [bySlug],
   );
 
@@ -98,7 +102,7 @@ export function HomeBoard({ activities }: { activities: readonly Activity[] }) {
         return activity ? { activity, views: row.views } : null;
       })
       .filter(
-        (entry): entry is { activity: Activity; views: number } =>
+        (entry): entry is { activity: ActivityEntry; views: number } =>
           entry !== null,
       );
 

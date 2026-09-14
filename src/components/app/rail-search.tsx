@@ -4,7 +4,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { RailButton } from "@/components/app/rail/rail-button";
-import { useSearch } from "@/components/app/search-provider";
+import { useActivities } from "@/components/app/activities-provider";
 import { Resting } from "@/components/app/search/orb";
 import { ResultRow } from "@/components/app/search/result-row";
 import { useListbox } from "@/components/app/search/use-listbox";
@@ -68,14 +68,14 @@ import { cn } from "@/lib/utils";
  * now, so typing no longer moves you. It also used to share its query with
  * that grid's own box, so a word typed on the catalogue page appeared here
  * and bloomed this box open at the same time. The query is this component's
- * alone now; the grid has its own. See `SearchProvider`.
+ * alone now; the grid has its own. See `ActivitiesProvider`.
  *
  * Collapsed, below `lg`, none of this fits in 3.75rem, so it becomes the icon
  * alone: a button that opens the grid, where the page's width makes a real
  * field possible again.
  */
 export function RailSearch() {
-  const { activities } = useSearch();
+  const activities = useActivities();
   const router = useRouter();
   const { setPreference } = useTheme();
 
