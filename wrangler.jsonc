@@ -5,6 +5,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "worker.ts",
   "assets": {
+    "run_worker_first": true,
     "directory": "dist/client",
     "not_found_handling": "none",
     "binding": "ASSETS",

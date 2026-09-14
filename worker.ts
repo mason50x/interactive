@@ -1,8 +1,10 @@
 import handler from "vinext/server/fetch-handler";
+import { accessClosedResponse, isAccessOpen } from "./src/lib/access-hours";
 
 /** Apply policy to redirects and errors as well as rendered HTML. */
 export default {
   async fetch(request, env, ctx) {
+    if (!isAccessOpen()) return accessClosedResponse(request);
     const response = await handler.fetch(request, env, ctx);
     const headers = new Headers(response.headers);
     const path = new URL(request.url).pathname;
