@@ -15,6 +15,8 @@
  */
 export type Release = {
   version: string;
+  /** Minor updates inherit the previous release's read state. Defaults to important. */
+  importance?: "important" | "minor";
   /** ISO date. */
   date: string;
   title: string;
@@ -22,6 +24,20 @@ export type Release = {
 };
 
 export const releases: readonly Release[] = [
+  {
+    version: "1.0.1",
+    importance: "minor",
+    date: "2026-09-13",
+    title: "A smoother start.",
+    body: `A few updates to keep things running smoothly.
+
+What's in it:
+
+- We've moved to Cloudflare, with a focus on performance and stronger security.
+- Verity now kicks off the Everyone chat with a fresh, playful morning greeting every day at 7:30 a.m. Central.
+- Unread indicators no longer flash when you send a message or while you're reading the live conversation.
+- We've tightened protection around learning activities and disabled alternate public hosting URLs.`,
+  },
   {
     version: "1.0",
     date: "2026-09-08",
@@ -41,6 +57,14 @@ What's in it:
 ];
 
 export const currentRelease = releases[0];
+
+/** Newest first. Consecutive minor updates share the preceding important release's key. */
+export function releaseSeenVersion(history: readonly Release[]): string {
+  const release =
+    history.find((entry) => entry.importance !== "minor") ?? history.at(-1);
+  if (!release) throw new Error("At least one release is required");
+  return release.version;
+}
 
 /** How a version is written wherever it is shown: `v1.1`. */
 export function versionLabel(version: string) {

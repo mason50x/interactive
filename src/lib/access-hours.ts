@@ -24,7 +24,7 @@ export function accessClosedResponse(request: Request): Response {
   return new Response(
     request.method === "HEAD"
       ? null
-      : "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Outside access hours</title><body><main><h1>We’re closed right now</h1><p>Access is available Monday–Friday, 7:30 a.m.–2:55 p.m. Central time.</p><p>Please return during these hours.</p></main></body></html>",
+      : '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Outside access hours</title><body><main><h1>We’re closed right now</h1><p>Access is available Monday–Friday, 7:30 a.m.–2:55 p.m. Central time.</p><p>Please return during these hours.</p></main></body></html>',
     {
       status: 403,
       headers: {

@@ -12,16 +12,22 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { LogoMark } from "@/components/wordmark";
-import { currentRelease, versionLabel, type Release } from "@/lib/releases";
+import {
+  currentRelease,
+  releases,
+  releaseSeenVersion,
+  versionLabel,
+  type Release,
+} from "@/lib/releases";
 import { cn } from "@/lib/utils";
 
 /**
- * One key per release, so what is stored is "this release was opened here"
- * and not "the last one opened was". The keys of every other release are
- * cleared on mount: a new version arriving is what deletes the old one's.
+ * Important releases start a new read state. Minor updates reuse the previous
+ * important release's key, preserving both read and unread states, even when
+ * several updates were skipped. Cleanup keeps that shared key intact.
  */
 const SEEN_PREFIX = "release-seen:";
-const seenKey = SEEN_PREFIX + currentRelease.version;
+const seenKey = SEEN_PREFIX + releaseSeenVersion(releases);
 
 const listeners = new Set<() => void>();
 
@@ -70,8 +76,8 @@ function forgetOldReleases() {
  * release's notes, kept in `src/lib/releases.ts` beside the code they
  * describe. Pressing the card opens the post in a sheet.
  *
- * Nothing is tracked on the server. Whether this release has been opened
- * here is a key in `localStorage`, read through `useSyncExternalStore` so the
+ * Nothing is tracked on the server. The release's shared read state is a
+ * key in `localStorage`, read through `useSyncExternalStore` so the
  * server and the hydrating client agree on "opened" and the unread state is
  * only ever added after hydration, never taken away. Until it is opened, the
  * card wears the comet rim the announcements card used to. A different
