@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { useMemo } from "react";
-import type { ActivityEntry } from "@/components/app/search-provider";
+import type { ActivityEntry } from "@/components/app/search/search-provider";
 import { conversationName } from "@/lib/chat";
 import { GENRES } from "@/lib/genres";
 import { ACTIVITIES_HREF, CHAT_HREF } from "@/lib/nav";

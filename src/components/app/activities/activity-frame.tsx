@@ -1,16 +1,16 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { ActivityControls } from "@/components/app/activity-controls";
-import styles from "@/components/app/activity-frame.module.css";
+import { ActivityControls } from "@/components/app/activities/activity-controls";
+import styles from "@/components/app/activities/activity-frame.module.css";
 import {
   ACTIVITY_ALLOW,
   ACTIVITY_REFERRER_POLICY,
   ACTIVITY_SANDBOX,
-} from "@/components/app/activity-sandbox";
-import { PacketCover } from "@/components/app/packet-cover";
+} from "@/components/app/activities/activity-sandbox";
+import { PacketCover } from "@/components/app/activities/packet-cover";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
-import { usePreferences } from "@/components/preferences-provider";
+import { usePreferences } from "@/components/providers/preferences-provider";
 import { safePanicUrl } from "@/lib/panic-key";
 
 /**

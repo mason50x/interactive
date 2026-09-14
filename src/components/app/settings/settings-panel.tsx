@@ -5,7 +5,7 @@ import { ComboRecorder } from "@/components/app/settings/combo-recorder";
 import { DestinationPicker } from "@/components/app/settings/destination-picker";
 import { Row } from "@/components/app/settings/row";
 import { TabMaskPicker } from "@/components/app/settings/tab-mask-picker";
-import { usePreferences } from "@/components/preferences-provider";
+import { usePreferences } from "@/components/providers/preferences-provider";
 import { Switch } from "@/components/ui/switch";
 import { tabMaskAssets } from "@/lib/tab-mask";
 

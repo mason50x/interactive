@@ -8,7 +8,7 @@ import type { Builtin } from "@/lib/simulator/types";
 
 // The engine is a WebAssembly bundle with no business on the server, so the
 // player is loaded on the client only, once the route is reached.
-const Player = dynamic(() => import("./player"), {
+const Player = dynamic(() => import("@/components/simulator/player"), {
   ssr: false,
   loading: () => <CenteredSpinner />,
 });

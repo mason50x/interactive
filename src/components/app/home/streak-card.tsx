@@ -2,8 +2,8 @@
 
 import { CheckIcon } from "@heroicons/react/24/solid";
 import { useQuery } from "convex/react";
-import { Flame } from "@/components/app/flame";
-import { useStreak } from "@/components/streak-provider";
+import { Flame } from "@/components/app/home/flame";
+import { useStreak } from "@/components/providers/streak-provider";
 import { Card } from "@/components/ui/card";
 import { useTzOffset } from "@/lib/hooks/use-tz-offset";
 import { cn } from "@/lib/utils";

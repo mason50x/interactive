@@ -2,7 +2,7 @@
 
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityCard } from "@/components/app/activity-card";
+import { ActivityCard } from "@/components/app/activities/activity-card";
 import type { Activity } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 

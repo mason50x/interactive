@@ -1,6 +1,6 @@
 "use client";
 
-import { ActivityCard } from "@/components/app/activity-card";
+import { ActivityCard } from "@/components/app/activities/activity-card";
 import type { Activity } from "@/lib/activity";
 import { useFlip } from "@/lib/hooks/use-flip";
 

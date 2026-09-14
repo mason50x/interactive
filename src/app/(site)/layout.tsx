@@ -1,4 +1,4 @@
-import { SiteChrome } from "@/components/site-chrome";
+import { SiteChrome } from "@/components/site/site-chrome";
 
 /**
  * The public site's chrome: header above, footer below, the page between.

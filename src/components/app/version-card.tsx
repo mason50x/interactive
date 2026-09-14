@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { RailButton } from "@/components/app/rail/rail-button";
-import { RailConstellation } from "@/components/app/rail-constellation";
+import { RailConstellation } from "@/components/app/rail/rail-constellation";
 import { Card } from "@/components/ui/card";
 import {
   Sheet,

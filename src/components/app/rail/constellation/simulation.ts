@@ -10,7 +10,7 @@ import {
   SCATTER_DISTANCE,
   SCATTER_NOISE,
   SHOVE,
-} from "@/components/app/constellation/tuning";
+} from "@/components/app/rail/constellation/tuning";
 
 /**
  * The arithmetic of `RailConstellation`, with no canvas in it.

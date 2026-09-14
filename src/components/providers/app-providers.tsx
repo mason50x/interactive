@@ -1,9 +1,9 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { ReactNode } from "react";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
-import { GoogleAnalytics } from "@/components/google-analytics";
-import { PreferencesProvider } from "@/components/preferences-provider";
-import { StoreUser } from "@/components/store-user";
+import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
+import { GoogleAnalytics } from "@/components/providers/google-analytics";
+import { PreferencesProvider } from "@/components/providers/preferences-provider";
+import { StoreUser } from "@/components/providers/store-user";
 
 /**
  * Everything the app needs and an activity must never get.

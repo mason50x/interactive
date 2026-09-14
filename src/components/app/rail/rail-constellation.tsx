@@ -6,7 +6,7 @@ import {
   linkPairs,
   seedPoint,
   stepPoints,
-} from "@/components/app/constellation/simulation";
+} from "@/components/app/rail/constellation/simulation";
 import {
   ALPHA_STEPS,
   AREA_PER_POINT,
@@ -23,7 +23,7 @@ import {
   REACH,
   SCATTER_FRAME_MS,
   SCATTER_MS,
-} from "@/components/app/constellation/tuning";
+} from "@/components/app/rail/constellation/tuning";
 import { cn } from "@/lib/utils";
 
 /**

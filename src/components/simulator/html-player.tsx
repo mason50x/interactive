@@ -22,9 +22,9 @@ import {
   validateHtmlSave,
   type HtmlEntry,
 } from "@/lib/simulator/html-store";
-import { useOriginalFilePicker } from "./file-picker";
-import { HtmlFilePrompt } from "./html-file-prompt";
-import { HtmlPlayerControls } from "./html-player-controls";
+import { useOriginalFilePicker } from "@/components/simulator/file-picker";
+import { HtmlFilePrompt } from "@/components/simulator/html-file-prompt";
+import { HtmlPlayerControls } from "@/components/simulator/html-player-controls";
 
 const BACK = "/dashboard/learning-simulator?mode=html";
 

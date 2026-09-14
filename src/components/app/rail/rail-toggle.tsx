@@ -1,7 +1,7 @@
 "use client";
 
 import { RailIconSolid } from "@/components/app/nav-icons";
-import { useRail } from "@/components/app/rail-context";
+import { useRail } from "@/components/app/rail/rail-context";
 import type { RailState } from "@/lib/rail";
 import { cn } from "@/lib/utils";
 

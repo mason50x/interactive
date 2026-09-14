@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { AppProviders } from "@/components/app-providers";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { AppProviders } from "@/components/providers/app-providers";
+import { SiteFooter } from "@/components/site/site-footer";
+import { SiteHeader } from "@/components/site/site-header";
 
 /**
  * The public site's frame: header above, footer below, the page between, and

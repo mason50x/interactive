@@ -4,7 +4,7 @@ import { useClerk } from "@clerk/nextjs";
 import { Cog6ToothIcon } from "@heroicons/react/24/solid";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { SettingsPanel } from "@/components/app/settings-panel";
+import { SettingsPanel } from "@/components/app/settings/settings-panel";
 import type { SettingsPage } from "@/lib/preferences";
 
 /**

@@ -6,7 +6,7 @@ import { CenteredSpinner } from "@/components/ui/spinner";
 
 // Loaded on the client only: the player reads IndexedDB and builds a
 // sandboxed document, neither of which the server can do or should try.
-const Player = dynamic(() => import("./html-player"), {
+const Player = dynamic(() => import("@/components/simulator/html-player"), {
   ssr: false,
   loading: () => <CenteredSpinner />,
 });

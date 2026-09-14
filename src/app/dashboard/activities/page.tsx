@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import { ActivitiesBrowser } from "@/components/app/activities-browser";
+import { ActivitiesBrowser } from "@/components/app/activities/activities-browser";
 import { Page, PageTitle } from "@/components/ui/page";
 import { ACTIVITIES } from "@/lib/server/activities";
 

@@ -4,29 +4,13 @@ import { ChevronDownIcon, TicketIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { InvitePanel } from "@/components/app/invite/invite-panel";
 import { useInviteActions } from "@/components/app/invite/use-invite-actions";
+import { useInvites } from "@/components/app/invite/use-invites";
 import { RailButton } from "@/components/app/rail/rail-button";
 import { CountBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Pips } from "@/components/ui/pips";
-import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { cn } from "@/lib/utils";
-import { api } from "@convex/_generated/api";
-
-/**
- * The allowance, live.
- *
- * `null` is "no numbers yet" — the state the card draws as a bare rail with no
- * count beside it — and it covers both of the ways there can be none.
- *
- * The query is skipped until Clerk's token has actually reached the Convex
- * client rather than run and answered `null` for "nobody is signed in". The
- * card waits for authentication before fetching its allowance, which is
- * why the card can sit on its skeleton for a moment before the pips arrive.
- */
-export function useInvites() {
-  return useAuthedQuery(api.invites.mine, {}) ?? null;
-}
 
 /**
  * Invites, as a card in the rail rather than a row in the account menu.

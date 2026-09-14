@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { useCallback, useMemo, type ReactNode } from "react";
-import { ActivityRow } from "@/components/app/activity-row";
+import { ActivityRow } from "@/components/app/activities/activity-row";
 import { Spinner } from "@/components/ui/spinner";
 import type { Activity } from "@/lib/activity";
 import { formatSince } from "@/lib/time";

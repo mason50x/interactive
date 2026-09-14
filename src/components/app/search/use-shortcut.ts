@@ -2,7 +2,7 @@
 
 import { type RefObject, useEffect, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
-import { useRail } from "@/components/app/rail-context";
+import { useRail } from "@/components/app/rail/rail-context";
 
 /**
  * The one shortcut this app has, and what to call it.

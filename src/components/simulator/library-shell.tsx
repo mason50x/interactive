@@ -2,7 +2,10 @@
 
 import type { ReactNode } from "react";
 import { Alert } from "@/components/ui/alert";
-import { HiddenFileInput, type FilePicker } from "./file-picker";
+import {
+  HiddenFileInput,
+  type FilePicker,
+} from "@/components/simulator/file-picker";
 
 /**
  * The outer frame of a simulator library: the whole page is a drop target,

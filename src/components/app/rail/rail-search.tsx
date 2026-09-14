@@ -4,7 +4,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { RailButton } from "@/components/app/rail/rail-button";
-import { useSearch } from "@/components/app/search-provider";
+import { useSearch } from "@/components/app/search/search-provider";
 import { Resting } from "@/components/app/search/orb";
 import { ResultRow } from "@/components/app/search/result-row";
 import { useListbox } from "@/components/app/search/use-listbox";
@@ -13,7 +13,7 @@ import {
   useSearchShortcut,
   useShortcutChord,
 } from "@/components/app/search/use-shortcut";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/providers/theme-provider";
 import { Kbd } from "@/components/ui/kbd";
 import { popupVariants } from "@/components/ui/popup";
 import { Spinner } from "@/components/ui/spinner";

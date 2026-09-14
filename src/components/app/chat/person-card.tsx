@@ -7,7 +7,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Monogram } from "@/components/app/chat/monogram";
-import { RowMenu } from "@/components/app/chat/people-rows";
+import { RowMenu } from "@/components/app/chat/row-menu";
 import { isBot, openDmError, personName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";

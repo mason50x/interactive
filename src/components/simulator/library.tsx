@@ -13,18 +13,21 @@ import {
   listLocal,
   removeLocal,
 } from "@/lib/simulator/local-store";
-import { useSimulatorSession } from "./session-provider";
-import { useFilePicker } from "./file-picker";
-import { ClearAllButton } from "./clear-all-button";
-import { ImportPanel, ProgressSection } from "./library-parts";
+import { useSimulatorSession } from "@/components/simulator/session-provider";
+import { useFilePicker } from "@/components/simulator/file-picker";
+import { ClearAllButton } from "@/components/simulator/clear-all-button";
+import {
+  ImportPanel,
+  ProgressSection,
+} from "@/components/simulator/library-parts";
 import {
   EntryList,
   EntryRow,
   LibraryEmpty,
   formatSavedAt,
-} from "./library-entries";
-import { LibraryShell } from "./library-shell";
-import { PixelController } from "./pixel-controller";
+} from "@/components/simulator/library-entries";
+import { LibraryShell } from "@/components/simulator/library-shell";
+import { PixelController } from "@/components/simulator/pixel-controller";
 
 const ROOT = "/dashboard/learning-simulator";
 

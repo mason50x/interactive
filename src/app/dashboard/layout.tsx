@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { BrowserCheck } from "@/components/app/browser-check";
-import { SearchProvider } from "@/components/app/search-provider";
-import { AppProviders } from "@/components/app-providers";
-import { StreakProvider } from "@/components/streak-provider";
+import { SearchProvider } from "@/components/app/search/search-provider";
+import { AppProviders } from "@/components/providers/app-providers";
+import { StreakProvider } from "@/components/providers/streak-provider";
 import { searchableActivities } from "@/lib/server/activities";
 import { RAIL_COOKIE, railState } from "@/lib/rail";
 

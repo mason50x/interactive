@@ -2,7 +2,7 @@
 
 import { MapPinIcon } from "@heroicons/react/24/solid";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WeatherGlyph } from "@/components/app/weather-glyph";
+import { WeatherGlyph } from "@/components/app/home/weather-glyph";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import {

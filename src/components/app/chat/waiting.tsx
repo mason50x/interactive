@@ -3,7 +3,8 @@
 import { useMutation, useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { GlideList } from "@/components/app/chat/glide-list";
-import { PersonRow, RowMenu } from "@/components/app/chat/people-rows";
+import { PersonRow } from "@/components/app/chat/people-rows";
+import { RowMenu } from "@/components/app/chat/row-menu";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@convex/_generated/api";
 

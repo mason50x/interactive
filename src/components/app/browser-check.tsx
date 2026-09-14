@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "@/components/app/browser-check.module.css";
-import { RailConstellation } from "@/components/app/rail-constellation";
+import { RailConstellation } from "@/components/app/rail/rail-constellation";
 import { readStorage, writeStorage } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
