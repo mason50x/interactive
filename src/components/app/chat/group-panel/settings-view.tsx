@@ -20,7 +20,7 @@ import {
 } from "@/components/app/chat/group-panel/use-group";
 import { OptionTiles } from "@/components/app/chat/option-tiles";
 import { CHAT_HREF } from "@/lib/nav";
-import { useTransientFlag } from "@/lib/use-transient-flag";
+import { useTransientFlag } from "@/lib/hooks/use-transient-flag";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";

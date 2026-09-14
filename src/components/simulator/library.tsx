@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
-import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
 import type { LocalEntry } from "@/lib/simulator/types";
 import { openProgram } from "@/lib/simulator/files";
 import {

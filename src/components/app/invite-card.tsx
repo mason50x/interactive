@@ -8,8 +8,8 @@ import { RailButton } from "@/components/app/rail/rail-button";
 import { CountBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Pips } from "@/components/ui/pips";
-import { useAuthedQuery } from "@/lib/use-authed-query";
-import { useClickOutside } from "@/lib/use-click-outside";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 

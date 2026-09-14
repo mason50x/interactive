@@ -42,7 +42,7 @@ says how.
 Nothing is re-uploaded and nothing is rewritten. Bundle HTML references its
 own files relatively — `scripts/migrate-to-r2.mjs` rewrites the one absolute
 URL upstream ships (Ruffle) into a relative path precisely so the bucket's
-contents never learn their own hostname. `src/lib/assets.ts` is the only
+contents never learn their own hostname. `src/lib/server/assets.ts` is the only
 module that knows the origin, and it is imported by exactly one server
 component, so the value never reaches the client bundle.
 

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ActivityFrame } from "@/components/app/activity-frame";
 import { ViewRecorder } from "@/components/app/view-recorder";
-import { findActivity } from "@/lib/activities";
+import { findActivity } from "@/lib/server/activities";
 import { activityFrameSrc } from "@/lib/learn";
 
 export async function generateMetadata({

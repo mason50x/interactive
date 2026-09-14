@@ -40,8 +40,7 @@
 import "server-only";
 
 import catalogue from "@/lib/activities.catalogue.json";
-import type { Activity, Genre } from "@/lib/activity";
-import type { ActivityEntry } from "@/components/app/search-provider";
+import type { Activity, ActivityEntry, Genre } from "@/lib/activity";
 
 // Re-exported so a Server Component that already needs the catalogue does not
 // have to import its type from a second module.

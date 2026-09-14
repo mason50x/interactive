@@ -26,8 +26,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
-import { useAuthedQuery } from "@/lib/use-authed-query";
-import { approveNomination } from "@/lib/voting-actions";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
+import { approveNomination } from "@/lib/server/voting-actions";
 
 type Nomination = FunctionReturnType<typeof api.voting.list>["page"][number];
 const errorMessage = (error: unknown) =>

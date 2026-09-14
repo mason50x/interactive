@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { siteUrl } from "@/lib/site-url";
+import { siteUrl } from "@/lib/server/site-url";
 afterEach(() => vi.unstubAllEnvs());
 test("runtime staging origin overrides the public canonical origin", () => {
   vi.stubEnv("SITE_URL", "https://staging.example.org/");

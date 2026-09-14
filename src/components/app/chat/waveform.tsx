@@ -2,8 +2,8 @@
 
 import { useCallback, useRef } from "react";
 
-import { useStillness } from "@/lib/motion";
-import { useMicLevel } from "@/lib/use-mic-level";
+import { useStillness } from "@/lib/hooks/motion";
+import { useMicLevel } from "@/lib/hooks/use-mic-level";
 
 /**
  * Five bars that move with the microphone, in place of the icon while the

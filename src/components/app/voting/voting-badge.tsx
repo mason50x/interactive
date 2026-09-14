@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@convex/_generated/api";
-import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
 import "./voting-nav.css";
 
 /** Imported only by the development navigation catalogue. */

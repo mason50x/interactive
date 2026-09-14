@@ -16,8 +16,8 @@ vi.mock("@clerk/nextjs/errors", () => ({
     Boolean(error && typeof error === "object" && "status" in error),
 }));
 vi.mock("convex/nextjs", () => ({ fetchMutation: mocks.fetchMutation }));
-vi.mock("@/lib/invitations", () => ({ inviteUser: mocks.inviteUser }));
-import { approveNomination } from "@/lib/voting-actions";
+vi.mock("@/lib/server/invitations", () => ({ inviteUser: mocks.inviteUser }));
+import { approveNomination } from "@/lib/server/voting-actions";
 const id = "nomination-test" as Id<"nominations">;
 afterEach(() => vi.unstubAllEnvs());
 

@@ -1,4 +1,4 @@
-import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
+import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "@config/bot";
 /**
  * The client's half of mentions: finding `@words` in text, and nothing that
  * decides whether they are anybody.

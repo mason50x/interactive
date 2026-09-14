@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useMutation } from "convex/react";
 import { useEffect, useRef } from "react";
-import { useTzOffset } from "@/lib/use-tz-offset";
+import { useTzOffset } from "@/lib/hooks/use-tz-offset";
 import { api } from "@convex/_generated/api";
 
 /**

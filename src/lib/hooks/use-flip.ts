@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { useStillness } from "@/lib/motion";
+import { useStillness } from "@/lib/hooks/motion";
 
 /**
  * The grid, moving to its new arrangement instead of appearing in it.

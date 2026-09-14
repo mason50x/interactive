@@ -3,7 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
 import { useEffect } from "react";
-import { syncChatAccount } from "@/lib/account-actions";
+import { syncChatAccount } from "@/lib/server/account-actions";
 
 /**
  * Keeps the account's row on the server current with Clerk.

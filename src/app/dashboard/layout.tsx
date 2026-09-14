@@ -7,7 +7,7 @@ import { BrowserCheck } from "@/components/app/browser-check";
 import { SearchProvider } from "@/components/app/search-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
-import { searchableActivities } from "@/lib/activities";
+import { searchableActivities } from "@/lib/server/activities";
 import { RAIL_COOKIE, railState } from "@/lib/rail";
 
 export const metadata: Metadata = {

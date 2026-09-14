@@ -1,5 +1,5 @@
-import { BOT_ID } from "../../config/bot";
-export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "../../config/bot";
+import { BOT_ID } from "@config/bot";
+export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "@config/bot";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
 import { channel } from "@/lib/events";

@@ -13,7 +13,7 @@ import {
   useMembers,
 } from "@/components/app/chat/group-panel/use-group";
 import { FoundNobody, Searching } from "@/components/app/chat/searching";
-import { useDebounced } from "@/lib/use-debounced";
+import { useDebounced } from "@/lib/hooks/use-debounced";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 

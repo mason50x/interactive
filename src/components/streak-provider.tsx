@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAuthedQuery } from "@/lib/use-authed-query";
+import { useAuthedQuery } from "@/lib/hooks/use-authed-query";
 import { api } from "@convex/_generated/api";
 
 /**

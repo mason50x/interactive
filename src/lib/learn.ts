@@ -7,7 +7,7 @@
  * was to keep third-party activity code away from the Clerk session. That split
  * is gone. It bought less than it looked like it did: the untrusted bundle was
  * never on that origin in the first place. A bundle is a static file on the
- * *asset* origin (see `src/lib/assets.ts`), framed from here, and the asset
+ * *asset* origin (see `src/lib/server/assets.ts`), framed from here, and the asset
  * origin is cross-origin to the app whether or not a player host exists. The
  * separate player host only isolated *this* framing page, which is our own
  * code and runs no bundle of its own.

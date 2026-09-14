@@ -8,23 +8,18 @@
  * from, which is why it works with no network at all.
  */
 import { identify } from "./files";
+import { keysUnder, openDatabase, whenComplete } from "./idb";
 import type { Program, LocalEntry } from "./types";
 const database = "50x-learning-simulator-v1";
+const STORES = ["progress", "programs"] as const;
+
+/** At most this many entries per owner; the library is a shelf, not an archive. */
+const MAX_LOCAL_ENTRIES = 20;
+
 function connect(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(database, 2);
-    request.onupgradeneeded = () => {
-      for (const name of ["progress", "programs"])
-        if (!request.result.objectStoreNames.contains(name))
-          request.result.createObjectStore(name);
-    };
-    request.onsuccess = () => {
-      request.result.onversionchange = () => request.result.close();
-      resolve(request.result);
-    };
-    request.onerror = () => reject(request.error);
-    request.onblocked = () =>
-      reject(new Error("Close other simulator tabs to update local storage."));
+  return openDatabase(database, 2, (db) => {
+    for (const name of STORES)
+      if (!db.objectStoreNames.contains(name)) db.createObjectStore(name);
   });
 }
 export function accountKey(owner: string) {
@@ -33,21 +28,12 @@ export function accountKey(owner: string) {
 async function transaction<T>(
   mode: IDBTransactionMode,
   run: (store: IDBObjectStore) => IDBRequest<T>,
-  storeName = "progress",
+  storeName: (typeof STORES)[number] = "progress",
 ): Promise<T> {
   const db = await connect();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, mode);
-    const req = run(tx.objectStore(storeName));
-    tx.oncomplete = () => {
-      db.close();
-      resolve(req.result);
-    };
-    tx.onerror = tx.onabort = () => {
-      db.close();
-      reject(tx.error ?? new Error("Local storage is unavailable."));
-    };
-  });
+  const tx = db.transaction(storeName, mode);
+  const req = run(tx.objectStore(storeName));
+  return whenComplete(db, tx, () => req.result);
 }
 export async function readLocal(
   owner: string,
@@ -59,48 +45,37 @@ export async function writeLocal(owner: string, entry: LocalEntry) {
   const db = await connect();
   const prefix = accountKey(owner),
     key = prefix + entry.contentHash;
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction("progress", "readwrite"),
-      store = tx.objectStore("progress");
-    let failure: Error | null = null;
-    const existing = store.getKey(key);
-    existing.onsuccess = () => {
-      if (existing.result !== undefined) {
-        store.put(entry, key);
-        return;
-      }
-      const count = store.count(IDBKeyRange.bound(prefix, prefix + "\uffff"));
-      count.onsuccess = () => {
-        if (count.result >= 20) {
-          failure = new Error(
-            "Local library is full. Clear an entry before saving another.",
-          );
-          tx.abort();
-        } else store.put(entry, key);
-      };
+  const tx = db.transaction("progress", "readwrite"),
+    store = tx.objectStore("progress");
+  let failure: Error | null = null;
+  const existing = store.getKey(key);
+  existing.onsuccess = () => {
+    if (existing.result !== undefined) {
+      store.put(entry, key);
+      return;
+    }
+    const count = store.count(keysUnder(prefix));
+    count.onsuccess = () => {
+      if (count.result >= MAX_LOCAL_ENTRIES) {
+        failure = new Error(
+          "Local library is full. Clear an entry before saving another.",
+        );
+        tx.abort();
+      } else store.put(entry, key);
     };
-    tx.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    tx.onabort = tx.onerror = () => {
-      db.close();
-      reject(failure ?? tx.error ?? new Error("Local storage is unavailable."));
-    };
-  });
+  };
+  await whenComplete(db, tx, () => undefined, { failure: () => failure });
 }
 export async function removeLocal(owner: string, hash: string) {
   await deleteStored(accountKey(owner) + hash);
 }
 export async function listLocal(owner: string): Promise<LocalEntry[]> {
   const prefix = accountKey(owner);
-  return transaction("readonly", (s) =>
-    s.getAll(IDBKeyRange.bound(prefix, prefix + "\uffff")),
-  );
+  return transaction("readonly", (s) => s.getAll(keysUnder(prefix)));
 }
 export async function clearLocal(owner: string) {
   const prefix = accountKey(owner);
-  await deleteStored(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+  await deleteStored(keysUnder(prefix));
 }
 
 // Program bytes live only in this browser store, never in progress envelopes.
@@ -136,17 +111,9 @@ export async function readProgram(
 }
 async function deleteStored(key: string | IDBKeyRange) {
   const db = await connect();
-  return new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(["progress", "programs"], "readwrite");
-    for (const name of ["progress", "programs"])
-      tx.objectStore(name).delete(key);
-    tx.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    tx.onerror = tx.onabort = () => {
-      db.close();
-      reject(tx.error ?? new Error("Could not clear local storage."));
-    };
+  const tx = db.transaction([...STORES], "readwrite");
+  for (const name of STORES) tx.objectStore(name).delete(key);
+  await whenComplete(db, tx, () => undefined, {
+    message: "Could not clear local storage.",
   });
 }

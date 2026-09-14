@@ -13,7 +13,7 @@ import {
   scoreFolded,
   searchEntries,
 } from "@/lib/search";
-import { useDebounced } from "@/lib/use-debounced";
+import { useDebounced } from "@/lib/hooks/use-debounced";
 import { api } from "@convex/_generated/api";
 
 /**

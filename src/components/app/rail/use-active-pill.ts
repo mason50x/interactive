@@ -14,7 +14,7 @@ import { navItems } from "@/lib/nav";
  * `litHref` is which row wears the pill. A click lights its row *now* and
  * lets the URL catch up, rather than the other way round: every route under
  * `/dashboard` reads cookies and so is rendered on demand, and until
- * `src/lib/warm.ts` has been round the rail the answer arrives some hundreds
+ * `src/lib/hooks/warm.ts` has been round the rail the answer arrives some hundreds
  * of milliseconds after the click. Waiting for `pathname` to move means
  * waiting all of that with the rail showing the row you just left — which
  * reads as a click that missed, and gets clicked again.

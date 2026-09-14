@@ -67,6 +67,18 @@ export type Activity = {
 };
 
 /**
+ * One activity, reduced to the three fields a search needs.
+ *
+ * Not the `Activity` type, deliberately. That carries a thumbnail path, a byte
+ * count and a rank, none of which a result row draws, and this list is handed
+ * to the browser on every page of the dashboard rather than only on the
+ * catalogue — so it is worth being the smallest thing that can answer "what is
+ * this called and where does it live". `SearchProvider` carries it; the
+ * server's `searchableActivities` produces it.
+ */
+export type ActivityEntry = Pick<Activity, "slug" | "title" | "genre">;
+
+/**
  * Tile art, served from `public/` rather than from the asset bucket.
  *
  * The bundles are in R2 because they are 4.85 GB and would blow both the

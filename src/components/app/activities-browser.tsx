@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
  * into a `/_next/static` chunk, which is served with no session in front of it
  * — the route would be gated and the data would not. As a prop it travels in
  * this page's RSC payload instead, behind the same `auth.protect()` as
- * everything else on it. See `src/lib/activities.ts`.
+ * everything else on it. See `src/lib/server/activities.ts`.
  *
  * What does not change is the filtering: the whole catalogue is still in the
  * browser once the page has loaded — six short fields per activity, about

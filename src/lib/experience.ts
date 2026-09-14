@@ -6,7 +6,7 @@
  * `config/experience-allowlist.json`. This module reads the same file so the
  * app can list the entries that are meant to be opened directly — the ones
  * with an `id`, a `label` and a `start` URL — and resolve the experience origin
- * the same way `src/lib/assets.ts` resolves the asset origin. The other
+ * the same way `src/lib/server/assets.ts` resolves the asset origin. The other
  * entries are dependencies a listed app pulls in (fonts, video hosts, one
  * script on google.com); the Worker enforces them, nothing here shows them.
  *

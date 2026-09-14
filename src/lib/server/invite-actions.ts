@@ -5,7 +5,7 @@ import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { inviteUser, revokeInvitation } from "./invitations";
+import { inviteUser, revokeInvitation } from "@/lib/server/invitations";
 
 /**
  * The two things a signed-in user can do with their invite allowance.

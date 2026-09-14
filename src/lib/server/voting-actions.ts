@@ -5,7 +5,7 @@ import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { fetchMutation } from "convex/nextjs";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { inviteUser } from "./invitations";
+import { inviteUser } from "@/lib/server/invitations";
 
 /** Reserve with the server's admin check before contacting Clerk. A retry
  * reconciles an existing invitation first, including a lost send response. */

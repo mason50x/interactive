@@ -3,7 +3,7 @@
 import { useQuery } from "convex/react";
 import { Card } from "@/components/ui/card";
 import { splitDuration } from "@/lib/time";
-import { useTzOffset } from "@/lib/use-tz-offset";
+import { useTzOffset } from "@/lib/hooks/use-tz-offset";
 import { api } from "@convex/_generated/api";
 
 /**

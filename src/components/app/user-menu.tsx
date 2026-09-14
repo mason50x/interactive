@@ -18,7 +18,7 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { onSettingsRequest } from "@/lib/preferences";
-import { useClickOutside } from "@/lib/use-click-outside";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { cn } from "@/lib/utils";
 
 /**

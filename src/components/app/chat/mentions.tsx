@@ -1,6 +1,6 @@
 "use client";
 
-import { BOT_MENTION_HANDLES } from "../../../../config/bot";
+import { BOT_MENTION_HANDLES } from "@config/bot";
 
 import { useQuery } from "convex/react";
 import { Fragment, useMemo, useState } from "react";
@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ChatMention } from "@convex/chat/messages";
-import { useDebounced } from "@/lib/use-debounced";
+import { useDebounced } from "@/lib/hooks/use-debounced";
 import { popupVariants } from "@/components/ui/popup";
 
 /**

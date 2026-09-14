@@ -1,25 +1,19 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { Genre } from "@/lib/activity";
+import type { ActivityEntry } from "@/lib/activity";
 
-/**
- * One activity, reduced to the three fields a search needs.
- *
- * Not the `Activity` type, deliberately. That carries a thumbnail path, a byte
- * count and a rank, none of which a result row draws, and this list is handed
- * to the browser on every page of the dashboard rather than only on the
- * catalogue — so it is worth being the smallest thing that can answer "what is
- * this called and where does it live".
- */
-export type ActivityEntry = { slug: string; title: string; genre: Genre };
+// Re-exported for the components that already take it from here; the type
+// itself lives beside `Activity` so the server module that produces the list
+// does not have to import a component to name its return type.
+export type { ActivityEntry };
 
 type Search = {
   /**
    * The catalogue, as the rail's search sees it.
    *
    * It arrives here as a prop from the dashboard layout and never as an
-   * import: `src/lib/activities.ts` is `server-only`, and a `"use client"`
+   * import: `src/lib/server/activities.ts` is `server-only`, and a `"use client"`
    * module reaching for it would put the whole index in a `/_next/static`
    * chunk that is served with no session in front of it. As a prop it travels
    * in the layout's RSC payload, behind the `auth.protect()` that layout

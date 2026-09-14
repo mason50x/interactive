@@ -56,8 +56,8 @@ ballots use separate tables. Indexed transactional lookups enforce unique votes
 and duplicate-nomination checks. Lists and ballot queries are paginated;
 deletion cleanup uses bounded batches.
 
-`src/lib/voting-actions.ts` authenticates the admin and reserves delivery in
-Convex before calling `src/lib/invitations.ts`. Delivery has its own pending,
+`src/lib/server/voting-actions.ts` authenticates the admin and reserves delivery in
+Convex before calling `src/lib/server/invitations.ts`. Delivery has its own pending,
 sending, and sent states. A one-minute reservation prevents double-click sends.
 Retries first look for a matching non-revoked invitation at Clerk, covering an
 email sent successfully when the response or Convex confirmation was lost.

@@ -1,5 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
-import { siteUrl } from "./site-url";
+import { siteUrl } from "@/lib/server/site-url";
 
 /**
  * Sending and inspecting Clerk application invitations.

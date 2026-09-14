@@ -40,7 +40,7 @@ const INVITE_LIMIT: number = 0;
  * Clerk's application invitations are Backend API only — they need the secret
  * key, so a browser can never create one directly, and Clerk itself has no
  * per-user allowance to enforce. That splits the job in two: this module owns
- * the accounting, transactionally, and `src/lib/invite-actions.ts` owns the
+ * the accounting, transactionally, and `src/lib/server/invite-actions.ts` owns the
  * Clerk call. The handshake between them is `reserve` -> Clerk -> `confirm`,
  * with `release` for the failure leg.
  *

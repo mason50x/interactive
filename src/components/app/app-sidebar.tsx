@@ -21,7 +21,7 @@ import { UserMenu } from "@/components/app/user-menu";
 import { NAV_HREFS, navItems } from "@/lib/nav";
 import type { RailState } from "@/lib/rail";
 import { cn } from "@/lib/utils";
-import { useWarmRoutes } from "@/lib/warm";
+import { useWarmRoutes } from "@/lib/hooks/warm";
 
 /**
  * The signed-in app's chrome: a vertical rail, not a header.

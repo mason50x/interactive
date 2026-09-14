@@ -5,7 +5,7 @@ import { RailToggle } from "@/components/app/rail/rail-toggle";
 import { GitHubIcon } from "@/components/ui/github-icon";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
-import type { useWarmRoutes } from "@/lib/warm";
+import type { useWarmRoutes } from "@/lib/hooks/warm";
 
 /**
  * The head of the rail: the mark, the name beside it, and the control that

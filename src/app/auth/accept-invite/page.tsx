@@ -7,7 +7,7 @@ import {
   isTicketStatus,
   TICKET_PARAM,
   TICKET_STATUS_PARAM,
-} from "@/lib/invitations";
+} from "@/lib/server/invitations";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = { title: "Accept your invitation" };

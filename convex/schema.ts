@@ -197,7 +197,7 @@ export default defineSchema({
    */
   views: defineTable({
     clerkId: v.string(),
-    /** A slug from `src/lib/activities.ts`. Not validated against the
+    /** A slug from `src/lib/server/activities.ts`. Not validated against the
      *  catalogue here — see `convex/views.ts` for why the shape is the check. */
     slug: v.string(),
     /** Times this account has opened it. */
