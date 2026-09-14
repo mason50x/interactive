@@ -1,7 +1,7 @@
 "use client";
 
 import { ActivityCard } from "@/components/app/activity-card";
-import type { Activity } from "@/lib/activity";
+import type { ActivityEntry } from "@/lib/activity";
 import { useFlip } from "@/lib/use-flip";
 
 /**
@@ -12,7 +12,7 @@ import { useFlip } from "@/lib/use-flip";
  * set of cards in a different order — so the grid animates the difference
  * rather than each control animating itself. See `useFlip`.
  */
-export function ActivityGrid({ shown }: { shown: readonly Activity[] }) {
+export function ActivityGrid({ shown }: { shown: readonly ActivityEntry[] }) {
   const { frame, ghosts } = useFlip(shown);
 
   return (

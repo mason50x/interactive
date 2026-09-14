@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { BrowserCheck } from "@/components/app/browser-check";
-import { SearchProvider } from "@/components/app/search-provider";
+import { ActivitiesProvider } from "@/components/app/activities-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
-import { searchableActivities } from "@/lib/activities";
+import { CLIENT_ACTIVITIES } from "@/lib/activities";
 import { RAIL_COOKIE, railState } from "@/lib/rail";
 
 export const metadata: Metadata = {
@@ -61,15 +61,6 @@ export default async function DashboardLayout({
   // `src/lib/rail.ts`.
   const rail = railState((await cookies()).get(RAIL_COOKIE)?.value);
 
-  // The catalogue, narrowed to what a result row needs, so the rail's search
-  // can find an activity from any page of the app rather than only from the one
-  // that already has the shelves. This is the *only* way the index reaches a
-  // browser — as data in this layout's RSC payload, behind the `auth.protect()`
-  // above — because `@/lib/activities` is `server-only` and a client module
-  // importing it would publish all 318 entries to a static chunk with no
-  // session in front of it. See that file's header.
-  const activities = searchableActivities();
-
   return (
     <AppProviders>
       <BrowserCheck />
@@ -83,16 +74,22 @@ export default async function DashboardLayout({
             `/dashboard/chat` so the dot is right while you are looking at an
             activity, which is the only time it is worth having. */}
         <ChatProvider>
-          {/* Carries the catalogue to the rail's search box without a
-              client import of the index. See `SearchProvider`. */}
-          <SearchProvider activities={activities}>
+          {/* The catalogue, for the rail's search, the home page's rows and
+              the activities grid alike. This is the *only* way it reaches a
+              browser — as data in this layout's RSC payload, behind the
+              `auth.protect()` above — because `@/lib/activities` is
+              `server-only` and a client module importing it would publish
+              every entry to a static chunk with no session in front of it.
+              Here rather than on each page so it is serialised once per full
+              load and never on a navigation. See `ActivitiesProvider`. */}
+          <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
             <div className="flex h-svh overflow-hidden bg-sidebar">
               <AppSidebar initialRail={rail} />
               <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
                 {children}
               </main>
             </div>
-          </SearchProvider>
+          </ActivitiesProvider>
         </ChatProvider>
       </StreakProvider>
     </AppProviders>

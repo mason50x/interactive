@@ -67,6 +67,20 @@ export type Activity = {
 };
 
 /**
+ * The part of an activity a browser is given.
+ *
+ * `path` and `bytes` stay on the server: nothing a client component draws
+ * reads either, and the list crosses the wire in the dashboard layout's RSC
+ * payload on every full page load, so each field is serialised 288 times per
+ * load. This is the shape `src/lib/activities.ts` hands `ActivitiesProvider`,
+ * and the only shape a `"use client"` module ever holds.
+ */
+export type ActivityEntry = Pick<
+  Activity,
+  "slug" | "title" | "genre" | "thumbnail" | "rank"
+>;
+
+/**
  * Tile art, served from `public/` rather than from the asset bucket.
  *
  * The bundles are in R2 because they are 4.85 GB and would blow both the
@@ -95,7 +109,7 @@ export type Activity = {
 export const THUMBNAIL_PATH = "/thumbnails";
 
 /** Where an activity's tile art lives. */
-export function thumbnailSrc(activity: Activity): string {
+export function thumbnailSrc(activity: Pick<Activity, "thumbnail">): string {
   return `${THUMBNAIL_PATH}/${activity.thumbnail}`;
 }
 
@@ -106,7 +120,7 @@ export function thumbnailSrc(activity: Activity): string {
  * else — so rather than invent a blurb this states the one fact we do have:
  * where the activity sits in upstream's hand-ordered, most-viewed-first index.
  */
-export function popularityLabel(activity: Activity): string {
+export function popularityLabel(activity: Pick<Activity, "rank">): string {
   return `#${activity.rank + 1} most viewed`;
 }
 
@@ -128,10 +142,9 @@ function normalise(value: string): string {
  * function run on the server against `ACTIVITIES` and in the browser against
  * whatever slice of it a component was handed.
  */
-export function filterActivities(
-  activities: readonly Activity[],
-  query: string,
-): readonly Activity[] {
+export function filterActivities<
+  T extends Pick<Activity, "title" | "slug" | "genre">,
+>(activities: readonly T[], query: string): readonly T[] {
   const needle = normalise(query);
   if (!needle) return activities;
   return activities.filter((activity) =>

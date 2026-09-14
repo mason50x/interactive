@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { useMemo } from "react";
-import type { ActivityEntry } from "@/components/app/search-provider";
+import type { ActivityEntry } from "@/lib/activity";
 import { conversationName } from "@/lib/chat";
 import { GENRES } from "@/lib/genres";
 import { ACTIVITIES_HREF, CHAT_HREF } from "@/lib/nav";
@@ -50,7 +50,7 @@ const ACTIVITY_LIMIT = 5;
  * - the **settings**, written down as searchable entries in `src/lib/search.ts`
  *   because a switch has no text in it to index;
  * - the **activity catalogue**, handed to the browser as a prop by the
- *   dashboard layout — never imported, see `SearchProvider`;
+ *   dashboard layout — never imported, see `ActivitiesProvider`;
  * - **chat messages**, through a Convex full-text index, filtered on the
  *   server to the conversations the caller is actually in. See `search` in
  *   `convex/chat/messages.ts`, which is where that promise is kept.

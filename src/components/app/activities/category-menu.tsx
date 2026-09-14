@@ -10,7 +10,7 @@ import {
   MenuRadioItem,
   MenuTrigger,
 } from "@/components/ui/menu";
-import type { Activity, Genre } from "@/lib/activity";
+import type { ActivityEntry, Genre } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ export function CategoryMenu({
   genres: readonly Genre[];
   genre: Genre | "all";
   onChange: (genre: Genre | "all") => void;
-  catalogue: readonly Activity[];
+  catalogue: readonly ActivityEntry[];
 }) {
   const counts = useMemo(() => {
     const tally = new Map<Genre, number>();
