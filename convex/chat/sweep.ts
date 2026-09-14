@@ -4,6 +4,7 @@ import { internal } from "../_generated/api";
 import { internalMutation } from "../_generated/server";
 import {
   clearSender,
+  clearTyping,
   deleteAttachment,
   deleteMessage,
   globalRoom,
@@ -251,6 +252,18 @@ export const purgeAuthor = internalMutation({
     const memberships = rows.filter((row) => row._creationTime < cutoff);
 
     for (const member of memberships) {
+      // The seat's live signals go with it. A "typing" or "here" row for an
+      // account that no longer exists would otherwise sit in any room that
+      // survives this pass until the hourly sweeps reached it.
+      await clearTyping(ctx, member.conversationId, clerkId);
+      const presence = await ctx.db
+        .query("presence")
+        .withIndex("byConversationUser", (q) =>
+          q.eq("conversationId", member.conversationId).eq("clerkId", clerkId),
+        )
+        .unique();
+      if (presence !== null) await ctx.db.delete(presence._id);
+
       // A direct message with a deleted account has no other party. The whole
       // conversation goes — including the messages the *other* person sent,
       // which is why this is a purge rather than a delete of the two member

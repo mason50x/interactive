@@ -333,9 +333,10 @@ function slug(value: string): string {
 /**
  * The static half of the search: destinations and settings, best first.
  *
- * `limit` is per source rather than overall — see `RailSearch`, which caps
- * each section so that a query matching nine settings cannot push the one
- * activity you were after off the bottom of the panel.
+ * `limit` caps this static list as a whole, pages and settings together.
+ * `useSearchHits` asks for a fixed `ENTRY_LIMIT` and interleaves the result
+ * with the other sources itself, so a query matching nine settings cannot
+ * push the one activity you were after off the bottom of the panel.
  */
 export function searchEntries(needle: string, limit: number): Hit[] {
   if (needle === "") return [];

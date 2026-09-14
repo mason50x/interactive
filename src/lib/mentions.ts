@@ -19,7 +19,7 @@ import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "@config/bot";
 /** The one mention that is not a person. Groups only. */
 export const EVERYONE = "everyone";
 
-/** `@` then three to twenty handle characters, standing on its own. */
+/** `@` then two to sixty-four handle characters, standing on its own. */
 const MENTION_PATTERN = /(^|[^a-z0-9_@-])@([a-z0-9_-]{2,64})(?![a-z0-9_-])/gi;
 
 /**

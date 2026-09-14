@@ -316,8 +316,11 @@ export async function membership(
 export function heirOf<
   Row extends { role: "owner" | "admin" | "member"; joinedAt: number },
 >(rows: readonly Row[]): Row | undefined {
+  // Callers filter the departing owner out; an owner still in the list ranks
+  // first so the order is total whatever they pass.
+  const rank = { owner: 0, admin: 1, member: 2 } as const;
   return [...rows].sort((first, second) => {
-    if (first.role !== second.role) return first.role === "admin" ? -1 : 1;
+    if (first.role !== second.role) return rank[first.role] - rank[second.role];
     return first.joinedAt - second.joinedAt;
   })[0];
 }
