@@ -156,10 +156,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* After the scripts racing the first paint, never before them; this
             one is not. Nothing else logs this early, so the greeting is still
             the first line in the console. */}
-        <script
-          dangerouslySetInnerHTML={{ __html: consoleGreetingScript }}
-          suppressHydrationWarning
-        />
+        {process.env.NODE_ENV === "production" && (
+          <script
+            dangerouslySetInnerHTML={{ __html: consoleGreetingScript }}
+            suppressHydrationWarning
+          />
+        )}
         <Suspense fallback={null}>
           <ThemeProvider />
         </Suspense>

@@ -1,5 +1,4 @@
-/// <reference path="../../worker-configuration.d.ts" />
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isAccessOpen } from "../../src/lib/access-hours";
 
 const { fetchApp } = vi.hoisted(() => ({ fetchApp: vi.fn() }));
@@ -11,6 +10,7 @@ import worker from "../../worker";
 afterEach(() => {
   vi.useRealTimers();
   vi.resetAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("Central access hours", () => {
@@ -39,6 +39,25 @@ describe("Central access hours", () => {
 });
 
 describe("Worker access enforcement", () => {
+  beforeEach(() => {
+    vi.stubEnv("NODE_ENV", "production");
+  });
+
+  it("allows development requests outside access hours", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
+    fetchApp.mockResolvedValue(new Response("app"));
+    const response = await worker.fetch(
+      new Request("http://localhost:3000/dashboard"),
+      {} as Cloudflare.Env,
+      {} as ExecutionContext,
+    );
+    expect(fetchApp).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
   it.each([
     "/",
     "/dashboard",

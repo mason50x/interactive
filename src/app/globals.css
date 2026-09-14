@@ -908,11 +908,10 @@
  * and the mark on it turn over together — including when the user has
  * overridden their OS.
  *
- * Unlayered on purpose: Clerk injects its own stylesheet, and a rule written
- * inside one of our layers would be the one that loses.
+ * AppProviders applies this variable through Clerk's supported appearance API.
  */
-:root[data-theme="dark"] .cl-logoImage {
-  filter: invert(1);
+:root[data-theme="dark"] {
+  --clerk-logo-filter: invert(1);
 }
 
 @keyframes drift {

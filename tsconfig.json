@@ -37,6 +37,7 @@
     ".cache",
     "worker.ts",
     "worker-configuration.d.ts",
+    "scripts/tests/access-hours.test.ts",
     ".next/types/validator.ts",
     ".next/dev"
   ]

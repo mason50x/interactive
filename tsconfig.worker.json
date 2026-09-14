@@ -9,5 +9,9 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["worker.ts", "worker-configuration.d.ts"]
+  "include": [
+    "worker.ts",
+    "worker-configuration.d.ts",
+    "scripts/tests/access-hours.test.ts"
+  ]
 }

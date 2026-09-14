@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { LEARN_PATH_PREFIX } from "@/lib/learn";
 
@@ -17,10 +17,8 @@ import { LEARN_PATH_PREFIX } from "@/lib/learn";
  * strip the `__clerk_ticket` param on the way, which is a dead end for someone
  * who has no account yet: that ticket is how they get one.
  */
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  `${LEARN_PATH_PREFIX}(.*)`,
-]);
+const inRouteTree = (path: string, root: string) =>
+  path === root || path.startsWith(`${root}/`);
 
 /**
  * The mirror image: routes that only make sense signed *out*. A visitor with a
@@ -36,12 +34,11 @@ const isProtectedRoute = createRouteMatcher([
  * `/auth/accept-invite` is deliberately absent. It has its own handling for a
  * signed-in recipient, and bouncing it to the dashboard would burn the link.
  */
-const isSignedOutRoute = createRouteMatcher([
-  "/",
-  "/auth",
-  "/auth/sign-in(.*)",
-  "/auth/sign-up(.*)",
-]);
+const isSignedOutRoute = (path: string) =>
+  path === "/" ||
+  path === "/auth" ||
+  inRouteTree(path, "/auth/sign-in") ||
+  inRouteTree(path, "/auth/sign-up");
 
 /** `TICKET_PARAM` from `src/lib/invitations.ts`, inlined to keep this file's
  *  edge bundle free of the Clerk Backend API client that module pulls in. */
@@ -56,12 +53,15 @@ const TICKET_PARAM = "__clerk_ticket";
  * is left is the session gate, which is all a single-origin deployment needs.
  */
 export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
+  const path = req.nextUrl.pathname;
+  // Early navigation handling only: protected pages and server actions also
+  // enforce authentication themselves, independently of this path check.
+  if (inRouteTree(path, "/dashboard") || inRouteTree(path, LEARN_PATH_PREFIX)) {
     await auth.protect();
     return;
   }
 
-  if (!isSignedOutRoute(req)) return;
+  if (!isSignedOutRoute(path)) return;
 
   // An invitation ticket outranks the open session: it is addressed to a
   // specific email, which may not be the one signed in on this browser. The

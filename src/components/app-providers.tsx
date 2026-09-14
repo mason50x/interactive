@@ -27,7 +27,11 @@ import { StoreUser } from "@/components/store-user";
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <>
-      <ClerkProvider>
+      <ClerkProvider
+        appearance={{
+          elements: { logoImage: { filter: "var(--clerk-logo-filter, none)" } },
+        }}
+      >
         <ConvexClientProvider>
           {/* Inside Convex, because the settings *are* a Convex subscription,
             and inside Clerk, because whose settings they are depends on the
