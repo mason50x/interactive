@@ -434,6 +434,8 @@ export default defineSchema({
     createdAt: v.number(),
     /** Absent on the global room, on purpose. See above. */
     lastMessageAt: v.optional(v.number()),
+    /** Central calendar date of the last scheduled greeting in Everyone. */
+    lastMorningGreetingDay: v.optional(v.string()),
     /** Groups only. `request` is the one that needs an owner to approve. */
     joinPolicy: v.optional(
       v.union(v.literal("invite"), v.literal("request"), v.literal("open")),

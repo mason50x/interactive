@@ -15,6 +15,15 @@ import { internal } from "./_generated/api";
  */
 const crons = cronJobs();
 
+// Central time is UTC-5 in summer and UTC-6 in winter. The action checks
+// America/Chicago before generating, so only the matching 7:30 run posts.
+crons.cron(
+  "Verity morning greeting in Everyone",
+  "30 12,13 * * *",
+  internal.chat.bot.morningGreeting,
+  {},
+);
+
 crons.daily(
   "trim the global room",
   { hourUTC: 8, minuteUTC: 20 },

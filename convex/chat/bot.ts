@@ -446,6 +446,87 @@ function plainReply(raw: string): string {
   return raw.replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim();
 }
 
+function centralMorning(now: number) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(now);
+  const value = (type: string) => parts.find((part) => part.type === type)?.value;
+  return {
+    day: `${value("year")}-${value("month")}-${value("day")}`,
+    due: value("hour") === "07" && value("minute") === "30",
+  };
+}
+
+export const morningGreetingDue = internalQuery({
+  args: {},
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx) => {
+    const { day, due } = centralMorning(Date.now());
+    if (!due) return null;
+    const room = await ctx.db.query("conversations")
+      .withIndex("byKind", (q) => q.eq("kind", "global")).unique();
+    return room && room.lastMorningGreetingDay !== day ? day : null;
+  },
+});
+
+/** The date and message commit together, including concurrent/retried calls. */
+export const publishMorningGreeting = internalMutation({
+  args: { day: v.string(), body: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, { day, body }) => {
+    if (centralMorning(Date.now()).day !== day || !body.trim()) return false;
+    const room = await ctx.db.query("conversations")
+      .withIndex("byKind", (q) => q.eq("kind", "global")).unique();
+    if (!room || room.lastMorningGreetingDay === day) return false;
+    await ctx.db.insert("messages", {
+      conversationId: room._id,
+      authorClerkId: BOT_ID,
+      authorHandle: BOT_HANDLE,
+      authorName: BOT_NAME,
+      body,
+      status: "visible",
+      flags: [],
+    });
+    await ctx.db.patch(room._id, { lastMorningGreetingDay: day });
+    return true;
+  },
+});
+
+/** Preview exercises Gemini without sending a message or consuming a user's quota. */
+export const morningGreeting = internalAction({
+  args: { preview: v.optional(v.boolean()) },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { preview }): Promise<string | null> => {
+    const day = preview ? centralMorning(Date.now()).day
+      : await ctx.runQuery(internal.chat.bot.morningGreetingDue, {});
+    if (day === null) return null;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY is not set on this deployment");
+    const model = process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
+    const google = createGoogleGenerativeAI({ apiKey });
+    const bot = new Agent(components.agent, {
+      name: BOT_NAME,
+      languageModel: google(model),
+      instructions: INSTRUCTIONS,
+    });
+    const result = await bot.generateText(ctx, { userId: BOT_ID }, {
+      prompt: `It is 7:30 a.m. Central on ${day}. Start the day in the Everyone group with a fresh, wild morning greeting. Be exuberant, absurd, playful, and uplifting: invent a surprising little scene or metaphor. Address the whole room. Keep it age-appropriate, at most 45 words in one or two sentences. Return only the greeting.`,
+      maxOutputTokens: 4_096,
+      temperature: 1,
+      maxRetries: 1,
+      abortSignal: AbortSignal.timeout(BOT_REQUEST_TIMEOUT_MS),
+    });
+    const body = plainReply(result.text);
+    if (!body) throw new Error(`Empty morning greeting (${result.finishReason})`);
+    if (preview) return body;
+    const posted = await ctx.runMutation(internal.chat.bot.publishMorningGreeting, { day, body });
+    console.info("@bot morning greeting completed", { day, model, posted, usage: result.usage });
+    return posted ? body : null;
+  },
+});
+
 function transcriptOf(messages: ContextMessage[], askerHandle: string): string {
   const transcript = messages.map((message) => ({
     speaker: message.fromBot
