@@ -45,6 +45,12 @@
     }
 
     try {
+      // Existing workers may still have requests waiting for a live transport.
+      // Give them a port before waiting for their replacement to activate;
+      // otherwise those requests can prevent activation indefinitely.
+      const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+      await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+
       // Wait for *this* registration to activate. `serviceWorker.ready` would
       // never resolve here: it waits for a worker whose scope covers this page,
       // and ours covers /service/ only.
@@ -71,15 +77,13 @@
         check();
       });
 
-      const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
-      await connection.setTransport("/transport.mjs", [location.origin + "/"]);
-
       const frame = document.createElement("iframe");
       frame.title = "Experience";
       frame.allow = "fullscreen; autoplay; encrypted-media";
       frame.src = experienceConfig.prefix + experienceConfig.encodeUrl(target);
       document.body.replaceChildren(frame);
-    } catch {
+    } catch (error) {
+      console.error("Experience startup failed", error);
       show("<p>The experience could not start.</p><p>Please reload and try again.</p>");
     }
   })();

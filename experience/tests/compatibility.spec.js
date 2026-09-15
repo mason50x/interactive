@@ -1,5 +1,29 @@
 import { expect, test } from "@playwright/test";
 
+test("the launcher supplies a transport before waiting on a worker update", async ({ page }) => {
+  await page.route("**/bridge/index.js", async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: await response.text() + `
+      const originalSetTransport = BareMux.BareMuxConnection.prototype.setTransport;
+      BareMux.BareMuxConnection.prototype.setTransport = async function (...args) {
+        await originalSetTransport.apply(this, args);
+        self.transportReady = true;
+      };
+    ` });
+  });
+  await page.addInitScript(() => {
+    const register = navigator.serviceWorker.register.bind(navigator.serviceWorker);
+    navigator.serviceWorker.register = (...args) => {
+      // A previous worker can have unfinished fetches needing this page's port.
+      // Its update cannot finish until a transport is available.
+      if (!self.transportReady) return new Promise(() => {});
+      return register(...args);
+    };
+  });
+  await page.goto("/?u=https%3A%2F%2Fexample.com%2F");
+  await expect(page.frameLocator("iframe").getByText("This page couldn’t load")).toBeVisible();
+});
+
 test("dynamic imports resolve against the importing module, not the page or themselves", async ({ page }) => {
   await page.goto("/");
   const result = await page.evaluate(async () => {
