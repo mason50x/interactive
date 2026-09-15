@@ -71,6 +71,8 @@ export function UserMenu() {
   }
 
   const name = user.firstName ?? user.username ?? "Account";
+  const chipClassName =
+    "inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200 bg-gradient-to-b from-white to-zinc-100 px-1.5 py-0.5 text-[0.5625rem] leading-none font-bold shadow-[0_1px_2px_rgb(0_0_0/0.16),inset_0_1px_0_rgb(255_255_255/0.9)] dark:border-zinc-300 dark:from-zinc-100 dark:to-zinc-200";
 
   return (
     <>
@@ -83,38 +85,54 @@ export function UserMenu() {
           if (!open) setConfirmingSignOut(false);
         }}
       >
-        <MenuTrigger
-          aria-label={`Account: ${name}`}
-          className="group flex h-14 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-foreground backdrop-blur-[3px] transition-colors outline-none hover:bg-foreground/[0.05] data-popup-open:bg-foreground/[0.05]"
-        >
-          {/* The margin centres the avatar in the icon rail's 60px row and
+        <div className="relative">
+          <MenuTrigger
+            aria-label={`Account: ${name}`}
+            className="group flex h-14 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-foreground backdrop-blur-[3px] transition-colors outline-none hover:bg-foreground/[0.05] data-popup-open:bg-foreground/[0.05]"
+          >
+            {/* The margin centres the avatar in the icon rail's 60px row and
               eases away as the name arrives, the same 8px slide the nav rows'
               icons make; see `AppSidebar`. */}
-          <span className="ml-1 flex shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
-            <Avatar src={user.imageUrl} name={name} size={36} />
-          </span>
-          <span className="hidden min-w-0 flex-1 text-left rail-wide wide:block">
-            <span className="block truncate text-[0.9375rem] leading-tight">
-              {user.fullName ?? name}
+            <span className="ml-1 flex shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
+              <Avatar src={user.imageUrl} name={name} size={36} />
             </span>
+            <span className="hidden min-w-0 flex-1 pb-5 text-left rail-wide wide:block">
+              <span className="block truncate text-[0.9375rem] leading-tight">
+                {user.fullName ?? name}
+              </span>
+            </span>
+            {/* Points at the popup: up while it is closed because that is where
+              it will appear, and flipped once it is open because from there
+              the only thing left to do is put it away. Wrapped so the swap's
+              transition list and the turn's are on different elements. */}
+            <span className="hidden shrink-0 rail-wide wide:block">
+              <ChevronUpIcon
+                strokeWidth={3}
+                className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180"
+              />
+            </span>
+          </MenuTrigger>
+          {/* Separate from the menu button so the source link stays a native link. */}
+          <div className="absolute bottom-2 left-[3.375rem] hidden items-center gap-1.5 rail-wide wide:flex">
             {adminBadgeIds.includes(user.id) ? (
-              <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[0.5625rem] leading-none font-semibold text-amber-700 dark:text-amber-400">
+              <span className={cn(chipClassName, "text-orange-600")}>
                 <AdminCrown className="size-3 shrink-0" />
                 ADMIN
               </span>
             ) : null}
-          </span>
-          {/* Points at the popup: up while it is closed because that is where
-              it will appear, and flipped once it is open because from there
-              the only thing left to do is put it away. Wrapped so the swap's
-              transition list and the turn's are on different elements. */}
-          <span className="hidden shrink-0 rail-wide wide:block">
-            <ChevronUpIcon
-              strokeWidth={3}
-              className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180"
-            />
-          </span>
-        </MenuTrigger>
+            <a
+              href="https://github.com/mason50x/interactive"
+              aria-label="OSS — source code on GitHub"
+              className={cn(
+                chipClassName,
+                "text-zinc-600 transition-colors hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              )}
+            >
+              <GitHubIcon className="size-3 shrink-0" />
+              OSS
+            </a>
+          </div>
+        </div>
 
         {/* Once the rail is wide the popup takes the trigger's exact width,
           so the two share both edges instead of the menu hanging over
@@ -163,31 +181,6 @@ export function UserMenu() {
           </MenuItem>
 
           <ThemeSubmenu preference={preference} onChange={setPreference} />
-
-          <MenuItem
-            render={<a href="https://github.com/mason50x/interactive" />}
-            nativeButton={false}
-            tone="muted"
-            size="tall"
-            className="justify-between"
-          >
-            <span className="flex items-center gap-2.5">
-              <GitHubIcon className="size-4 shrink-0" />
-              OSS
-            </span>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-4 shrink-0 text-faint"
-            >
-              <path d="M6 18 18 6M6 6h12v12" />
-            </svg>
-          </MenuItem>
 
           <MenuSeparator className="-mx-1.5 my-1.5" />
 

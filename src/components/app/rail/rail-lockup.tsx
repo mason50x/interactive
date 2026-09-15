@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { RailToggle } from "@/components/app/rail/rail-toggle";
-import { GitHubIcon } from "@/components/ui/github-icon";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
 import type { useWarmRoutes } from "@/lib/warm";
@@ -50,14 +49,6 @@ export function RailLockup({
             nameClassName="rail-wide hidden wide:inline [--rail-leave:150ms]"
           />
         </Link>
-        <a
-          href="https://github.com/mason50x/interactive"
-          className="hidden items-center gap-1.5 rounded-sm text-[0.6875rem] leading-none text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 wide:inline-flex"
-          aria-label="OSS — source code on GitHub"
-        >
-          <GitHubIcon className="size-3" />
-          OSS
-        </a>
       </div>
 
       {/* Flush to the rail's right edge like every row below it, and for

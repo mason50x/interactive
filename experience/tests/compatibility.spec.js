@@ -168,3 +168,32 @@ test("a restored top-level service URL bootstraps with no other live page", asyn
   await expect(restored.frameLocator("iframe").getByRole("heading", { name: "This page couldn’t load" })).toBeVisible();
   await expect(restored.locator("body")).not.toContainText("MessagePort");
 });
+
+test("the installed window.open hook preserves target and popup features", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/client.js" });
+  await page.evaluate(async () => {
+    const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+    await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+    history.replaceState(null, "", experienceConfig.prefix + experienceConfig.encodeUrl("https://gemini.google.com/app"));
+    self.__uv$cookies = "";
+    self.__uv$referrer = "";
+    self.openCalls = [];
+    self.open = (...args) => { openCalls.push(args); return null; };
+  });
+  await page.addScriptTag({ url: "/experience/handler.js" });
+  const calls = await page.evaluate(() => {
+    window.open("https://gemini.google.com/signin?continue=%2Fapp", "google-login", "noopener,width=480");
+    window.open("/app", "_self");
+    return openCalls;
+  });
+  expect(errors).toEqual([]);
+  const popup = new URL(calls[0][0]);
+  expect(popup.pathname).toBe("/");
+  expect(popup.searchParams.get("u")).toBe("https://gemini.google.com/signin?continue=%2Fapp");
+  expect(calls[0].slice(1)).toEqual(["google-login", "noopener,width=480"]);
+  expect(new URL(calls[1][0]).pathname).toMatch(/^\/service\//);
+  expect(calls[1][1]).toBe("_self");
+});
