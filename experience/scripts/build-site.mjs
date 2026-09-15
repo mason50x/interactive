@@ -55,7 +55,24 @@ const fixedUrlMatcher = String.raw`/url\(['"]?([^)]+?)['"]?\)/gm`;
 if (bundle.split(brokenUrlMatcher).length !== 2) {
   throw new Error("Review the experience CSS compatibility patch for this engine version.");
 }
-writeFileSync(bundlePath, bundle.replace(brokenUrlMatcher, fixedUrlMatcher));
+// The parser embedded in the published engine rejects valid `for (const x of
+// await of(...))` syntax used by Claude. Its installed, pinned parser fixes
+// this. Use it in both page and service-worker engines so a parse failure does
+// not silently leave relative module imports pointing at the proxy root.
+const parser = readFileSync(join(modules, "meriyah", "dist", "meriyah.umd.min.js"), "utf8");
+writeFileSync(bundlePath, bundle.replace(brokenUrlMatcher, fixedUrlMatcher) + "\n" + parser + `
+;self.Ultraviolet = class extends self.Ultraviolet {
+  constructor(...args) {
+    super(...args);
+    this.js.parse = self.meriyah.parse;
+  }
+  // The rewriter emits (importingModuleUrl, specifier), but the bundled
+  // method treats those arguments in reverse and imports the module itself.
+  rewriteImport(base, specifier, meta = this.meta) {
+    return this.rewriteUrl(specifier, { ...meta, base });
+  }
+};
+`);
 
 // Modern sites pass postMessage(message, { targetOrigin, transfer }). The
 // engine only understands the older three-argument form and drops ports.
@@ -98,6 +115,7 @@ for (const [packageName, label] of [
   ["@titaniumnetwork-dev/ultraviolet", "ultraviolet"],
   ["@mercuryworkshop/bare-mux", "bare-mux"],
   ["@mercuryworkshop/bare-as-module3", "bare-as-module3"],
+  ["meriyah", "meriyah"],
 ]) {
   const packageDir = join(modules, packageName);
   const licenses = readdirSync(packageDir).filter((name) => /^licen[sc]e(?:\.|$)/i.test(name));

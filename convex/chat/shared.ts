@@ -347,11 +347,25 @@ export async function ensureGlobalRoom(
   });
 }
 
-/** Ensure both default conversations, including for existing accounts. */
+/** Ensure all default conversations, including for existing accounts. */
 export async function ensureGlobalMembership(
   ctx: MutationCtx,
   clerkId: string,
 ): Promise<Id<"conversations">> {
+  const announcementRoom = await ctx.db.query("conversations")
+    .withIndex("byKind", q => q.eq("kind", "announcements")).unique();
+  const announcementId = announcementRoom?._id ?? await ctx.db.insert("conversations", {
+    kind: "announcements", createdBy: "", createdAt: Date.now(),
+  });
+  const announcementMember = await membership(ctx, announcementId, clerkId);
+  if (announcementMember === null) {
+    await ctx.db.insert("conversationMembers", {
+      conversationId: announcementId, clerkId, kind: "announcements",
+      role: "member", status: "active", joinedAt: Date.now(), lastReadAt: 0,
+    });
+  } else if (announcementMember.status !== "active") {
+    await ctx.db.patch(announcementMember._id, { status: "active" });
+  }
   await ensureDm(ctx, clerkId, BOT_ID);
   const conversationId = await ensureGlobalRoom(ctx, clerkId);
   const existing = await membership(ctx, conversationId, clerkId);

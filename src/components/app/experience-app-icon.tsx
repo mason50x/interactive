@@ -1,10 +1,18 @@
 import { GlobeAltIcon } from "@heroicons/react/24/solid";
+import Image from "next/image";
 import { SolidIcon } from "@/components/ui/icon";
 
+const SERVICE_ICONS: Record<string, string> = {
+  spotify: "/experience/spotify.ico",
+  chatgpt: "/experience/chatgpt.svg",
+  claude: "/experience/claude.svg",
+  gemini: "/experience/gemini.svg",
+  "apple-music": "/experience/apple-music.png",
+};
+
 /**
- * The mark for an app in the experience: a brand glyph where we have drawn
- * one, the globe otherwise. Drawn inline rather than fetched, so the list
- * renders without touching the app's own servers.
+ * Brand marks are bundled locally so tiles and tabs do not contact the
+ * services to render their icons. Sources are in public/experience/ASSETS.md.
  */
 export function ExperienceAppIcon({
   id,
@@ -13,6 +21,22 @@ export function ExperienceAppIcon({
   id: string;
   className?: string;
 }) {
+  const src = SERVICE_ICONS[id];
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt=""
+        aria-hidden="true"
+        width={40}
+        height={40}
+        unoptimized
+        className={[className, id === "chatgpt" ? "dark:invert" : ""]
+          .filter(Boolean)
+          .join(" ")}
+      />
+    );
+  }
   if (id === "netflix") {
     return (
       <SolidIcon className={className}>

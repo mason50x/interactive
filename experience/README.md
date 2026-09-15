@@ -92,3 +92,36 @@ account, device, DRM, or network restrictions.
 
 The build also applies checked engine compatibility patches for postMessage's
 options/transfer-list form and original script-src lookup used by consent SDKs.
+
+## Authentication and additional apps
+
+The catalog also includes Spotify, ChatGPT, Claude, Gemini, and Apple Music.
+Google account/consent hosts and the `/js/bg/` authentication scripts are
+allowed for YouTube and Gemini. Google Search remains outside the allowlist.
+Spotify's separate asset domains, Apple's account/media hosts, and Claude's
+asset and CAPTCHA hosts are dependencies rather than additional tiles.
+ChatGPT's authentication and asset entries follow the relevant domains in
+[OpenAI's network guidance](https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps).
+
+The published engine also needs two module compatibility corrections, applied
+in `scripts/build-site.mjs` to both page and service-worker engines:
+
+- Use pinned Meriyah 6.1.4 instead of the older parser embedded in the bundle.
+  Claude uses a valid `for (const item of await of(...))` loop that the embedded
+  parser rejects, leaving the entire script's imports unrewritten.
+- Resolve dynamic imports with the emitted argument order `(base, specifier)`.
+  The upstream method reverses these arguments, importing the calling module
+  itself. Apple Music consequently loses its player and sign-in controls.
+
+Browser regressions cover both cases. Run `npm test` here, plus
+`npx vitest run scripts/tests/experience-allowlist.test.ts` from the repo root
+for relay enforcement and catalog coverage. These deterministic tests do not
+prove third-party account login, chat completion, or licensed playback.
+
+Live local testing on 2026-09-15 reached YouTube and Spotify sign-in forms,
+Gemini's signed-out screen and Google sign-in, and Apple Music's catalog and
+player controls. Full account testing is still pending. ChatGPT returned an
+upstream "Unable to load site" page; Claude remained blank after loading its
+scripts; Apple's nested sign-in navigation still reached a missing page.
+Do not treat these services as fully verified until login and actual playback
+or chat have been tested through the deployed proxy and app frame.

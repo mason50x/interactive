@@ -116,7 +116,7 @@ export function Composer({
   onCancelReply: () => void;
   /** For the mention picker. See `useMentionPeople`. */
   conversationId: Id<"conversations">;
-  kind: "global" | "dm" | "group" | null;
+  kind: "global" | "announcements" | "dm" | "group" | null;
   peer: MentionPerson | null;
   authors: MentionPerson[];
   me: string | null | undefined;

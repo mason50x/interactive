@@ -1,6 +1,6 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
-import { isChatAdmin } from "../config/chat-admin";
+import { privilegesFor, roleFor } from "../config/roles";
 import { components, internal } from "./_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "./_generated/server";
 
@@ -18,14 +18,14 @@ async function quota(ctx: QueryCtx) {
   if (!identity) throw new ConvexError("Sign in to use Experience.");
   const now = Date.now();
   const day = Math.floor(now / DAY);
-  const allowanceSeconds = isChatAdmin(identity.subject) ? 5 * 60 * 60 : 10 * 60;
+  const allowanceSeconds = privilegesFor(identity.subject).experienceSecondsPerDay;
   const key = `${identity.subject}:${day}`;
   const config = { kind: "fixed window" as const, rate: allowanceSeconds, period: DAY, start: day * DAY };
   const value = await limiter.getValue(ctx, "experienceSeconds", { key, config });
   const lease = await ctx.db.query("experienceLeases")
     .withIndex("by_clerkId_and_day", q => q.eq("clerkId", identity.subject).eq("day", day))
     .unique();
-  const previousAllowance = lease?.allowanceSeconds ?? (isChatAdmin(identity.subject) ? 18_000 : 300);
+  const previousAllowance = lease?.allowanceSeconds ?? (roleFor(identity.subject) === "admin" ? 18_000 : 300);
   const adjustment = lease ? allowanceSeconds - previousAllowance : 0;
   return { now, day, key, config, lease, adjustment, clerkId: identity.subject,
     status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value + adjustment)),
@@ -49,7 +49,7 @@ export const acquire = mutation({
     if (sessionId !== undefined && (!sessionId || sessionId.length > 100)) throw new ConvexError("Invalid session");
     const q = await quota(ctx);
     if (q.lease && q.adjustment !== 0) {
-      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: -q.adjustment });
+      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds - q.adjustment }, count: -q.adjustment, reserve: true });
       await ctx.db.patch(q.lease._id, { allowanceSeconds: q.status.allowanceSeconds });
     }
     const sessions = (q.lease?.sessions ?? []).filter(s => s.until > q.now && s.id !== sessionId);
@@ -85,7 +85,7 @@ export const release = mutation({
   handler: async (ctx, { sessionId }) => {
     const q = await quota(ctx);
     if (q.lease && q.adjustment !== 0) {
-      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: -q.adjustment });
+      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds - q.adjustment }, count: -q.adjustment, reserve: true });
       await ctx.db.patch(q.lease._id, { allowanceSeconds: q.status.allowanceSeconds });
     }
     if (!q.lease?.sessions?.some(s => s.id === sessionId)) return null;

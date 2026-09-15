@@ -25,24 +25,24 @@ async function setup() {
   }
   const alice = t.withIdentity({ subject: "alice" });
   const list = await alice.query(api.chat.conversations.list, {});
-  return { t, alice, global: list[0]._id, dm: list[1]._id };
+  return { t, alice, global: list[0]._id, dm: list.find((conversation) => conversation.peerClerkId === "bot")!._id };
 }
 
 test("everyone receives a private pinned bot DM, without duplicates or a bot profile", async () => {
   const { t, alice, dm } = await setup();
   await alice.mutation(api.chat.profiles.joinGlobal, {});
   const list = await alice.query(api.chat.conversations.list, {});
-  expect(list).toHaveLength(2);
+  expect(list.filter((conversation) => conversation.peerClerkId === "bot")).toHaveLength(1);
   expect(list[0].kind).toBe("global");
-  expect(list[1]).toMatchObject({
+  expect(list.find((conversation) => conversation.peerClerkId === "bot")).toMatchObject({
     kind: "dm",
     peerClerkId: "bot",
-    peerName: "Verity",
-    peerAvatarUrl: "/chat/bot-avatar.png",
+    peerName: "Bot",
+    peerAvatarUrl: "/chat/bot-avatar.webp",
   });
   expect(
     await alice.query(api.chat.conversations.get, { conversationId: dm }),
-  ).toMatchObject({ peerName: "Verity" });
+  ).toMatchObject({ peerName: "Bot" });
   expect(
     await t
       .withIdentity({ subject: "bob" })
@@ -118,7 +118,7 @@ test("plain DMs share the global quota and preserve private context, typing and 
       }),
     ).toBe(true);
     const list = await alice.query(api.chat.conversations.list, {});
-    expect(list[1].unread).toBeGreaterThan(0);
+    expect(list.find((conversation) => conversation.peerClerkId === "bot")!.unread).toBeGreaterThan(0);
     expect(await t.run((ctx) => ctx.db.query("typing").take(10))).toEqual([]);
   } finally {
     vi.useRealTimers();
@@ -150,7 +150,7 @@ test("empty bot DMs get one delayed personalized welcome without generation", as
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({
       authorClerkId: "bot",
-      body: expect.stringContaining("Hey, alice. I'm Verity."),
+      body: expect.stringContaining("Hey, alice. I'm Bot."),
     });
     expect(await t.run((ctx) => ctx.db.query("typing").take(10))).toHaveLength(
       0,
@@ -353,7 +353,7 @@ test("historical bot messages and reply previews use current branding without ch
   await t.run(async (ctx) => {
     const original = await ctx.db.insert("messages", {
       conversationId: dm, authorClerkId: "bot", authorHandle: "bot",
-      authorName: "Bot", body: "An existing answer.", status: "visible", flags: [],
+      authorName: "Verity", body: "An existing answer.", status: "visible", flags: [],
     });
     await ctx.db.insert("messages", {
       conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
@@ -364,9 +364,9 @@ test("historical bot messages and reply previews use current branding without ch
     conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER, paginationOpts: { numItems: 20, cursor: null },
   });
   expect(result.page.find(message => message.authorClerkId === "bot"))
-    .toMatchObject({ authorName: "Verity", authorHandle: "bot", body: "An existing answer." });
+    .toMatchObject({ authorName: "Bot", authorHandle: "bot", body: "An existing answer." });
   expect(result.page.find(message => message.replyTo)?.replyTo)
-    .toMatchObject({ authorName: "Verity", authorHandle: "bot", preview: "An existing answer." });
+    .toMatchObject({ authorName: "Bot", authorHandle: "bot", preview: "An existing answer." });
 });
 
 

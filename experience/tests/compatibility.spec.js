@@ -1,5 +1,41 @@
 import { expect, test } from "@playwright/test";
 
+test("dynamic imports resolve against the importing module, not the page or themselves", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const engine = new Ultraviolet(experienceConfig);
+    engine.meta.origin = location.origin;
+    engine.meta.base = engine.meta.url = new URL("https://music.apple.com/assets/player.js");
+    const rewritten = engine.rewriteJS('return import("./controls.js")');
+    let args;
+    await new Function("__uv", rewritten)({ rewriteImport: (...values) => {
+      args = values;
+      return 'data:text/javascript,export const loaded = true';
+    } });
+    // The page base differs from the source module once its code executes.
+    engine.meta.base = engine.meta.url = new URL("https://music.apple.com/us/new");
+    return engine.sourceUrl(engine.rewriteImport(...args));
+  });
+  expect(result).toBe("https://music.apple.com/assets/controls.js");
+});
+
+test("module imports are rewritten when a for-of loop awaits a function named of", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const engine = new Ultraviolet(experienceConfig);
+    engine.meta.origin = location.origin;
+    engine.meta.base = engine.meta.url = new URL("https://claude.ai/assets/app.js");
+    const source = 'import { of } from "./vendor.js"; async function run() { for (const item of await of()) { console.log(item); } }';
+    const rewritten = engine.rewriteJS(source);
+    const executable = engine.rewriteJS('return (async () => { const of = async () => [42]; for (const item of await of()) return item; })()');
+    return {
+      imported: rewritten.includes(engine.rewriteUrl("./vendor.js")),
+      value: await new Function(executable)(),
+    };
+  });
+  expect(result).toEqual({ imported: true, value: 42 });
+});
+
 test("CSS URL rewriting preserves nested empty fallbacks and subsequent rules", async ({ page }) => {
   await page.goto("/");
   const result = await page.evaluate(() => {

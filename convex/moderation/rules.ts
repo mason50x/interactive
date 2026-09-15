@@ -34,6 +34,7 @@ export type Refusal =
   | "duplicate"
   | "broadcast"
   | "too-fast"
+  | "read-only"
   | "not-a-member"
   | "blocked"
   | "reply-unavailable"

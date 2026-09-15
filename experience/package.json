@@ -13,7 +13,8 @@
   "dependencies": {
     "@mercuryworkshop/bare-as-module3": "^2.2.5",
     "@mercuryworkshop/bare-mux": "^2.1.7",
-    "@titaniumnetwork-dev/ultraviolet": "^3.2.10"
+    "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
+    "meriyah": "6.1.4"
   },
   "devDependencies": {
     "wrangler": "^4.131.0"

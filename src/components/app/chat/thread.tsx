@@ -103,7 +103,7 @@ function ConversationThread({
   conversationId: Id<"conversations">;
 }) {
   const { userId } = useAuth();
-  const { profile, behind, setReading, images: pictures } = useChat();
+  const { profile, isAdmin, behind, setReading, images: pictures } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
 
   /**
@@ -151,9 +151,11 @@ function ConversationThread({
    */
   const composer = useRef<ComposerHandle>(null);
 
-  const archived = detail?.kind === "global" && daysAgo > 0;
+  const daily = detail?.kind === "global" || detail?.kind === "announcements";
+  const readOnly = detail?.kind === "announcements" && !isAdmin;
+  const archived = daily && daysAgo > 0;
   const { dragging, handlers: dropHandlers } = useDropFiles({
-    enabled: pictures && !archived,
+    enabled: pictures && !archived && !readOnly,
     onFiles: (files) => composer.current?.addFiles(files),
   });
 
@@ -396,8 +398,7 @@ function ConversationThread({
   // Not a member — which is sometimes a door rather than a wall. See `Outside`.
   if (detail === null) return <Outside conversationId={conversationId} />;
 
-  const global = detail?.kind === "global";
-  const live = !global || daysAgo === 0;
+  const live = !daily || daysAgo === 0;
 
   return (
     <div
@@ -432,8 +433,16 @@ function ConversationThread({
         onScroll={onScroll}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
       >
-        {global ? (
-          <DayPager now={now} daysAgo={daysAgo} onChange={setDaysAgo} />
+        {daily ? (
+          <DayPager
+            maxDays={detail?.kind === "announcements" ? Infinity : undefined}
+            label={
+              detail?.kind === "announcements" ? "Announcements" : "Everyone"
+            }
+            now={now}
+            daysAgo={daysAgo}
+            onChange={setDaysAgo}
+          />
         ) : null}
 
         {status === "LoadingFirstPage" ? (
@@ -465,7 +474,7 @@ function ConversationThread({
             next={ordered[index + 1]}
             mine={message.authorClerkId === userId}
             me={userId}
-            canAct={profile !== null}
+            canAct={profile !== null && !readOnly}
             onReply={() => {
               setReplyingTo(message);
               composer.current?.focus();
@@ -500,7 +509,11 @@ function ConversationThread({
           — cost the last message of every conversation, which sat half
           behind it until you scrolled. A footer is a footer. */}
       <div className="shrink-0">
-        {live ? (
+        {readOnly ? (
+          <p className="px-4 py-4 text-center text-sm text-muted-foreground">
+            Only admins can post in Announcements.
+          </p>
+        ) : live && detail !== undefined ? (
           <Composer
             ref={composer}
             onSubmit={submit}

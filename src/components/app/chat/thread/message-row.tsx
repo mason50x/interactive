@@ -3,7 +3,6 @@
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { hasChatAdminBadge } from "@config/chat-admin";
 import {
   Tooltip as AdminTooltip,
   TooltipProvider,
@@ -63,7 +62,7 @@ export function MessageRow({
   onJumpToMessage: (messageId: Id<"messages">) => void;
 }) {
   const react = useMutation(api.chat.messages.react);
-  const { isAdmin } = useChat();
+  const { isAdmin, adminBadgeIds } = useChat();
   const [adminError, setAdminError] = useState<string | null>(null);
 
   // Held rather than left to `:hover`, because the bar below is the menu's
@@ -293,7 +292,7 @@ export function MessageRow({
             </PersonCard>
           )}
 
-          {!mine && endsGroup && hasChatAdminBadge(message.authorClerkId) ? (
+          {!mine && endsGroup && adminBadgeIds.includes(message.authorClerkId) ? (
             <TooltipProvider delay={250}>
               <AdminTooltip>
                 <TooltipTrigger

@@ -90,7 +90,7 @@ test("new account receives one profile and global membership; Clerk identities d
     two: await profileByHandle(ctx, "al1ce"),
   }));
   expect(rows.profiles).toHaveLength(2);
-  expect(rows.members).toHaveLength(4);
+  expect(rows.members).toHaveLength(6);
   expect(
     rows.members.filter((member) => member.kind === "global"),
   ).toHaveLength(2);

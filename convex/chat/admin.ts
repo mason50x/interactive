@@ -3,11 +3,11 @@ import { internal } from "../_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
 
-import { isChatAdmin } from "../../config/chat-admin";
+import { adminClerkIds, privilegesFor, ROLES } from "../../config/roles";
 
-async function adminId(ctx: QueryCtx) {
+export async function adminId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity || !isChatAdmin(identity.subject)) return null;
+  if (!identity || !privilegesFor(identity.subject).deleteChatMessages) return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;
@@ -17,6 +17,19 @@ export const mine = query({
   args: {},
   returns: v.boolean(),
   handler: async ctx => (await adminId(ctx)) !== null,
+});
+
+/** Badges use the same server-owned role assignment as authorization. */
+export const badges = query({
+  args: {},
+  returns: v.array(v.string()),
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !ROLES.admin.adminBadge) return [];
+    const user = await ctx.db.query("users")
+      .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
+    return user ? adminClerkIds() : [];
+  },
 });
 
 // Reports can grow without bound. Delete the message immediately and drain its

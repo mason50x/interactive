@@ -8,7 +8,7 @@ import { matchesOwnName, THREE_DAYS } from "../../convex/voting/model";
 const modules = import.meta.glob("../../convex/**/*.ts");
 beforeEach(() => {
   vi.stubEnv("VOTING_ENABLED", "1");
-  vi.stubEnv("CHAT_ADMIN_CLERK_IDS", "admin");
+  vi.stubEnv("ADMIN_CLERK_IDS", "admin");
   vi.useFakeTimers();
 });
 afterEach(() => {

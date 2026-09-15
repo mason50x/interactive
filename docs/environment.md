@@ -18,7 +18,6 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `SITE_URL` | Optional runtime invitation origin override for staging |
 | `NEXT_PUBLIC_SITE_URL` | App origin; use localhost locally and your HTTPS domain in production |
 | `NEXT_PUBLIC_BRAND_DOMAIN` | Optional email/brand domain override |
-| `NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS` | Optional comma-separated IDs for visual badges only |
 | `ASSET_ORIGIN` | Optional separate public bucket origin for hosted activities |
 | `NEXT_PUBLIC_ASSET_ORIGIN` | Legacy alias for the asset origin |
 | `EXPERIENCE_ORIGIN` | Experience Worker origin for development and production |
@@ -44,16 +43,33 @@ separate Clerk instances and webhook secrets.
 | `CLERK_JWT_ISSUER_DOMAIN` | JWT validation; issuer of your Clerk instance |
 | `CLERK_SECRET_KEY` | Account synchronization via Clerk's backend API |
 | `CLERK_WEBHOOK_SECRET` | Verification of the Clerk users webhook |
-| `CHAT_ADMIN_CLERK_IDS` | Optional comma-separated verified Clerk user IDs with chat admin rights |
+| `ADMIN_CLERK_IDS` | Comma-separated Clerk user IDs assigned the site-wide admin role |
 | `OPENAI_API_KEY` | Optional image moderation |
 | `IMAGES_ENABLED` | Set to `1` to enable uploads after configuring moderation |
 | `GEMINI_API_KEY` | Optional bot responses |
 | `GEMINI_MODEL` | Optional model override; default in `convex/chat/bot.ts` |
 
-An empty admin list grants no admin rights. Use stable Clerk subjects from your
-own instance, never names, usernames, emails, or editable metadata. The public
-badge list is cosmetic and is never consulted for authorization. Removing a user
-from the Convex list revokes backend admin access without rebuilding the frontend.
+### Add or remove an admin
+
+Set **one key**, `ADMIN_CLERK_IDS`, in each Convex deployment's dashboard:
+
+```env
+ADMIN_CLERK_IDS=user_existing,user_new
+```
+
+Append an exact Clerk user ID to grant access; remove it to revoke access. An empty
+or unset value grants no admin rights. Use verified Clerk subjects from that
+instance, never names, usernames, emails, or editable metadata. No frontend
+configuration or rebuild is needed. Badges come from the same backend setting.
+
+`config/roles.ts` defines all site-wide privileges: chat message deletion (within
+conversations the admin can access), voting management and email visibility,
+50 bot uses per rolling day, two hours of Experience per UTC day, and badges.
+Group owner/admin membership remains scoped to its conversation.
+
+**Migration:** copy the existing Convex `CHAT_ADMIN_CLERK_IDS` value into
+`ADMIN_CLERK_IDS` before deploying this change. Remove the old key and
+`NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS` afterward; neither is read by the new code.
 
 Image uploads fail closed when moderation is unavailable. Model services are
 optional and subject to their providers' terms, availability, and pricing.

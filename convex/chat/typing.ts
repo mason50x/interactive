@@ -1,3 +1,4 @@
+import { adminId } from "./admin";
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import {
@@ -103,6 +104,7 @@ export const start = mutation({
 
     const member = await membership(ctx, conversationId, profile.clerkId);
     if (member === null || member.status !== "active") return;
+    if (member.kind === "announcements" && (await adminId(ctx)) === null) return;
 
     if (member.dmPeer !== undefined) {
       if (await blockedEitherWay(ctx, profile.clerkId, member.dmPeer)) return;

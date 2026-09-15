@@ -45,6 +45,7 @@ export type Refusal = Extract<SendResult, { ok: false }>["refusal"];
  * addressed as though they had.
  */
 const REFUSALS: Record<string, string> = {
+  "read-only": "Only admins can post in Announcements.",
   empty: "There is nothing to send.",
   "too-long": "That is too long for one message.",
   "hidden-characters": "That message had invisible characters in it.",
@@ -274,12 +275,13 @@ export function openDmError(
  * applies everywhere else a person is named on one line.
  */
 export function conversationName(conversation: {
-  kind: "global" | "dm" | "group";
+  kind: "global" | "announcements" | "dm" | "group";
   title?: string;
   peerHandle?: string;
   peerName?: string;
 }): string {
   if (conversation.kind === "global") return "Everyone";
+  if (conversation.kind === "announcements") return "Announcements";
   if (conversation.kind === "dm") {
     return conversation.peerName ?? conversation.peerHandle ?? "Direct message";
   }

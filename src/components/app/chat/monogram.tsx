@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { MegaphoneIcon } from "@heroicons/react/24/solid";
 import { LogoMark } from "@/components/wordmark";
 import { Photo } from "@/components/app/chat/photo";
 import { BOT_AVATAR, BOT_HANDLE, handleHue } from "@/lib/chat";
@@ -51,6 +52,7 @@ export function Monogram({
   initials,
   hue: given,
   brand,
+  announcements,
   className,
 }: {
   handle: string;
@@ -59,12 +61,13 @@ export function Monogram({
   initials?: string;
   hue?: number;
   brand?: boolean;
+  announcements?: boolean;
   className?: string;
 }) {
   const hue = given ?? handleHue(handle);
   const bot = handle === BOT_HANDLE;
 
-  if (brand) {
+  if (brand || announcements) {
     return (
       <span
         aria-hidden
@@ -78,7 +81,11 @@ export function Monogram({
             resized by `className`. Wider than a disc's letter would be: with no
             circle around it, the mark needs the extra width to carry the same
             weight as the faces beside it. */}
-        <LogoMark className="h-[65%] w-[72%]" />
+        {announcements ? (
+          <MegaphoneIcon className="size-[72%]" />
+        ) : (
+          <LogoMark className="h-[65%] w-[72%]" />
+        )}
       </span>
     );
   }

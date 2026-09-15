@@ -212,6 +212,7 @@ export function ConversationList() {
                             : conversation.hue
                         }
                         brand={conversation.kind === "global"}
+                        announcements={conversation.kind === "announcements"}
                       />
 
                       <span className="min-w-0 flex-1">
@@ -240,9 +241,11 @@ export function ConversationList() {
                           <span className="block truncate text-[0.75rem] text-faint">
                             {conversation.kind === "global"
                               ? "Everyone here"
-                              : conversation.kind === "group"
-                                ? "Group"
-                                : `@${conversation.peerHandle ?? ""}`}
+                              : conversation.kind === "announcements"
+                                ? "General announcements"
+                                : conversation.kind === "group"
+                                  ? "Group"
+                                  : `@${conversation.peerHandle ?? ""}`}
                           </span>
                         )}
                       </span>

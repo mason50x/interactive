@@ -29,7 +29,7 @@ test.each([
   expect(await t.query(internal.chat.bot.morningGreetingDue, {})).toBe(expected);
 });
 
-test("posts once per day as Verity in Everyone, with no fake prompt or reply", async () => {
+test("posts once per day as Bot in Everyone, with no fake prompt or reply", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-14T12:30:00Z"));
   const { t, room } = await setup();
@@ -39,7 +39,7 @@ test("posts once per day as Verity in Everyone, with no fake prompt or reply", a
   expect(await t.query(internal.chat.bot.morningGreetingDue, {})).toBeNull();
   const messages = await t.run(ctx => ctx.db.query("messages").take(10));
   expect(messages).toHaveLength(1);
-  expect(messages[0]).toMatchObject({ conversationId: room, authorClerkId: "bot", authorHandle: "bot", authorName: "Verity", body: args.body, status: "visible" });
+  expect(messages[0]).toMatchObject({ conversationId: room, authorClerkId: "bot", authorHandle: "bot", authorName: "Bot", body: args.body, status: "visible" });
   expect(messages[0].replyToId).toBeUndefined();
   vi.setSystemTime(new Date("2026-09-15T12:30:00Z"));
   expect(await t.mutation(internal.chat.bot.publishMorningGreeting, args)).toBe(false);

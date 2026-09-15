@@ -28,7 +28,7 @@ the existing rail's hover and reduced-motion rules.
   through the existing Clerk invitation helper and does not enable ordinary
   member invitation allowances.
 - Completed votes appear under **Accepted or Rejected**.
-- Authors can delete their own suggestions; existing message admins can delete
+- Authors can delete their own suggestions; site-wide admins can delete
   any suggestion. Suggestions cannot be edited. Deletion also removes the
   suggestion from history and cleans up ballots, but never revokes an invite.
 - A rejected person can be nominated again three days after rejection. A small
@@ -45,7 +45,7 @@ two people can share a name. Admins review the nominee before an invite is sent.
 
 Member-facing nomination responses explicitly return `null` for email. Voter
 labels come from chat profiles, not account email or full legal name fields.
-Admin authorization uses the server's `CHAT_ADMIN_CLERK_IDS` configuration,
+Admin authorization uses the server's `ADMIN_CLERK_IDS` configuration,
 never the public cosmetic badge configuration.
 
 ## Backend and delivery

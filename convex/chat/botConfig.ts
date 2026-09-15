@@ -1,11 +1,11 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
-import { isChatAdmin } from "../../config/chat-admin";
+import { roleFor, ROLES } from "../../config/roles";
 import { components } from "../_generated/api";
 
 export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "../../config/bot";
 
 /** Five immediately, then one use returns every 4.8 hours. */
-export const BOT_TAGS_PER_DAY = 5;
+export const BOT_TAGS_PER_DAY = ROLES.member.botTagsPerDay;
 
 /**
  * A compact rolling allowance rather than a row-per-use log. The component
@@ -15,9 +15,9 @@ export const BOT_TAGS_PER_DAY = 5;
 export const botRateLimiter = new RateLimiter(components.rateLimiter, {
   adminBotTags: {
     kind: "token bucket",
-    rate: 50,
+    rate: ROLES.admin.botTagsPerDay,
     period: DAY,
-    capacity: 50,
+    capacity: ROLES.admin.botTagsPerDay,
   },
   botTags: {
     kind: "token bucket",
@@ -28,5 +28,5 @@ export const botRateLimiter = new RateLimiter(components.rateLimiter, {
 });
 
 export function botQuotaName(clerkId: string) {
-  return isChatAdmin(clerkId) ? "adminBotTags" : "botTags";
+  return roleFor(clerkId) === "admin" ? "adminBotTags" : "botTags";
 }

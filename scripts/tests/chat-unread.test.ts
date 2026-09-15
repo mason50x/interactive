@@ -26,7 +26,13 @@ async function setup() {
   const alice = t.withIdentity({ subject: "alice" });
   const bob = t.withIdentity({ subject: "bob" });
   const list = await alice.query(api.chat.conversations.list, {});
-  return { t, alice, bob, global: list[0]._id, dm: list[1]._id };
+  return {
+    t,
+    alice,
+    bob,
+    global: list[0]._id,
+    dm: list.find((row) => row.kind === "dm")!._id,
+  };
 }
 
 // The clock is held still on purpose: a message is then stamped a fraction of
@@ -51,6 +57,7 @@ test("sending does not leave the sender's own message unread", async () => {
     const mine = await alice.query(api.chat.conversations.list, {});
     expect(mine.map((row) => [row.kind, row.unread, row.mentioned])).toEqual([
       ["global", 0, false],
+      ["announcements", 0, false],
       ["dm", 0, false],
     ]);
 

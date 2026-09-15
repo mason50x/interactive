@@ -123,7 +123,7 @@ type Quota = ReturnType<typeof useExperienceQuota>;
 
 export function ExperienceQuotaNotice({ quota }: { quota: Quota }) {
   const allowance =
-    quota.status?.allowanceSeconds === 18_000 ? "5 hours" : "10 minutes";
+    quota.status?.allowanceSeconds === 7_200 ? "2 hours" : "30 minutes";
   const seconds = quota.remaining;
   const remaining =
     seconds === null

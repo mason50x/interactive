@@ -71,6 +71,7 @@ export type Chat = {
    */
   images: boolean;
   isAdmin: boolean;
+  adminBadgeIds: string[];
   /**
    * The conversation whose thread is open at its live end, or `null`. Set by
    * `Thread`, and never counted as unread by anything above.
@@ -95,6 +96,7 @@ const EMPTY: Chat = {
   waiting: 0,
   images: false,
   isAdmin: false,
+  adminBadgeIds: [],
   reading: null,
   setReading: () => {},
   behind: false,
@@ -112,6 +114,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const conversations = useAuthedQuery(api.chat.conversations.list, {});
   const pending = useAuthedQuery(api.chat.friends.pending, {});
   const invitations = useAuthedQuery(api.chat.groups.invitations, {});
+  const adminBadgeIds = useAuthedQuery(api.chat.admin.badges, {});
   const isAdmin = useAuthedQuery(api.chat.admin.mine, {});
   const features = useAuthedQuery(api.features.get, {});
 
@@ -169,6 +172,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     waiting,
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,
+    adminBadgeIds: isAuthenticated ? adminBadgeIds ?? [] : [],
     reading,
     setReading,
     behind,

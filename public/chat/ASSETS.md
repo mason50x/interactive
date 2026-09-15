@@ -1,4 +1,9 @@
-# Bot avatar
+# Bot avatars
+
+`bot-avatar.webp` is the original Bot profile picture, restored byte-for-byte
+from commit `1113491` (first added in `02e5e62`). It is the active avatar.
+
+## Previous Verity avatar
 
 `bot-avatar.png` is the unmodified `verity_face_smile.png` texture from
 [MrPauk335/Verity-Minecraft-Mod](https://github.com/MrPauk335/Verity-Minecraft-Mod),

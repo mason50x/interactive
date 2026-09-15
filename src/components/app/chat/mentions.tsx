@@ -100,7 +100,7 @@ export function useMentionPeople({
 }: {
   conversationId: Id<"conversations">;
   /** `null` until the conversation has answered about itself. */
-  kind: "global" | "dm" | "group" | null;
+  kind: "global" | "announcements" | "dm" | "group" | null;
   /** A direct message's other person. */
   peer: MentionPerson | null;
   /** Whoever has spoken in the loaded thread, newest first. */

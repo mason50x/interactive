@@ -68,7 +68,11 @@ export function DayPager({
   now,
   daysAgo,
   onChange,
+  label = "Everyone",
+  maxDays = GLOBAL_DAY_PAGES,
 }: {
+  label?: string;
+  maxDays?: number;
   now: number;
   daysAgo: number;
   onChange: (daysAgo: number) => void;
@@ -80,7 +84,7 @@ export function DayPager({
 
   if (live) {
     return (
-      <nav aria-label="Everyone by day" className="flex justify-center pb-2">
+      <nav aria-label={`${label} by day`} className="flex justify-center pb-2">
         <Button
           variant="ghost"
           size="sm"
@@ -96,9 +100,9 @@ export function DayPager({
   }
 
   return (
-    <nav aria-label="Everyone by day" className="flex justify-center pb-2">
+    <nav aria-label={`${label} by day`} className="flex justify-center pb-2">
       <div className="grid grid-cols-[2rem_minmax(9rem,auto)_2rem] items-center">
-        {daysAgo < GLOBAL_DAY_PAGES - 1 ? (
+        {daysAgo < maxDays - 1 ? (
           <Button
             variant="ghost"
             size="icon-sm"

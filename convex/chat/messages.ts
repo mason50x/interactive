@@ -1,3 +1,4 @@
+import { adminId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
@@ -172,6 +173,10 @@ export const send = mutation({
       return { ok: false, refusal: "not-a-member" };
     }
 
+    if (member.kind === "announcements" && (await adminId(ctx)) === null) {
+      return { ok: false, refusal: "read-only" };
+    }
+
     // A block ends the conversation for both people, and it can land after the
     // thread already exists — which is the only reason this is checked on every
     // send rather than once when the thread opened.
@@ -242,7 +247,7 @@ export const send = mutation({
     const state = senderState(sender, profile);
 
     const context: SendContext = {
-      surface: member.kind,
+      surface: member.kind === "announcements" ? "global" : member.kind,
       conversationId,
       now,
       createdAt: profile.createdAt,
@@ -621,7 +626,7 @@ export const list = query({
 
     const blocked = await blockedBy(ctx, profile.clerkId);
 
-    const result = await (member.kind === "global"
+    const result = await ((member.kind === "global" || member.kind === "announcements")
       ? ctx.db
           .query("messages")
           .withIndex("byConversation", (q) =>
@@ -737,6 +742,7 @@ export const react = mutation({
       profile.clerkId,
     );
     if (member === null || member.status !== "active") return;
+    if (member.kind === "announcements" && (await adminId(ctx)) === null) return;
 
     const reactions = message.reactions ?? [];
     const existing = reactions.find((entry) => entry.emoji === emoji);
@@ -888,7 +894,7 @@ export type MessageHit = {
   _id: Id<"messages">;
   _creationTime: number;
   conversationId: Id<"conversations">;
-  kind: "global" | "dm" | "group";
+  kind: "global" | "announcements" | "dm" | "group";
   title?: string;
   peerHandle?: string;
   authorHandle: string;
@@ -999,5 +1005,5 @@ async function nameFor(
     return { kind: "group", title: conversation?.title };
   }
 
-  return { kind: "global" };
+  return { kind: member.kind };
 }

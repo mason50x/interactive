@@ -453,7 +453,7 @@ export default defineSchema({
    * is pinned to the top of the list instead, which is where it belongs anyway.
    */
   conversations: defineTable({
-    kind: v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
+    kind: v.union(v.literal("global"), v.literal("announcements"), v.literal("dm"), v.literal("group")),
     /** Set only on direct messages: both Clerk ids, sorted, joined. */
     dmKey: v.optional(v.string()),
     /** Groups only. Screened like a message before it is accepted. */
@@ -514,7 +514,7 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     clerkId: v.string(),
     /** Copied from the conversation, which never changes kind. */
-    kind: v.union(v.literal("global"), v.literal("dm"), v.literal("group")),
+    kind: v.union(v.literal("global"), v.literal("announcements"), v.literal("dm"), v.literal("group")),
     role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
     status: v.union(
       v.literal("active"),

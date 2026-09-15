@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { isChatAdmin } from "../config/chat-admin";
+import { privilegesFor } from "../config/roles";
 import { votingEnabled } from "./features";
 import { delivery, matchesOwnName, MIN_VOTES, nameKey, status, THREE_DAYS } from "./voting/model";
 
@@ -18,7 +18,7 @@ async function member(ctx: QueryCtx) {
 
 async function admin(ctx: QueryCtx) {
   const user = await member(ctx);
-  if (!isChatAdmin(user.clerkId)) throw new ConvexError("Admin access required.");
+  if (!privilegesFor(user.clerkId).manageVoting) throw new ConvexError("Admin access required.");
   return user;
 }
 
@@ -40,7 +40,7 @@ const row = v.object({
 
 async function present(ctx: QueryCtx, nomination: Doc<"nominations">, clerkId: string) {
   const ballot = await ctx.db.query("nominationVotes").withIndex("by_nominationId_and_clerkId", q => q.eq("nominationId", nomination._id).eq("clerkId", clerkId)).unique();
-  const isAdmin = isChatAdmin(clerkId);
+  const isAdmin = privilegesFor(clerkId).manageVoting;
   return {
     id: nomination._id, name: nomination.name, email: isAdmin ? nomination.email : null,
     status: nomination.status, yes: nomination.yes, no: nomination.no,
@@ -64,7 +64,7 @@ export const approvals = query({
   args: {}, returns: v.array(row),
   handler: async ctx => {
     const user = await member(ctx);
-    if (!isChatAdmin(user.clerkId)) return [];
+    if (!privilegesFor(user.clerkId).manageVoting) return [];
     const pending = await ctx.db.query("nominations").withIndex("by_status_and_delivery", q => q.eq("status", "accepted").eq("delivery", "pending")).take(30);
     const sending = await ctx.db.query("nominations").withIndex("by_status_and_delivery", q => q.eq("status", "accepted").eq("delivery", "sending")).take(30);
     return await Promise.all([...pending, ...sending].map(n => present(ctx, n, user.clerkId)));
@@ -162,7 +162,7 @@ export const remove = mutation({
     const user = await member(ctx);
     const nomination = await ctx.db.get(nominationId);
     if (!nomination) return null;
-    if (nomination.authorClerkId !== user.clerkId && !isChatAdmin(user.clerkId)) throw new ConvexError("Only the author or an admin can delete this suggestion.");
+    if (nomination.authorClerkId !== user.clerkId && !privilegesFor(user.clerkId).manageVoting) throw new ConvexError("Only the author or an admin can delete this suggestion.");
     if (nomination.status === "open" && Date.now() >= nomination.closesAt) await reject(ctx, nomination, nomination.closesAt);
     await ctx.db.delete(nominationId);
     await ctx.scheduler.runAfter(0, internal.voting.clearVotes, { nominationId });

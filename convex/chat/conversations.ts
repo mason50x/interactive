@@ -43,7 +43,7 @@ const UNREAD_CAP = 100;
 
 export type ConversationSummary = {
   _id: Id<"conversations">;
-  kind: "global" | "dm" | "group";
+  kind: "global" | "announcements" | "dm" | "group";
   /** The group's name. Absent for the other two, which the client names. */
   title?: string;
   lastMessageAt?: number;
@@ -241,6 +241,8 @@ export const list = query({
     return summaries.sort((first, second) => {
       if (first.kind === "global") return -1;
       if (second.kind === "global") return 1;
+      if (first.kind === "announcements") return -1;
+      if (second.kind === "announcements") return 1;
       if (first.peerClerkId === BOT_ID) return -1;
       if (second.peerClerkId === BOT_ID) return 1;
       return (second.lastMessageAt ?? 0) - (first.lastMessageAt ?? 0);
@@ -359,7 +361,7 @@ export const createGroup = mutation({
 
 export type ConversationDetail = {
   _id: Id<"conversations">;
-  kind: "global" | "dm" | "group";
+  kind: "global" | "announcements" | "dm" | "group";
   title?: string;
   joinPolicy?: "invite" | "request" | "open";
   role: "owner" | "admin" | "member";
