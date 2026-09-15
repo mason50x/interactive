@@ -2,6 +2,7 @@
 
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
+import { createContext, useContext } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,10 @@ const SelectValue = SelectPrimitive.Value;
 const SelectGroup = SelectPrimitive.Group;
 
 const SelectGroupLabel = SelectPrimitive.GroupLabel;
+
+// Custom pages in third-party modals must keep popups in the modal's
+// stacking context and focus boundary instead of portalling to document.body.
+const SelectPortalContainer = createContext<HTMLElement | null>(null);
 
 /**
  * The collapsed row. Same shell as the key recorder in the settings sheet —
@@ -77,12 +82,15 @@ function SelectContent({
 }: SelectPrimitive.Popup.Props & {
   sideOffset?: SelectPrimitive.Positioner.Props["sideOffset"];
 }) {
+  const container = useContext(SelectPortalContainer);
+
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={container}>
       <SelectPrimitive.Positioner
         data-slot="select-positioner"
         className="z-50 outline-none select-none"
         alignItemWithTrigger={false}
+        positionMethod="fixed"
         sideOffset={sideOffset}
       >
         <SelectPrimitive.Popup
@@ -158,6 +166,7 @@ export {
   SelectGroup,
   SelectGroupLabel,
   SelectItem,
+  SelectPortalContainer,
   SelectSeparator,
   SelectTrigger,
   SelectValue,

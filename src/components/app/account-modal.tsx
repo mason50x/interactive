@@ -5,6 +5,7 @@ import { Cog6ToothIcon } from "@heroicons/react/24/solid";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { SettingsPanel } from "@/components/app/settings-panel";
+import { SelectPortalContainer } from "@/components/ui/select";
 import type { SettingsPage } from "@/lib/preferences";
 
 /**
@@ -71,7 +72,13 @@ export function useAccountModal() {
 
   const pages: ReactNode = (
     <>
-      {slot && createPortal(<SettingsPanel />, slot)}
+      {slot &&
+        createPortal(
+          <SelectPortalContainer value={slot}>
+            <SettingsPanel />
+          </SelectPortalContainer>,
+          slot,
+        )}
       {iconSlot &&
         createPortal(<Cog6ToothIcon className="size-4 shrink-0" />, iconSlot)}
     </>
