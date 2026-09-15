@@ -25,6 +25,10 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | Legacy alias for the Worker origin |
 | `CONVEX_DEPLOY_KEY` | Production deployment and runtime administrative account-sync credential |
 
+`EXPERIENCE_ORIGIN` is a public server-side origin committed in the app's
+`wrangler.jsonc` vars so production receives it. `.env.local` alone does not
+deploy this setting. Update the Wrangler value when moving the Experience Worker.
+
 Public variables are embedded at build time; changing them requires rebuilding.
 Set `SITE_URL` or `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.
 Public variables must never contain secrets.
