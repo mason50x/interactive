@@ -192,3 +192,22 @@ test("retry backoff is respected by the periodic flush", async () => {
   await m.flush();
   expect(f.mock.mutation).toHaveBeenCalledTimes(1);
 });
+
+test("UI snapshots retain old slots without duplicating immutable save buffers", async () => {
+  const { snapshotRecord } =
+    await import("../../src/lib/simulator/record-snapshot");
+  const f = fakeClient();
+  const m = manager(f.client);
+  await m.init();
+  const first = capture();
+  await m.capture(first);
+  const snapshot = snapshotRecord(m.record);
+  expect(snapshot.saves.auto?.checkpoint).toBe(m.record.saves.auto?.checkpoint);
+  await m.capture(capture());
+  await m.flush(true);
+  expect(snapshot.saves.auto?.captureId).toBe(first.captureId);
+  expect(snapshot.saves.previous).toBeUndefined();
+  expect(snapshot.pending.auto?.captureId).toBe(first.captureId);
+  expect(m.record.pending.auto).toBeUndefined();
+  expect(m.record.saves.previous?.captureId).toBe(first.captureId);
+});

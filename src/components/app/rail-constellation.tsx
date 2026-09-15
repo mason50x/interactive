@@ -198,6 +198,8 @@ export function RailConstellation({
     // gone by the corners. The radius reaches the corner rather than the
     // nearer edge so nothing along the long sides is cut off flat.
     let ring: CanvasGradient | string = "transparent";
+    let topHem: CanvasGradient | string = "transparent";
+    let bottomHem: CanvasGradient | string = "transparent";
     const readInk = () => {
       const style = getComputedStyle(element);
 
@@ -239,6 +241,14 @@ export function RailConstellation({
         gradient.addColorStop(0.45, "rgba(0, 0, 0, 0)");
         gradient.addColorStop(1, "rgba(0, 0, 0, 1)");
         ring = gradient;
+      } else {
+        const hem = height * HEM;
+        topHem = context.createLinearGradient(0, 0, 0, hem);
+        topHem.addColorStop(0, "rgba(0, 0, 0, 1)");
+        topHem.addColorStop(1, "rgba(0, 0, 0, 0)");
+        bottomHem = context.createLinearGradient(0, height - hem, 0, height);
+        bottomHem.addColorStop(0, "rgba(0, 0, 0, 0)");
+        bottomHem.addColorStop(1, "rgba(0, 0, 0, 1)");
       }
 
       const wanted = Math.max(
@@ -364,16 +374,10 @@ export function RailConstellation({
       } else {
         const hem = height * HEM;
 
-        const top = context.createLinearGradient(0, 0, 0, hem);
-        top.addColorStop(0, "rgba(0, 0, 0, 1)");
-        top.addColorStop(1, "rgba(0, 0, 0, 0)");
-        context.fillStyle = top;
+        context.fillStyle = topHem;
         context.fillRect(0, 0, width, hem);
 
-        const bottom = context.createLinearGradient(0, height - hem, 0, height);
-        bottom.addColorStop(0, "rgba(0, 0, 0, 0)");
-        bottom.addColorStop(1, "rgba(0, 0, 0, 1)");
-        context.fillStyle = bottom;
+        context.fillStyle = bottomHem;
         context.fillRect(0, height - hem, width, hem);
       }
 

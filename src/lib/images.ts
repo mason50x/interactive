@@ -87,6 +87,9 @@ const previews = new Map<string, string>();
 const PREVIEWS_KEPT = 24;
 
 export function rememberPreview(attachmentId: string, url: string): void {
+  const previous = previews.get(attachmentId);
+  if (previous !== undefined && previous !== url)
+    URL.revokeObjectURL(previous);
   previews.set(attachmentId, url);
   if (previews.size <= PREVIEWS_KEPT) return;
   const oldest = previews.keys().next().value;
@@ -137,14 +140,18 @@ export async function prepareImage(file: File): Promise<PreparedImage | null> {
     const canvas = document.createElement("canvas");
     canvas.width = targetWidth;
     canvas.height = targetHeight;
-    const context = canvas.getContext("2d");
-    if (context === null) return null;
-    context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-
-    const blob = await encode(canvas, file.type);
-    if (blob === null) return null;
-
-    return { blob, width: targetWidth, height: targetHeight };
+    try {
+      const context = canvas.getContext("2d");
+      if (context === null) return null;
+      context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+      const blob = await encode(canvas, file.type);
+      if (blob === null) return null;
+      return { blob, width: targetWidth, height: targetHeight };
+    } finally {
+      // Release the pixel backing store as soon as encoding finishes.
+      canvas.width = 0;
+      canvas.height = 0;
+    }
   } finally {
     bitmap.close();
   }

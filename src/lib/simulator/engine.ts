@@ -214,15 +214,19 @@ export class SimulatorEngine {
       const dt = this.last ? Math.min((ms - this.last) / 1000, 0.05) : 1 / 60;
       this.last = ms;
       const until = this.m._emulator_get_ticks_f64(this.e) + dt * 4194304;
+      let needsDraw = false;
       for (let i = 0; i < 1000; i++) {
         const event = this.m._emulator_run_until_f64(this.e, until);
         if (event & 1) {
           this.frames++;
-          this.draw();
+          needsDraw = true;
         }
         if (event & 2) this.pushAudio();
         if (event & 4) break;
       }
+      // A delayed callback can emulate several frames, but only the final
+      // framebuffer can reach the screen. Keep every native/audio step.
+      if (needsDraw) this.draw();
       if (this.m._emulator_was_ext_ram_updated(this.e))
         this.batteryDirty = true;
       // The upstream input callback logs changes; bound its memory without keeping rewind history.

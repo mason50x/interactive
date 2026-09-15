@@ -21,6 +21,7 @@ import type {
 } from "./types";
 import { SimulatorEngine } from "./engine";
 import { ProgressSync } from "./sync";
+import { snapshotRecord } from "./record-snapshot";
 import { makeProgress, validateProgress } from "./progress";
 import { identify } from "./files";
 import { acquirePlayerLock } from "./lock";
@@ -64,7 +65,7 @@ export function useSimulator(
       client,
       () => {
         if (!cancelled) {
-          setRecord(structuredClone(manager.record));
+          setRecord(snapshotRecord(manager.record));
           setStatus({ ...manager.status });
         }
       },
@@ -92,7 +93,7 @@ export function useSimulator(
       }
       await manager.init();
       if (!cancelled) {
-        setRecord(structuredClone(manager.record));
+        setRecord(snapshotRecord(manager.record));
         setReady(true);
       }
     })();
