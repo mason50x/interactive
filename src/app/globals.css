@@ -1826,16 +1826,16 @@
   inset: 0;
   z-index: 1;
   border-radius: inherit;
-  padding: 1.5px;
+  padding: var(--release-rim-width, 1.5px);
   pointer-events: none;
   background: conic-gradient(
     from var(--release-rim-angle),
     transparent 0deg 215deg,
-    color-mix(in oklch, var(--primary) 8%, transparent) 255deg,
-    color-mix(in oklch, var(--primary) 40%, transparent) 300deg,
-    color-mix(in oklch, var(--primary) 85%, white) 333deg,
+    color-mix(in oklch, var(--release-rim-color, var(--primary)) 8%, transparent) 255deg,
+    color-mix(in oklch, var(--release-rim-color, var(--primary)) 40%, transparent) 300deg,
+    color-mix(in oklch, var(--release-rim-color, var(--primary)) 85%, white) 333deg,
     white 344deg,
-    color-mix(in oklch, var(--primary) 30%, transparent) 352deg,
+    color-mix(in oklch, var(--release-rim-color, var(--primary)) 30%, transparent) 352deg,
     transparent 360deg
   );
   mask:
@@ -1843,9 +1843,9 @@
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
   filter: drop-shadow(
-    0 0 3px color-mix(in oklch, var(--primary) 45%, transparent)
+    0 0 var(--release-rim-glow, 3px) color-mix(in oklch, var(--release-rim-color, var(--primary)) 45%, transparent)
   );
-  animation: release-rim-travel 5s linear infinite;
+  animation: release-rim-travel var(--release-rim-duration, 5s) linear infinite;
 }
 
 @keyframes release-rim-travel {

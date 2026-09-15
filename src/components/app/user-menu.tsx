@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/menu";
 import { onSettingsRequest } from "@/lib/preferences";
 import { useClickOutside } from "@/lib/use-click-outside";
+import { useCachedAdminBadge } from "@/lib/use-cached-admin-badge";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,7 +40,11 @@ import { cn } from "@/lib/utils";
  */
 export function UserMenu() {
   const { isLoaded, user } = useUser();
-  const { adminBadgeIds } = useChat();
+  const { adminBadgeIds, adminBadgesLoaded } = useChat();
+  const showAdminBadge = useCachedAdminBadge(
+    user?.id,
+    user && adminBadgesLoaded ? adminBadgeIds.includes(user.id) : undefined,
+  );
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
   const { open: openAccount, pages: accountPages } = useAccountModal();
@@ -113,9 +118,19 @@ export function UserMenu() {
             </span>
           </MenuTrigger>
           {/* Separate from the menu button so the source link stays a native link. */}
-          <div className="absolute bottom-2 left-[3.375rem] hidden items-center gap-1.5 rail-wide wide:flex">
-            {adminBadgeIds.includes(user.id) ? (
-              <span className={cn(chipClassName, "text-orange-600")}>
+          <div
+            className={cn(
+              "absolute bottom-2 left-[3.375rem] hidden items-center gap-1.5 rail-wide wide:flex",
+              showAdminBadge === null && "invisible",
+            )}
+          >
+            {showAdminBadge ? (
+              <span
+                className={cn(
+                  chipClassName,
+                  "release-unread-glow relative text-orange-600 [--release-rim-color:var(--color-orange-500)] [--release-rim-duration:4s] [--release-rim-glow:1px] [--release-rim-width:1px]",
+                )}
+              >
                 <AdminCrown className="size-3 shrink-0" />
                 ADMIN
               </span>

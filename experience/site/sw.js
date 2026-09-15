@@ -29,6 +29,21 @@ async function loadExperience(event) {
     return Response.redirect(launcher.href, 302);
   }
   const response = await engine.fetch(event);
+  // Claude sometimes serves a Cloudflare challenge instead of its app. That
+  // challenge cannot finish through this relay and otherwise renders blank.
+  if (
+    ["document", "iframe"].includes(event.request.destination) &&
+    response.headers.get("cf-mitigated") === "challenge" &&
+    new URL(experienceConfig.decodeUrl(event.request.url.slice(
+      location.origin.length + experienceConfig.prefix.length,
+    ))).hostname === "claude.ai"
+  ) {
+    const notice = await fetch("/claude-unavailable.html");
+    return new Response(notice.body, {
+      status: response.status,
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
   // Keep the library's diagnostics out of the page shown to learners.
   if (response.status >= 500 && ["document", "iframe"].includes(event.request.destination)) {
     const notice = await fetch("/unavailable.html");

@@ -72,6 +72,7 @@ export type Chat = {
   images: boolean;
   isAdmin: boolean;
   adminBadgeIds: string[];
+  adminBadgesLoaded: boolean;
   /**
    * The conversation whose thread is open at its live end, or `null`. Set by
    * `Thread`, and never counted as unread by anything above.
@@ -97,6 +98,7 @@ const EMPTY: Chat = {
   images: false,
   isAdmin: false,
   adminBadgeIds: [],
+  adminBadgesLoaded: false,
   reading: null,
   setReading: () => {},
   behind: false,
@@ -173,6 +175,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,
     adminBadgeIds: isAuthenticated ? adminBadgeIds ?? [] : [],
+    adminBadgesLoaded: isAuthenticated && adminBadgeIds !== undefined,
     reading,
     setReading,
     behind,
