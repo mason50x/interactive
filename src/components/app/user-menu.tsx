@@ -4,11 +4,13 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { ChevronRightIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccountModal } from "@/components/app/account-modal";
+import { useChat } from "@/components/app/chat/chat-provider";
 import { useRail } from "@/components/app/rail-context";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
 import { GitHubIcon } from "@/components/ui/github-icon";
+import { AdminCrown } from "@/components/ui/admin-crown";
 import { useTheme } from "@/components/theme-provider";
 import {
   Menu,
@@ -37,6 +39,7 @@ import { cn } from "@/lib/utils";
  */
 export function UserMenu() {
   const { isLoaded, user } = useUser();
+  const { adminBadgeIds } = useChat();
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
   const { open: openAccount, pages: accountPages } = useAccountModal();
@@ -94,6 +97,12 @@ export function UserMenu() {
             <span className="block truncate text-[0.9375rem] leading-tight">
               {user.fullName ?? name}
             </span>
+            {adminBadgeIds.includes(user.id) ? (
+              <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[0.5625rem] leading-none font-semibold text-amber-700 dark:text-amber-400">
+                <AdminCrown className="size-3 shrink-0" />
+                ADMIN
+              </span>
+            ) : null}
           </span>
           {/* Points at the popup: up while it is closed because that is where
               it will appear, and flipped once it is open because from there

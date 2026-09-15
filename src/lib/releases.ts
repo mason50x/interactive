@@ -34,9 +34,11 @@ export const releases: readonly Release[] = [
 What's in it:
 
 - We've moved to Cloudflare, with a focus on performance and stronger security.
-- Verity now kicks off the Everyone chat with a fresh, playful morning greeting every day at 7:30 a.m. Central.
+- Experience brings supported sites into the app through our proxy.
+- Verity is now Bot, with a new avatar. Mention @bot to chat; @verity still works.
+- Bot now kicks off the Everyone chat with a fresh, playful morning greeting every day at 7:30 a.m. Central.
 - Unread indicators no longer flash when you send a message or while you're reading the live conversation.
-- We've tightened protection around learning activities and disabled alternate public hosting URLs.`,
+- Security fixes strengthen access-hour enforcement, tighten protection around learning activities, and disable alternate public hosting URLs.`,
   },
   {
     version: "1.0",

@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminCrown } from "@/components/ui/admin-crown";
+
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
@@ -299,14 +301,7 @@ export function MessageRow({
                   aria-label="Admin with elevated privileges"
                   className="-ml-1 inline-flex shrink-0 items-center rounded-sm text-yellow-500 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="size-3.5"
-                    aria-hidden="true"
-                  >
-                    <path d="M3.5 14 2 5.5 6.5 9 10 3l3.5 6L18 5.5 16.5 14h-13Zm0 1.5h13V17h-13v-1.5Z" />
-                  </svg>
+                  <AdminCrown className="size-3.5" />
                 </TooltipTrigger>
                 <TooltipContent>Admin with elevated privileges</TooltipContent>
               </AdminTooltip>

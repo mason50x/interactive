@@ -19,6 +19,15 @@ self.addEventListener("fetch", (event) => {
 
 async function loadExperience(event) {
   if (!engine.route(event)) return fetch(event.request);
+  // Direct top-level navigation (target=_blank links, pasted links, restored
+  // tabs) must initialize its own BareMux transport. Iframe navigations already
+  // have the launcher as a live client and must not redirect back into it.
+  if (event.request.mode === "navigate" && event.request.destination === "document") {
+    const encoded = event.request.url.slice(location.origin.length + experienceConfig.prefix.length);
+    const launcher = new URL("/", location.origin);
+    launcher.searchParams.set("u", experienceConfig.decodeUrl(encoded));
+    return Response.redirect(launcher.href, 302);
+  }
   const response = await engine.fetch(event);
   // Keep the library's diagnostics out of the page shown to learners.
   if (response.status >= 500 && ["document", "iframe"].includes(event.request.destination)) {

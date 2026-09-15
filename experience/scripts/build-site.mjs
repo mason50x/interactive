@@ -90,7 +90,14 @@ writeFileSync(clientPath, client);
 // Consent SDKs locate their own script with script[src*="otSDKStub"]. The
 // rewritten src is encoded; the engine retains the original in __uv-attr-src.
 const handlerPath = join(dist, "experience", "handler.js");
-writeFileSync(handlerPath, readFileSync(handlerPath, "utf8") + String.raw`
+let handler = readFileSync(handlerPath, "utf8");
+const originalOpen = 'let[s]=l;return s=e.rewriteUrl(s),t.call(r,s)';
+const popupOpen = 'let[s]=l;return s=self.__experiencePopupUrl(e.rewriteUrl(s),l[1]),t.apply(r,[s,...l.slice(1)])';
+if (handler.split(originalOpen).length !== 2) {
+  throw new Error("Review the experience popup transport initialization patch.");
+}
+handler = handler.replace(originalOpen, popupOpen);
+writeFileSync(handlerPath, handler + "\n" + readFileSync(join(root, "site", "popup.js"), "utf8") + String.raw`
 ;(() => {
   if (typeof document === "undefined") return;
   for (const proto of [Document.prototype, Element.prototype]) {

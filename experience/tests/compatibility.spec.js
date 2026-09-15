@@ -130,3 +130,41 @@ test("postMessage options preserve transferable ports", async ({ page }) => {
   });
   expect(result).toBe("received");
 });
+
+test("popup URLs initialize a new transport without changing in-place navigation", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    self.__uv = new Ultraviolet(experienceConfig);
+    __uv.meta.origin = location.origin;
+    __uv.meta.base = __uv.meta.url = new URL("https://gemini.google.com/app");
+  });
+  await page.addScriptTag({ url: "/popup.js" });
+  const result = await page.evaluate(() => {
+    const destination = "https://gemini.google.com/signin?continue=https%3A%2F%2Fgemini.google.com%2Fapp";
+    const rewritten = __uv.rewriteUrl(destination);
+    return {
+      destination,
+      popup: new URL(__experiencePopupUrl(rewritten, "_blank")).searchParams.get("u"),
+      named: new URL(__experiencePopupUrl(rewritten, "google-signin")).pathname,
+      inPlace: __experiencePopupUrl(rewritten, "_self") === rewritten,
+      blank: __experiencePopupUrl("about:blank", "_blank"),
+    };
+  });
+  expect(result.popup).toBe(result.destination);
+  expect(result.named).toBe("/");
+  expect(result.inPlace).toBe(true);
+  expect(result.blank).toBe("about:blank");
+});
+
+test("a restored top-level service URL bootstraps with no other live page", async ({ page, context }) => {
+  const destination = "https://example.com/?continue=https%3A%2F%2Fexample.com%2Fapp";
+  await page.goto("/?u=" + encodeURIComponent(destination));
+  await expect(page.frameLocator("iframe").getByRole("heading", { name: "This page couldn’t load" })).toBeVisible();
+  const direct = await page.evaluate(url => location.origin + experienceConfig.prefix + experienceConfig.encodeUrl(url), destination);
+  await page.close();
+  const restored = await context.newPage();
+  await restored.goto(direct);
+  await expect(restored).toHaveURL(url => url.pathname === "/" && url.searchParams.get("u") === destination);
+  await expect(restored.frameLocator("iframe").getByRole("heading", { name: "This page couldn’t load" })).toBeVisible();
+  await expect(restored.locator("body")).not.toContainText("MessagePort");
+});
