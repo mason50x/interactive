@@ -76,6 +76,7 @@
 
       const frame = document.createElement("iframe");
       frame.title = "Experience";
+      frame.allow = "fullscreen; autoplay; encrypted-media";
       frame.src = experienceConfig.prefix + experienceConfig.encodeUrl(target);
       document.body.replaceChildren(frame);
     } catch {

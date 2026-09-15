@@ -10,6 +10,8 @@ export default defineSchema({
     clerkId: v.string(),
     day: v.number(),
     until: v.number(),
+    allowanceSeconds: v.optional(v.number()),
+    sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
   nominations: defineTable(nominationFields)
     .index("by_status", ["status"])

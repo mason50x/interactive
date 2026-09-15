@@ -13,7 +13,7 @@ switched off, so this is the only place the Worker answers.
 The app frames that page from `/dashboard/experience` — see `src/lib/experience.ts`.
 The route and sidebar entry are included in production and development builds.
 Set `EXPERIENCE_ORIGIN` to the Experience Worker origin in the app deployment.
-Signed-in accounts share five minutes per UTC day across apps; verified admins
+Signed-in accounts share ten minutes per UTC day across apps; verified admins
 get five hours. Convex stores the allowance and removes expired daily records.
 
 ## Layout
@@ -76,3 +76,19 @@ prefixes, and only URLs under them are allowed on that host.
 Nothing, as long as the account stays on Workers Free. Past 100,000 `/v3/`
 requests in a day the Worker returns error 1027 until midnight UTC; it does
 not bill. There is no KV, R2 or Durable Object behind it.
+
+## Netflix
+
+Netflix is included with its published service/CDN domains from
+https://openconnect.netflix.com/mobiledeliverydomains.txt plus the observed
+OneTrust consent endpoints. The shared allowlist covers exact hosts and their
+subdomains, without opening unrelated advertising networks.
+
+The public landing page and sign-in form are browser-tested through Experience.
+Signed-in video playback still needs account testing: Netflix may reject proxy
+connections or require DRM capabilities the embedded browser cannot supply.
+Both frame layers delegate `encrypted-media`; this does not bypass Netflix's
+account, device, DRM, or network restrictions.
+
+The build also applies checked engine compatibility patches for postMessage's
+options/transfer-list form and original script-src lookup used by consent SDKs.

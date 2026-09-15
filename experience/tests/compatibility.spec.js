@@ -73,3 +73,24 @@ test("failed destinations show a branded retry screen without engine diagnostics
   await frame.getByRole("button", { name: "Try again" }).click();
   await expect(frame.getByRole("heading", { name: "This page couldn’t load" })).toBeVisible();
 });
+
+test("postMessage options preserve transferable ports", async ({ page }) => {
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/client.js" });
+  const result = await page.evaluate(async () => {
+    const client = new UVClient(window);
+    client.message.overridePostMessage();
+    const send = client.message.wrapPostMessage(window, "postMessage");
+    const received = new Promise(resolve => {
+      window.addEventListener("message", event => {
+        if (event.data !== "port-test") return;
+        event.ports[0].postMessage("received");
+      }, { once: true });
+      const channel = new MessageChannel();
+      channel.port1.onmessage = event => resolve(event.data);
+      send("port-test", { targetOrigin: location.origin, transfer: [channel.port2] });
+    });
+    return received;
+  });
+  expect(result).toBe("received");
+});

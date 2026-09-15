@@ -15,6 +15,7 @@ export function useExperienceQuota(active = false) {
   const [error, setError] = useState(false);
   const [lease, setLease] = useState({ until: 0, offset: 0 });
   const acquire = useMutation(api.experience.acquire);
+  const release = useMutation(api.experience.release);
   const status = useQuery(
     api.experience.status,
     isAuthenticated ? { day: Math.floor(now / DAY) } : "skip",
@@ -36,15 +37,39 @@ export function useExperienceQuota(active = false) {
 
   useEffect(() => {
     if (!active || !isAuthenticated) return;
+    let sessionId = crypto.randomUUID();
     let cancelled = false;
     let pending = false;
     let nextCheck = 0;
+    // A same-origin keepalive request survives page teardown; an ordinary
+    // Convex WebSocket mutation cannot be relied on after the tab closes.
+    const releaseOnExit = (id: string) => {
+      void fetch("/dashboard/experience/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: id }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+    const stop = () => {
+      nextCheck = 0;
+      setLease({ until: 0, offset: 0 });
+      releaseOnExit(sessionId);
+      // A late stop must never release a subsequently resumed session.
+      sessionId = crypto.randomUUID();
+    };
+    const unload = () => releaseOnExit(sessionId);
     const tick = async () => {
       if (document.hidden || pending || Date.now() < nextCheck) return;
       pending = true;
+      const requestSession = sessionId;
       try {
-        const result = await acquire({});
-        if (cancelled) return;
+        const result = await acquire({ sessionId: requestSession });
+        if (cancelled || document.hidden || requestSession !== sessionId) {
+          // Covers leaving while the start/renew request was in flight.
+          void release({ sessionId: requestSession }).catch(() => {});
+          return;
+        }
         const receivedAt = Date.now();
         setLease({
           until: result.leaseUntil,
@@ -65,13 +90,20 @@ export function useExperienceQuota(active = false) {
     };
     void tick();
     const timer = setInterval(() => void tick(), 1000);
-    document.addEventListener("visibilitychange", tick);
+    const visibilityChanged = () => {
+      if (document.hidden) stop();
+      else void tick();
+    };
+    document.addEventListener("visibilitychange", visibilityChanged);
+    window.addEventListener("pagehide", unload);
     return () => {
       cancelled = true;
+      unload();
       clearInterval(timer);
-      document.removeEventListener("visibilitychange", tick);
+      document.removeEventListener("visibilitychange", visibilityChanged);
+      window.removeEventListener("pagehide", unload);
     };
-  }, [active, isAuthenticated, acquire]);
+  }, [active, isAuthenticated, acquire, release]);
 
   const serverNow = now + lease.offset;
   const allowed = isAuthenticated && visible && lease.until > serverNow;
@@ -91,7 +123,7 @@ type Quota = ReturnType<typeof useExperienceQuota>;
 
 export function ExperienceQuotaNotice({ quota }: { quota: Quota }) {
   const allowance =
-    quota.status?.allowanceSeconds === 18_000 ? "5 hours" : "5 minutes";
+    quota.status?.allowanceSeconds === 18_000 ? "5 hours" : "10 minutes";
   const seconds = quota.remaining;
   const remaining =
     seconds === null

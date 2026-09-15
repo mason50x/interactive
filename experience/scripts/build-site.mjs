@@ -57,6 +57,36 @@ if (bundle.split(brokenUrlMatcher).length !== 2) {
 }
 writeFileSync(bundlePath, bundle.replace(brokenUrlMatcher, fixedUrlMatcher));
 
+// Modern sites pass postMessage(message, { targetOrigin, transfer }). The
+// engine only understands the older three-argument form and drops ports.
+const clientPath = join(dist, "experience", "client.js");
+let client = readFileSync(clientPath, "utf8");
+for (const [before, after] of [
+  ['this.ctx.worker?[n,i=[]]=e:[n,o,i=[]]=e;', 'this.ctx.worker?[n,i=[]]=e:[n,o,i=[]]=e;if(!this.ctx.worker&&o&&typeof o==="object"){i=o.transfer??[];o=o.targetOrigin??"/";}'],
+  ['e?([c,u=[]]=i,l=null):[c,l,u=[]]=i;', 'e?([c,u=[]]=i,l=null):[c,l,u=[]]=i;if(!e&&l&&typeof l==="object"){u=l.transfer??[];l=l.targetOrigin??"/";}'],
+]) {
+  if (client.split(before).length !== 2) throw new Error("Review the experience postMessage compatibility patch.");
+  client = client.replace(before, after);
+}
+writeFileSync(clientPath, client);
+
+// Consent SDKs locate their own script with script[src*="otSDKStub"]. The
+// rewritten src is encoded; the engine retains the original in __uv-attr-src.
+const handlerPath = join(dist, "experience", "handler.js");
+writeFileSync(handlerPath, readFileSync(handlerPath, "utf8") + String.raw`
+;(() => {
+  if (typeof document === "undefined") return;
+  for (const proto of [Document.prototype, Element.prototype]) {
+    const query = proto.querySelector;
+    proto.querySelector = function(selector) {
+      const result = query.call(this, selector);
+      if (result || typeof selector !== "string" || !/^script\[src(?:[*^$|~]?=)/i.test(selector)) return result;
+      return query.call(this, selector.replace(/^script\[src/i, "script[__uv-attr-src"));
+    };
+  }
+})();
+`);
+
 const noMaps = { recursive: true, filter: (src) => !/\.(map|d\.ts)$/.test(src) };
 cpSync(join(modules, "@mercuryworkshop", "bare-mux", "dist"), join(dist, "bridge"), noMaps);
 cpSync(join(modules, "@mercuryworkshop", "bare-as-module3", "dist"), join(dist, "transport"), noMaps);

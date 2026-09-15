@@ -146,7 +146,7 @@ export function ExperienceChrome({
           src={src}
           title={app.label}
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          allow="fullscreen; autoplay"
+          allow="fullscreen; autoplay; encrypted-media"
           referrerPolicy="no-referrer"
           className="min-h-0 w-full flex-1 border-0 bg-white"
         />
