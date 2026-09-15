@@ -1,6 +1,6 @@
 # Voting for access
 
-Voting is development-only, following Experience's `.dev.tsx` route and
+Voting is development-only, using the `.dev.tsx` route and
 `nav-extras.dev.ts` navigation convention. Production and preview builds exclude
 the route, UI, invitation action, sidebar subscription, and icon animation.
 

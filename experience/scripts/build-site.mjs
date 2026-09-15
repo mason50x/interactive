@@ -13,7 +13,7 @@
  * `deploy`, so the vendored code is always whatever package-lock.json says.
  */
 
-import { copyFileSync, cpSync, mkdirSync, rmSync, readdirSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -42,6 +42,20 @@ for (const [from, to] of [
   copyFileSync(join(engineSrc, from), join(dist, "experience", to));
 }
 copyFileSync(join(root, "site", "experience.config.js"), join(dist, "experience", "config.js"));
+
+// The engine's CSS matcher consumes the outer ')' in var(--image,
+// url()). That unbalances the stylesheet and drops thousands of YouTube's
+// component rules. Apply the correction to the shared bundle so both service
+// worker responses and dynamically inserted styles use the same matcher.
+// Fail loudly on upstream changes rather than silently shipping a stale fix.
+const bundlePath = join(dist, "experience", "bundle.js");
+const bundle = readFileSync(bundlePath, "utf8");
+const brokenUrlMatcher = String.raw`/url\(['"]?(.+?)['"]?\)/gm`;
+const fixedUrlMatcher = String.raw`/url\(['"]?([^)]+?)['"]?\)/gm`;
+if (bundle.split(brokenUrlMatcher).length !== 2) {
+  throw new Error("Review the experience CSS compatibility patch for this engine version.");
+}
+writeFileSync(bundlePath, bundle.replace(brokenUrlMatcher, fixedUrlMatcher));
 
 const noMaps = { recursive: true, filter: (src) => !/\.(map|d\.ts)$/.test(src) };
 cpSync(join(modules, "@mercuryworkshop", "bare-mux", "dist"), join(dist, "bridge"), noMaps);

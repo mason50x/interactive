@@ -35,7 +35,7 @@ const rows = [
   [
     "Experience",
     experience.url,
-    experience.from ? `${experience.from} (dev only)` : null,
+    experience.from,
   ],
   ["Mail", `@${mail.host}`, mail.from],
 ];

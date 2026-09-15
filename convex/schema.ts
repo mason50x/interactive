@@ -6,6 +6,11 @@ import { entryFields, saveFields } from "./simulator/model";
 import { nominationFields } from "./voting/model";
 
 export default defineSchema({
+  experienceLeases: defineTable({
+    clerkId: v.string(),
+    day: v.number(),
+    until: v.number(),
+  }).index("by_clerkId_and_day", ["clerkId", "day"]),
   nominations: defineTable(nominationFields)
     .index("by_status", ["status"])
     .index("by_status_and_delivery", ["status", "delivery"])

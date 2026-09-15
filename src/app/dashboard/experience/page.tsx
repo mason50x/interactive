@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ExperienceDailyQuota } from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
 import { Page, PageTitle } from "@/components/ui/page";
 import { EXPERIENCE_APPS, experienceAppHref } from "@/lib/experience";
@@ -8,10 +9,6 @@ import { EXPERIENCE_APPS, experienceAppHref } from "@/lib/experience";
 export const metadata: Metadata = { title: "Experience" };
 
 /**
- * Development only: the `.dev.tsx` name means `next build` never registers
- * this route (see `pageExtensions` in next.config.ts), so no deployment has
- * it, links to it, or bundles what it imports.
- *
  * The apps: every allowlist entry with a name and a front door, as a tile.
  * Opening one goes to `/dashboard/experience/<id>`, where it is framed inside
  * a browser-shaped shell. See `src/lib/experience.ts` for what makes an entry
@@ -26,7 +23,10 @@ export default async function ExperiencePage() {
   // of art, and it reads better at the prose pages' measure.
   return (
     <Page className="max-w-5xl">
-      <PageTitle>Experience</PageTitle>
+      <div className="space-y-3">
+        <PageTitle>Experience</PageTitle>
+        <ExperienceDailyQuota />
+      </div>
 
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {EXPERIENCE_APPS.map((app) => (

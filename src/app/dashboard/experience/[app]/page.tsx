@@ -4,11 +4,6 @@ import { notFound } from "next/navigation";
 import { ExperienceChrome } from "@/components/app/experience-chrome";
 import { experienceSrc, findExperienceApp } from "@/lib/experience";
 
-/**
- * Typed by hand rather than with `PageProps<...>`: this file is a route only
- * under `next dev` (see `pageExtensions` in next.config.ts), so the generated
- * route types have no entry for it in a production type check.
- */
 type Props = { params: Promise<{ app: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -19,8 +14,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /**
  * One app, open. The page is the whole shell: the browser-shaped chrome and
  * the frame under it fill the dashboard's main column edge to edge.
- *
- * Development only. The `.dev.tsx` name keeps this route out of every build.
  */
 export default async function ExperienceAppPage({ params }: Props) {
   await auth.protect();

@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { isAccessOpen } from "../../src/lib/access-hours";
 import { readdir } from "node:fs/promises";
 
 test("generated scripts, styles and fonts are served by the Worker", async ({
   request,
 }) => {
-  test.skip(!isAccessOpen(), "The live clock is outside access hours.");
   const files = await readdir("dist/client/_next/static", { recursive: true });
   for (const extension of [".js", ".css", ".woff2"]) {
     const paths = files.filter((file) => file.endsWith(extension));
@@ -26,34 +24,9 @@ test("generated scripts, styles and fonts are served by the Worker", async ({
   }
 });
 
-test("outside access hours all routes and assets are blocked", async ({
-  request,
-}) => {
-  test.skip(
-    isAccessOpen(),
-    "The live clock is within access hours; boundaries are covered by unit tests.",
-  );
-  for (const path of [
-    "/",
-    "/dashboard",
-    "/learn/crossy",
-    "/api/test",
-    "/favicon.ico",
-    "/robots.txt",
-  ]) {
-    const response = await request.get(path);
-    expect(response.status(), path).toBe(403);
-    expect(response.headers()["cache-control"], path).toContain("no-store");
-    expect(await response.text(), path).toContain(
-      "7:30 a.m.–2:55 p.m. Central time",
-    );
-  }
-});
-
 test("public routes and static assets retain the response policy", async ({
   request,
 }) => {
-  test.skip(!isAccessOpen(), "The live clock is outside access hours.");
   for (const path of [
     "/",
     "/about",
@@ -75,7 +48,6 @@ test("public routes and static assets retain the response policy", async ({
 test("anonymous requests cannot read protected HTML or RSC, including dotted slugs", async ({
   request,
 }) => {
-  test.skip(!isAccessOpen(), "The live clock is outside access hours.");
   for (const path of [
     "/dashboard",
     "/dashboard/chat/room.js",

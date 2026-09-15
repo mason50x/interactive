@@ -1,22 +1,14 @@
-# Site access hours
+# Site availability
 
-The Cloudflare Worker permits requests Monday–Friday from 7:30 a.m. inclusive
-until 2:55 p.m. exclusive in `America/Chicago`. This follows Central daylight
-and standard time. All other times return HTTP 403 with a non-cacheable closure
-page. There are no IP, account, path, or geographic exceptions.
+The site is available at all hours, every day. The Worker does not restrict
+requests by time or day of the week.
 
-`src/lib/access-hours.ts` defines the schedule. `worker.ts` checks it before
-calling the app. `assets.run_worker_first` in `wrangler.jsonc` ensures static
-assets also pass through the gate. No scheduler, external lookup, or database
-is needed. The same policy applies when running the built Worker locally.
+`worker.ts` applies response headers to app responses and static assets.
+`assets.run_worker_first` in `wrangler.jsonc` ensures both receive this policy.
+Successful static assets use fixed private browser cache lifetimes: one hour
+for `/_next/static/` and five minutes for other assets. Dashboard, auth, and
+learning routes retain `private, no-store` caching.
 
-Tests in `scripts/tests/access-hours.test.ts` cover boundaries, weekdays,
-weekends, daylight saving, and Worker enforcement with a controlled clock.
-The Workers browser tests check the appropriate behavior for the current time.
-
-This controls new requests to the app's Cloudflare domains. It does not unload
-already-open pages, erase downloaded content, or disconnect existing connections
-to the separately hosted Convex backend or content origin.
-
-To change the schedule, edit the helper, update the tests, build with production
-public environment variables, and deploy the generated Worker configuration.
+Tests in `scripts/tests/worker.test.ts` cover production requests in the early
+morning, evenings, and weekends, asset serving, and response caching. The
+Workers browser tests run regardless of the current time.

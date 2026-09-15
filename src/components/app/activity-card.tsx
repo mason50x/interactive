@@ -142,6 +142,7 @@ export function ActivityCard({
   return (
     <Link
       href={`/dashboard/activities/${activity.slug}`}
+      prefetch={false}
       style={hue}
       className={shell}
     >

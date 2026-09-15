@@ -6,6 +6,7 @@
   X-Robots-Tag: noindex, nofollow, noarchive
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
+  Cache-Control: no-cache
   # Only a developer's app may frame this page. The route that frames it is
   # development only, so no deployed origin is listed here on purpose.
   Content-Security-Policy: frame-ancestors 'self' http://localhost:3000

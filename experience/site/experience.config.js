@@ -6,7 +6,7 @@
 // The global names on the left are the engine's own and cannot change here.
 // Nothing in this file is a security boundary — it ships to the browser. The
 // allowlist lives in src/worker.js.
-self.__uv$config = {
+self.experienceConfig = self.__uv$config = {
   prefix: "/service/",
   encodeUrl: Ultraviolet.codec.xor.encode,
   decodeUrl: Ultraviolet.codec.xor.decode,

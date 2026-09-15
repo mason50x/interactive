@@ -21,7 +21,7 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS` | Optional comma-separated IDs for visual badges only |
 | `ASSET_ORIGIN` | Optional separate public bucket origin for hosted activities |
 | `NEXT_PUBLIC_ASSET_ORIGIN` | Legacy alias for the asset origin |
-| `EXPERIENCE_ORIGIN` | Optional development-only Worker origin |
+| `EXPERIENCE_ORIGIN` | Experience Worker origin for development and production |
 | `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | Legacy alias for the Worker origin |
 | `CONVEX_DEPLOY_KEY` | Production deployment and runtime administrative account-sync credential |
 

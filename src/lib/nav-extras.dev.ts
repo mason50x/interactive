@@ -1,5 +1,5 @@
-import { GlobeAltIcon, HandThumbUpIcon } from "@heroicons/react/24/outline";
-import { GlobeIconSolid, VoteIconSolid } from "@/components/app/nav-icons";
+import { HandThumbUpIcon } from "@heroicons/react/24/outline";
+import { VoteIconSolid } from "@/components/app/nav-icons";
 import { VotingBadge } from "@/components/app/voting/voting-badge";
 import type { NavItem } from "@/lib/nav";
 
@@ -11,11 +11,6 @@ import type { NavItem } from "@/lib/nav";
  * them either.
  */
 export const extraNavItems: NavItem[] = [
-  {
-    label: "Experience",
-    href: "/dashboard/experience",
-    icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
-  },
   {
     label: "Voting",
     href: "/dashboard/voting",

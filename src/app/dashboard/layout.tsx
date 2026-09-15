@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
-import { BrowserCheck } from "@/components/app/browser-check";
 import { ActivitiesProvider } from "@/components/app/activities-provider";
 import { AppProviders } from "@/components/app-providers";
 import { StreakProvider } from "@/components/streak-provider";
@@ -63,7 +62,6 @@ export default async function DashboardLayout({
 
   return (
     <AppProviders>
-      <BrowserCheck />
       {/* Here and not in `AppProviders`, which also wraps the marketing site
           and the auth pages: arriving at the app is a day's activity, reading
           the pricing page is not. */}

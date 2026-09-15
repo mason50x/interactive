@@ -48,22 +48,38 @@
       // Wait for *this* registration to activate. `serviceWorker.ready` would
       // never resolve here: it waits for a worker whose scope covers this page,
       // and ours covers /service/ only.
-      const registration = await navigator.serviceWorker.register("/sw.js", { scope: __uv$config.prefix });
-      await new Promise((resolve) => {
-        if (registration.active) return resolve();
-        const worker = registration.installing || registration.waiting;
-        worker.addEventListener("statechange", () => worker.state === "activated" && resolve());
+      const registration = await navigator.serviceWorker.register("/sw.js", {
+        scope: experienceConfig.prefix,
+        updateViaCache: "none",
+      });
+      await new Promise((resolve, reject) => {
+        const worker = registration.installing || registration.waiting || registration.active;
+        if (!worker) return reject(new Error("The experience worker was not installed."));
+        if (worker.state === "activated") return resolve();
+        const timeout = setTimeout(() => {
+          worker.removeEventListener("statechange", check);
+          reject(new Error("The experience took too long to start. Please reload."));
+        }, 15000);
+        function check() {
+          if (worker.state !== "activated" && worker.state !== "redundant") return;
+          clearTimeout(timeout);
+          worker.removeEventListener("statechange", check);
+          if (worker.state === "activated") resolve();
+          else reject(new Error("The experience worker could not start."));
+        }
+        worker.addEventListener("statechange", check);
+        check();
       });
 
       const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
-      await connection.setTransport("/transport/index.mjs", [location.origin + "/"]);
+      await connection.setTransport("/transport.mjs", [location.origin + "/"]);
 
       const frame = document.createElement("iframe");
       frame.title = "Experience";
-      frame.src = __uv$config.prefix + __uv$config.encodeUrl(target);
+      frame.src = experienceConfig.prefix + experienceConfig.encodeUrl(target);
       document.body.replaceChildren(frame);
-    } catch (error) {
-      show(`<p>The experience could not start.</p><p><code>${String(error && error.message || error)}</code></p>`);
+    } catch {
+      show("<p>The experience could not start.</p><p>Please reload and try again.</p>");
     }
   })();
 </script>

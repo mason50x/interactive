@@ -12,6 +12,10 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
+import {
+  ExperienceQuotaDonut,
+  useExperienceQuota,
+} from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -47,6 +51,7 @@ export function ExperienceChrome({
   app: ExperienceApp;
   src: string;
 }) {
+  const quota = useExperienceQuota(true);
   const stage = useRef<HTMLDivElement>(null);
   const [run, setRun] = useState(0);
 
@@ -109,6 +114,7 @@ export function ExperienceChrome({
           </span>
         </div>
 
+        <ExperienceQuotaDonut quota={quota} container={stage} />
         {canFull && (
           <ChromeButton
             label={full ? "Exit fullscreen" : "Fullscreen"}
@@ -134,15 +140,30 @@ export function ExperienceChrome({
         </ButtonLink>
       </div>
 
-      <iframe
-        key={run}
-        src={src}
-        title={app.label}
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        allow="fullscreen; autoplay"
-        referrerPolicy="no-referrer"
-        className="min-h-0 w-full flex-1 border-0 bg-white"
-      />
+      {quota.allowed ? (
+        <iframe
+          key={run}
+          src={src}
+          title={app.label}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          allow="fullscreen; autoplay"
+          referrerPolicy="no-referrer"
+          className="min-h-0 w-full flex-1 border-0 bg-white"
+        />
+      ) : (
+        <div
+          className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground"
+          role="status"
+        >
+          {quota.error
+            ? "Unable to check your daily time. Retrying…"
+            : quota.remaining === 0
+              ? "Your daily Experience time is used up. Come back after midnight UTC."
+              : !quota.visible
+                ? "Experience is paused while this tab is hidden."
+                : "Checking your daily Experience time…"}
+        </div>
+      )}
     </div>
   );
 }

@@ -18,7 +18,7 @@ import { useRailState } from "@/components/app/rail/use-rail-state";
 import { usePreferences } from "@/components/preferences-provider";
 import { RailSearch } from "@/components/app/rail-search";
 import { UserMenu } from "@/components/app/user-menu";
-import { NAV_HREFS, navItems } from "@/lib/nav";
+import { navItems } from "@/lib/nav";
 import type { RailState } from "@/lib/rail";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
@@ -97,7 +97,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   // the trailing segment and not just the prefix.
   const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname);
 
-  const warm = useWarmRoutes(NAV_HREFS, pathname);
+  const warm = useWarmRoutes(pathname);
 
   return (
     <RailContext value={railContext}>

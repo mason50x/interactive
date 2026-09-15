@@ -11,9 +11,10 @@ That hostname is on the same zone as the R2 bucket. The workers.dev address is
 switched off, so this is the only place the Worker answers.
 
 The app frames that page from `/dashboard/experience` — see `src/lib/experience.ts`.
-That route is development only: its page files are `page.dev.tsx`, an extension
-`next build` does not register, so no deployment has the route, the rail entry,
-or any of this code in its bundles. Only `next dev` does.
+The route and sidebar entry are included in production and development builds.
+Set `EXPERIENCE_ORIGIN` to the Experience Worker origin in the app deployment.
+Signed-in accounts share five minutes per UTC day across apps; verified admins
+get five hours. Convex stores the allowance and removes expired daily records.
 
 ## Layout
 
@@ -33,11 +34,19 @@ asset requests do not count toward the Free plan's 100,000 requests a day.
     npm run dev       # build the site, then wrangler dev on localhost:8787
     npm run deploy    # build the site, then wrangler deploy
     npm run tail      # live logs from the deployed Worker
+    npm test          # browser regressions (uses the root Playwright install)
 
-`npm run dev` serves over HTTP/1.1, and Chromium will not stream a request
-body over HTTP/1.1, so any POST a proxied page makes fails locally with a 500
-from the service worker. The deployed Worker is HTTP/2 and unaffected; test
-POST-heavy sites against the cloud.
+`npm run dev` serves over HTTP/1.1. `site/transport.mjs` buffers request
+bodies on loopback hosts because Chromium cannot stream uploads over HTTP/1.1.
+Video responses remain streamed. The commands explicitly select `wrangler.toml`
+so the main app's parent Wrangler configuration cannot take over.
+
+The build applies a checked compatibility patch to the engine's CSS URL
+matcher: empty `url()` fallbacks must not consume enclosing parentheses.
+Without it, YouTube's stylesheet loses thousands of component rules. Review
+this patch when upgrading the engine; the build fails if its source changes.
+Service worker updates bypass the script cache and activate before framing
+the destination, so returning visitors receive the corrected engine.
 
 Deploying needs `wrangler login` once on the machine. There are no secrets and
 no environment variables; the allowlist is compiled in.

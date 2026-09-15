@@ -27,6 +27,7 @@ import type * as chat_sweep from "../chat/sweep.js";
 import type * as chat_typing from "../chat/typing.js";
 import type * as crons from "../crons.js";
 import type * as days from "../days.js";
+import type * as experience from "../experience.js";
 import type * as features from "../features.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   "chat/typing": typeof chat_typing;
   crons: typeof crons;
   days: typeof days;
+  experience: typeof experience;
   features: typeof features;
   http: typeof http;
   invites: typeof invites;

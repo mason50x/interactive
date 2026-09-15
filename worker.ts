@@ -1,13 +1,8 @@
 import handler from "vinext/server/fetch-handler";
-import { accessClosedResponse, isAccessOpen } from "./src/lib/access-hours";
-
 /** Apply policy to redirects and errors as well as rendered HTML. */
 export default {
   async fetch(request: Request, env, ctx) {
-    if (process.env.NODE_ENV === "production" && !isAccessOpen()) {
-      return accessClosedResponse(request);
-    }
-    // run_worker_first keeps the access-hours policy ahead of static files.
+    // run_worker_first applies response policy to static files as well.
     // Vinext expects the asset layer to have served matching files already.
     let assetResponse: Response | undefined;
     if (request.method === "GET" || request.method === "HEAD") {
@@ -28,6 +23,20 @@ export default {
       "Content-Security-Policy",
       learn ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
     );
+    // Cloudflare assets default to max-age=0: every revisit otherwise asks
+    // this Worker to revalidate unchanged files. Cache only actual successful
+    // assets privately for a fixed lifetime.
+    if (assetResponse && (response.status === 200 || response.status === 304)) {
+      const maxAge = path.startsWith("/_next/static/") ? 3600 : 300;
+      headers.set(
+        "Cache-Control",
+        `private, max-age=${maxAge}, must-revalidate`,
+      );
+      // The asset's upstream Age/Date must not shorten or extend this policy.
+      headers.delete("Age");
+      headers.delete("Expires");
+      headers.set("Date", new Date().toUTCString());
+    }
     if (
       learn ||
       path === "/dashboard" ||

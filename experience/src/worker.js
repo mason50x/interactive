@@ -18,7 +18,7 @@
  * `tomphttp/bare-server-worker` was last touched in 2023 and only speaks v1
  * and v2, which the current engine transport no longer sends. It also
  * kept WebSocket state in KV, which on the Free plan is 1,000 writes a day.
- * This speaks v3 only and needs no storage: a proxied WebSocket is one
+ * This speaks v3 only and needs no storage: a relayed WebSocket is one
  * inbound socket paired with one outbound `fetch` upgrade, both in memory.
  *
  * ## The allowlist
@@ -122,7 +122,7 @@ export default {
   },
 };
 
-/** One proxied HTTP request. */
+/** One relayed HTTP request. */
 async function relayHttp(request) {
   const bare = joinHeaders(request.headers);
 
@@ -215,7 +215,7 @@ async function relayHttp(request) {
 }
 
 /**
- * One proxied WebSocket.
+ * One relayed WebSocket.
  *
  * The client opens a socket to us, sends one JSON `connect` message naming
  * the real destination, and expects one JSON `open` message back before any
@@ -372,7 +372,7 @@ function json(status, body) {
 
 /**
  * Reassemble `x-bare-headers` if the client split it. Each part is
- * `x-bare-headers-<n>` with a leading `;` so proxies cannot fold it.
+ * `x-bare-headers-<n>` with a leading `;` so intermediaries cannot fold it.
  */
 function joinHeaders(headers) {
   const output = new Headers(headers);

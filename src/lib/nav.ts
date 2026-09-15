@@ -2,6 +2,7 @@ import {
   CpuChipIcon,
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
+  GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import type { ComponentType } from "react";
 import type { IconPair } from "@/lib/icons";
@@ -11,6 +12,7 @@ import {
   ChipIconSolid,
   ControllerIconSolid,
   HomeIconSolid,
+  GlobeIconSolid,
 } from "@/components/app/nav-icons";
 import { extraNavItems } from "@/lib/nav-extras";
 
@@ -65,6 +67,11 @@ export const navItems: NavItem[] = [
     },
     unread: true,
   },
+  {
+    label: "Experience",
+    href: "/dashboard/experience",
+    icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
+  },
   // Rows that exist only on a developer's machine; an empty list in every
   // build. See `src/lib/nav-extras.ts` for how the swap works.
   ...extraNavItems,
@@ -74,14 +81,3 @@ export const navItems: NavItem[] = [
     icon: { outline: CpuChipIcon, solid: ChipIconSolid },
   },
 ];
-
-/**
- * The same destinations as a bare list of paths, held once.
- *
- * `useWarmRoutes` takes this as an effect dependency, so it has to keep its
- * identity between renders — `navItems.map(...)` in a component body is a new
- * array every time and would restart the idle pass on each one. Derived from
- * `navItems` rather than written out again so a new row cannot be warmed by
- * one list and shown by the other.
- */
-export const NAV_HREFS: readonly string[] = navItems.map((item) => item.href);
