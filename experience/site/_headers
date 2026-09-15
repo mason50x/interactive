@@ -7,6 +7,6 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Cache-Control: no-cache
-  # Only a developer's app may frame this page. The route that frames it is
-  # development only, so no deployed origin is listed here on purpose.
-  Content-Security-Policy: frame-ancestors 'self' http://localhost:3000
+  # Allow the production app and local development to embed Experience.
+  # Device restrictions are enforced separately by the zone's ChromeOS rule.
+  Content-Security-Policy: frame-ancestors 'self' https://interactivelearningresources.org https://www.interactivelearningresources.org http://localhost:3000
