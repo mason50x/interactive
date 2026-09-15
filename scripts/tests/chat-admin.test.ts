@@ -5,7 +5,7 @@ import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
 const mason = "user_test_admin";
-beforeEach(() => vi.stubEnv("ADMIN_CLERK_IDS", mason));
+beforeEach(() => vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries((mason).split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"])))));
 afterEach(() => vi.unstubAllEnvs());
 
 async function setup() {
@@ -151,7 +151,7 @@ test("verified admin gets 50 bot uses; other accounts get five, with refunds in 
 });
 
 test("an unset admin list denies access and the public badge setting cannot grant it", async () => {
-  vi.stubEnv("ADMIN_CLERK_IDS", "");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   vi.stubEnv("NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS", mason);
   const { t, messageId } = await setup();
   const admin = t.withIdentity({ subject: mason });
@@ -162,7 +162,7 @@ test("an unset admin list denies access and the public badge setting cannot gran
 });
 
 test("deployment admin list accepts multiple exact subjects and supports revocation", async () => {
-  vi.stubEnv("ADMIN_CLERK_IDS", ` , ${mason}, user_other_admin , `);
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries((` , ${mason}, user_other_admin , `).split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   const { t } = await setup();
   await t.run((ctx) =>
     ctx.db.insert("users", {
@@ -180,7 +180,7 @@ test("deployment admin list accepts multiple exact subjects and supports revocat
       .withIdentity({ subject: "user_other" })
       .query(api.chat.admin.mine, {}),
   ).toBe(false);
-  vi.stubEnv("ADMIN_CLERK_IDS", "user_other_admin");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("user_other_admin").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   expect(
     await t.withIdentity({ subject: mason }).query(api.chat.admin.mine, {}),
   ).toBe(false);
@@ -188,20 +188,20 @@ test("deployment admin list accepts multiple exact subjects and supports revocat
 
 
 test("badges follow the single admin list and do not expose it to anonymous callers", async () => {
-  vi.stubEnv("ADMIN_CLERK_IDS", ` , ${mason}, ${mason}, user_second , `);
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries((` , ${mason}, ${mason}, user_second , `).split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   vi.stubEnv("NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS", "impostor");
   const { t } = await setup();
   expect(await t.query(api.chat.admin.badges, {})).toEqual([]);
   expect(await t.withIdentity({ subject: "unknown" }).query(api.chat.admin.badges, {})).toEqual([]);
   const member = t.withIdentity({ subject: "impostor" });
   expect(await member.query(api.chat.admin.badges, {})).toEqual([mason, "user_second"]);
-  vi.stubEnv("ADMIN_CLERK_IDS", "user_second");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("user_second").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   expect(await member.query(api.chat.admin.badges, {})).toEqual(["user_second"]);
   expect(await t.withIdentity({ subject: mason }).query(api.chat.admin.mine, {})).toBe(false);
 });
 
 test("legacy keys cannot assign the admin role", async () => {
-  vi.stubEnv("ADMIN_CLERK_IDS", "");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   vi.stubEnv("CHAT_ADMIN_CLERK_IDS", mason);
   vi.stubEnv("NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS", mason);
   const { privilegesFor, roleFor } = await import("../../config/roles");
@@ -211,4 +211,22 @@ test("legacy keys cannot assign the admin role", async () => {
     deleteChatMessages: false, manageVoting: false, adminBadge: false,
     botTagsPerDay: 5, experienceSecondsPerDay: 1800,
   });
+});
+
+
+test("CEO and moderator keep the same capabilities but have distinct badges", async () => {
+  vi.stubEnv("STAFF_ROLES", JSON.stringify({ [mason]: "ceo", impostor: "moderator", unknown: "owner" }));
+  const { t } = await setup();
+  expect(await t.withIdentity({ subject: mason }).query(api.chat.admin.roles, {})).toEqual([
+    { clerkId: mason, role: "ceo" }, { clerkId: "impostor", role: "moderator" },
+  ]);
+  expect(await t.query(api.chat.admin.roles, {})).toEqual([]);
+  expect(await t.withIdentity({ subject: "impostor" }).query(api.chat.admin.mine, {})).toBe(true);
+  const { privilegesFor, roleFor } = await import("../../config/roles");
+  expect(roleFor(mason)).toBe("ceo");
+  expect(privilegesFor(mason)).toEqual(privilegesFor("impostor"));
+  const { botQuotaName } = await import("../../convex/chat/botConfig");
+  expect(botQuotaName(mason)).toBe("adminBotTags");
+  vi.stubEnv("STAFF_ROLES", "not json");
+  expect(await t.withIdentity({ subject: mason }).query(api.chat.admin.mine, {})).toBe(false);
 });

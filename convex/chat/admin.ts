@@ -3,7 +3,7 @@ import { internal } from "../_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
 
-import { adminClerkIds, privilegesFor, ROLES } from "../../config/roles";
+import { adminClerkIds, privilegesFor, staffRoles } from "../../config/roles";
 
 export async function adminId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -25,10 +25,23 @@ export const badges = query({
   returns: v.array(v.string()),
   handler: async ctx => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity || !ROLES.admin.adminBadge) return [];
+    if (!identity) return [];
     const user = await ctx.db.query("users")
       .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
     return user ? adminClerkIds() : [];
+  },
+});
+
+/** Staff presentation is separate from the caller's mutation capabilities. */
+export const roles = query({
+  args: {},
+  returns: v.array(v.object({ clerkId: v.string(), role: v.union(v.literal("ceo"), v.literal("moderator")) })),
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const user = await ctx.db.query("users")
+      .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
+    return user ? staffRoles() : [];
   },
 });
 

@@ -15,12 +15,14 @@ function serverSnapshot() {
 /** Cosmetic only. Permissions must always use the live server response. */
 export function useCachedAdminBadge(
   userId: string | undefined,
-  live: boolean | undefined,
-): boolean | null {
-  const key = userId ? `il-admin-badge:${userId}` : null;
+  live: "ceo" | "moderator" | "member" | undefined,
+): "ceo" | "moderator" | "member" | null {
+  const key = userId ? `il-staff-role:${userId}` : null;
   const getSnapshot = useCallback(() => {
     const value = key ? readStorage(key) : null;
-    return value === "true" ? true : value === "false" ? false : null;
+    return value === "ceo" || value === "moderator" || value === "member"
+      ? value
+      : null;
   }, [key]);
   const cached = useSyncExternalStore(subscribe, getSnapshot, serverSnapshot);
 
@@ -28,5 +30,5 @@ export function useCachedAdminBadge(
     if (key && live !== undefined) writeStorage(key, String(live));
   }, [key, live]);
 
-  return userId ? live ?? cached : null;
+  return userId ? (live ?? cached) : null;
 }

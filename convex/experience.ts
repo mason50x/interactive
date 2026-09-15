@@ -25,7 +25,7 @@ async function quota(ctx: QueryCtx) {
   const lease = await ctx.db.query("experienceLeases")
     .withIndex("by_clerkId_and_day", q => q.eq("clerkId", identity.subject).eq("day", day))
     .unique();
-  const previousAllowance = lease?.allowanceSeconds ?? (roleFor(identity.subject) === "admin" ? 18_000 : 300);
+  const previousAllowance = lease?.allowanceSeconds ?? (roleFor(identity.subject) !== "member" ? 18_000 : 300);
   const adjustment = lease ? allowanceSeconds - previousAllowance : 0;
   return { now, day, key, config, lease, adjustment, clerkId: identity.subject,
     status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value + adjustment)),

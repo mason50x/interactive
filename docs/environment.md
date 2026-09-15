@@ -43,33 +43,30 @@ separate Clerk instances and webhook secrets.
 | `CLERK_JWT_ISSUER_DOMAIN` | JWT validation; issuer of your Clerk instance |
 | `CLERK_SECRET_KEY` | Account synchronization via Clerk's backend API |
 | `CLERK_WEBHOOK_SECRET` | Verification of the Clerk users webhook |
-| `ADMIN_CLERK_IDS` | Comma-separated Clerk user IDs assigned the site-wide admin role |
+| `STAFF_ROLES` | JSON map of exact Clerk user IDs to `ceo` or `moderator` |
 | `OPENAI_API_KEY` | Optional image moderation |
 | `IMAGES_ENABLED` | Set to `1` to enable uploads after configuring moderation |
 | `GEMINI_API_KEY` | Optional bot responses |
 | `GEMINI_MODEL` | Optional model override; default in `convex/chat/bot.ts` |
 
-### Add or remove an admin
+### Staff roles
 
-Set **one key**, `ADMIN_CLERK_IDS`, in each Convex deployment's dashboard:
+Set one server-owned key, `STAFF_ROLES`, on each Convex deployment:
 
-```env
-ADMIN_CLERK_IDS=user_existing,user_new
+```json
+{"user_3IhbuJdEMX72wHvrpeidDZP1LY5":"ceo","user_3Im2mCDx3WPHlOsnBXdFAKFbWPx":"moderator"}
 ```
 
-Append an exact Clerk user ID to grant access; remove it to revoke access. An empty
-or unset value grants no admin rights. Use verified Clerk subjects from that
-instance, never names, usernames, emails, or editable metadata. No frontend
-configuration or rebuild is needed. Badges come from the same backend setting.
+Add an exact Clerk ID with `ceo` or `moderator`; remove it to revoke staff
+privileges. Unknown roles and malformed configuration grant no access.
+`config/roles.ts` defines the privileges for each role. Both currently retain
+chat moderation, voting management, 50 bot uses per rolling day and two hours
+of Experience per UTC day. CEO displays a crown and CEO text; moderator displays
+a shield. Group membership is independent.
 
-`config/roles.ts` defines all site-wide privileges: chat message deletion (within
-conversations the admin can access), voting management and email visibility,
-50 bot uses per rolling day, two hours of Experience per UTC day, and badges.
-Group owner/admin membership remains scoped to its conversation.
-
-**Migration:** copy the existing Convex `CHAT_ADMIN_CLERK_IDS` value into
-`ADMIN_CLERK_IDS` before deploying this change. Remove the old key and
-`NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS` afterward; neither is read by the new code.
+Before deploying, migrate `ADMIN_CLERK_IDS` into `STAFF_ROLES`, assigning existing
+staff the appropriate role. The old key is no longer read. Sidebar role caching
+is cosmetic and never grants backend access.
 
 Image uploads fail closed when moderation is unavailable. Model services are
 optional and subject to their providers' terms, availability, and pricing.

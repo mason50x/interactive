@@ -11,7 +11,7 @@ const start = Date.UTC(2026, 8, 15, 12);
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(start);
-  vi.stubEnv("ADMIN_CLERK_IDS", "admin");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("admin").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -208,7 +208,7 @@ test("existing five-minute accounts gain twenty-five minutes without losing time
 test("removing an admin reduces the existing allowance without resetting spent time", async () => {
   const { user } = setup("admin");
   await user.mutation(api.experience.acquire, {});
-  vi.stubEnv("ADMIN_CLERK_IDS", "");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   const revoked = await user.mutation(api.experience.acquire, {});
   expect(revoked.allowanceSeconds).toBe(1800);
   expect(revoked.remainingSeconds).toBe(1785);

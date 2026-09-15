@@ -71,7 +71,7 @@ export type Chat = {
    */
   images: boolean;
   isAdmin: boolean;
-  adminBadgeIds: string[];
+  staffRoles: { clerkId: string; role: "ceo" | "moderator" }[];
   adminBadgesLoaded: boolean;
   /**
    * The conversation whose thread is open at its live end, or `null`. Set by
@@ -97,7 +97,7 @@ const EMPTY: Chat = {
   waiting: 0,
   images: false,
   isAdmin: false,
-  adminBadgeIds: [],
+  staffRoles: [],
   adminBadgesLoaded: false,
   reading: null,
   setReading: () => {},
@@ -116,7 +116,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const conversations = useAuthedQuery(api.chat.conversations.list, {});
   const pending = useAuthedQuery(api.chat.friends.pending, {});
   const invitations = useAuthedQuery(api.chat.groups.invitations, {});
-  const adminBadgeIds = useAuthedQuery(api.chat.admin.badges, {});
+  const staffRoles = useAuthedQuery(api.chat.admin.roles, {});
   const isAdmin = useAuthedQuery(api.chat.admin.mine, {});
   const features = useAuthedQuery(api.features.get, {});
 
@@ -174,8 +174,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     waiting,
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,
-    adminBadgeIds: isAuthenticated ? adminBadgeIds ?? [] : [],
-    adminBadgesLoaded: isAuthenticated && adminBadgeIds !== undefined,
+    staffRoles: isAuthenticated ? staffRoles ?? [] : [],
+    adminBadgesLoaded: isAuthenticated && staffRoles !== undefined,
     reading,
     setReading,
     behind,

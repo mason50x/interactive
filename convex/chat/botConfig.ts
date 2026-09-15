@@ -15,9 +15,9 @@ export const BOT_TAGS_PER_DAY = ROLES.member.botTagsPerDay;
 export const botRateLimiter = new RateLimiter(components.rateLimiter, {
   adminBotTags: {
     kind: "token bucket",
-    rate: ROLES.admin.botTagsPerDay,
+    rate: ROLES.moderator.botTagsPerDay,
     period: DAY,
-    capacity: ROLES.admin.botTagsPerDay,
+    capacity: ROLES.moderator.botTagsPerDay,
   },
   botTags: {
     kind: "token bucket",
@@ -28,5 +28,5 @@ export const botRateLimiter = new RateLimiter(components.rateLimiter, {
 });
 
 export function botQuotaName(clerkId: string) {
-  return roleFor(clerkId) === "admin" ? "adminBotTags" : "botTags";
+  return roleFor(clerkId) !== "member" ? "adminBotTags" : "botTags";
 }

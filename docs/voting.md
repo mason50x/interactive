@@ -45,7 +45,7 @@ two people can share a name. Admins review the nominee before an invite is sent.
 
 Member-facing nomination responses explicitly return `null` for email. Voter
 labels come from chat profiles, not account email or full legal name fields.
-Admin authorization uses the server's `ADMIN_CLERK_IDS` configuration,
+Admin authorization uses the server's `STAFF_ROLES` configuration,
 never the public cosmetic badge configuration.
 
 ## Backend and delivery

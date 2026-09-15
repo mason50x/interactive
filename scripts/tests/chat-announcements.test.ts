@@ -7,7 +7,7 @@ const modules = import.meta.glob("../../convex/**/*.ts");
 afterEach(() => vi.unstubAllEnvs());
 
 async function setup() {
-  vi.stubEnv("ADMIN_CLERK_IDS", "admin,secondAdmin");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("admin,secondAdmin").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   const t = convexTest(schema, modules);
   for (const id of ["admin", "secondAdmin", "reader"]) {
     await t.mutation(internal.users.upsertFromClerk, {
@@ -79,7 +79,7 @@ test("only site admins can send; group roles and names cannot grant posting; rev
       await t.withIdentity({ subject }).mutation(api.chat.messages.send, args),
     ).toMatchObject({ ok: true });
   }
-  vi.stubEnv("ADMIN_CLERK_IDS", "");
+  vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   expect(
     await t
       .withIdentity({ subject: "admin" })

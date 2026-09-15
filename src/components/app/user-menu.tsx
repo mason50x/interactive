@@ -10,7 +10,7 @@ import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
 import { GitHubIcon } from "@/components/ui/github-icon";
-import { AdminCrown } from "@/components/ui/admin-crown";
+import { StaffBadge } from "@/components/ui/staff-badge";
 import { useTheme } from "@/components/theme-provider";
 import {
   Menu,
@@ -40,10 +40,13 @@ import { cn } from "@/lib/utils";
  */
 export function UserMenu() {
   const { isLoaded, user } = useUser();
-  const { adminBadgeIds, adminBadgesLoaded } = useChat();
+  const { staffRoles, adminBadgesLoaded } = useChat();
   const showAdminBadge = useCachedAdminBadge(
     user?.id,
-    user && adminBadgesLoaded ? adminBadgeIds.includes(user.id) : undefined,
+    user && adminBadgesLoaded
+      ? (staffRoles.find((entry) => entry.clerkId === user.id)?.role ??
+          "member")
+      : undefined,
   );
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
@@ -124,15 +127,14 @@ export function UserMenu() {
               showAdminBadge === null && "invisible",
             )}
           >
-            {showAdminBadge ? (
+            {showAdminBadge && showAdminBadge !== "member" ? (
               <span
                 className={cn(
                   chipClassName,
                   "release-unread-glow relative text-orange-600 [--release-rim-color:var(--color-orange-500)] [--release-rim-duration:4s] [--release-rim-glow:1px] [--release-rim-width:1px]",
                 )}
               >
-                <AdminCrown className="size-3 shrink-0" />
-                ADMIN
+                <StaffBadge role={showAdminBadge} sidebar />
               </span>
             ) : null}
             <a

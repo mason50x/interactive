@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminCrown } from "@/components/ui/admin-crown";
+import { StaffBadge } from "@/components/ui/staff-badge";
 
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
@@ -64,7 +64,10 @@ export function MessageRow({
   onJumpToMessage: (messageId: Id<"messages">) => void;
 }) {
   const react = useMutation(api.chat.messages.react);
-  const { isAdmin, adminBadgeIds } = useChat();
+  const { isAdmin, staffRoles } = useChat();
+  const staffRole = staffRoles.find(
+    (entry) => entry.clerkId === message.authorClerkId,
+  )?.role;
   const [adminError, setAdminError] = useState<string | null>(null);
 
   // Held rather than left to `:hover`, because the bar below is the menu's
@@ -294,16 +297,18 @@ export function MessageRow({
             </PersonCard>
           )}
 
-          {!mine && endsGroup && adminBadgeIds.includes(message.authorClerkId) ? (
+          {!mine && endsGroup && staffRole ? (
             <TooltipProvider delay={250}>
               <AdminTooltip>
                 <TooltipTrigger
-                  aria-label="Admin with elevated privileges"
-                  className="-ml-1 inline-flex shrink-0 items-center rounded-sm text-yellow-500 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                  aria-label={staffRole === "ceo" ? "CEO" : "Moderator"}
+                  className="-ml-1 inline-flex shrink-0 items-center gap-1 rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
-                  <AdminCrown className="size-3.5" />
+                  <StaffBadge role={staffRole} />
                 </TooltipTrigger>
-                <TooltipContent>Admin with elevated privileges</TooltipContent>
+                <TooltipContent>
+                  {staffRole === "ceo" ? "CEO" : "Moderator"}
+                </TooltipContent>
               </AdminTooltip>
             </TooltipProvider>
           ) : null}
