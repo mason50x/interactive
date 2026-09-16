@@ -19,7 +19,8 @@
     "build:production": "convex deploy --cmd \"npm run build\" --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL",
     "deploy:preview": "wrangler versions upload --config dist/server/wrangler.json",
     "cf:typegen": "wrangler types",
-    "test:workers": "playwright test"
+    "test:workers": "playwright test",
+    "check:tv-artwork": "node scripts/check-tv-artwork.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.63",

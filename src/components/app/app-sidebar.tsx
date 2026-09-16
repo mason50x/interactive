@@ -56,7 +56,7 @@ import { useWarmRoutes } from "@/lib/warm";
 export function AppSidebar() {
   const pathname = usePathname();
   const { preferences } = usePreferences();
-  const { hasUnread, mentioned, conversations } = useChat();
+  const { hasUnread, mentioned, conversations, isAdmin } = useChat();
   const hasNewAnnouncement = conversations.some(
     (conversation) =>
       conversation.kind === "announcements" && conversation.unread > 0,
@@ -98,6 +98,28 @@ export function AppSidebar() {
           const active = item.href === activeHref;
           const lit = item.href === litHref;
           const Icon = item.icon.solid;
+          const comingSoon = item.href === "/entertainment" && !isAdmin;
+
+          if (comingSoon) {
+            return (
+              <li key={item.href}>
+                <span
+                  aria-disabled="true"
+                  aria-label="Entertainment — SOON"
+                  title="Entertainment — SOON"
+                  className="relative flex h-11 cursor-not-allowed items-center rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap text-muted-foreground opacity-40"
+                >
+                  <Icon className="ml-2 size-5 shrink-0 wide:ml-0" />
+                  <span className="hidden wide:ml-3 wide:inline">
+                    Entertainment
+                  </span>
+                  <span className="ml-auto hidden rounded border border-border px-1.5 py-0.5 text-[0.625rem] leading-none wide:inline">
+                    SOON
+                  </span>
+                </span>
+              </li>
+            );
+          }
 
           return (
             <Fragment key={item.href}>

@@ -1,4 +1,5 @@
 import concurrent.futures, html, json, re, urllib.request
+from pathlib import Path
 
 source = open("tv-and-movie-links.md", encoding="utf8").read()
 links, seen = [], set()
@@ -34,5 +35,15 @@ for title, url, files in results:
                          "number": int(em.group(1)) if em else i, "title": name})
     base.append({"slug": key, "title": title, "genre": "anime" if re.search(r"anime|manga|naruto|one punch|attack|jujutsu|saga|man", title, re.I) else "animation",
                  "thumbnail": "", "episodes": episodes, "sourceUrl": url})
+# Artwork identities are reviewed explicitly. Never replace them with fuzzy
+# title searches, blank thumbnails, or generated placeholder images on rebuild.
+artwork = json.load(open("scripts/data/tv-artwork.json", encoding="utf8"))
+missing = [entry["slug"] for entry in base if entry["slug"] not in artwork]
+if missing:
+    raise SystemExit("Resolve real artwork before rebuilding: " + ", ".join(missing))
+for entry in base:
+    entry["thumbnail"] = artwork[entry["slug"]]["thumbnail"]
+    if not Path("public" + entry["thumbnail"]).is_file():
+        raise SystemExit("Missing local artwork: " + entry["thumbnail"])
 json.dump(base, open("src/lib/tv.catalogue.json", "w", encoding="utf8"), indent=2, ensure_ascii=False); open("src/lib/tv.catalogue.json", "a").write("\n")
 print(f"shows={len(base)} episodes={sum(len(x['episodes']) for x in base)} folders={len(links)}")

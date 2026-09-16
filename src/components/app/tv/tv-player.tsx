@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { ActivityFrame } from "@/components/app/activity-frame";
-import { PlaybackHelpButton } from "./entertainment-setup";
 import type { TvShow } from "@/lib/tv-types";
 
 export function TvPlayer({ show }: { show: TvShow }) {
@@ -26,7 +25,6 @@ export function TvPlayer({ show }: { show: TvShow }) {
               </option>
             ))}
           </select>
-          <PlaybackHelpButton />
         </>
       }
     />

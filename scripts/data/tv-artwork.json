@@ -1,0 +1,2825 @@
+{
+  "my-adventures-with-superman": {
+    "identity": "My Adventures with Superman",
+    "source": "https://www.tvmaze.com/shows/55414/my-adventures-with-superman",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/528/1320723.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-55414.jpg",
+    "sha256": "fb76c5b285edb16895b7211f62e8aecb39d70c3d822b06ae92542fc1855b9130"
+  },
+  "the-cuphead-show": {
+    "identity": "The Cuphead Show!",
+    "source": "https://www.tvmaze.com/shows/42927/the-cuphead-show",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/396/991620.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-42927.jpg",
+    "sha256": "8ecf2fd08b65b5b6680692bc7a54459f240758e5eb017c53e0fb593ee94d9622"
+  },
+  "static-shock": {
+    "identity": "Static Shock",
+    "source": "https://www.tvmaze.com/shows/5950/static-shock",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/566585.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-5950.jpg",
+    "sha256": "5e324cd3f2e7c9593b28c9be7e20cc6d04c22e14f2a7d699dfc8f0603f2851c7"
+  },
+  "one-punch-man": {
+    "identity": "One-Punch Man",
+    "source": "https://www.tvmaze.com/shows/4201/one-punch-man",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/219/548004.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-4201.jpg",
+    "sha256": "191548893b578c2fd4408a901b2bfba5650cf2d0611c3ba31e939a94577be68d"
+  },
+  "avatar-the-last-airbender": {
+    "identity": "Avatar: The Last Airbender",
+    "source": "https://www.tvmaze.com/shows/555/avatar-the-last-airbender",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/71/178922.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-555.jpg",
+    "sha256": "de6bd144f0f3943d6474eb13dfcc5ef9682fdc41b50a4bc3adc101dda834be34"
+  },
+  "superman": {
+    "identity": "My Adventures with Superman",
+    "source": "https://www.tvmaze.com/shows/55414/my-adventures-with-superman",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/528/1320723.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-55414.jpg",
+    "sha256": "fb76c5b285edb16895b7211f62e8aecb39d70c3d822b06ae92542fc1855b9130"
+  },
+  "b": {
+    "identity": "Boruto: Naruto Next Generations",
+    "source": "https://www.tvmaze.com/shows/23796/boruto-naruto-next-generations",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/101/253829.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-23796.jpg",
+    "sha256": "e245a19273832e016e2582019ec545a5b4e037ba258fee35ba8b66dc116c44a3"
+  },
+  "o": {
+    "identity": "Boruto: Naruto Next Generations",
+    "source": "https://www.tvmaze.com/shows/23796/boruto-naruto-next-generations",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/101/253829.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-23796.jpg",
+    "sha256": "e245a19273832e016e2582019ec545a5b4e037ba258fee35ba8b66dc116c44a3"
+  },
+  "r": {
+    "identity": "Boruto: Naruto Next Generations",
+    "source": "https://www.tvmaze.com/shows/23796/boruto-naruto-next-generations",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/101/253829.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-23796.jpg",
+    "sha256": "e245a19273832e016e2582019ec545a5b4e037ba258fee35ba8b66dc116c44a3"
+  },
+  "u": {
+    "identity": "Boruto: Naruto Next Generations",
+    "source": "https://www.tvmaze.com/shows/23796/boruto-naruto-next-generations",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/101/253829.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-23796.jpg",
+    "sha256": "e245a19273832e016e2582019ec545a5b4e037ba258fee35ba8b66dc116c44a3"
+  },
+  "t": {
+    "identity": "Boruto: Naruto Next Generations",
+    "source": "https://www.tvmaze.com/shows/23796/boruto-naruto-next-generations",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/101/253829.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-23796.jpg",
+    "sha256": "e245a19273832e016e2582019ec545a5b4e037ba258fee35ba8b66dc116c44a3"
+  },
+  "naruto": {
+    "identity": "Naruto",
+    "source": "https://www.tvmaze.com/shows/495/naruto",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/3/9744.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-495.jpg",
+    "sha256": "a01ab323a1a2d28a1364e0d5513e78bfccc758f6502da43349d8264c8e5c09e1"
+  },
+  "kaiju-no-8": {
+    "identity": "Kaiju No. 8",
+    "source": "https://www.tvmaze.com/shows/73362/kaiju-no-8",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/508/1271203.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-73362.jpg",
+    "sha256": "1c6caaa069c1b0e17dd9a7657dceba0d17b8ef5b1ef3efd52d5bb343bf6d0562"
+  },
+  "berserk": {
+    "identity": "Berserk",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt5847454/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTY0ZGMwZmEtNDVmMy00OWJmLWFlNjEtMGZkNTdlN2EzOWVmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5847454.jpg",
+    "sha256": "02cdafc62fc0393712deb74528e6dba5d93b5c7f7ecbd4a67c4e35783a65e95a"
+  },
+  "black-clover": {
+    "identity": "Black Clover",
+    "source": "https://www.tvmaze.com/shows/31396/black-clover",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/564/1411801.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-31396.jpg",
+    "sha256": "197e67ed9db888c825f5dcf5b669859d5e414e13fe98d646bd030613acaa9abf"
+  },
+  "vinland-saga": {
+    "identity": "Vinland Saga",
+    "source": "https://www.tvmaze.com/shows/42155/vinland-saga",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/508/1270295.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-42155.jpg",
+    "sha256": "f313c3c8e4c84a74e7c89c7bd98f6d717d09791df65f36c7c0367f967f0ef71d"
+  },
+  "sakamoto-days": {
+    "identity": "Sakamoto Days",
+    "source": "https://www.tvmaze.com/shows/77383/sakamoto-days",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/580/1450303.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-77383.jpg",
+    "sha256": "aa8a7759f77207bd210e4a894ae6205fd781ee3e3c71b7c1b5d831a9060676ab"
+  },
+  "chainsaw-man": {
+    "identity": "Chainsaw Man",
+    "source": "https://www.tvmaze.com/shows/63451/chainsaw-man",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/422/1056726.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-63451.jpg",
+    "sha256": "2f2b279640c5a486e48af318a1b469772b9ed5a51b0d6c3ee5a9a5db355fe3c8"
+  },
+  "afro-samurai": {
+    "identity": "Afro Samurai",
+    "source": "https://www.tvmaze.com/shows/4889/afro-samurai",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/21/53514.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-4889.jpg",
+    "sha256": "35a803782f8530c1a221a696239e33dbf14f62e2ed9a4285c783dca096b5340d"
+  },
+  "jjk-s2": {
+    "identity": "Jujutsu Kaisen",
+    "source": "https://www.tvmaze.com/shows/48450/jujutsu-kaisen",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/608/1521905.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-48450.jpg",
+    "sha256": "b5e76e4161d81697a5d5cb06027e601cba012e869591b45961bc10e80daa8cab"
+  },
+  "solo-leveling": {
+    "identity": "Solo Leveling",
+    "source": "https://www.tvmaze.com/shows/64632/solo-leveling",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/497/1244908.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-64632.jpg",
+    "sha256": "505a8dd3492ae464de57f301e0939cb2f85db9bbca0afe88ca54ccb823b15fbf"
+  },
+  "tokyo": {
+    "identity": "Tokyo Ghoul",
+    "source": "https://www.tvmaze.com/shows/1440/tokyo-ghoul",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/604/1510953.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-1440.jpg",
+    "sha256": "3198a1fc0871754afb7af18414b23ce81a51e4ad63faee0c5d4426103e6e7f40"
+  },
+  "ghoul": {
+    "identity": "Tokyo Ghoul",
+    "source": "https://www.tvmaze.com/shows/1440/tokyo-ghoul",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/604/1510953.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-1440.jpg",
+    "sha256": "3198a1fc0871754afb7af18414b23ce81a51e4ad63faee0c5d4426103e6e7f40"
+  },
+  "baki": {
+    "identity": "Baki",
+    "source": "https://www.tvmaze.com/shows/37673/baki",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/160/401566.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-37673.jpg",
+    "sha256": "c89dfe1f02d72db8ccd66b4f40ceb9604693f7cd16265cbbc651970bf7b32c07"
+  },
+  "toilet-bound-hanako-kun": {
+    "identity": "Toilet-Bound Hanako-kun",
+    "source": "https://www.tvmaze.com/shows/45746/toilet-bound-hanako-kun",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/235/587899.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-45746.jpg",
+    "sha256": "3fb17361161b99fb765cf058e039fb65be58135e1a03580aee1d784d2ea887df"
+  },
+  "sailor-moon": {
+    "identity": "Bishoujo Senshi Sailor Moon",
+    "source": "https://www.tvmaze.com/shows/5476/bishoujo-senshi-sailor-moon",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/291/728726.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-5476.jpg",
+    "sha256": "5826e096db4ddba4fb47e215e86ce6d6ee037e1f10e38b6c53a2e29dfcbe9d8e"
+  },
+  "full-metal-alchemist": {
+    "identity": "Fullmetal Alchemist: Brotherhood",
+    "source": "https://www.tvmaze.com/shows/2071/fullmetal-alchemist-brotherhood",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/485/1214095.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-2071.jpg",
+    "sha256": "34bfdde151924aac5a360d7749adc23bbda518a065cb375136c4f65a3a39c02d"
+  },
+  "death-note": {
+    "identity": "Death Note",
+    "source": "https://www.tvmaze.com/shows/40/death-note",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/499/1249019.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-40.jpg",
+    "sha256": "8a49c36a32104192f1c0f75798ddcf612f5e164963f7d06a002aa61544adc407"
+  },
+  "high-card": {
+    "identity": "High Card",
+    "source": "https://www.tvmaze.com/shows/65772/high-card",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/435/1087913.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-65772.jpg",
+    "sha256": "5113cfdd53ce972869eed6b93491a64350b7df89cb167d48cb2234a338521c6b"
+  },
+  "tower-of-god": {
+    "identity": "Tower of God",
+    "source": "https://www.tvmaze.com/shows/46815/tower-of-god",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/562/1405891.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-46815.jpg",
+    "sha256": "aef964fe96ae8cf13d3055c69f9ccb6a4b2a493c2cb0e0a5c608cc587353b3fc"
+  },
+  "bocchi-the-rock": {
+    "identity": "Bocchi the Rock!",
+    "source": "https://www.tvmaze.com/shows/64321/bocchi-the-rock",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/604/1510962.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-64321.jpg",
+    "sha256": "f6eec8f65b645ff5e851c897420bd6b40c7e7268ba8d10d77ef12be3df8e0f91"
+  },
+  "hell-s-paradise": {
+    "identity": "Hell's Paradise",
+    "source": "https://www.tvmaze.com/shows/65876/hells-paradise",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/608/1520006.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-65876.jpg",
+    "sha256": "a90fe58ff3fa3f1842fdc754bc768084829c5eeb2b0e4fc5d8789d106ae4a7ad"
+  },
+  "reincarnated-as-a-slime": {
+    "identity": "That Time I Got Reincarnated as a Slime",
+    "source": "https://www.tvmaze.com/shows/38390/that-time-i-got-reincarnated-as-a-slime",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/509/1274849.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-38390.jpg",
+    "sha256": "c34c31cccc4d12eb771478d3a8fb12e5ea075753e4ba39795cc3b189327d7916"
+  },
+  "lookism": {
+    "identity": "Lookism",
+    "source": "https://www.tvmaze.com/shows/64539/lookism",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/429/1074422.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-64539.jpg",
+    "sha256": "78bfe0129ae5cf5e5384407d80a923067c0f73812ba27e1fbbbaaeac8e7d06af"
+  },
+  "rorouni-kenshin": {
+    "identity": "Rurouni Kenshin: Meiji Kenkaku Romantan",
+    "source": "https://www.tvmaze.com/shows/67637/rurouni-kenshin-meiji-kenkaku-romantan",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/557/1394571.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-67637.jpg",
+    "sha256": "b799ef78357c46c98a55ac506bd8386107cb43058bdf70490ffd6d02497a57b9"
+  },
+  "black-lagoon": {
+    "identity": "Black Lagoon",
+    "source": "https://www.tvmaze.com/shows/8232/black-lagoon",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/179/448972.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-8232.jpg",
+    "sha256": "be02f4874a68feaa0e6b53ecc2702389be3cb4f5bd759c87583030d067b77712"
+  },
+  "danganronpa": {
+    "identity": "Danganronpa: The Animation",
+    "source": "https://www.tvmaze.com/shows/5279/danganronpa-the-animation",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/22/55063.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-5279.jpg",
+    "sha256": "f59ca4f7a31b6132d2f186d18c83c92d95f477f622474de65595577d42d065a6"
+  },
+  "the-eminence-in-shadow": {
+    "identity": "The Eminence in Shadow",
+    "source": "https://www.tvmaze.com/shows/63236/the-eminence-in-shadow",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/608/1521906.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-63236.jpg",
+    "sha256": "911f35322808a8f84bd145506195331f3e47575ce17d3c5a36ffff4390849af4"
+  },
+  "mushoko-tensei": {
+    "identity": "Mushoku Tensei: Jobless Reincarnation",
+    "source": "https://www.tvmaze.com/shows/52279/mushoku-tensei-jobless-reincarnation",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/631/1578229.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-52279.jpg",
+    "sha256": "3a99033f034f43dadf09f5b0cffbd4504b076e8b5534bdd3d4719c6fe6f01636"
+  },
+  "ranking-of-kings": {
+    "identity": "Ousama Ranking",
+    "source": "https://www.tvmaze.com/shows/56084/ousama-ranking",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/399/997839.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-56084.jpg",
+    "sha256": "07c1e17f2da8c4906708061a9658b0cc9243aea1b5a158e7b15cc55e29c1deb7"
+  },
+  "m": {
+    "identity": "My Hero Academia",
+    "source": "https://www.tvmaze.com/shows/13615/my-hero-academia",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/599/1499141.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-13615.jpg",
+    "sha256": "fd1f50e226417108779886fb0e5d96ada65fd986c44f57456a5aa1522c481a45"
+  },
+  "y": {
+    "identity": "My Hero Academia",
+    "source": "https://www.tvmaze.com/shows/13615/my-hero-academia",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/599/1499141.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-13615.jpg",
+    "sha256": "fd1f50e226417108779886fb0e5d96ada65fd986c44f57456a5aa1522c481a45"
+  },
+  "h": {
+    "identity": "My Hero Academia",
+    "source": "https://www.tvmaze.com/shows/13615/my-hero-academia",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/599/1499141.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-13615.jpg",
+    "sha256": "fd1f50e226417108779886fb0e5d96ada65fd986c44f57456a5aa1522c481a45"
+  },
+  "e": {
+    "identity": "My Hero Academia",
+    "source": "https://www.tvmaze.com/shows/13615/my-hero-academia",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/599/1499141.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-13615.jpg",
+    "sha256": "fd1f50e226417108779886fb0e5d96ada65fd986c44f57456a5aa1522c481a45"
+  },
+  "acade": {
+    "identity": "My Hero Academia",
+    "source": "https://www.tvmaze.com/shows/13615/my-hero-academia",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/599/1499141.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-13615.jpg",
+    "sha256": "fd1f50e226417108779886fb0e5d96ada65fd986c44f57456a5aa1522c481a45"
+  },
+  "mia": {
+    "identity": "My Hero Academia",
+    "source": "https://www.tvmaze.com/shows/13615/my-hero-academia",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/599/1499141.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-13615.jpg",
+    "sha256": "fd1f50e226417108779886fb0e5d96ada65fd986c44f57456a5aa1522c481a45"
+  },
+  "digimon-fusion": {
+    "identity": "Digimon Fusion",
+    "source": "https://www.tvmaze.com/shows/2447/digimon-fusion",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/13/32809.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-2447.jpg",
+    "sha256": "4ef8f63d115286e6c3d5e5f06951c78316fc21d1a4a47d4d24296ae081186d5a"
+  },
+  "seven-deadly-sins": {
+    "identity": "The Seven Deadly Sins",
+    "source": "https://www.tvmaze.com/shows/8524/the-seven-deadly-sins",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/282/707000.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-8524.jpg",
+    "sha256": "d05daecd63f252b4386c507fe6af3d2f3de808c707ca5794cef7b0d60eecd8b5"
+  },
+  "summer-pockets": {
+    "identity": "Summer Pockets",
+    "source": "https://www.tvmaze.com/shows/81600/summer-pockets",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/562/1407247.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-81600.jpg",
+    "sha256": "a1cf2f9497b7b322a74501dc64643cfb0242aad6f2cb51fe35c978d47e1960b4"
+  },
+  "parallel-world-pharmacy": {
+    "identity": "Parallel World Pharmacy",
+    "source": "https://www.tvmaze.com/shows/62784/parallel-world-pharmacy",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/416/1040630.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-62784.jpg",
+    "sha256": "9e2688e0f0c0f8d106df0cb8619cd22a3a81e9da14d44c9a289a1416843c8a2a"
+  },
+  "parry-susu": {
+    "identity": "I Parry Everything",
+    "source": "https://www.tvmaze.com/shows/77803/i-parry-everything",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/608/1520554.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-77803.jpg",
+    "sha256": "34f6ac93cf29efaf59591cf54a537a8c12c26c873d08bab4a55d88f16a8c4fa0"
+  },
+  "op-insta-death-ability": {
+    "identity": "My Instant Death Ability is So Overpowered, No One in This Other World Stands a Chance Against Me!",
+    "source": "https://www.tvmaze.com/shows/72091/my-instant-death-ability-is-so-overpowered-no-one-in-this-other-world-stands-a-chance-against-me",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/617/1542879.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-72091.jpg",
+    "sha256": "98c34b8c2200083d4a5d736f91386412ea20a3e2d7b01a90c46c4105e4b1a66f"
+  },
+  "in-another-world": {
+    "identity": "In Another World with My Smartphone",
+    "source": "https://www.tvmaze.com/shows/28512/in-another-world-with-my-smartphone",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/611/1529051.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-28512.jpg",
+    "sha256": "a6314d226f5a5c3ffea41bc41acfeddb50253225bd48d03eed5cc8923c568ac9"
+  },
+  "sweet-reincarnation": {
+    "identity": "Okashi na Tensei",
+    "source": "https://www.tvmaze.com/shows/69623/okashi-na-tensei",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/467/1167657.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-69623.jpg",
+    "sha256": "082feeadd2feb94b6363b6c29e4c8bdafb069580aaece744b7d26e5a6e1eab3c"
+  },
+  "lvl-99-villain": {
+    "identity": "Villainess Level 99: I May Be the Hidden Boss But I'm Not the Demon Lord",
+    "source": "https://www.tvmaze.com/shows/73419/villainess-level-99-i-may-be-the-hidden-boss-but-im-not-the-demon-lord",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/492/1232124.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-73419.jpg",
+    "sha256": "4507b84298d5f84bbd6d9454b1806c94cd4f546e27e2d2cd80aa7db65b36c009"
+  },
+  "gravity-falls": {
+    "identity": "Gravity Falls",
+    "source": "https://www.tvmaze.com/shows/396/gravity-falls",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/2/6140.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-396.jpg",
+    "sha256": "16b9e86786858e7c11b2d1b6edbfd8d01a8b522cd25b16f1c8c1bd89695fac23"
+  },
+  "static-shock-s1": {
+    "identity": "Static Shock",
+    "source": "https://www.tvmaze.com/shows/5950/static-shock",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/566585.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-5950.jpg",
+    "sha256": "5e324cd3f2e7c9593b28c9be7e20cc6d04c22e14f2a7d699dfc8f0603f2851c7"
+  },
+  "static-shock-s2": {
+    "identity": "Static Shock",
+    "source": "https://www.tvmaze.com/shows/5950/static-shock",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/566585.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-5950.jpg",
+    "sha256": "5e324cd3f2e7c9593b28c9be7e20cc6d04c22e14f2a7d699dfc8f0603f2851c7"
+  },
+  "static-shock-s3": {
+    "identity": "Static Shock",
+    "source": "https://www.tvmaze.com/shows/5950/static-shock",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/566585.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-5950.jpg",
+    "sha256": "5e324cd3f2e7c9593b28c9be7e20cc6d04c22e14f2a7d699dfc8f0603f2851c7"
+  },
+  "teen-titans": {
+    "identity": "Teen Titans",
+    "source": "https://www.tvmaze.com/shows/765/teen-titans",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/6/15290.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-765.jpg",
+    "sha256": "e7b929813cf68b601fdfadbc909cc4fa0f8d7d171c80ebfe2df140a74c6623df"
+  },
+  "teen-titans-s2": {
+    "identity": "Teen Titans",
+    "source": "https://www.tvmaze.com/shows/765/teen-titans",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/6/15290.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-765.jpg",
+    "sha256": "e7b929813cf68b601fdfadbc909cc4fa0f8d7d171c80ebfe2df140a74c6623df"
+  },
+  "teen-titans-s3": {
+    "identity": "Teen Titans",
+    "source": "https://www.tvmaze.com/shows/765/teen-titans",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/6/15290.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-765.jpg",
+    "sha256": "e7b929813cf68b601fdfadbc909cc4fa0f8d7d171c80ebfe2df140a74c6623df"
+  },
+  "kim-possible-s1": {
+    "identity": "Kim Possible",
+    "source": "https://www.tvmaze.com/shows/2557/kim-possible",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/565519.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-2557.jpg",
+    "sha256": "d86974bc9edb938403243e5ce29ca9069b5e321be3c7bbb73f8f66ff6edb088c"
+  },
+  "kim-possible-s2": {
+    "identity": "Kim Possible",
+    "source": "https://www.tvmaze.com/shows/2557/kim-possible",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/565519.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-2557.jpg",
+    "sha256": "d86974bc9edb938403243e5ce29ca9069b5e321be3c7bbb73f8f66ff6edb088c"
+  },
+  "kim-possible-s3": {
+    "identity": "Kim Possible",
+    "source": "https://www.tvmaze.com/shows/2557/kim-possible",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/226/565519.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-2557.jpg",
+    "sha256": "d86974bc9edb938403243e5ce29ca9069b5e321be3c7bbb73f8f66ff6edb088c"
+  },
+  "tmnt": {
+    "identity": "Teenage Mutant Ninja Turtles",
+    "source": "https://www.tvmaze.com/shows/668/teenage-mutant-ninja-turtles",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/5/14755.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-668.jpg",
+    "sha256": "b50a5cee1cc243b13ca9f34816a5a34d38e2f19aafe6cde206fb9ed70c2e0931"
+  },
+  "tmnt-s2": {
+    "identity": "Teenage Mutant Ninja Turtles",
+    "source": "https://www.tvmaze.com/shows/668/teenage-mutant-ninja-turtles",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/5/14755.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-668.jpg",
+    "sha256": "b50a5cee1cc243b13ca9f34816a5a34d38e2f19aafe6cde206fb9ed70c2e0931"
+  },
+  "tmnt-s3": {
+    "identity": "Teenage Mutant Ninja Turtles",
+    "source": "https://www.tvmaze.com/shows/668/teenage-mutant-ninja-turtles",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/5/14755.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-668.jpg",
+    "sha256": "b50a5cee1cc243b13ca9f34816a5a34d38e2f19aafe6cde206fb9ed70c2e0931"
+  },
+  "the-wonderfully-weird-world-of-gumball": {
+    "identity": "The Wonderfully Weird World of Gumball",
+    "source": "https://www.tvmaze.com/shows/86249/the-wonderfully-weird-world-of-gumball",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/604/1510610.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-86249.jpg",
+    "sha256": "f5104e097544d165387eb5213b36a0434ca2bc67c40ec69521d923a16cd035e2"
+  },
+  "the-amazing-world-of-gumball-s01-360p-re-webrip": {
+    "identity": "The Amazing World of Gumball",
+    "source": "https://www.tvmaze.com/shows/3134/the-amazing-world-of-gumball",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/17/43096.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-3134.jpg",
+    "sha256": "5ad41a572fbf9bd3801e7147f915865edd1d3173fdb1c35b2729ca6a4abd0b53"
+  },
+  "the-amazing-world-of-gumball-s02-360p-re-webrip": {
+    "identity": "The Amazing World of Gumball",
+    "source": "https://www.tvmaze.com/shows/3134/the-amazing-world-of-gumball",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/17/43096.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-3134.jpg",
+    "sha256": "5ad41a572fbf9bd3801e7147f915865edd1d3173fdb1c35b2729ca6a4abd0b53"
+  },
+  "sonic-x-full-series-dvd-ripped": {
+    "identity": "Sonic X",
+    "source": "https://www.tvmaze.com/shows/7646/sonic-x",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/28/70421.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-7646.jpg",
+    "sha256": "8d46b7a98cc6d691f72d5637af95386d7cec2d36003ca1d4c98998c9b0762bbe"
+  },
+  "steven-universe": {
+    "identity": "Steven Universe",
+    "source": "https://www.tvmaze.com/shows/1615/steven-universe",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/8/22200.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-1615.jpg",
+    "sha256": "127a3064e351eb68ba185d400dfbc7674fa1d5b6d6b4cdc3385b576f87cb6dd2"
+  },
+  "hey-arnold": {
+    "identity": "Hey Arnold!",
+    "source": "https://www.tvmaze.com/shows/6482/hey-arnold",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/24/61868.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-6482.jpg",
+    "sha256": "76796fec6716247326d9960b82cdc783fe95fdd921441a099abb47275b1c1bea"
+  },
+  "hazbin-hotel-series": {
+    "identity": "Hazbin Hotel",
+    "source": "https://www.tvmaze.com/shows/43094/hazbin-hotel",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/594/1487307.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-43094.jpg",
+    "sha256": "f84bbeb13c6ff76a7d14d8458a7c7f8ad69dec3d474ff26c30b0fb376d568dfb"
+  },
+  "hazbin-hotel-s2": {
+    "identity": "Hazbin Hotel",
+    "source": "https://www.tvmaze.com/shows/43094/hazbin-hotel",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/594/1487307.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-43094.jpg",
+    "sha256": "f84bbeb13c6ff76a7d14d8458a7c7f8ad69dec3d474ff26c30b0fb376d568dfb"
+  },
+  "the-spectacular-spiderman": {
+    "identity": "The Spectacular Spider-Man",
+    "source": "https://www.tvmaze.com/shows/4490/the-spectacular-spider-man",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/20/51967.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-4490.jpg",
+    "sha256": "ab7a9a1a0c69b59d95f910b0cbd3b2a9c9a542ae5045e527e9139566df6f599f"
+  },
+  "adventure-time-fiona-and-cake": {
+    "identity": "Adventure Time: Fionna and Cake",
+    "source": "https://www.tvmaze.com/shows/56904/adventure-time-fionna-and-cake",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/604/1510959.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-56904.jpg",
+    "sha256": "075f762ff03817dcd720b893ba128090e2e52894ede4f4cb14910cdb13034b07"
+  },
+  "lab-rats-season-2": {
+    "identity": "Lab Rats",
+    "source": "https://www.tvmaze.com/shows/1362/lab-rats",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/7/18894.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-1362.jpg",
+    "sha256": "dbbdbe022e001893553a4f21efa1cf6ff049f7f0b11cef1f6b8f739c3e59a1e1"
+  },
+  "lab-rats-season-3": {
+    "identity": "Lab Rats",
+    "source": "https://www.tvmaze.com/shows/1362/lab-rats",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/7/18894.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-1362.jpg",
+    "sha256": "dbbdbe022e001893553a4f21efa1cf6ff049f7f0b11cef1f6b8f739c3e59a1e1"
+  },
+  "lab-rats-season-4": {
+    "identity": "Lab Rats",
+    "source": "https://www.tvmaze.com/shows/1362/lab-rats",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/7/18894.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-1362.jpg",
+    "sha256": "dbbdbe022e001893553a4f21efa1cf6ff049f7f0b11cef1f6b8f739c3e59a1e1"
+  },
+  "cobra-kai": {
+    "identity": "Cobra Kai",
+    "source": "https://www.tvmaze.com/shows/30960/cobra-kai",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/536/1340290.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-30960.jpg",
+    "sha256": "467bd869a435b574281643f1473b1c43b0a0a1a23009d2d3de8a917472b53c5e"
+  },
+  "the-last-of-us": {
+    "identity": "The Last of Us",
+    "source": "https://www.tvmaze.com/shows/46562/the-last-of-us",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/563/1409008.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-46562.jpg",
+    "sha256": "4b5f3f41e867f8fb08f64bc6947690817cfa0f77216e97cc6b8da6638aa55bbb"
+  },
+  "the-good-doctor-season-1": {
+    "identity": "The Good Doctor",
+    "source": "https://www.tvmaze.com/shows/21845/the-good-doctor",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/507/1269854.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-21845.jpg",
+    "sha256": "be4f8f5f37a6c019c8e7fdbbb31e6ac462d9c896be9723b883f40662f4731c03"
+  },
+  "the-good-doctor-season-02-s02-complete-720p-webrip-2ch-x265-hevc-psa": {
+    "identity": "The Good Doctor",
+    "source": "https://www.tvmaze.com/shows/21845/the-good-doctor",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/507/1269854.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-21845.jpg",
+    "sha256": "be4f8f5f37a6c019c8e7fdbbb31e6ac462d9c896be9723b883f40662f4731c03"
+  },
+  "the-good-doctor-s03-360p-re-webrip": {
+    "identity": "The Good Doctor",
+    "source": "https://www.tvmaze.com/shows/21845/the-good-doctor",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/507/1269854.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-21845.jpg",
+    "sha256": "be4f8f5f37a6c019c8e7fdbbb31e6ac462d9c896be9723b883f40662f4731c03"
+  },
+  "the-good-doctor-s04-360p-re-webrip": {
+    "identity": "The Good Doctor",
+    "source": "https://www.tvmaze.com/shows/21845/the-good-doctor",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/507/1269854.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-21845.jpg",
+    "sha256": "be4f8f5f37a6c019c8e7fdbbb31e6ac462d9c896be9723b883f40662f4731c03"
+  },
+  "the-good-doctor-s05-360p-re-webrip": {
+    "identity": "The Good Doctor",
+    "source": "https://www.tvmaze.com/shows/21845/the-good-doctor",
+    "image": "https://static.tvmaze.com/uploads/images/original_untouched/507/1269854.jpg",
+    "thumbnail": "/thumbnails/tv/tvmaze-21845.jpg",
+    "sha256": "be4f8f5f37a6c019c8e7fdbbb31e6ac462d9c896be9723b883f40662f4731c03"
+  },
+  "mulan-1-2": {
+    "identity": "Mulan",
+    "year": 1998,
+    "source": "https://www.imdb.com/title/tt0120762/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYzU0ZTQxZDktOGY0Yy00NjdiLTllNDItMTMzMjI1YjMyYjRhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0120762.jpg",
+    "sha256": "8a66f94cc10bb62bb57eb7633c0326b7c7de3eab3f749262de2068d2b18e8092"
+  },
+  "shrek-1": {
+    "identity": "Shrek",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0126029/",
+    "image": "https://m.media-amazon.com/images/M/MV5BN2FkMTRkNTUtYTI0NC00ZjI4LWI5MzUtMDFmOGY0NmU2OGY1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0126029.jpg",
+    "sha256": "761db747da964eefb65dd8eb732610627812f68720a54fd0736825fc75b4debb"
+  },
+  "shrek-2": {
+    "identity": "Shrek 2",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0298148/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzNmNjQ1NmUtNzhiZS00YWE2LTg4N2ItZTA2ODdmOTMwOTQ1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0298148.jpg",
+    "sha256": "831b76252d591d675de8cd32bf0d08f7514725e9f9904e2b68bbe9018937d7df"
+  },
+  "finding-nemo": {
+    "identity": "Finding Nemo",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0266543/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTc5NjExNTA5OV5BMl5BanBnXkFtZTYwMTQ0ODY2._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0266543.jpg",
+    "sha256": "2b0b211ac90fc4d8e0d08899589c8a199d15d4a19ef3a1a6ef3de0288418a422"
+  },
+  "finding-dory": {
+    "identity": "Finding Dory",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt2277860/",
+    "image": "https://m.media-amazon.com/images/M/MV5BY2VlYWJjMGMtYjcwZC00MDE2LThmMDItYjVlMzNhYzBhYTk5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2277860.jpg",
+    "sha256": "d1cec36f20418c829b27db10b119a42eaa1d3678c9d8c614dc728097773a8149"
+  },
+  "wonka": {
+    "identity": "Wonka",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt6166392/",
+    "image": "https://m.media-amazon.com/images/M/MV5BM2Y1N2ZhNjctYjVhZC00MDg2LWFhNTItMzI3ZjAwZDhjYmFiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6166392.jpg",
+    "sha256": "97f8e7513a83926c75e5c401c2119eca8851b900342143dd63b232631dc5754b"
+  },
+  "john-wick-full-mp4": {
+    "identity": "John Wick",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt2911666/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTU2NjA1ODgzMF5BMl5BanBnXkFtZTgwMTM2MTI4MjE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2911666.jpg",
+    "sha256": "4abeabef346c7b895d053f7879f93d8a58e8bbf5f00e7f6877a12104fcbb87fa"
+  },
+  "john-wick-chapter-2-mp4": {
+    "identity": "John Wick: Chapter 2",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt4425200/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjE2NDkxNTY2M15BMl5BanBnXkFtZTgwMDc2NzE0MTI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4425200.jpg",
+    "sha256": "15f3242f569e9d619273f975d9376c8a72918cfd1d204b34ad19d18da8d81785"
+  },
+  "indiana-jones-and-the-dial-of-destiny-full-movie-mp4": {
+    "identity": "Indiana Jones and the Dial of Destiny",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt1462764/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWJlOWE2ZjEtZGRhOC00M2YzLWFkZGEtYzIzZWI2Zjg3NWYxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1462764.jpg",
+    "sha256": "44e1b6f643e23bce5ca919f44aaa5be20b67fa6e63ec480bd5a1dc8a5485d0fd"
+  },
+  "john-wick-chapter-3-mp4": {
+    "identity": "John Wick: Chapter 3 - Parabellum",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt6146586/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjdlNWFlZjEtM2U0NS00ZWU5LTk1M2EtZmQxNWFiZjk0MGM5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6146586.jpg",
+    "sha256": "a2ed585d8b3ac3497861079adf7c1bef3d5a5574fa79e39ee56252c31564a658"
+  },
+  "watch-john-wick-chapter-4-mp4": {
+    "identity": "John Wick: Chapter 4",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt10366206/",
+    "image": "https://m.media-amazon.com/images/M/MV5BY2Q2ZmI5ZjUtNWVhMC00YzJkLTlmYjMtY2RmZDhkNzEzYjZhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt10366206.jpg",
+    "sha256": "8ab56d08d4d18e27be2324f6d7bfc7681cef47c45a9e84608da0ab850d7f4cf5"
+  },
+  "rocky-1-mp4": {
+    "identity": "Rocky",
+    "year": 1976,
+    "source": "https://www.imdb.com/title/tt0075148/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDEyY2M2MGMtYjg5OC00ZWFjLWFkZDQtNmQzZTdiYmYzZTBkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0075148.jpg",
+    "sha256": "813dba3633331a9a7ed96dcc315f56c8dceae3f51ca115b14c05c198a747292a"
+  },
+  "el-camino-mp4": {
+    "identity": "El Camino",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt9243946/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTYxMjI2YzUtODQ5Mi00M2JmLTlmNzItOTlkM2MyM2ExM2RlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt9243946.jpg",
+    "sha256": "4c4b0f3e886cca0fa00f5c38b2688564d200ed4336076b865014f15131328352"
+  },
+  "napoleon-full-movie-cam-mp4": {
+    "identity": "Napoleon",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt13287846/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGQ1NGUxNDUtNjg3Yi00ZTZjLWIwOTUtNDBjYWY5ZjVmZGI4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt13287846.jpg",
+    "sha256": "209a34018993b1b94b8d094a210e04f25d779d5355933cad2c49003b75dd9321"
+  },
+  "jurassic-park-1-1993-360p-ts": {
+    "identity": "Jurassic Park",
+    "year": 1993,
+    "source": "https://www.imdb.com/title/tt0107290/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjM2MDgxMDg0Nl5BMl5BanBnXkFtZTgwNTM2OTM5NDE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0107290.jpg",
+    "sha256": "22e8a0f0c8093fb770197ad9ebd4c75f356a54b294744f653ee82a7a805bf349"
+  },
+  "the-lost-world-jurassic-park-1997-360p-ts": {
+    "identity": "The Lost World: Jurassic Park",
+    "year": 1997,
+    "source": "https://www.imdb.com/title/tt0119567/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMGI3NDg5N2ItZGIyZi00ZWNkLWFlODUtZDA1Y2Q1M2U4NGM2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0119567.jpg",
+    "sha256": "bcdcfa60e8ab22ab8d7191f4d0f31a8cf86a4362426a4e7ec2a92dae0fb95cb5"
+  },
+  "jurassic-park-iii-2001-360p-ts": {
+    "identity": "Jurassic Park III",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0163025/",
+    "image": "https://m.media-amazon.com/images/M/MV5BN2FmMjhlZDYtNmYyMy00NTdjLTlhYzYtZWNlMDY2MmUzOGM2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0163025.jpg",
+    "sha256": "65f9bfb4ab82e9a6c8ee2df8be99dd46a7594132d06f5c8d8c866b8755d63646"
+  },
+  "jurassic-world-2015-360p-ts": {
+    "identity": "Jurassic World",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt0369610/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzBhNzlkM2UtZTQyOC00NjUyLTkzMmMtNDQ1YTM5N2NmMGE5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0369610.jpg",
+    "sha256": "2a1b952ca65e128a0db82557feb09d4e2d7e687973908f5c93bab1ea9b5422e9"
+  },
+  "gladiator-2000-720p-hd-mp4": {
+    "identity": "Gladiator",
+    "year": 2000,
+    "source": "https://www.imdb.com/title/tt0172495/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWQ4YmNjYjEtOWE1Zi00Y2U4LWI4NTAtMTU0MjkxNWQ1ZmJiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0172495.jpg",
+    "sha256": "f1f47ee66447a1c4292c15b88b4fd51da25cc7f4b8fa9d9bc4c3d01b2ad96833"
+  },
+  "jurassic-world-dominion-full-movie-mp4": {
+    "identity": "Jurassic World: Dominion",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt8041270/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGExMWU2NWMtNzczYi00NjQ4LTk2YzctZGZkYmRmMDdhMjllXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt8041270.jpg",
+    "sha256": "2d790c53797ea5bdb7c27a2f8c1020bc1809a46617e2ed91546f69171b007659"
+  },
+  "transformers-2007-ts": {
+    "identity": "Transformers",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0418279/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjM3ZDA2YmItMzhiMi00ZGI3LTg3ZGQtOTk3Nzk0MDY0ZDZhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0418279.jpg",
+    "sha256": "fb30ed433a4b2699867a496f126c19a075fec6c4d275d56cac634a7c9bc55d3b"
+  },
+  "the-fast-and-the-furious-2001-dvdrip-x264-ac3-vain-mkv": {
+    "identity": "The Fast and the Furious",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0232500/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGRiMDE1NTMtMThmZS00YjE4LWI1ODQtNjRkZGZlOTg2MGE1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0232500.jpg",
+    "sha256": "7dd44a1756c8b3c0f68c48c783bd1e2bb7871515703431de5ffa1e3903be8330"
+  },
+  "2-fast-2-furious-2003-dvdrip-x264-ac3-vain-mkv": {
+    "identity": "2 Fast 2 Furious",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0322259/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTQzYzEwNWMtOTAwYy00YWYwLWE1NTEtZTkxOGQxZTM0M2VhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0322259.jpg",
+    "sha256": "9bf5e76f6bbc7a53d943c92ce0f53668a81a3ee9d7d305fe89c744b54dffc3d2"
+  },
+  "the-fast-and-the-furious-tokyo-drift-2011-1080p-brrip-x264-yify-mp4": {
+    "identity": "The Fast and the Furious: Tokyo Drift",
+    "year": 2006,
+    "source": "https://www.imdb.com/title/tt0463985/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQ2NTMxODEyNV5BMl5BanBnXkFtZTcwMDgxMjA0MQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0463985.jpg",
+    "sha256": "c5c2f6510e7cbea1409c7042a1be56f59b6ac5f2d38ed79bf338d9cdd4f548fd"
+  },
+  "fast-and-furious-2009-dvdrip-x264-ac3-vain-mkv": {
+    "identity": "Fast & Furious",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt1013752/",
+    "image": "https://m.media-amazon.com/images/M/MV5BM2Y1YzhkNzUtMzhmZC00OTFkLWJjZDktMWYzZmQ0Y2Y5ODcwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1013752.jpg",
+    "sha256": "0614ce276669e1a526445a9ae02864bbb5e4961c299c16394af5f58f6c7e2fce"
+  },
+  "transformers-one-2024-cam-360p-ts": {
+    "identity": "Transformers One",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt8864596/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZWI1ZDY1YTQtMjRkNy00ZDZhLWE3OTItMTIwNzliY2Y1MTZhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt8864596.jpg",
+    "sha256": "ca387b1739486ee3b29009ec23afb9d8ea5a8ef47cdcd2bc610aa31b67330129"
+  },
+  "the-shawshank-redemption-1994-720p-uhd-bluray-x264-6ch-pahe-in-mkv": {
+    "identity": "The Shawshank Redemption",
+    "year": 1994,
+    "source": "https://www.imdb.com/title/tt0111161/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDAyY2FhYjctNDc5OS00MDNlLThiMGUtY2UxYWVkNGY2ZjljXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0111161.jpg",
+    "sha256": "ba39f4f04d9514ebe4a8ee555de20e6f5c105d136a12de0dc5cd112246dca94b"
+  },
+  "full-fight-ripped-from-netflix-jake-paul-vs-mike-tyson-mp4": {
+    "identity": "Jake Paul vs. Mike Tyson",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt31630905/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzY4MzA4MmItMDQ3ZS00MzY5LWE4MDUtOGM3OTA1Yzc2MzQ4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt31630905.jpg",
+    "sha256": "726a00ab86ae94f6c6c914e73273f466fde54da4e755fdaf83e842c514be19cf"
+  },
+  "oppenheimer-full-movie-mp4": {
+    "identity": "Oppenheimer",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt15398776/",
+    "image": "https://m.media-amazon.com/images/M/MV5BN2JkMDc5MGQtZjg3YS00NmFiLWIyZmQtZTJmNTM5MjVmYTQ4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt15398776.jpg",
+    "sha256": "5cabcfba0314ca6016a95770ad7ed069fe502c6c8674e22fbf1b73b432a7740f"
+  },
+  "top-gun-maverick-mp4": {
+    "identity": "Top Gun: Maverick",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt1745960/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDBkZDNjMWEtOTdmMi00NmExLTg5MmMtNTFlYTJlNWY5YTdmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1745960.jpg",
+    "sha256": "6f1bf140bfcc06c196279e174296a44ecd36826a011c7e6a5fa988d44f611461"
+  },
+  "men-in-black-mp4": {
+    "identity": "Men in Black",
+    "year": 1997,
+    "source": "https://www.imdb.com/title/tt0119654/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZmQ0YTdhYzEtMjIxZC00MGFiLTlmNjktZmFlOWE2M2QxOTRhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0119654.jpg",
+    "sha256": "d60028dfe4fecec7b4d79eaa41260e83f3f2f79a93ebd9f496b011f5fa185c54"
+  },
+  "kingdom-of-the-planet-of-the-apes-2024-360p-ts": {
+    "identity": "Kingdom of the Planet of the Apes",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt11389872/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDRlZTc3YTItOTk3Yi00NmU4LWFiOGUtNjgwMDZjNjIzNTU1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt11389872.jpg",
+    "sha256": "544a9364c72133993e3d9408e09b23cadcf458273409cbb9b2e881df1bdf8835"
+  },
+  "the-evil-dead-1981-ts": {
+    "identity": "The Evil Dead",
+    "year": 1981,
+    "source": "https://www.imdb.com/title/tt0083907/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNWRmZGQyYzgtNjA5OC00NGYzLTlhYWMtNzBhZTFlZGNjYWI2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0083907.jpg",
+    "sha256": "d2a8b3c7eee15c22950161331f895fdd009bf26ba23bb2798c38067af267acdc"
+  },
+  "evil-dead-ii-1987-ts": {
+    "identity": "Evil Dead II",
+    "year": 1987,
+    "source": "https://www.imdb.com/title/tt0092991/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMGMxMWVhMzAtYWRlOS00YzY1LTlkYTQtYjU5ZDM4MGI1YWFjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0092991.jpg",
+    "sha256": "f2e5caf4fe335f5940b30a960d358f6ed358e796c91ad95a5f90ece9066bdd4a"
+  },
+  "red-one-2024-720p-cam-mp4": {
+    "identity": "Red One",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt14948432/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZmFkMjE4NjQtZTVmZS00MDZjLWE2ZmEtZTkzODljNjhlNWUxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt14948432.jpg",
+    "sha256": "6d4af7edd68d7da1be4aca07e98be36096416a584c8d7bf299d0ede6ecebce35"
+  },
+  "back-to-the-future-mp4": {
+    "identity": "Back to the Future",
+    "year": 1985,
+    "source": "https://www.imdb.com/title/tt0088763/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZmM3ZjE0NzctNjBiOC00MDZmLTgzMTUtNGVlOWFlOTNiZDJiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0088763.jpg",
+    "sha256": "d3353da6f856b4a190fb0055ee0408f7d9687d1194479b5f487dc63dc0055b5a"
+  },
+  "back-to-the-future-part-2-mp4": {
+    "identity": "Back to the Future Part II",
+    "year": 1989,
+    "source": "https://www.imdb.com/title/tt0096874/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTNlOTRmOTEtMTAyMi00NjFiLTk3NDMtNWI0YzA3ZTZlYjZiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0096874.jpg",
+    "sha256": "287c3e965228cce4d810897dd22709b210ef29e166b48e48436b164fc12584e4"
+  },
+  "back-to-the-future-part-3-mp4": {
+    "identity": "Back to the Future Part III",
+    "year": 1990,
+    "source": "https://www.imdb.com/title/tt0099088/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTNkNzJmY2MtOGNjYi00NDJmLWIyZTQtNmFmMGQ5M2VlOTI0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0099088.jpg",
+    "sha256": "4ff9694221351f5b855a05c1c0c3d95ae1fcb463745462403e9ba13361670b2c"
+  },
+  "star-wars-episode-iii-revenge-of-the-sith-2005-360p-ts": {
+    "identity": "Star Wars: Episode III - Revenge of the Sith",
+    "year": 2005,
+    "source": "https://www.imdb.com/title/tt0121766/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTc4MTc3NTQ5OF5BMl5BanBnXkFtZTcwOTg0NjI4NA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0121766.jpg",
+    "sha256": "5a74aa7496af1698703a10bfed35be8ea4586a2212472e5e8f65a24d1c9fcbec"
+  },
+  "star-wars-1977-360p-ts": {
+    "identity": "Star Wars: Episode IV - A New Hope",
+    "year": 1977,
+    "source": "https://www.imdb.com/title/tt0076759/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOGUwMDk0Y2MtNjBlNi00NmRiLTk2MWYtMGMyMDlhYmI4ZDBjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0076759.jpg",
+    "sha256": "b58a91190495431f0fbddbd669568a5c8b2611ed2d0358707e5d77380bcfc592"
+  },
+  "pirates-of-the-caribbean-on-stranger-tides-2011-720p-hd-mp4": {
+    "identity": "Pirates of the Caribbean: On Stranger Tides",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt1298650/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjE5MjkwODI3Nl5BMl5BanBnXkFtZTcwNjcwMDk4NA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1298650.jpg",
+    "sha256": "f44f9e2268f1134582923144f37544b07c0738fc7c4c30c434f71afc99df5c9f"
+  },
+  "godzilla-minus-one-2023-360p-ts": {
+    "identity": "Godzilla Minus One",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt23289160/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjc5MjllMGUtMDIwMS00ZDVkLWEzODQtM2NlMTMwMTZhNThmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt23289160.jpg",
+    "sha256": "257dc14e5efd46fdfb5684d01ce61b71d5b76a51c018b9a5d4833376ce420475"
+  },
+  "alien-romulus-1080p-hd-mp4": {
+    "identity": "Alien: Romulus",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt18412256/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDU0NjcwOGQtNjNjOS00NzQ3LWIwM2YtYWVmODZjMzQzN2ExXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt18412256.jpg",
+    "sha256": "cf36195e3654f3b4e6f9c4f02c9ce7982ba3cf1079dfba6f3f2a458b181f92d9"
+  },
+  "jaws-the-revenge-1987-360p-ts": {
+    "identity": "Jaws: The Revenge",
+    "year": 1987,
+    "source": "https://www.imdb.com/title/tt0093300/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGFiOTU1MTctMTRkMy00ZmVkLTk5YTktODMxZDhlOGQyN2MwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0093300.jpg",
+    "sha256": "d88698ae9d0d42d723265b5de1d689fe02ffee16c04ef11c9ea1213478177326"
+  },
+  "fast-and-furious-2001-mp4": {
+    "identity": "The Fast and the Furious",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0232500/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGRiMDE1NTMtMThmZS00YjE4LWI1ODQtNjRkZGZlOTg2MGE1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0232500.jpg",
+    "sha256": "7dd44a1756c8b3c0f68c48c783bd1e2bb7871515703431de5ffa1e3903be8330"
+  },
+  "godzilla-x-kong-the-new-empire-full-movie-cam-001-ts": {
+    "identity": "Godzilla X Kong: The New Empire",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt14539740/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTY0N2MzODctY2ExYy00OWYxLTkyNDItMTVhZGIxZjliZjU5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt14539740.jpg",
+    "sha256": "f1037fb11aedcb072fb9c50f41c3fa636b23d9681b9490cdb5405141e24bd79a"
+  },
+  "tmnt-2007-1080p-bluray-h264-aac-rarbg-mp4": {
+    "identity": "TMNT",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0453556/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTAyODQ1NTc0ODBeQTJeQWpwZ15BbWU3MDg4MTc0NDE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0453556.jpg",
+    "sha256": "a5b30a0789978b7177ec61611cf9dd441cb04bdbf91a57704e0c7cad822d09db"
+  },
+  "teenage-mutant-ninja-turtles-2014-mp4": {
+    "identity": "Teenage Mutant Ninja Turtles",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt1291150/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjUzODQ5MDY5NV5BMl5BanBnXkFtZTgwOTc1NzcyMjE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1291150.jpg",
+    "sha256": "ad28edd354d0fb135fd90df4cbcb8b25dcb0972c9b9b329f27decdae090024e2"
+  },
+  "twilight-mp4": {
+    "identity": "Twilight",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt1099212/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQ2NzUxMTAxN15BMl5BanBnXkFtZTcwMzEyMTIwMg@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1099212.jpg",
+    "sha256": "ac4d677a855f2092ff658a6ae62d212fabad1e720c38d949a1d386abf2b0e80c"
+  },
+  "twilight-eclipse-mp4": {
+    "identity": "The Twilight Saga: Eclipse",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt1325004/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNDMwNjAzNzYwOF5BMl5BanBnXkFtZTcwMDY5NzcyMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1325004.jpg",
+    "sha256": "75432d7cc8e3b8bf3bdd11748c8467dc7cfe7f3c19b089f04aa7974edb0df554"
+  },
+  "twilight-new-moon-mkv": {
+    "identity": "The Twilight Saga: New Moon",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt1259571/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTI3MjE3NDIxNF5BMl5BanBnXkFtZTcwODM3NTY5Mg@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1259571.jpg",
+    "sha256": "d41f76f10e2529dc6725b3e20922ad44c99d44b296a71d552b78ed2e86a19933"
+  },
+  "the-twilight-saga-breaking-dawn-part-1-2011-720p-amzn-webrip-800mb-x264-galaxyrg-mkv": {
+    "identity": "The Twilight Saga: Breaking Dawn - Part 1",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt1324999/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjBlY2M2MTctMzU3Yi00MTY3LTlkMTAtMzhlMzY1YjZlYTA2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1324999.jpg",
+    "sha256": "39918c18792b44310909fae6f8ef3ab63cc660d0e60a18d36454e65197a58886"
+  },
+  "twilight-breaking-dawn-2-mkv": {
+    "identity": "The Twilight Saga: Breaking Dawn - Part 2",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt1673434/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTcyMzUyMzY1OF5BMl5BanBnXkFtZTcwNDQ4ODk1OA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1673434.jpg",
+    "sha256": "9a3be10e60bc555c06c167175384ce4c7f02dbe93d83a51d76d20bf7776c1894"
+  },
+  "twister-1996-360p-ts": {
+    "identity": "Twister",
+    "year": 1996,
+    "source": "https://www.imdb.com/title/tt0117998/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGVhY2JjYzgtYjAyOC00ODg0LTliYWEtMzliZWYzMjA2NjYyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0117998.jpg",
+    "sha256": "7b2d689f625e3ef51832b38eecb66cd64e933512ceb76246f79e7d5414ce0879"
+  },
+  "twister-1989-360p-ts": {
+    "identity": "Twister",
+    "year": 1989,
+    "source": "https://www.imdb.com/title/tt0096321/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTBhNzdiNjgtMzBmZS00MzhkLTlkODktMjNlN2FkZDkzZDIzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0096321.jpg",
+    "sha256": "616c371e1b9b7516569a440a673e737ed59b519e45104bae9afbdf6c8be1d0fa"
+  },
+  "twisters-hd-2024-mp4": {
+    "identity": "Twisters",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt12584954/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjM4MWEwMTEtNTcwYi00ZDI4LWEwMzUtNDMzODBhZmI5MWE1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt12584954.jpg",
+    "sha256": "4a41a7ee531d814f4d09c79b42d853745c3d3af504c81cb277725f23df850b8e"
+  },
+  "texas-twister-2024-360p-ts": {
+    "identity": "Texas Twister",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt19752096/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjNlN2JkMTEtYmU0OS00ZmE2LWI4ZmMtNTYyMmY0N2JlZTFmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt19752096.jpg",
+    "sha256": "ef17d31daf12b81d042a80c179f78b5a39e8289a516989548f00954b49b2cbf4"
+  },
+  "pirates-of-the-carribean-curse-of-the-black-pearl-mp4": {
+    "identity": "Pirates of the Caribbean: The Curse of the Black Pearl",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0325980/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNDhlMzEyNzItMTA5Mi00YWRhLThlNTktYTQyMTA0MDIyNDEyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0325980.jpg",
+    "sha256": "fb293acccabcb7b9597b0e8caa1d611d2aac542d864033294b7acccae251d6e7"
+  },
+  "pirates-of-the-caribbean-at-worlds-end-mp4": {
+    "identity": "Pirates of the Caribbean: At World's End",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0449088/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjIyNjkxNzEyMl5BMl5BanBnXkFtZTYwMjc3MDE3._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0449088.jpg",
+    "sha256": "1b59129691d59059aaf0490d0fa91df78fe9fe336e96ea6fda2386f3ab1714fc"
+  },
+  "creed-mkv": {
+    "identity": "Creed",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt3076658/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNWM3NjY2ZDctMGZiYy00OGFlLThkMTktOTY2MDM2YjE2OTliXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3076658.jpg",
+    "sha256": "4407a546cab39f491f33b773c4f00294c327625ea8fae7a59c8f5f88dc71b733"
+  },
+  "terrifier-full-movie": {
+    "identity": "Terrifier",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt4281724/",
+    "image": "https://m.media-amazon.com/images/M/MV5BN2M5MzJlYzctNmZhOC00MTFmLWIxZmUtN2I4NzY5MTlmNDdmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4281724.jpg",
+    "sha256": "05ac35453963b0cdabe6ef3aefae73264f04ed9e3ade01c9fce81483edbbb0fc"
+  },
+  "terrifier-2-2022-720p-hd-mp4": {
+    "identity": "Terrifier 2",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt10403420/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTUyZWM1MDgtMGZiZi00OWZlLTgwNzItZGU3NTkwN2I4OWNiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt10403420.jpg",
+    "sha256": "0c1aad3bf842c5a32b7133735dcc19b0c7ec9e3bf23ec7d0027aa57e37a149bc"
+  },
+  "terrifier-3-2024-hd-mkv": {
+    "identity": "Terrifier 3",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt27911000/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzc2MWUyYzctY2E4Ny00ZTlmLThjNTMtMTViZGI5NjcyN2EzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt27911000.jpg",
+    "sha256": "c342f76b123bb1ddd00c42f7b52de374f7f9f2f4e82d95b4df9db4b31d9f760d"
+  },
+  "scream-1-1996-ts": {
+    "identity": "Scream",
+    "year": 1996,
+    "source": "https://www.imdb.com/title/tt0117571/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjA2NjU5MTg5OF5BMl5BanBnXkFtZTgwOTkyMzQxMDE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0117571.jpg",
+    "sha256": "cd73b53c670c2fb3709bfcd5aeefcd6757524775bc7743e718971e4c3848188d"
+  },
+  "scream-2-1997-ts": {
+    "identity": "Scream 2",
+    "year": 1997,
+    "source": "https://www.imdb.com/title/tt0120082/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODE5YWJkMDMtN2ZiNC00MjI5LTkxYTgtOTkyZjUwMjU0YThiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0120082.jpg",
+    "sha256": "9403b61e62c8142450262b8312b056f06d7e2341f10fb2bfd6d1b1b346e0285c"
+  },
+  "scream-3-2000-ts": {
+    "identity": "Scream 3",
+    "year": 2000,
+    "source": "https://www.imdb.com/title/tt0134084/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzc4MThjNDItNWIzYy00NjA5LWExMTAtNjAzZGQwZTViN2ZiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0134084.jpg",
+    "sha256": "b42e904955e0b4c6d64c9524d8f18f70646770bec3c44805e928938ab82317d5"
+  },
+  "scream-4-mp4": {
+    "identity": "Scream 4",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt1262416/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTk5OTcxNTUyNF5BMl5BanBnXkFtZTcwMDczMzE0NA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1262416.jpg",
+    "sha256": "784cae563020b85dde01a5961ea468e2d91933617ffd9248a00caf7427e240c8"
+  },
+  "scream-2022-ts": {
+    "identity": "Scream",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt11245972/",
+    "image": "https://m.media-amazon.com/images/M/MV5BN2NkYTYzOGUtMzk1Yy00YmI0LWIzODEtMjQ0MWU0NWI4ODdlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt11245972.jpg",
+    "sha256": "bd0331660e7aad95ef3b559968f9ee8e93a6cf8cfb97da1f5381cb236ae9016c"
+  },
+  "scream-vi-2023-ts": {
+    "identity": "Scream VI",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt17663992/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDZkYzk3YTEtYTQ5MS00MzQ5LTg0NjUtOTgzODA5N2EyYTQ1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt17663992.jpg",
+    "sha256": "556034966f476ba5a089b7cbaaa6f41104b0708d4b0771cdc0ca8e8f291c1e2c"
+  },
+  "friday-the-13th-2009-reboot-720p-ts": {
+    "identity": "Friday the 13th",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt0758746/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTg1YzcwZDgtZmUzYi00NGI0LTlhN2YtNGMxZTI5MDc3ZmMyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0758746.jpg",
+    "sha256": "1595f9eee603a7d5eb2f084a789df6cb186d5a28c215dd4752787774509c5274"
+  },
+  "friday-the-13th-full-movie-ts": {
+    "identity": "Friday the 13th",
+    "year": 1980,
+    "source": "https://www.imdb.com/title/tt0080761/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjEwOTY5MjMtMTkzMi00Zjk1LThkM2QtZGZhMzQ3MzI3NDNhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0080761.jpg",
+    "sha256": "71350281a9d9a8a1e990f51a62e5d328b02fd0d98afe325ebbade9255a5667d8"
+  },
+  "friday-the-13th-part-2-full-movie-ts": {
+    "identity": "Friday the 13th: Part 2",
+    "year": 1981,
+    "source": "https://www.imdb.com/title/tt0082418/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjBkMGM2MDAtMjUwYS00ZjVlLWEzNGItZDJmOTA2YmE2NjRhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0082418.jpg",
+    "sha256": "61e70ed4ec835ed44ffce503dd2ffdebd7f5fc39df3fc22d5b78609992c44ade"
+  },
+  "friday-the-13th-part-iii-full-movie-ts": {
+    "identity": "Friday the 13th: Part 3",
+    "year": 1982,
+    "source": "https://www.imdb.com/title/tt0083972/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYzdkOWZiY2UtNjk0Zi00M2M4LWFjMjAtNGI4YmMzMTgyZTRmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0083972.jpg",
+    "sha256": "8b276052bc6a6d218b02aba5c7b6ff92a72ef1cf084b53ed1c0bacde927e710a"
+  },
+  "friday-the-13th-the-final-chapter-1984-360p-mp4": {
+    "identity": "Friday the 13th: The Final Chapter",
+    "year": 1984,
+    "source": "https://www.imdb.com/title/tt0087298/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjE1N2NlMjctMmM5OS00NGUyLWFiNjYtNzM2MDJlOTUxODVkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0087298.jpg",
+    "sha256": "dc569d2183e0ef6d4c68ce0423b3624b2a6374cec757d67650e472790bbd983f"
+  },
+  "friday-the-13th-part-vii-the-new-blood-full-movie-ts": {
+    "identity": "Friday the 13th: The New Blood",
+    "year": 1988,
+    "source": "https://www.imdb.com/title/tt0095179/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTA5ZTFlYzQtMWNmMS00ZDI4LTg4ZWQtNzYzNjFiYzQyODhjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0095179.jpg",
+    "sha256": "ad16f5ec313708ae9f29865ad10fe72a9076fcf3e7945df09cacd8c044da2ad0"
+  },
+  "friday-the-13th-part-viii-jason-takes-manhattan-1989-360p-mp4": {
+    "identity": "Friday the 13th Part VIII: Jason Takes Manhattan",
+    "year": 1989,
+    "source": "https://www.imdb.com/title/tt0097388/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODg3MThhYjUtYzFmOC00NmI4LTkzODgtMjgxN2M2NmE0ZjViXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0097388.jpg",
+    "sha256": "c0e3974b9f6d66fda7c1a7aec2368034a524dc285d5c597fb452b0c5322c073b"
+  },
+  "jason-goes-to-hell-the-final-friday-1993-360p-ts": {
+    "identity": "Jason Goes to Hell: The Final Friday",
+    "year": 1993,
+    "source": "https://www.imdb.com/title/tt0107254/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMWVmZjc4YjYtYmY3Mi00MTY2LWIzMzctMjQ2MGEwNzE2YTZlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0107254.jpg",
+    "sha256": "1a2b90ad9b8831e81ab06483407cab45a1abcaa66e0b5887d953caa667c5c531"
+  },
+  "jason-x-2001-360p-ts": {
+    "identity": "Jason X",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0211443/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDY4NWZhZmMtNDQwZi00MmZiLTllNTItYTRjN2FkYTU1MDVmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0211443.jpg",
+    "sha256": "aa0393a8c9635eee640495840d6f6da0298c30aca0086755663e2a385e537600"
+  },
+  "freddy-vs-jason-2003-ts": {
+    "identity": "Freddy vs. Jason",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0329101/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTc4ODQ3YTAtNDJiZi00NTUzLTllOWUtYjE3NjYyNjdlNDlmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0329101.jpg",
+    "sha256": "e0bfe014e910f3f05a64828620923b004dd35b1503a5e08a7ab601fe7e8eb019"
+  },
+  "the-purge-2013-720p-hd-mp4": {
+    "identity": "The Purge",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt2184339/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQzNTcwODEyM15BMl5BanBnXkFtZTcwMjM1MDI0OQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2184339.jpg",
+    "sha256": "233a8d447e1dd1a9b6b01ef116753dd4e27ca594965bb7885b03c191e694bc54"
+  },
+  "the-purge-election-year-2016-360p-ts": {
+    "identity": "The Purge: Election Year",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt4094724/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjI3MDI0MTA1N15BMl5BanBnXkFtZTgwOTk4NjU5ODE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4094724.jpg",
+    "sha256": "1f535d0acc97b989831a106b98f327ffe4b955dd6317a0c1342d3f5e324a69c3"
+  },
+  "the-first-purge-2018-720p-hd-ts": {
+    "identity": "The First Purge",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt6133466/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjZmMDY4MzItYzVhOC00YmQ5LWFjMDgtYzk5ZDY1ZTFmN2ZjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6133466.jpg",
+    "sha256": "10059d0091cffccef0f0a04c266935acb4d0ba2162799e0871541c2b04d98c39"
+  },
+  "the-purge-anarchy-2014-360p-ts": {
+    "identity": "The Purge: Anarchy",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt2975578/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjE2ODMxMTk1Nl5BMl5BanBnXkFtZTgwMDEzNjEzMTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2975578.jpg",
+    "sha256": "44ba4d5495d214d171f34b0faefb05a74198cc56e11cc6fcc8bfdbf6931cd2bd"
+  },
+  "purge-of-kingdoms-2019-360p-ts": {
+    "identity": "Purge of Kingdoms",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt6411748/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjJmNzc3YTYtZTA5YS00N2QwLWI5YmYtMzhkY2JiNjg2NjFiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6411748.jpg",
+    "sha256": "383c80e0faa4ee9da07d4244ec88f935f10806f87cc4bffd4b90de7e0ad6c3f5"
+  },
+  "the-forever-purge-2021-360p-ts": {
+    "identity": "The Forever Purge",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt10327252/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZWVmYmE5ZWQtY2E3NC00Mzk1LWEzMzYtNjkyM2E0MGY0MjcxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt10327252.jpg",
+    "sha256": "80f4fbe2fa144d2beda934729d30fbaf84398abb95fb538dc46d9c928b5b70dd"
+  },
+  "halloween-full-movie-ts": {
+    "identity": "Halloween",
+    "year": 1978,
+    "source": "https://www.imdb.com/title/tt0077651/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzZiNTdiYTgtYjNkMS00MmJmLWEwZGQtNmY0NGJkMGE0YmYzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0077651.jpg",
+    "sha256": "2ab6a3da7a5d9f9011a5ef098b0354df8376066e846f87dd3445b09fe9642644"
+  },
+  "saw-i-2004-720p-brrip-x264-yify-mp4": {
+    "identity": "Saw",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0387564/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTE5MzFlMTktMzBkOC00ZjMxLThmOTAtOGU3ZGEwZGRlNDdjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0387564.jpg",
+    "sha256": "626f98d1b088b211257e764acbfeda63a7791a7b08f2be2c5b9093190137c226"
+  },
+  "saw-ii-2005-360p-ts": {
+    "identity": "Saw II",
+    "year": 2005,
+    "source": "https://www.imdb.com/title/tt0432348/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGVlNjk3MmItZmUzNy00MzcyLWIzOTktZjllYWU5MDAyMjM1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0432348.jpg",
+    "sha256": "7980c05aab80d5aeabab9605b33f04f848d4e975c5108956813aab9603ff6666"
+  },
+  "saw-iii-2006-360p-ts": {
+    "identity": "Saw III",
+    "year": 2006,
+    "source": "https://www.imdb.com/title/tt0489270/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODQ4YTAwZTItZGFjZi00YjNiLTllYzUtYWY3OWM2OTQzODVkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0489270.jpg",
+    "sha256": "646576018e41f8921ecb318a3c43e1a68b04f495137653ed9be8874aa25c8773"
+  },
+  "saw-iv-2007-720p-brrip-x264-yify-mp4": {
+    "identity": "Saw IV",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0890870/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjc0NjUyNzg3MF5BMl5BanBnXkFtZTYwODMxOTM3._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0890870.jpg",
+    "sha256": "5111c1268c236069d60d7d7009fcce371db1437c47c14a4e32b22d4201028577"
+  },
+  "saw-v-2008-720p-brrip-x264-yify-mp4-mp4": {
+    "identity": "Saw V",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt1132626/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNWViYzg3YzItYzQxNS00MTE1LWJkNTMtMTM3OGI4ODAxOTMwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1132626.jpg",
+    "sha256": "46dbb979086a5bf6268629a973701b158a1181129cf33d6008b576b850a85e8a"
+  },
+  "saw-vi-2009-360p-ts": {
+    "identity": "Saw VI",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt1233227/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTU0NDA3MTM4M15BMl5BanBnXkFtZTcwOTY4Njg3Mg@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1233227.jpg",
+    "sha256": "1570c6e58f1ec39d083807d70d47e225443f5736bde86e180be70ce75ecdb99f"
+  },
+  "american-psycho-2000-mp4": {
+    "identity": "American Psycho",
+    "year": 2000,
+    "source": "https://www.imdb.com/title/tt0144084/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzBjM2I5ZjUtNmIzNy00OGNkLWIwZDMtOTAwYWUwMzA2YjdlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0144084.jpg",
+    "sha256": "a4df7c24af0ffb3cf4aea05f9d899b84e55bb95f972f6dcba45a1679d41091b4"
+  },
+  "saw-x-full-movie-mp4": {
+    "identity": "Saw X",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt21807222/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODRmMzAwMWItZjI5MS00NDYyLWFjMmMtZGUwYjQ1ZTBkNmYzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt21807222.jpg",
+    "sha256": "65ebd2ebb61afabfed7ca4d8cd95a67e8cb1d0551fc7f3c31bacacf95465050a"
+  },
+  "saw-the-final-chapter-2010-ts": {
+    "identity": "Saw 3D",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt1477076/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjI0NTEwNTgwNF5BMl5BanBnXkFtZTcwMDM5MTU5Mw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1477076.jpg",
+    "sha256": "088894b80eea82fe3999376af59780e253876ba55202476997012e7f7c18440c"
+  },
+  "the-nun-2018-720p-hd-ts": {
+    "identity": "The Nun",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt5814060/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjM3NzQ5NDcxOF5BMl5BanBnXkFtZTgwNzM4MTQ5NTM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5814060.jpg",
+    "sha256": "078b2759a71232266382842a9729b5b7d4643f55c8470ad5708e5e1e8e96068f"
+  },
+  "the-conjuring-2-full-movie-mp4": {
+    "identity": "The Conjuring 2",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt3065204/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTRkMDlmZWEtMzQyYy00YzgyLTgwM2QtNzgxYmIwNGVlYmJlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3065204.jpg",
+    "sha256": "54b812b455237b76ba7b7ca2f0e50e9876ff7884ac9d15b012fec63584eda832"
+  },
+  "the-conjuring-mp4": {
+    "identity": "The Conjuring",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1457767/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTM3NjA1NDMyMV5BMl5BanBnXkFtZTcwMDQzNDMzOQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1457767.jpg",
+    "sha256": "bbe54fbea5c2fa9de6125aae4f1c468739db9fff87b3b8eb3fd7db05ae3ffb5d"
+  },
+  "the-conjuring-the-devil-made-me-do-it-full-movie-mp4": {
+    "identity": "The Conjuring: The Devil Made Me Do It",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt7069210/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNThkYWE3OGItNzAyNC00N2U4LThjY2QtMGQwYjZhYTI1MzMwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7069210.jpg",
+    "sha256": "a25926047f7863821dd9c7e562daee5a603c39e95ab6ccf276b979d078cb7870"
+  },
+  "it-2017-720p-full-movie": {
+    "identity": "It",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt1396484/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGZmOTZjNzUtOTE4OS00OGM3LWJiNGEtZjk4Yzg2M2Q1YzYxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1396484.jpg",
+    "sha256": "c4b2894c2f8c82ffa2d66f63dd3792d0b58183cf232788babb0f588cebfd2c49"
+  },
+  "it-chapter-two-720p-2019-mp4": {
+    "identity": "It: Chapter Two",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt7349950/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYzUxM2VhOGItZTY2My00OTA4LWI4NjUtMDA5YWJjM2M2NDJjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7349950.jpg",
+    "sha256": "4813e263d46c35f604dfa5e05ccff29cc6880f56e0e53c81d665c556f60eb122"
+  },
+  "cocaine-bear-2023-360p-ts": {
+    "identity": "Cocaine Bear",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt14209916/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjg3MmNiNWQtOWI1OS00MjE2LWFhYzYtMWY0NWRhZmVkMGFiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt14209916.jpg",
+    "sha256": "847c7391bb244c2b55c144c17275a805449c553bcc0c0fefa266e8f05cce083c"
+  },
+  "annabelle-2014-dvdripped-mp4": {
+    "identity": "Annabelle",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt3322940/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjkyMDU5ZWQtZDhkOC00ZWFjLWIyM2MtZWFhMDUzNjdlNzU2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3322940.jpg",
+    "sha256": "05f871a23fb721622fffd75d30bafeaa7ac8c8f6fb091a94f9d382acbf863f39"
+  },
+  "annabelle-creation-2017-dvdripped-mp4": {
+    "identity": "Annabelle: Creation",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt5140878/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjA1MzIwMjMxNF5BMl5BanBnXkFtZTgwMDQ3NTc2MjI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5140878.jpg",
+    "sha256": "ab626b637b778338a56ddd4060c4bb357318ff4144b4f31ebd87f2de3f57e380"
+  },
+  "army-of-darkness-1992-ts": {
+    "identity": "Army of Darkness",
+    "year": 1992,
+    "source": "https://www.imdb.com/title/tt0106308/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYzU4ZDFmNzEtNmE2Ny00OTA1LWEyMmMtZjFiOWM0MGM3YTQ1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0106308.jpg",
+    "sha256": "5e0bfec4f59e4c10155cfda91a5db02c5ea9e1e45bf2cd1cf4e338f7510d82b0"
+  },
+  "ouija-origin-of-evil-2016-netflix-ripped-mp4": {
+    "identity": "Ouija: Origin of Evil",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt4361050/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzhmYzkyNjUtNmI2OC00MWY2LWFjN2MtNjIwMGRkOWMyYzI0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4361050.jpg",
+    "sha256": "14cd1986c32ed376dad9c17d8ef28550562c32c43f988927834b04fb9d3f5184"
+  },
+  "ghostbusters-ii2-theatricaldvdrip-mp4": {
+    "identity": "Ghostbusters II",
+    "year": 1989,
+    "source": "https://www.imdb.com/title/tt0097428/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZThjODU5NTMtMWJiNC00NjNkLWJmM2YtM2EzNDg3NjMxYjU5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0097428.jpg",
+    "sha256": "51ab353f99bd7b928cc50c33a0f71b5e01b9e0f03ec678eea731bc0bed4eec59"
+  },
+  "child-s-play-2-mp4": {
+    "identity": "Child's Play 2",
+    "year": 1990,
+    "source": "https://www.imdb.com/title/tt0099253/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNmQ5ZWRhZmMtOWI0OC00OWMzLWIwNzgtMzYzNjNhZDEwNTE1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0099253.jpg",
+    "sha256": "1bfc7db10888a717f74f5a041fc18b98e4bb75f57d4eb52fe0cf7478a905745e"
+  },
+  "child-play3-mp4": {
+    "identity": "Child's Play 3",
+    "year": 1991,
+    "source": "https://www.imdb.com/title/tt0103956/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzc0NjExMTgtYTA4ZS00NWRiLWE3MzUtNTUyNDFkNGY3ODRkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0103956.jpg",
+    "sha256": "691254b70140efc83d55bd94cb288f6d66dd6357d9a08ef1d22c2faccde0782a"
+  },
+  "the-texas-chain-saw-massacre-1974-ts": {
+    "identity": "The Texas Chain Saw Massacre",
+    "year": 1974,
+    "source": "https://www.imdb.com/title/tt0072271/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjE1MGJkMjUtY2VkNi00N2U1LWI2NWEtMDExNGYzYjRkZTM0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0072271.jpg",
+    "sha256": "2483b9e08283a3f431264e1c517b7342beae42c59d36c58ab0015d99d26db915"
+  },
+  "the-texas-chainsaw-massacre-2-1986-ts": {
+    "identity": "The Texas Chainsaw Massacre 2",
+    "year": 1986,
+    "source": "https://www.imdb.com/title/tt0092076/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYzU0YTNkYTktYjhiMS00NWI2LTg2NmUtYTdmN2IwN2IyNmFiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0092076.jpg",
+    "sha256": "452b47d7cc46b4d3867f97073148aadaebfce70782e5f1e8c20e4fa4336abb68"
+  },
+  "leatherface-the-texas-chainsaw-massacre-iii-1990-ts": {
+    "identity": "Leatherface: Texas Chainsaw Massacre III",
+    "year": 1990,
+    "source": "https://www.imdb.com/title/tt0099994/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzcyMjRmZGUtNmVhMS00NzkwLTg1MTEtMmRlMDM3ZWRiNWYzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0099994.jpg",
+    "sha256": "a56ff30fa496a688b6ba7506d9e2ad5cd5436d137a46bd76db986bc9ba8bca05"
+  },
+  "the-texas-chainsaw-massacre-2003-360p-ts": {
+    "identity": "The Texas Chainsaw Massacre",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0324216/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzY0MDQwMTctYzQ1Mi00ODIwLThlMWQtODQ0NzA2ZTg3ZDFhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0324216.jpg",
+    "sha256": "459c0a50f4a41148badac177414c188fdb8562c33b7d8c6ea3392c193554053c"
+  },
+  "the-texas-chainsaw-massacre-the-beginning-2006-360p-ts": {
+    "identity": "The Texas Chainsaw Massacre: The Beginning",
+    "year": 2006,
+    "source": "https://www.imdb.com/title/tt0420294/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjBmZjYyMDktODIzZi00NDM3LWIxZDktYzkxZGJhNTk5MGEzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0420294.jpg",
+    "sha256": "374fc239f0d68af53fc16b820f67713db2609096fed4c07674964efe3d1d82a8"
+  },
+  "texas-chainsaw-3d-2013-720p-ts": {
+    "identity": "Texas Chainsaw",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1572315/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQzMzAyNTE2N15BMl5BanBnXkFtZTcwNzM1NDg2OA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1572315.jpg",
+    "sha256": "2522eb111024d9e356c41aa158e377dbb42a15e51ccde2019890608963021422"
+  },
+  "freddy-s-dead-the-final-nightmare-1991-ts": {
+    "identity": "Freddy's Dead: The Final Nightmare",
+    "year": 1991,
+    "source": "https://www.imdb.com/title/tt0101917/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjNiMWEzNDMtZjQwZS00YTJiLTkyNzItNjkyY2Y4YjBiNmIzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0101917.jpg",
+    "sha256": "59cde8362089a7563af120bd559729cc3544c5e08c07c6d0a79fd86d969cf7d8"
+  },
+  "jaws169-title1-mp4-dvdriped-of-jaws-1-1975": {
+    "identity": "Jaws",
+    "year": 1975,
+    "source": "https://www.imdb.com/title/tt0073195/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjViNDQzNmUtYzkxZi00NTk5LTljMmItYjJlZmZkODIxNjU1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0073195.jpg",
+    "sha256": "49a6cbe66ab4441f53cfe1c3ae95bda331ee3ab9ede2986e4bda2b423e1199af"
+  },
+  "jaws-2-1978-360p-ts": {
+    "identity": "Jaws 2",
+    "year": 1978,
+    "source": "https://www.imdb.com/title/tt0077766/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzAxN2Q5Y2UtMDBkZS00MGQwLWIyZDEtYTgyNGRlZmZiNjI2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0077766.jpg",
+    "sha256": "dfabd30ee97562e98bca741e5539bd859c09f534647b42ce4a20c012ec69de00"
+  },
+  "jaws-3-d-1983-360p-ts": {
+    "identity": "Jaws 3-D",
+    "year": 1983,
+    "source": "https://www.imdb.com/title/tt0085750/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYmY3YWZiMTAtZGYyYy00ODc3LTk5NjQtY2RhN2QwNzE2ZGI3XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0085750.jpg",
+    "sha256": "386dbb0b03e97999bb77a7d2e37432fe049acee67471307114f71111c30c8f23"
+  },
+  "jaws-vs-kraken-2022-360p-ts": {
+    "identity": "Jaws vs Kraken",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt21477226/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWEzOTQ3NGUtNjg0MC00ZTAyLTkzYjUtZDcwMWYxZDViMjg0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt21477226.jpg",
+    "sha256": "0b6175254303fb2ad485979516361f477b2384ef965cfb591a7ae9eb4198d92c"
+  },
+  "mean-girls-2004-mp4": {
+    "identity": "Mean Girls",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0377092/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjE1MDQ4MjI1OV5BMl5BanBnXkFtZTcwNzcwODAzMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0377092.jpg",
+    "sha256": "9bac2a87ce225c0762ee293e7d6351b9a681be795280b5ac6d4c10ee901e3c3a"
+  },
+  "sonic-the-hedgehog-2-1080p-english-mp4": {
+    "identity": "Sonic the Hedgehog 2",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt12412888/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDBiYzk0YTMtNWRiYi00YWY0LWE3NjgtYmJiYTAwZmYzOTM0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt12412888.jpg",
+    "sha256": "2c0780ae2219e2c0eabaca53f6bc8eaa5db51f303d1d444fa5fd91437aef9c29"
+  },
+  "sonic-the-hedgehog-3-2024-1080p-x264-xoxo-mp4": {
+    "identity": "Sonic the Hedgehog 3",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt18259086/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjZjNjE5NDEtOWJjYS00Mjk2LWI1ZDYtOWI1ZWI3MzRjM2UzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt18259086.jpg",
+    "sha256": "453c332a6613aff3f5e7fd556feedbeba0ffbea3a9cc007b25b25ecc07c11124"
+  },
+  "space-jam-a-new-legacy-mp4": {
+    "identity": "Space Jam: A New Legacy",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt3554046/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDkyOGM4MDMtZWU4ZS00YWMxLTgzNjAtYzI4M2Y1ODA4YWJlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3554046.jpg",
+    "sha256": "68fa546829210a1deefba56a8eac14031ca9feb75959663486c6fb5fc5654d86"
+  },
+  "home-alone-1990-720p-mp4": {
+    "identity": "Home Alone",
+    "year": 1990,
+    "source": "https://www.imdb.com/title/tt0099785/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzNmNmQ2ZDEtMTc1MS00NjNiLThlMGUtZmQxNTg1Nzg5NWMzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0099785.jpg",
+    "sha256": "dc78cb27a304f579fb005e38e98676b2dc84f432d9e9d51cc8964911075ff0cf"
+  },
+  "space-jam-mp4": {
+    "identity": "Space Jam",
+    "year": 1996,
+    "source": "https://www.imdb.com/title/tt0117705/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGQ3ZDk0M2MtZDNmNi00OWE3LThiODUtMTU3NmVjMTA0ZGQyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0117705.jpg",
+    "sha256": "5ccc248d7f772d092a8478bcecf7c26f86700d599fb46d215bbff06197c8aaed"
+  },
+  "santa-claus-is-comin-to-town-1970-480p-mp4": {
+    "identity": "Santa Claus Is Comin' to Town",
+    "year": 1970,
+    "source": "https://www.imdb.com/title/tt0066327/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTVkODA5MTUtODg2ZS00Y2RlLWJiNzAtYTQzMjcyYzMyZWNmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0066327.jpg",
+    "sha256": "d426c196fdb63448ebcf63ea78cb612d1d262c7f491ac911bdebde7d142c0cdf"
+  },
+  "the-santa-clause-3-the-escape-clause-720p-hd-mp4": {
+    "identity": "The Santa Clause 3: The Escape Clause",
+    "year": 2006,
+    "source": "https://www.imdb.com/title/tt0452681/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTI4ODQ4MzgzMl5BMl5BanBnXkFtZTcwODc5NTUzMQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0452681.jpg",
+    "sha256": "148bcea7653342282a31d2cd58eab1f0cd8edf16b64f17dcdf50c42a10421ff1"
+  },
+  "marley-me-2009-theatrical-dvdrip-mp4": {
+    "identity": "Marley & Me",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt0822832/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjAzOGQ1NjYtNWZmMi00ZDcwLThiMGEtZTdkZjkzMDU5ZjE2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0822832.jpg",
+    "sha256": "38806b3bc18fbab0ceae223134da990ccca7b2fbd09068af5047a6c45970bd44"
+  },
+  "diary-wimpy-kid-dog-day-2012-mp4": {
+    "identity": "Diary of a Wimpy Kid: Dog Days",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt2023453/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTc2MTk4MTk4Nl5BMl5BanBnXkFtZTcwMzgzOTY2Nw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2023453.jpg",
+    "sha256": "df637969746294d3c764c968060e223299d6a22bbf469963f002438d0c9cb285"
+  },
+  "elf-2003-mov": {
+    "identity": "Elf",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0319343/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNDQ0ZWE2NzgtNGNhMC00MDIwLWI1MjUtYjYxZGRiM2UyYTQzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0319343.jpg",
+    "sha256": "889eb88bcedd2de7821126a181a62aa644ed1dfa2542b1e58f08fccd6756896d"
+  },
+  "good-burger-2-2023-720p-amzn-webrip-800mb-x264-galaxyrg-mkv": {
+    "identity": "Good Burger 2",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt25289836/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTJjMGUzMTItYzg4ZS00MTZlLWIwNzEtNTM2ZWFhMmE3MjE2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt25289836.jpg",
+    "sha256": "5db74622ff2c6590c4accfe5e3d1f02b8309cbe68fb1165d9afaac982510c7e5"
+  },
+  "looney-tunes-back-in-action-full-movie-mp4": {
+    "identity": "Looney Tunes: Back in Action",
+    "year": 2003,
+    "source": "https://www.imdb.com/title/tt0318155/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNDU2NmU2YzktNWFlMC00MDk1LWFhZjQtYjUxZThiMjZhNjQ2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0318155.jpg",
+    "sha256": "c24d7fa8014483527c1d068ea5d3aa2c9b6ae9f954188a4b1bcb5669c14429c5"
+  },
+  "gremlins-2-theatrical-dvdrip-mp4": {
+    "identity": "Gremlins 2: The New Batch",
+    "year": 1990,
+    "source": "https://www.imdb.com/title/tt0099700/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZWI2ZTI2ZjAtOWYyZS00ZmY2LWE4ZDYtNTdmNWMwZTFjNzZhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0099700.jpg",
+    "sha256": "b760f29f2dd5faf412fc9c85714c25d57f6e5d2d1856275ffbf008a87942ef37"
+  },
+  "ted-2012-720p-mp4": {
+    "identity": "Ted",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt1637725/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQ1OTU0ODcxMV5BMl5BanBnXkFtZTcwOTMxNTUwOA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1637725.jpg",
+    "sha256": "2621209036e65de3ed7858313183cc29f9ef148a32c12e0e2c6c8500a2ea6713"
+  },
+  "ted-2-2015-720p-mp4": {
+    "identity": "Ted 2",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2637276/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjEwMDg3MDk1NF5BMl5BanBnXkFtZTgwNjYyODA1NTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2637276.jpg",
+    "sha256": "39d787a2030e7da1f42b141283ab4e581d11c7966476db16aee9401aa383011d"
+  },
+  "beetlejuice-beetlejuice-cam-hd-2024-mp4": {
+    "identity": "Beetlejuice Beetlejuice",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt2049403/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTQ4Y2MzY2MtYzQyMS00ZTQ3LWIzZGQtNjVjYzgwYzA1MDkzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2049403.jpg",
+    "sha256": "1541a1c81d1a9a5c1960c9b3fbad1de9c1b324cd8b5b2adc47f164dc1f3f40c6"
+  },
+  "south-park-post-covid-2021-360p-ts": {
+    "identity": "South Park: Post COVID",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt15005868/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODRjYmI4ZjYtNzE5NC00N2EwLWFmNWYtM2E3MWVjNDZkZjE4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt15005868.jpg",
+    "sha256": "cc6d189a02cb9e112584bb62bc4440d9e83d151e84a134dece4ce7162cd115f3"
+  },
+  "rudolph-the-red-nosed-reindeer-1964-720p-hd-mp4": {
+    "identity": "Rudolph the Red-Nosed Reindeer",
+    "year": 1964,
+    "source": "https://www.imdb.com/title/tt0058536/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOWFmMDNkZjgtZWM0Ny00NGQ4LTg4ZWQtNzY1ZDRkNzRhZmM3XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0058536.jpg",
+    "sha256": "7799a3f33a056e5af81ae5d5053bb9098f86f4eacfd42c9acc1886ec3a8cc56e"
+  },
+  "the-polar-express-avi": {
+    "identity": "The Polar Express",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0338348/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTM1NTU0NTE4MV5BMl5BanBnXkFtZTcwMTQ0MjEzMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0338348.jpg",
+    "sha256": "def5d608c404345fa401e92de0faa57a4228b8a2a48b3236bba57ed1669e5e8f"
+  },
+  "frosty-s-winter-wonderland": {
+    "identity": "Frosty's Winter Wonderland",
+    "year": 1976,
+    "source": "https://www.imdb.com/title/tt0134661/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMmEwODYzYzItNjdmOC00ZDQ3LThjM2QtN2QxN2ZjMTg3Y2E3XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0134661.jpg",
+    "sha256": "01e5df13a371a11e054f435ba3e91de2f39fdf74c25fcd88d409803c0f389371"
+  },
+  "spongebob-movie-sponge-out-of-water-2017-720p-hd-mp4": {
+    "identity": "The SpongeBob Movie: Sponge Out of Water",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2279373/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODAyMDgzMzkyMV5BMl5BanBnXkFtZTgwMjI1MzQzMjE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2279373.jpg",
+    "sha256": "8c3b635214fa0d05e506a5bda78d1fbee57d3fa643f674e6ba68a6888b5d6324"
+  },
+  "plankton-the-movie-mp4": {
+    "identity": "Plankton: The Movie",
+    "year": 2025,
+    "source": "https://www.imdb.com/title/tt32560777/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTZmOGRiMzgtNTIxYy00ZTg4LTlhMTUtMTgwOWI0NTVhM2UwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt32560777.jpg",
+    "sha256": "a72039ce0f48464e658174c3a7f164d5eec966217f2642582d98e4d0ff7aa427"
+  },
+  "saving-bikini-bottom-the-sandy-cheeks-movie-full-movie": {
+    "identity": "Saving Bikini Bottom: The Sandy Cheeks Movie",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt23063732/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTFmNDU1YjItZThmYi00NjM3LTk5OGEtODgyMDQ3ODFiYjZhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt23063732.jpg",
+    "sha256": "a1b091d8349aa912f1bb3433f06c51b4f929c88cd9554b25898b800cfd3ef013"
+  },
+  "the-garfield-movie-2024-360p-ts": {
+    "identity": "The Garfield Movie",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt5779228/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjY2NDZhN2EtZmYwNS00NDU2LThiODAtNmY4OWY2ODNmZWRmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5779228.jpg",
+    "sha256": "077750d947ebd71e177fc5891a721599862c3eb4ba8f63568fa8d3c6277f41f6"
+  },
+  "kpop-demon-hunters-2025-720p-web-x264-esub-hollymoviehd-mp4": {
+    "identity": "KPop Demon Hunters",
+    "year": 2025,
+    "source": "https://www.imdb.com/title/tt14205554/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTBiYWJlMjQtOTIyMy00NTY4LWFhOWItOWZhNzc3NGMyMjc2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt14205554.jpg",
+    "sha256": "32d4d02953e5d579c01af05faec79d2a18c9ddb2b892f9f8fe3f4be6b2dd16f5"
+  },
+  "woody-woodpecker-goes-to-camp-2024-360p-ts": {
+    "identity": "Woody Woodpecker Goes to Camp",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt20221690/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDg5YjAzNDAtOGJlOC00NmQ4LTkwY2EtOTg5OWJkOGJiY2NhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt20221690.jpg",
+    "sha256": "d11c348ca40eb3796d02d659936f98a3ecec7374891e8515932cbdf6740f55f2"
+  },
+  "frosty-the-snowman-1969": {
+    "identity": "Frosty the Snowman",
+    "year": 1969,
+    "source": "https://www.imdb.com/title/tt0064349/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDM2Y2RiMjgtMDM1Zi00Mjk2LTg5ZGQtZTIwNTJjOTMxMGQxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0064349.jpg",
+    "sha256": "166c262f4ea4e2a0402bab163bb742a0c35c02fafea7b0d75f882a40e4722136"
+  },
+  "the-smurfs-2-2013-720p-bluray-x264-yify-mp4": {
+    "identity": "The Smurfs 2",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt2017020/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjMwMDEwOTEwMF5BMl5BanBnXkFtZTcwMzQ0MDQ1OA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2017020.jpg",
+    "sha256": "dec715355242cda990190b393fff0b03e104630a8ebe243390f3c3ee7d9f6ebb"
+  },
+  "the-lego-ninjago-movie-mp4": {
+    "identity": "The Lego Ninjago Movie",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt3014284/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNWQ3Zjk0ZGEtOTU4ZS00OWY1LTlkM2YtNTllZjBhNTk3NDAxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3014284.jpg",
+    "sha256": "710e9b22efd41f77af6bf7999854291d18e4bed8caca9dc9ec46b0c564833080"
+  },
+  "south-park-the-streaming-wars-part-2-2022-360p-ts": {
+    "identity": "South Park: The Streaming Wars Part 2",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt21198156/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjNiOWJhZTQtYzBkNi00NzU3LWE2MzktOWIyMzE5YTExODJmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt21198156.jpg",
+    "sha256": "a90eaeb712ac58108a65147e2c05afd6448050818513fbb6db2d6864f4533461"
+  },
+  "dragon-ball-super-broly-full-movie-hd-en-1-mp4": {
+    "identity": "Dragon Ball Super: Broly",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt7961060/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTA5MTc1M2EtZWQ2Ni00ZmU2LTg3MzQtOTliMjE4OGM0ZWFiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7961060.jpg",
+    "sha256": "ff219f89ebd05ed76ee389b28de75f5d464a180a4222c7277d1fb45b49455f4e"
+  },
+  "barnyard-full-movie-mp4": {
+    "identity": "Barnyard",
+    "year": 2006,
+    "source": "https://www.imdb.com/title/tt0414853/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTU2NDE0ODYyNF5BMl5BanBnXkFtZTcwNjQ3NzAzMQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0414853.jpg",
+    "sha256": "f20c79aaf07cdcd00792680a3c94f7366c2499f24fe8b292ed6af715b415b7cd"
+  },
+  "super-mario-bros-movie": {
+    "identity": "The Super Mario Bros. Movie",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt6718170/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOWFmNmY2YjAtZTgyNy00MjBmLWI1YWMtMjFjZjkxYjYyOTVmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6718170.jpg",
+    "sha256": "9af2918f4fc0eac9bb1ef155f47c29ca3f78f3c6abdb8cbffe045d3e5a0762b0"
+  },
+  "lego-jurassic-park": {
+    "identity": "Lego Jurassic Park: The Unofficial Retelling",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt29380429/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTgyODJjMjAtY2Q0NC00ZjYwLWE1MzctMjdhMzk4NzFkNGViXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt29380429.jpg",
+    "sha256": "79bdb5b3409865f229acff5ba6d020b94541d32ee93ee83f3f61fd82537df1d0"
+  },
+  "pokemon-arceus-chronicles": {
+    "identity": "Pokémon: The Arceus Chronicles",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt21970564/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTBkNjA5NTQtMDY0NC00ZDQ1LWE4NzEtOTEwYTZlMDFiMWJhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt21970564.jpg",
+    "sha256": "07123baf1bd7e304e7db38e8aaee38edb1d4ebb6767ed43f60deb105b01e9f7b"
+  },
+  "pokemon-detective-pikachu": {
+    "identity": "Pokémon: Detective Pikachu",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt5884052/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNDU4Mzc3NzE5NV5BMl5BanBnXkFtZTgwMzE1NzI1NzM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5884052.jpg",
+    "sha256": "5d8cdb6a991ddaae91eced4f7b0bb4d6902cc890c64fe3fa078b9f9713c9089a"
+  },
+  "sonic-the-hedgehog": {
+    "identity": "Sonic the Hedgehog",
+    "year": 2020,
+    "source": "https://www.imdb.com/title/tt3794354/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTg2Yjc5MzItNzVmMi00MTllLWI2MDQtOTYyOWNjYWIxNzEzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3794354.jpg",
+    "sha256": "56cca2fd1fd82298fe84e1d3ab9724311e8eeafc94dbbedada2fe5dd8fbe2711"
+  },
+  "mortal-kombat-old": {
+    "identity": "Mortal Kombat",
+    "year": 1995,
+    "source": "https://www.imdb.com/title/tt0113855/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjQyYjJjMzEtZTYzYy00ZjFmLTlkNTktNDI5ZjIwNTAxOWE0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0113855.jpg",
+    "sha256": "e0b256c27382cca96c21ea98c805021f05f252f8d4663f39098a60d625219997"
+  },
+  "lego-batman-movie": {
+    "identity": "The Lego Batman Movie",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt4116284/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTcyNTEyOTY0M15BMl5BanBnXkFtZTgwOTAyNzU3MDI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4116284.jpg",
+    "sha256": "8fe83307464b16192c7f6c855306dde4010a6b2133394c41da1f4ccbcc47bcbc"
+  },
+  "lego-movie-2": {
+    "identity": "The Lego Movie 2: The Second Part",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt3513498/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTkyOTkwNDc1N15BMl5BanBnXkFtZTgwNzkyMzk3NjM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3513498.jpg",
+    "sha256": "444c81b2fa87ae5507648061bb66873b8a07ec383f56c48ce7884f7d6974f524"
+  },
+  "minecraft-movie": {
+    "identity": "A Minecraft Movie",
+    "year": 2025,
+    "source": "https://www.imdb.com/title/tt3566834/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYzFjMzNjOTktNDBlNy00YWZhLWExYTctZDcxNDA4OWVhOTJjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3566834.jpg",
+    "sha256": "3936cc9b08758f67439077d2ae316ff715ad1521897ed164355830cfe17af617"
+  },
+  "jumanji": {
+    "identity": "Jumanji",
+    "year": 1995,
+    "source": "https://www.imdb.com/title/tt0113497/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTFkMjFmODgtYzRiZi00NmQwLTliZWMtMzRhMWQ5ZmY3ZDExXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0113497.jpg",
+    "sha256": "da0a1daa086d116b38db80e3fb5b6452f5fad1976278c9426560454ebade12a5"
+  },
+  "pixels": {
+    "identity": "Pixels",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2120120/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzIyNTc1NmUtOTBlNS00YzEwLTlkZTMtZjJkMGM2YzNkYmY3XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2120120.jpg",
+    "sha256": "82f3edcb7160be83b45f1f13744cf8632283555bce04071bd0174f501d4c072d"
+  },
+  "fnaf-movie": {
+    "identity": "Five Nights at Freddy's",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt4589218/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzFkMDE2ZmEtOWMwNy00MWM2LThlNjMtZWQzNWY5MTJjZjcxXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4589218.jpg",
+    "sha256": "03555d0988431c5565e25dfdff7053140febbe1a97d85b9b8459736ef2117090"
+  },
+  "jumanji-next-level": {
+    "identity": "Jumanji: The Next Level",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt7975244/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWFjODExZWEtYzIwYS00M2YwLTk4YTktNDQ5ZmVmOThiNmI1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7975244.jpg",
+    "sha256": "e724ba50f2d3fa261d68311e5053710ed198301f408dde19ee6f16532f550f9b"
+  },
+  "the-holy-bible-kjv-pdf": {
+    "identity": "The Holy Bible (KJV), Covenant Christian Coalition edition",
+    "source": "https://drive.google.com/file/d/1708mzXROLnR3qvmNaXca1eRt9TQnFqBR/view",
+    "image": "https://drive.google.com/thumbnail?id=1708mzXROLnR3qvmNaXca1eRt9TQnFqBR&sz=w640",
+    "thumbnail": "/thumbnails/tv/holy-bible-kjv.jpg",
+    "sha256": "2dfd26b22dc00a7efe8961f0565b0bfc0ed030151214edc97260981bc8c8ab9c"
+  },
+  "oceanofpdf-com-minecraft-gather-cook-eat-official-cookbook-tara-theoharis-pdf": {
+    "identity": "Minecraft: Gather, Cook, Eat! Official Cookbook",
+    "source": "https://www.simonandschuster.com/books/Minecraft-Gather-Cook-Eat!-Official-Cookbook/Tara-Theoharis/9781647228262",
+    "image": "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781647228262/minecraft-gather-cook-eat-official-cookbook-9781647228262_hr.jpg",
+    "thumbnail": "/thumbnails/tv/minecraft-cookbook.jpg",
+    "sha256": "8dbe262370f92657a853e0784a60d69ee8a8b4419f0c7e29af1de23857d3b964"
+  },
+  "spider-man-far-from-home-2019-ts": {
+    "identity": "Spider-Man: Far from Home",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt6320628/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzNhNTE0NWQtN2E1Ny00NjcwLTg1YTctMGY1NmMwODJmY2NmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6320628.jpg",
+    "sha256": "e5de2c12aa74c9460574aa7889fc689056334a9aacc0da2f6b836c30ace6a892"
+  },
+  "the-avengers-2012-proper-720p-bluray-x264-esub-hollymoviehd-mp4": {
+    "identity": "The Avengers",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt0848228/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGE0YTVjNzUtNzJjOS00NGNlLTgxMzctZTY4YTE1Y2Y1ZTU4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0848228.jpg",
+    "sha256": "892a0530f5a6dc5b8053832993c74978e5fb72670a197e26cbc961a2369fe146"
+  },
+  "avengers-infinity-war-2018-720p-bluray-x264-esub-hollymoviehd-mp4": {
+    "identity": "Avengers: Infinity War",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt4154756/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjMxNjY2MDU1OV5BMl5BanBnXkFtZTgwNzY1MTUwNTM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4154756.jpg",
+    "sha256": "39f72cc42ca2c54f59dd09224efa7684adc3011a3ef854d9388de288e8a23753"
+  },
+  "spider-man-no-way-home-theatrical-2021-dvdripped-mp4": {
+    "identity": "Spider-Man: No Way Home",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt10872600/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMmFiZGZjMmEtMTA0Ni00MzA2LTljMTYtZGI2MGJmZWYzZTQ2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt10872600.jpg",
+    "sha256": "7f0f844a3a7ba054fa0c0b7cd463afa0b5bfffe370890f7c2462f48c9139c8a5"
+  },
+  "spider-man-full-movie-ts": {
+    "identity": "Spider-Man",
+    "year": 2002,
+    "source": "https://www.imdb.com/title/tt0145487/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZWM0OWVmNTEtNWVkOS00MzgyLTkyMzgtMmE2ZTZiNjY4MmFiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0145487.jpg",
+    "sha256": "086cfacb05044e86af0e0ff4274ceff58494a871759edb320ed6265263557c7a"
+  },
+  "spider-man-2-2004-ts": {
+    "identity": "Spider-Man 2",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0316654/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGQ0YTQyYTgtNWI2YS00NTE2LWJmNDItNTFlMTUwNmFlZTM0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0316654.jpg",
+    "sha256": "8ae010b077e4134438e3139565f3669697f667c9e63a314ea43c963b9a84044a"
+  },
+  "spider-man-3-2007-ts": {
+    "identity": "Spider-Man 3",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0413300/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODE2NzNhMDctYjUzMC00Y2M5LWI2Y2EtODJkZTFjN2Y5ODlmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0413300.jpg",
+    "sha256": "255b9867165f9207275cdb9f8f77908d908736b1fcb9d11ad57b6bce3fde7647"
+  },
+  "the-amazing-spider-man-full-movie-ts": {
+    "identity": "The Amazing Spider-Man",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt0948470/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjMyOTM4MDMxNV5BMl5BanBnXkFtZTcwNjIyNzExOA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0948470.jpg",
+    "sha256": "beb0c87d4ce4de7b0c9fc6abd15309e5694f6248b38699f1f3bb42a0d9528f28"
+  },
+  "the-amazing-spider-man-2-full-movie": {
+    "identity": "The Amazing Spider-Man 2",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt1872181/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTA5NDYxNTg0OV5BMl5BanBnXkFtZTgwODE5NzU1MTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1872181.jpg",
+    "sha256": "a0091646f19fecbfdd759b54a4245cea2493dcb9e51d652fce896d59cdcde537"
+  },
+  "captain-america-the-first-avenger-2011-720p-mp4": {
+    "identity": "Captain America: The First Avenger",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt0458339/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzUyM2YyY2MtNzNlMS00MWU5LTgxNjAtNzZlNmI2NjU2NDZlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0458339.jpg",
+    "sha256": "b4f9a6c12d28b2485436fc2d31f637a006b174b11f1b7d3458a991566271c759"
+  },
+  "captain-america-civil-war-2016-720p-hd-mp4": {
+    "identity": "Captain America: Civil War",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt3498820/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjQ0MTgyNjAxMV5BMl5BanBnXkFtZTgwNjUzMDkyODE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3498820.jpg",
+    "sha256": "c62b0010782c046629f173e941264de01fc5a7bbca0bc036a2853dafdf5e1ba0"
+  },
+  "black-panther-2018-mp4": {
+    "identity": "Black Panther",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt1825683/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTg1MTY2MjYzNV5BMl5BanBnXkFtZTgwMTc4NTMwNDI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1825683.jpg",
+    "sha256": "72c68d5ce4ea7577a881928ae07a8b7cc5981a36de32609ea683fa321f19c9be"
+  },
+  "deadpool-2016-360p-ts": {
+    "identity": "Deadpool",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt1431045/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzY3ZWU5NGQtOTViNC00ZWVmLTliNjAtNzViNzlkZWQ4YzQ4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1431045.jpg",
+    "sha256": "2cde23d059d8319fc6f1388d2c1c2527d84e89dcca11e330ce5d78422e637992"
+  },
+  "ant-man-mp4": {
+    "identity": "Ant-Man",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt0478970/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjM2NTQ5Mzc2M15BMl5BanBnXkFtZTgwNTcxMDI2NTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0478970.jpg",
+    "sha256": "2141a9be58b9fd0b8c31ee36641881cd567f30ef06292f4ace3a3514dd6253c4"
+  },
+  "ant-man-and-the-wasp-mp4": {
+    "identity": "Ant-Man and the Wasp",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt5095030/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODVkY2ZmZTAtYzFhMi00YzZlLWE2YWMtMDBiYjY2OTU4ZWM0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5095030.jpg",
+    "sha256": "a290b63de2a6f4a8d196983bb1bffa55cd8a9c9cac16dfde3f90056311e99670"
+  },
+  "thor-2011-720p-mp4": {
+    "identity": "Thor",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt0800369/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjRhNGZjZjEtYTQzYS00OWUxLThjNGEtMTIwMTE2ZDFlZTZkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0800369.jpg",
+    "sha256": "8e111c5bf1c1e3eef0116bcd44fd95d6565bb2463e59fd66805a3b0321f023de"
+  },
+  "thor-the-dark-world-2013-720p-hd-mp4": {
+    "identity": "Thor: The Dark World",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1981115/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQyNzAwOTUxOF5BMl5BanBnXkFtZTcwMTE0OTc5OQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1981115.jpg",
+    "sha256": "90b653ed4dae0b70e24cb9469921a97f803f5ea14839ba113dee2d68d3ea8d2e"
+  },
+  "thor-ragnarok-2017-720p-hd-mp4": {
+    "identity": "Thor: Ragnarok",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt3501632/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjMyNDkzMzI1OF5BMl5BanBnXkFtZTgwODcxODg5MjI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3501632.jpg",
+    "sha256": "ebafd7b1e76ac2425f51db4c62ebbd2a9e961e7e7cc16e5e87d99bc81d53989e"
+  },
+  "venom-let-there-be-carnage-2021-mkv": {
+    "identity": "Venom: Let There Be Carnage",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt7097896/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGIxMTU1MjItM2FmMi00YmFiLTgwNDMtMTczYmVjYTBhNGZhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7097896.jpg",
+    "sha256": "2f402fc2010935b07afd444c75d64122b67b89ec1f31c59954a6fbc1d860ff25"
+  },
+  "iron-man-2-2010-360p-ts": {
+    "identity": "Iron Man 2",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt1228705/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWYyOGQzOGYtMGQ1My00ZWYxLTgzZjktZWYzN2IwYjkxYzM0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1228705.jpg",
+    "sha256": "238fcfe724195c8e1fc95560d4a019001c3f26728ef4e7c500d4375333e1e370"
+  },
+  "iron-man-3-1080p-mp4": {
+    "identity": "Iron Man 3",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1300854/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjIzMzAzMjQyM15BMl5BanBnXkFtZTcwNzM2NjcyOQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1300854.jpg",
+    "sha256": "ba3f6f5fed5a73dff0a92a10decc8b35c19042d4d5acd596b68033650f2f0c81"
+  },
+  "deadpool-wolverine-720p-hd-2024-mp4": {
+    "identity": "Deadpool & Wolverine",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt6263850/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTk5ODY0MmQtMzA3Ni00NGY1LThiYzItZThiNjFiNDM4MTM3XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6263850.jpg",
+    "sha256": "df816cd6b648723a30d24fa7cc20e8eb4883ba33b0184818e97fed5d0c94ebff"
+  },
+  "the-wolverine-2013-bluray-720p-mp4": {
+    "identity": "The Wolverine",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1430132/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGU0MzRhMWEtYTBkNS00NzliLWJkMmUtMDFlMjkyOTkyYmZlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1430132.jpg",
+    "sha256": "08f00a16be34f87678aca0fd553f0e735aba3ee358b5e2f9330061847db324b3"
+  },
+  "iron-man-mp4": {
+    "identity": "Iron Man",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt0371746/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTczNTI2ODUwOF5BMl5BanBnXkFtZTcwMTU0NTIzMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0371746.jpg",
+    "sha256": "fd074798b7316ea0449567e1ab6fa85c30c147eee7ca7576e7fc1462986c1432"
+  },
+  "iron-man-2-mp4": {
+    "identity": "Iron Man 2",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt1228705/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWYyOGQzOGYtMGQ1My00ZWYxLTgzZjktZWYzN2IwYjkxYzM0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1228705.jpg",
+    "sha256": "238fcfe724195c8e1fc95560d4a019001c3f26728ef4e7c500d4375333e1e370"
+  },
+  "iron-man-3-mp4": {
+    "identity": "Iron Man 3",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1300854/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjIzMzAzMjQyM15BMl5BanBnXkFtZTcwNzM2NjcyOQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1300854.jpg",
+    "sha256": "ba3f6f5fed5a73dff0a92a10decc8b35c19042d4d5acd596b68033650f2f0c81"
+  },
+  "doctor-strange-2016-720p-hd-mkv": {
+    "identity": "Doctor Strange",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt1211837/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjgwNzAzNjk1Nl5BMl5BanBnXkFtZTgwMzQ2NjI1OTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1211837.jpg",
+    "sha256": "b7fd7f2622045147f987686abfd283aa69a2fb8b9cefd0c6009570a767b0450d"
+  },
+  "guardians-of-the-galaxy-vol-3-2023-720p-webrip-900mb-x264-galaxyrg-mkv": {
+    "identity": "Guardians of the Galaxy Vol. 3",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt6791350/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTJhOTMxMmItZmE0Ny00MDc3LWEzOGEtOGFkMzY4MWYyZDQ0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6791350.jpg",
+    "sha256": "9c55a5b463acaf565a0150d54c773f6739069fdfc407011472cc20c33b0b9639"
+  },
+  "shang-chi-and-the-legend-of-the-ten-rings-2021-mp4": {
+    "identity": "Shang-Chi and the Legend of the Ten Rings",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt9376612/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZmY5MDcyNzAtYzg3MC00MGNlLTg3OGItNmRjYThkZGVlNzAyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt9376612.jpg",
+    "sha256": "b72ac0ac0ff57fe8da10974caf4005e867dcac4e6835d7cb7924219089b167ae"
+  },
+  "x-men-origins-wolverine-2009-full-movie-genvideos-mp4": {
+    "identity": "X-Men Origins: Wolverine",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt0458525/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZjQwOGEzNjUtNDgwYS00NzUzLWJhZjAtNmFlNzY2YTQyOTllXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0458525.jpg",
+    "sha256": "1ef27e8519469ca7e5dcb7084666e7fb40726d2a9c890a1ebfb99d5f7d33845d"
+  },
+  "into-the-spider-verse-mp4": {
+    "identity": "Spider-Man: Into the Spider-Verse",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt4633694/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjMwNDkxMTgzOF5BMl5BanBnXkFtZTgwNTkwNTQ3NjM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4633694.jpg",
+    "sha256": "d6fe30cf3f5432eebd03cfc443fbe0db5de0f70f5da75099f4a7a5e89c687276"
+  },
+  "venom-the-last-dance-2024-cam-360p-ts": {
+    "identity": "Venom: The Last Dance",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt16366836/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDMyYWU4NzItZDY0MC00ODE2LTkyYTMtMzNkNDdmYmFhZDg0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt16366836.jpg",
+    "sha256": "4fa710ea0522e3d330beffa853da41e530cf62c0032428e7a606458439b8a7df"
+  },
+  "dark-knight-rises": {
+    "identity": "The Dark Knight Rises",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt1345836/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTk4ODQzNDY3Ml5BMl5BanBnXkFtZTcwODA0NTM4Nw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1345836.jpg",
+    "sha256": "01981ac75345e7f76588220915a5fc5ee9efbf1b9dbbf2b392f370714d4d8b4f"
+  },
+  "the-batman-2022": {
+    "identity": "The Batman",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt1877830/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMmU5NGJlMzAtMGNmOC00YjJjLTgyMzUtNjAyYmE4Njg5YWMyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1877830.jpg",
+    "sha256": "41a80de484627276a16c616c797b96db893aa3b838bb61dfc02f91865038f054"
+  },
+  "dark-knight": {
+    "identity": "The Dark Knight",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt0468569/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0468569.jpg",
+    "sha256": "6c1baf1551493b46c0f25c35524f718a56667015bac965dc5fcad2d4b27134a9"
+  },
+  "batman-begins": {
+    "identity": "Batman Begins",
+    "year": 2005,
+    "source": "https://www.imdb.com/title/tt0372784/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzA2NDQzZDEtNDU5Ni00YTlkLTg2OWEtYmQwM2Y1YTBjMjFjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0372784.jpg",
+    "sha256": "ecba30af949d2115a0275ec48ab1881e8d5c70afb906c0feb961d183c9e87d7d"
+  },
+  "the-joker": {
+    "identity": "Joker",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt7286456/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzY3OWQ5NDktNWQ2OC00ZjdlLThkMmItMDhhNDk3NTFiZGU4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7286456.jpg",
+    "sha256": "c65c7dba4906266fe6c146ff0577ec4242b0b6c58a9e43d1a5d2e50edfc9385a"
+  },
+  "shazam": {
+    "identity": "Shazam!",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt0448115/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZWM1YjdmOGQtNGYyMC00NjMwLTk1OWUtMGYzM2NjYjliYzYyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0448115.jpg",
+    "sha256": "16cf7a8e45ac7c6baa64b86abaf59a82af91b35d44a4aba87a4c86322122cc5f"
+  },
+  "shazam-fury-of-gods": {
+    "identity": "Shazam! Fury of the Gods",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt10151854/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjdlYzAwYTMtMWJlOC00OTQ5LWJhMmYtMDhjNGY4M2RhMGU4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt10151854.jpg",
+    "sha256": "f159e99860067e6b308e09133134e12659b573fd7df26ee457a1102a28e080fa"
+  },
+  "suicide-squad": {
+    "identity": "Suicide Squad",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt1386697/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjM1OTMxNzUyM15BMl5BanBnXkFtZTgwNjYzMTIzOTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1386697.jpg",
+    "sha256": "6763873c219a8e2b0cc97ad1b51047c708653d24d01507d7a357c9ee0f39630d"
+  },
+  "suicide-squad-2": {
+    "identity": "The Suicide Squad",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt6334354/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMWU3Y2NlZmEtMjJjNS00ZWMxLWE1MzctYWYyMjMzMDdkNTE4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6334354.jpg",
+    "sha256": "f1101fbb9ed9ad9d92c100164cde6d48f6521be3a485e50940be8db3b55dcb6c"
+  },
+  "birds-of-prey": {
+    "identity": "Birds of Prey and the Fantabulous Emancipation of One Harley Quinn",
+    "year": 2020,
+    "source": "https://www.imdb.com/title/tt7713068/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTgwNWEwOWMtNGIxMy00YzU5LTk2MzgtMjAzMmM1MjZiY2RiXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt7713068.jpg",
+    "sha256": "9eab30adafc0f5489665aea157ca143940ba21ef17c9883de250e52b17c3021b"
+  },
+  "blue-beetle": {
+    "identity": "Blue Beetle",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt9362930/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTEyYzQzOTMtMWExNi00OWNjLTgwMDUtNzY0YjhmZDBiMTk2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt9362930.jpg",
+    "sha256": "933eb6f18ce3c5b9ce1d0d2449172f172fb843651b24ba5c488d7b239547f0e1"
+  },
+  "the-flash-2023": {
+    "identity": "The Flash",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt0439572/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYmE2NzBjNGUtNTJiMy00N2UxLWEyYzMtYzFjODFhMGZlOTgzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0439572.jpg",
+    "sha256": "d71df22deaa023bd42bc045f995ac71e7d9de2b60ead9229581d763b61a5d885"
+  },
+  "joker-folie-deux": {
+    "identity": "Joker: Folie à Deux",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt11315808/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTRlNmU1NzEtODNkNC00ZGM3LWFmNzQtMjBlMWRiYTcyMGRhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt11315808.jpg",
+    "sha256": "5f2a00cbe474bc096153666c57c811eb4f34fa45dadbb54126b9cfdc6fb8ce49"
+  },
+  "harry-potter-and-the-sorcerer-s-stone": {
+    "identity": "Harry Potter and the Sorcerer's Stone",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0241527/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNTU1MzgyMDMtMzBlZS00YzczLThmYWEtMjU3YmFlOWEyMjE1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0241527.jpg",
+    "sha256": "b91a8fa5cfc783e1e914b0740e9ef4cebb560b4ba823a8e436a5cca727b79c7b"
+  },
+  "harry-potter-and-the-chamber-of-secrets-mp4": {
+    "identity": "Harry Potter and the Chamber of Secrets",
+    "year": 2002,
+    "source": "https://www.imdb.com/title/tt0295297/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGJhM2M2MWYtZjIzMC00MDZmLThkY2EtOWViMDhhYjRhMzk4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0295297.jpg",
+    "sha256": "7bb4c08280899bd5bfb44e24352d4fceebe162b84fb676059479b52e40174706"
+  },
+  "harry-potter-and-the-prisoner-of-azkaban-2004-mp4": {
+    "identity": "Harry Potter and the Prisoner of Azkaban",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0304141/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTY4NTIwODg0N15BMl5BanBnXkFtZTcwOTc0MjEzMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0304141.jpg",
+    "sha256": "3ad86917fb1ff045511ec99cee62718be05da39b8da9b553779d647df45977e3"
+  },
+  "harry-potter-and-the-goblet-of-fire-2005-mp4": {
+    "identity": "Harry Potter and the Goblet of Fire",
+    "year": 2005,
+    "source": "https://www.imdb.com/title/tt0330373/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTIzNzUzOTk2NV5BMl5BanBnXkFtZTYwNTI4MDg2._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0330373.jpg",
+    "sha256": "de260baad20cd5e5f5910a8c5a712b8928f56269f31cde17e923784eebc8f6cc"
+  },
+  "harry-potter-and-the-order-of-the-phoenix-2007-mp4": {
+    "identity": "Harry Potter and the Order of the Phoenix",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0373889/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWJmM2M1YzItMjY1Ni00YzRmLTg5YWYtNDFmNTJjNzQ0ODkyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0373889.jpg",
+    "sha256": "58bcf536592d9a8862364bf92623497edcfda63544b655e3c10c9923003ef89c"
+  },
+  "harry-potter-and-the-half-blood-prince-2009-mp4": {
+    "identity": "Harry Potter and the Half-Blood Prince",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt0417741/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzU3NDg4NTAyNV5BMl5BanBnXkFtZTcwOTg2ODg1Mg@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0417741.jpg",
+    "sha256": "6cecc9e14f6210ea32128589b4fe03b045aa72e7f5554efdc9d62bace9283294"
+  },
+  "harry-potter-and-the-deathly-hallows-part-1-2010-mp4": {
+    "identity": "Harry Potter and the Deathly Hallows: Part 1",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt0926084/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQ2OTE1Mjk0N15BMl5BanBnXkFtZTcwODE3MDAwNA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0926084.jpg",
+    "sha256": "7fa7e40d06b86ec1f144a818f1fb1dd7c6c900eeb76a09da84795fa1b72ed392"
+  },
+  "harry-potter-and-the-deathly-hallows-part-2-2011-mp4": {
+    "identity": "Harry Potter and the Deathly Hallows: Part 2",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt1201607/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTA1Mzc2N2ItZWRiNS00MjQzLTlmZDQtMjU0NmY1YWRkMGQ4XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1201607.jpg",
+    "sha256": "4375627fa82ef42024073977d824c809d726d36b4de1c6db21f587d37213218a"
+  },
+  "the-lion-king": {
+    "identity": "The Lion King",
+    "year": 1994,
+    "source": "https://www.imdb.com/title/tt0110357/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZGRiZDZhZjItM2M3ZC00Y2IyLTk3Y2MtMWY5YjliNDFkZTJlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0110357.jpg",
+    "sha256": "9d1fbc08c9179acd9c1d862b1d3c95e1f9ce03733b2a6326a4a9114a2405e01f"
+  },
+  "the-lion-king-2": {
+    "identity": "The Lion King II: Simba's Pride",
+    "year": 1998,
+    "source": "https://www.imdb.com/title/tt0120131/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMmJlZDQ0M2UtZjgwNC00MjgxLWIzNjAtY2MyNzIyNjliYjRkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0120131.jpg",
+    "sha256": "a46eb60a9627d2ff7b8c1188525517806f155f963b79d607b92b6eaa04ddb6d7"
+  },
+  "cars": {
+    "identity": "Cars",
+    "year": 2006,
+    "source": "https://www.imdb.com/title/tt0317219/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTg5NzY0MzA2MV5BMl5BanBnXkFtZTYwNDc3NTc2._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0317219.jpg",
+    "sha256": "1ea0488eeaa976ad51edf051ef99c3d769b1a7b1dd2e6c15ef29b736a09cb0e4"
+  },
+  "hercules": {
+    "identity": "Hercules",
+    "year": 1997,
+    "source": "https://www.imdb.com/title/tt0119282/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMmUyZGY1ZjItMWYwZS00MjJjLTg1YzAtY2Q5OTA4MmFhYzFjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0119282.jpg",
+    "sha256": "d6f888ded8e2c0125b502b2bae3dec4837b8550af71d50e8e09bbf242709719a"
+  },
+  "coco": {
+    "identity": "Coco",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt2380307/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMDIyM2E2NTAtMzlhNy00ZGUxLWI1NjgtZDY5MzhiMDc5NGU3XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2380307.jpg",
+    "sha256": "f2ff20f3d69e111ab00044f3a34388dcc079bb69303974554b590151407a874c"
+  },
+  "encanto": {
+    "identity": "Encanto",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt2953050/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGEyNzk2M2MtNjBhZS00MzYwLWI0Y2YtYjc5ZWE2MjM0YWE5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2953050.jpg",
+    "sha256": "574524e5df8f890694787f8b32e1e908065ff52bd0e21d94fde420467caa0635"
+  },
+  "toy-story": {
+    "identity": "Toy Story",
+    "year": 1995,
+    "source": "https://www.imdb.com/title/tt0114709/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTA3OWVjOWItNjE1NS00NzZiLWE1MjgtZDZhMWI1ZTlkNzYwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0114709.jpg",
+    "sha256": "97339421e163756f77f7f3d69b33eb701161a46df59ab4fdd89aef7d586ae162"
+  },
+  "toy-story-3": {
+    "identity": "Toy Story 3",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt0435761/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTgxOTY4Mjc0MF5BMl5BanBnXkFtZTcwNTA4MDQyMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0435761.jpg",
+    "sha256": "63226ebd5b0a72b95e91af2f91ad192af8e51b58d580bc83d091a68336347122"
+  },
+  "toy-story-4": {
+    "identity": "Toy Story 4",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt1979376/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTYzMDM4NzkxOV5BMl5BanBnXkFtZTgwNzM1Mzg2NzM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1979376.jpg",
+    "sha256": "1f0b516662f8ca545850e790c6287aeb2e0262eccc7aa4256ddf2d55b2202812"
+  },
+  "frozen-ii": {
+    "identity": "Frozen II",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt4520988/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTE1YjlmZjctNjIwNi00NDQ0LTlmMzgtYWZkY2RkZTMwNTdmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt4520988.jpg",
+    "sha256": "935555d74224a0724028d2ac6fbec6de7fbd907198f6ba01b0d7920b741480c1"
+  },
+  "the-incredibles": {
+    "identity": "The Incredibles",
+    "year": 2004,
+    "source": "https://www.imdb.com/title/tt0317705/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTY5OTU0OTc2NV5BMl5BanBnXkFtZTcwMzU4MDcyMQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0317705.jpg",
+    "sha256": "a7195f2d09b29b0d458ca66ac0d1631aab8dd6394f3938b33b6d3a258b4ffa1e"
+  },
+  "the-incredibles-2": {
+    "identity": "Incredibles 2",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt3606756/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTEzNzY0OTg0NTdeQTJeQWpwZ15BbWU4MDU3OTg3MjUz._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3606756.jpg",
+    "sha256": "cf3f2995e5bc0eecd3facfb0fee8d998a367ab3bbd4b0544d70f9b1d8fbeece8"
+  },
+  "inside-out": {
+    "identity": "Inside Out",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2096673/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTgxMDQwMDk0OF5BMl5BanBnXkFtZTgwNjU5OTg2NDE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2096673.jpg",
+    "sha256": "047f7afb3c0d1d34f3e75ce8ca0387f79ae4804fff53c9229b031d7326557a3f"
+  },
+  "inside-out-2": {
+    "identity": "Inside Out 2",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt22022452/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYWY3MDE2Y2UtOTE3Zi00MGUzLTg2MTItZjE1ZWVkMGVlODRmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt22022452.jpg",
+    "sha256": "90e88a6eb58fe41d4643f7427001d88e1fad749e0da6eb67950c5966f9cfb583"
+  },
+  "maleficent": {
+    "identity": "Maleficent",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt1587310/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjAwMzAzMzExOF5BMl5BanBnXkFtZTgwOTcwMDA5MTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1587310.jpg",
+    "sha256": "a1a4f709ff7299339662d8a12515904ef5e8cec91910ed1875621dad25b556c7"
+  },
+  "moana": {
+    "identity": "Moana",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt3521164/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjI4MzU5NTExNF5BMl5BanBnXkFtZTgwNzY1MTEwMDI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3521164.jpg",
+    "sha256": "79abc9e842e50624159df2935b041e9741f307566d6d9a0cdc0ffff59dc367bc"
+  },
+  "moana-2": {
+    "identity": "Moana 2",
+    "year": 2024,
+    "source": "https://www.imdb.com/title/tt13622970/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDUxNThhYTUtYjgxNy00MGQ4LTgzOTEtZjg1YTU5NTcwNThlXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt13622970.jpg",
+    "sha256": "1da2aab6bf7f9098eb2ffeb43c5e2f767bc095593f3f93de532d38ac6f5d96df"
+  },
+  "monster-inc": {
+    "identity": "Monsters, Inc.",
+    "year": 2001,
+    "source": "https://www.imdb.com/title/tt0198781/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTY1NTI0ODUyOF5BMl5BanBnXkFtZTgwNTEyNjQ0MDE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0198781.jpg",
+    "sha256": "3e153ce613c1c7965cd43877d306c05060d7f6644ead2b43551fb7da70366cb9"
+  },
+  "luca": {
+    "identity": "Luca",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt12801262/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMWMyNGNlZTktODVkNS00ZmMyLTk0NmUtNWVjOWU1MWMzZGMzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt12801262.jpg",
+    "sha256": "4f2aedcd9a919824e3d4afdb56e43e0995b79ca2a93f6b20ada4ecd9410d68bb"
+  },
+  "peter-pan": {
+    "identity": "Peter Pan",
+    "year": 1953,
+    "source": "https://www.imdb.com/title/tt0046183/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOGUwNjg5MWItNTc5OC00MTNkLWEwNzYtYzA1M2Y4MWU3NmQwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0046183.jpg",
+    "sha256": "5fee9503d58c1302b55f05447248ba6e7880498c0879bb11fed4767103c6ee0f"
+  },
+  "tangled": {
+    "identity": "Tangled",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt0398286/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTAxNDYxMjg0MjNeQTJeQWpwZ15BbWU3MDcyNTk2OTM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0398286.jpg",
+    "sha256": "cae7bd25c225100bc89f1f838373e98bc711a56acd38146b4f15cb0a7743a696"
+  },
+  "ratatouille": {
+    "identity": "Ratatouille",
+    "year": 2007,
+    "source": "https://www.imdb.com/title/tt0382932/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTMzODU0NTkxMF5BMl5BanBnXkFtZTcwMjQ4MzMzMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0382932.jpg",
+    "sha256": "c01e6f1cd0ee3393277f819ac3dc0f6768e4a7b6cecf3afbf719e21b4402576c"
+  },
+  "the-good-dinosaur": {
+    "identity": "The Good Dinosaur",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt1979388/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTc5MTg2NjQ4MV5BMl5BanBnXkFtZTgwNzcxOTY5NjE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1979388.jpg",
+    "sha256": "9561d74c5157dd1dfb32699ce77e883853e551b5bb6678c3d45ff12ea982eede"
+  },
+  "the-princess-and-the-frog": {
+    "identity": "The Princess and the Frog",
+    "year": 2009,
+    "source": "https://www.imdb.com/title/tt0780521/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTE3YTExYTEtOTUxZC00OTM0LWJmYmItMDk5YjczNmIwNzA2XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0780521.jpg",
+    "sha256": "d59fa8159fcf3d77a7dfa202fe60b24d0282886afcce280fa241548cd8b31bac"
+  },
+  "zootopia": {
+    "identity": "Zootopia",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt2948356/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTMyMjEyNzIzMV5BMl5BanBnXkFtZTgwNzIyNjU0NzE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2948356.jpg",
+    "sha256": "003127df1425d72da3becb20d64054a9a4912219f0b53bb4aeda7c0d50a9ed2a"
+  },
+  "the-little-mermaid-black-edition": {
+    "identity": "The Little Mermaid",
+    "year": 2023,
+    "source": "https://www.imdb.com/title/tt5971474/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTM4MWY0OTEtY2E4ZC00NDdhLThkY2ItYTlmNWQxNTNkZTRmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5971474.jpg",
+    "sha256": "cd5f3ad3b77c39d49e1225feb67f82a69c48af682333a31022e6f7a9e1bb2e11"
+  },
+  "wall-e": {
+    "identity": "WALL·E",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt0910970/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjExMTg5OTU0NF5BMl5BanBnXkFtZTcwMjMxMzMzMw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0910970.jpg",
+    "sha256": "b70ca41a747cc6cd36c46f5fa38f3c6b9f71f201523cb88648aa8cc27595c67d"
+  },
+  "wreck-it-ralph": {
+    "identity": "Wreck-It Ralph",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt1772341/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzMxNTExOTkyMF5BMl5BanBnXkFtZTcwMzEyNDc0OA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1772341.jpg",
+    "sha256": "71b269defce5768bfdf2cf66bd8012f483c8036693ce1477b18443599c6aec25"
+  },
+  "ralph-breaks-the-internet": {
+    "identity": "Ralph Breaks the Internet",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt5848272/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTYyNzEyNDAzOV5BMl5BanBnXkFtZTgwNTk3NDczNjM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5848272.jpg",
+    "sha256": "e45deb487f6ff2f2b6f2ba8608559590c16a5416e70ac4df1c0b78a358fca0d2"
+  },
+  "a-bug-s-life": {
+    "identity": "A Bug's Life",
+    "year": 1998,
+    "source": "https://www.imdb.com/title/tt0120623/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGI3Mjc1ZjUtYTJhYS00NjBiLTgyYjctODU5NTNlMWJiYjYzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0120623.jpg",
+    "sha256": "c066b3548f1bb2c0cc5df35d7db23939c3f1ced8ea41b0ed40c17f528477c75b"
+  },
+  "the-lorax-2017-720p-hd-mp4": {
+    "identity": "The Lorax",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt1482459/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTU1MTAwMjk1NF5BMl5BanBnXkFtZTcwMDI5NDc4Ng@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1482459.jpg",
+    "sha256": "52eb76ecf16b86f0314dc0596d91dcbf4b7f4098800bd611858acc4b576f4a58"
+  },
+  "despicable-me-mp4": {
+    "identity": "Despicable Me",
+    "year": 2010,
+    "source": "https://www.imdb.com/title/tt1323594/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTY3NjY0MTQ0Nl5BMl5BanBnXkFtZTcwMzQ2MTc0Mw@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1323594.jpg",
+    "sha256": "246f26ee39b6fbbbbc2dba049217417e94564512ca65cc861913dca3e0ac0bae"
+  },
+  "home-2015-720p-bluray-x264-yify-mp4": {
+    "identity": "Home",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2224026/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjExOTQ4MDMyMV5BMl5BanBnXkFtZTgwMTE3NDM2MzE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2224026.jpg",
+    "sha256": "0c9ec64f2e35b788e7dd0d2e38a4e77a3271cd3ff7844706210576e7fd24a820"
+  },
+  "sing-mp4": {
+    "identity": "Sing",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt3470600/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTYzODYzODU2Ml5BMl5BanBnXkFtZTgwNTc1MTA2NzE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3470600.jpg",
+    "sha256": "e2bcc0ddc9acd05d8342fafeebeb91b47a2d67ebeb5afa176363d604fe93d37b"
+  },
+  "despicable-me-2-mp4": {
+    "identity": "Despicable Me 2",
+    "year": 2013,
+    "source": "https://www.imdb.com/title/tt1690953/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTQxNzY1MjI5NF5BMl5BanBnXkFtZTcwNTI0MDY1OQ@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1690953.jpg",
+    "sha256": "3b424136d175110a3bfd8f76d59227923e0d38c2ffd6948c6660e7e536fd742a"
+  },
+  "puss-in-boots-mp4": {
+    "identity": "Puss in Boots",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt0448694/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTQwMGU5YTEtYmQzMy00MTM0LWFhNzAtOGY2Yzc1MzBkYTYyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0448694.jpg",
+    "sha256": "dbb7c75b819e03ab9efb160cbaefa11544f569d1f49ba89b22c0fc0d9a811fe4"
+  },
+  "puss-in-boots-the-last-wish-2022-720p-webrip-800mb-x264-galaxyrg-mp4": {
+    "identity": "Puss in Boots: The Last Wish",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt3915174/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzg0MWUzMjctYjVlOS00NzVjLWIwZDMtNzg1YzNkYzdjNTMwXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3915174.jpg",
+    "sha256": "84848dcda999669e3bd5875784220c9072b26947c34b4214a14cfcd514b215fd"
+  },
+  "despicable-me-3-2017-720p-bluray-x264-vppv-mkv": {
+    "identity": "Despicable Me 3",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt3469046/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNjUyNzQ2MTg3Ml5BMl5BanBnXkFtZTgwNzE4NDM3MTI@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt3469046.jpg",
+    "sha256": "436eb1cfaa60940c12d407fe42f08d8ad40d7725ba37a99fb7c7e3266f890a47"
+  },
+  "minions-2015-hdrip-xvid-etrg-avi": {
+    "identity": "Minions",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2293640/",
+    "image": "https://m.media-amazon.com/images/M/MV5BODI4NzMyNjE0MF5BMl5BanBnXkFtZTgwMTcwNzI0MzE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2293640.jpg",
+    "sha256": "c05a01a7d1e6da676db8157178e0a54469f9ad08a6c60c0520472a76ed97cb90"
+  },
+  "minions-the-rise-of-gru-2022-720p-telesync-h265-700mb-mp4": {
+    "identity": "Minions: The Rise of Gru",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt5113044/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZTAzMTkyNmQtNTMzZS00MTM1LWI4YzEtMjVlYjU0ZWI5Y2IzXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt5113044.jpg",
+    "sha256": "3f5e5948399b1ca3b7a8c1e8d8630de1d23ae2cb73646761143508b87809529c"
+  },
+  "hotel-transylvania-2012-720p-bluray-x264-yify-mp4": {
+    "identity": "Hotel Transylvania",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt0837562/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTM3NjQyODI3M15BMl5BanBnXkFtZTcwMDM4NjM0OA@@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0837562.jpg",
+    "sha256": "9edef44c26b557597bb9e04881887954847d85f65695a89b84e1d4aa2fd97cd7"
+  },
+  "hotel-transylvania-2-2015-720p-hdrip-x264-remo-mkv": {
+    "identity": "Hotel Transylvania 2",
+    "year": 2015,
+    "source": "https://www.imdb.com/title/tt2510894/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTY3MTg0MzM3OV5BMl5BanBnXkFtZTgwODM4MzMwNTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2510894.jpg",
+    "sha256": "e7a2a818866ba98f5cb91e29e2e63b243332945285378f4433bc4dd158384421"
+  },
+  "hotel-transylvania-4-transformania-2022-720p-amzn-webrip-800mb-x264-galaxyrg-mkv": {
+    "identity": "Hotel Transylvania 4: Transformania",
+    "year": 2022,
+    "source": "https://www.imdb.com/title/tt9848626/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNGYyN2Q5NGQtYWI3OS00MDMxLTlhNTktNjBkOWIwMTIzNGZkXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt9848626.jpg",
+    "sha256": "92c6003ed0ccde809888f6b1d8f33a6e91122a89f6472f0d0e9b934063b5870e"
+  },
+  "kung-fu-panda-bluray-1080p-x264-5-1-judas-mp4": {
+    "identity": "Kung Fu Panda",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt0441773/",
+    "image": "https://m.media-amazon.com/images/M/MV5BZDU5MDNiMGItYjVmZi00NDUxLTg2OTktNGE0NzNlNzM4NzgyXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0441773.jpg",
+    "sha256": "8efcf0c81640aabd732c3109afebdea078f9f4cb2acdef1bdc79499a04b4f26d"
+  },
+  "kung-fu-panda-2-2011-1080p-bluray-h264-aac-rarbg-mp4": {
+    "identity": "Kung Fu Panda 2",
+    "year": 2011,
+    "source": "https://www.imdb.com/title/tt1302011/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYmIxMGYzMTUtZDQzYy00ODc4LWE1YzQtZGMwYTc0YTYyYTE0XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1302011.jpg",
+    "sha256": "b6318bcf4335399561a11cbec8b8f19844ad404548935072a585db2642579caf"
+  },
+  "kung-fu-panda-3-2016-720p-webrip-x264-aac-etrg-mp4": {
+    "identity": "Kung Fu Panda 3",
+    "year": 2016,
+    "source": "https://www.imdb.com/title/tt2267968/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTUyNzgxNjg2M15BMl5BanBnXkFtZTgwMTY1NDI1NjE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2267968.jpg",
+    "sha256": "64a6347147e5f934ee57145ef1970a6b146109b573d424318e575eb44e085cd3"
+  },
+  "madagascar-1-mp4": {
+    "identity": "Madagascar",
+    "year": 2005,
+    "source": "https://www.imdb.com/title/tt0351283/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYjk4OGFmZmYtYWE4NC00MzM4LTkwZTItODdhMjk3NTZjMmI5XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0351283.jpg",
+    "sha256": "4b4e4a8a741529d2983b952e65a130963f0368b3732d29f817d23a4dd77cdfea"
+  },
+  "madagascar-2-mp4": {
+    "identity": "Madagascar: Escape 2 Africa",
+    "year": 2008,
+    "source": "https://www.imdb.com/title/tt0479952/",
+    "image": "https://m.media-amazon.com/images/M/MV5BOTg0ZDIwZmYtNTY2Zi00MzBlLWJkNWEtOWI5NzFmNGQwODZmXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt0479952.jpg",
+    "sha256": "fa00dc5626f8991f2d565872f7249959e254ab42e30cb6a33ffdf30bedc5b128"
+  },
+  "the-grinch-mkv": {
+    "identity": "The Grinch",
+    "year": 2018,
+    "source": "https://www.imdb.com/title/tt2709692/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzM4OTcxNzQtMTQ3OC00ZGVmLWJmNDUtYzczZmU2ZDFmOTdhXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2709692.jpg",
+    "sha256": "41515292736cc1a487857b5bcaba5fa8b8305e56d9ce94c5c35060975aa64aef"
+  },
+  "madagascar-3-mp4": {
+    "identity": "Madagascar 3: Europe's Most Wanted",
+    "year": 2012,
+    "source": "https://www.imdb.com/title/tt1277953/",
+    "image": "https://m.media-amazon.com/images/M/MV5BYTM5OWRiZTAtOTNkMS00NzNhLTkwYmYtMWI1MzkyMjE3MWE1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1277953.jpg",
+    "sha256": "5eae3d4bf7b2f98522aae9ee3266d83f7a05a324d4914048826940177ee84386"
+  },
+  "captain-underpants-the-first-epic-movie-2017-720p-bluray-x264-vppv-mkv": {
+    "identity": "Captain Underpants: The First Epic Movie",
+    "year": 2017,
+    "source": "https://www.imdb.com/title/tt2091256/",
+    "image": "https://m.media-amazon.com/images/M/MV5BN2FlOTgyOTctMTE1Ny00MzFhLWE5NjctNTMxNzM5N2I2Yzk1XkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2091256.jpg",
+    "sha256": "dabda03ed8ec7baa887dfd65e137e5b12e347c3aefcd71e467a4967b1be1a056"
+  },
+  "penguins-of-madagascar-2014-360p-ts": {
+    "identity": "Penguins of Madagascar",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt1911658/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMTEyMDg4MDU4MjdeQTJeQWpwZ15BbWU4MDQyOTc3MjIx._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1911658.jpg",
+    "sha256": "ddb9d83a2cc3fb47cdf7802c018a87c2987089e801900645079cbc6c006ebc70"
+  },
+  "how-to-train-your-dragon-2-2014-mp4": {
+    "identity": "How to Train Your Dragon 2",
+    "year": 2014,
+    "source": "https://www.imdb.com/title/tt1646971/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMzMwMTAwODczN15BMl5BanBnXkFtZTgwMDk2NDA4MTE@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt1646971.jpg",
+    "sha256": "83387b21885acb58bf2a3298dccc3ce47b94ee385b64d7e62de8d5b401839f51"
+  },
+  "how-to-train-your-dragon-the-hidden-world-2019-mp4": {
+    "identity": "How to Train Your Dragon: The Hidden World",
+    "year": 2019,
+    "source": "https://www.imdb.com/title/tt2386490/",
+    "image": "https://m.media-amazon.com/images/M/MV5BMjIwMDIwNjAyOF5BMl5BanBnXkFtZTgwNDE1MDc2NTM@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt2386490.jpg",
+    "sha256": "e45fd8a1634c888e3039e40bb2b65e4f53468fecd2c54b00596584c558985bf3"
+  },
+  "sing-2-2021-720p-webrip-800mb-x264-galaxyrg-mkv": {
+    "identity": "Sing 2",
+    "year": 2021,
+    "source": "https://www.imdb.com/title/tt6467266/",
+    "image": "https://m.media-amazon.com/images/M/MV5BNzZkZmMzNzItYzBhOS00ZGEwLWFiNWYtMWRjNzM4MjRjZTRjXkEyXkFqcGc@._V1_.jpg",
+    "thumbnail": "/thumbnails/tv/imdb-tt6467266.jpg",
+    "sha256": "4527203df5e8cbab0d9a0fba8959cd95e553db8112020063612c435d4aaa740a"
+  }
+}

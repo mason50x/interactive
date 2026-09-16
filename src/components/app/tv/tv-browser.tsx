@@ -3,7 +3,6 @@ import { FilmIcon } from "@heroicons/react/24/solid";
 import { CatalogueBrowser } from "@/components/app/catalogue-browser";
 import { CatalogueGrid } from "@/components/app/activities/activity-grid";
 import { CatalogueCard } from "@/components/app/catalogue-card";
-import { PlaybackHelpButton } from "./entertainment-setup";
 import type { TvEntry } from "@/lib/tv-types";
 
 const CATEGORIES = {
@@ -13,9 +12,6 @@ const CATEGORIES = {
 export function TvBrowser({ shows }: { shows: readonly TvEntry[] }) {
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        <PlaybackHelpButton />
-      </div>
       <CatalogueBrowser
         catalogue={shows}
         ranked={shows}
