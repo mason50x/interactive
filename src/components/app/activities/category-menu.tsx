@@ -10,7 +10,6 @@ import {
   MenuRadioItem,
   MenuTrigger,
 } from "@/components/ui/menu";
-import type { ActivityEntry, Genre } from "@/lib/activity";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
 
@@ -38,21 +37,23 @@ export function CategoryMenu({
   genre,
   onChange,
   catalogue,
+  categories = GENRES,
 }: {
-  genres: readonly Genre[];
-  genre: Genre | "all";
-  onChange: (genre: Genre | "all") => void;
-  catalogue: readonly ActivityEntry[];
+  genres: readonly string[];
+  genre: string;
+  onChange: (genre: string) => void;
+  catalogue: readonly { genre: string }[];
+  categories?: Record<string, { label: string; hue: string }>;
 }) {
   const counts = useMemo(() => {
-    const tally = new Map<Genre, number>();
+    const tally = new Map<string, number>();
     for (const activity of catalogue) {
       tally.set(activity.genre, (tally.get(activity.genre) ?? 0) + 1);
     }
     return tally;
   }, [catalogue]);
 
-  const chosen = genre === "all" ? null : GENRES[genre];
+  const chosen = genre === "all" ? null : categories[genre];
 
   return (
     <Menu>
@@ -83,7 +84,7 @@ export function CategoryMenu({
       <MenuContent align="end" sideOffset={8} className="min-w-[13rem]">
         <MenuRadioGroup
           value={genre}
-          onValueChange={(value) => onChange(value as Genre | "all")}
+          onValueChange={(value) => onChange(value as string)}
         >
           <MenuRadioItem value="all" closeOnClick tone="muted" size="tall">
             <Indicator />
@@ -103,9 +104,9 @@ export function CategoryMenu({
               <Indicator />
               <span
                 className="size-1.5 shrink-0 rounded-full"
-                style={{ background: GENRES[value].hue }}
+                style={{ background: categories[value].hue }}
               />
-              {GENRES[value].label}
+              {categories[value].label}
               <span className="ml-auto pl-4 text-faint">
                 {counts.get(value)}
               </span>

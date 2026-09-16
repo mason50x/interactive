@@ -20,7 +20,14 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /** Only authenticated app routes use the saved appearance preference. */
 export function usesAppTheme(pathname: string): boolean {
-  return /^\/(home|activities|chat|experience|learning-simulator|learn)(?:\/|$)/.test(pathname);
+  return /^\/(home|activities|entertainment|chat|experience|learning-simulator|learn)(?:\/|$)/.test(
+    pathname,
+  );
+}
+
+/** A temporary viewing theme; it never changes the saved appearance choice. */
+export function isEntertainmentPlayer(pathname: string): boolean {
+  return /^\/entertainment\/[^/]+\/?$/.test(pathname);
 }
 
 function isThemePreference(value: unknown): value is ThemePreference {
@@ -150,7 +157,7 @@ export const themeScript = `(function(){try{var p="system";if((${usesAppTheme.to
   THEME_STORAGE_KEY,
 )});}catch(_){}}var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
   DARK_QUERY,
-)}).matches?"dark":"light");var e=document.documentElement;e.setAttribute(${JSON.stringify(
+)}).matches?"dark":"light");if((${isEntertainmentPlayer.toString()})(location.pathname))t="dark";var e=document.documentElement;e.setAttribute(${JSON.stringify(
   THEME_ATTRIBUTE,
 )},t);e.style.colorScheme=t;var m=document.createElement("meta");m.name="theme-color";m.content=t==="dark"?${JSON.stringify(
   brand.colors.themeDark,

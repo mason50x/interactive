@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { ActivityControls } from "@/components/app/activity-controls";
 import styles from "@/components/app/activity-frame.module.css";
 import {
@@ -45,7 +45,17 @@ import { safePanicUrl } from "@/lib/panic-key";
  *
  * The pill of controls is `ActivityControls`; what it controls is here.
  */
-export function ActivityFrame({ title, src }: { title: string; src: string }) {
+export function ActivityFrame({
+  title,
+  src,
+  variant = "activity",
+  controls,
+}: {
+  title: string;
+  src: string;
+  variant?: "activity" | "tv";
+  controls?: ReactNode;
+}) {
   // The element that goes fullscreen. The stage rather than the iframe, so the
   // controls come with it — fullscreening the iframe alone would hand the
   // whole screen to the activity with no way back but Escape.
@@ -98,7 +108,7 @@ export function ActivityFrame({ title, src }: { title: string; src: string }) {
     >
       <div className="absolute inset-0">
         <iframe
-          key={run}
+          key={`${src}-${run}`}
           src={src}
           title={title}
           // This frame is a capability pass-through, not the security boundary.
@@ -116,8 +126,16 @@ export function ActivityFrame({ title, src }: { title: string; src: string }) {
           // the app regardless of this flag, so being granted its own origin
           // never brings it any closer to the session. The lists themselves are
           // in `activity-sandbox.ts`, shared with `HostedActivity`.
-          sandbox={ACTIVITY_SANDBOX}
-          allow={ACTIVITY_ALLOW}
+          sandbox={
+            variant === "tv"
+              ? "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              : ACTIVITY_SANDBOX
+          }
+          allow={
+            variant === "tv"
+              ? "autoplay; fullscreen; encrypted-media; picture-in-picture"
+              : ACTIVITY_ALLOW
+          }
           referrerPolicy={ACTIVITY_REFERRER_POLICY}
           className="block size-full border-0"
         />
@@ -129,18 +147,34 @@ export function ActivityFrame({ title, src }: { title: string; src: string }) {
           scheduling: a restart tears both down together, so the cover is
           already black on the first frame of the new load rather than
           arriving an effect later. */}
-      <PacketCover key={`cover-${run}`} />
-
-      <ActivityControls
-        title={title}
-        open={open}
-        onToggle={() => setOpen((value) => !value)}
-        onReload={() => setRun((value) => value + 1)}
-        full={full}
-        canFull={canFull}
-        onToggleFull={toggleFull}
-        onPanic={panicUrl ? onPanic : null}
+      <PacketCover
+        key={`cover-${src}-${run}`}
+        detail={variant === "tv" ? "Getting your episode ready." : undefined}
+        label={variant === "tv" ? "Entertainment" : undefined}
+        holdMs={variant === "tv" ? 1600 : undefined}
       />
+
+      <div className="pointer-events-none absolute top-3 right-3 left-3 z-20 flex flex-wrap items-start gap-2">
+        <ActivityControls
+          positioned={false}
+          title={title}
+          contentLabel={variant === "tv" ? "Entertainment" : "activity"}
+          backHref={variant === "tv" ? "/entertainment" : undefined}
+          backLabel={variant === "tv" ? "Back to Entertainment" : undefined}
+          open={open}
+          onToggle={() => setOpen((value) => !value)}
+          onReload={() => setRun((value) => value + 1)}
+          full={full}
+          canFull={canFull}
+          onToggleFull={toggleFull}
+          onPanic={panicUrl ? onPanic : null}
+        />
+        {controls && (
+          <div className="pointer-events-auto flex items-center rounded-full border border-white/15 bg-black/55 p-1 text-white shadow-lg backdrop-blur-md">
+            {controls}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

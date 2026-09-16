@@ -5,7 +5,6 @@ import { ChevronRightIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccountModal } from "@/components/app/account-modal";
 import { useChat } from "@/components/app/chat/chat-provider";
-import { useRail } from "@/components/app/rail-context";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
@@ -79,18 +78,14 @@ export function UserMenu() {
   const disarm = useCallback(() => setConfirmingSignOut(false), []);
   useClickOutside(signOutRef, disarm, confirmingSignOut);
 
-  // Read for the popup alone. It is portalled to the body, where the `wide:`
-  // variant's attribute is out of sight, and it is the one thing here whose
-  // shape depends on the rail's width without being inside it.
-  const { rail } = useRail();
-
   if (!isLoaded || !user) {
     // Holds the row's exact height so the rail does not jump when the session
     // resolves. Not a spinner: this is usually a single frame.
     return <div className="h-14" aria-hidden />;
   }
 
-  const name = normalizePersonName(user.firstName) ?? user.username ?? "Account";
+  const name =
+    normalizePersonName(user.firstName) ?? user.username ?? "Account";
   const chipClassName =
     "inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200 bg-gradient-to-b from-white to-zinc-100 px-1.5 py-0.5 text-[0.5625rem] leading-none font-bold shadow-[0_1px_2px_rgb(0_0_0/0.16),inset_0_1px_0_rgb(255_255_255/0.9)] dark:border-zinc-600 dark:from-zinc-700 dark:to-zinc-800 dark:shadow-[0_2px_3px_rgb(0_0_0/0.4),inset_0_1px_0_rgb(255_255_255/0.12)]";
 
@@ -145,7 +140,7 @@ export function UserMenu() {
               <span
                 className={cn(
                   chipClassName,
-                  "release-unread-glow relative text-orange-600 dark:text-orange-400 [--release-rim-color:var(--color-orange-500)] [--release-rim-duration:4s] [--release-rim-glow:1px] [--release-rim-width:1px]",
+                  "release-unread-glow relative text-orange-600 [--release-rim-color:var(--color-orange-500)] [--release-rim-duration:4s] [--release-rim-glow:1px] [--release-rim-width:1px] dark:text-orange-400",
                 )}
               >
                 <StaffBadge role={showAdminBadge} sidebar />
@@ -158,7 +153,7 @@ export function UserMenu() {
               aria-label="OSS — source code on GitHub"
               className={cn(
                 chipClassName,
-                "text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "text-zinc-600 transition-colors hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-zinc-200 dark:hover:text-white",
               )}
             >
               <GitHubIcon className="size-3 shrink-0" />
@@ -171,16 +166,12 @@ export function UserMenu() {
           so the two share both edges instead of the menu hanging over
           into the shell. Narrow, the trigger is a 4.5rem icon and there
           is nothing useful to match, so it falls back to a width of its
-          own. `lg:` and the rail state together are `wide:`, written out
-          because the portal cannot see the attribute. */}
+          own. `lg:` matches the sidebar’s responsive breakpoint. */}
         <MenuContent
           side="top"
           align="start"
           sideOffset={8}
-          className={cn(
-            "w-[15rem]",
-            rail === "open" && "lg:w-[var(--anchor-width)]",
-          )}
+          className="w-[15rem] lg:w-[var(--anchor-width)]"
         >
           {/* One door. Behind it is Clerk's account modal with the site's
             settings as its first page and Clerk's own — profile, email

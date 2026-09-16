@@ -1,8 +1,6 @@
 "use client";
 
 import { type RefObject, useEffect, useSyncExternalStore } from "react";
-import { flushSync } from "react-dom";
-import { useRail } from "@/components/app/rail-context";
 
 /**
  * The one shortcut this app has, and what to call it.
@@ -13,38 +11,21 @@ import { useRail } from "@/components/app/rail-context";
  * printing the chord the reader actually has.
  */
 
-/**
- * Focuses `inputRef` on ⌘K or Ctrl+K, opening a collapsed rail first.
- *
- * The panic key is recorded separately and may be anything; if somebody
- * chose this one, its handler replaces the whole page and wins outright —
- * which is the right outcome for a key whose entire purpose is winning.
- *
- * A collapsed rail has no box to focus, so the shortcut opens it first. The
- * box is in the layout on the same frame `data-rail` changes — `display`
- * flips at once and only the opacity waits, see `rail-wide` in
- * `globals.css` — so the only thing between this handler and a focusable
- * field is React committing the state, and `flushSync` is what makes that
- * happen here rather than after the handler returns. Below `lg` the box is
- * hidden by the viewport and the focus goes nowhere, as it always has.
- */
+/** Focuses the desktop search input on ⌘K or Ctrl+K. */
 export function useSearchShortcut(
   inputRef: RefObject<HTMLInputElement | null>,
 ) {
-  const { rail, setRail } = useRail();
-
   useEffect(() => {
     function onShortcut(event: KeyboardEvent) {
       if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return;
       event.preventDefault();
-      if (rail === "closed") flushSync(() => setRail("open"));
       inputRef.current?.focus();
       inputRef.current?.select();
     }
 
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
-  }, [rail, setRail, inputRef]);
+  }, [inputRef]);
 }
 
 // Nothing to subscribe to: the platform does not change under a running page.

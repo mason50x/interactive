@@ -4,7 +4,15 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 /** A softly lit loading interlude, remounted with each activity run. */
-export function PacketCover() {
+export function PacketCover({
+  detail = "Waiting for R2 response.",
+  label = "Activity",
+  holdMs = HOLD,
+}: {
+  detail?: string;
+  label?: string;
+  holdMs?: number;
+}) {
   const [phase, setPhase] = useState<Phase>("held");
 
   // Which word is printed this time. The draw disagrees across the two renders
@@ -26,13 +34,13 @@ export function PacketCover() {
   const caption = CAPTIONS[captionIndex];
 
   useEffect(() => {
-    const lift = window.setTimeout(() => setPhase("lifting"), HOLD);
-    const gone = window.setTimeout(() => setPhase("gone"), HOLD + LIFT);
+    const lift = window.setTimeout(() => setPhase("lifting"), holdMs);
+    const gone = window.setTimeout(() => setPhase("gone"), holdMs + LIFT);
     return () => {
       window.clearTimeout(lift);
       window.clearTimeout(gone);
     };
-  }, []);
+  }, [holdMs]);
 
   if (phase === "gone") return null;
 
@@ -66,9 +74,9 @@ export function PacketCover() {
         className="packet-caption text-shimmer text-[1.75rem] font-semibold"
       >
         {caption}
-        <span className="sr-only">. Activity loading.</span>
+        <span className="sr-only">. {label} loading.</span>
       </p>
-      <p className="packet-detail">Waiting for R2 response.</p>
+      <p className="packet-detail">{detail}</p>
     </div>
   );
 }

@@ -196,43 +196,6 @@ export function ChipIconSolid(props: IconProps) {
 }
 
 /**
- * The collapse glyph: a window with its left column marked off. Drawn here
- * because Heroicons has no sidebar, to the solid set's rules — 24 on the
- * grid, one filled frame with the pane cut out — so it sits beside the nav
- * rows' icons as one of them. The same glyph both ways: it names the thing
- * being moved, and the label says which way. Masked so the pane can move:
- * on hover it slides toward the side the rail is about to go, which is what
- * `data-to` on the button says.
- */
-export function RailIconSolid(props: IconProps) {
-  const id = useMaskId();
-  return (
-    <SolidIcon {...props}>
-      <mask
-        id={id}
-        maskUnits="userSpaceOnUse"
-        x="0"
-        y="0"
-        width="24"
-        height="24"
-      >
-        <rect x="2.25" y="3.75" width="19.5" height="16.5" rx="3" fill="#fff" />
-        <rect
-          className="ni-rail-pane"
-          x="9.75"
-          y="5.25"
-          width="10.5"
-          height="13.5"
-          rx="1.5"
-          fill="#000"
-        />
-      </mask>
-      <rect width="24" height="24" mask={`url(#${id})`} />
-    </SolidIcon>
-  );
-}
-
-/**
  * Sign out, drawn here rather than imported.
  *
  * Every row in the account menu is a solid Heroicon, and Heroicons' own

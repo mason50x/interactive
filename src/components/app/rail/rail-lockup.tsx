@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { RailToggle } from "@/components/app/rail/rail-toggle";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
 import type { useWarmRoutes } from "@/lib/warm";
 
 /**
- * The head of the rail: the mark, the name beside it, and the control that
- * puts the rail away.
+ * The head of the rail: the mark and the name beside it.
  *
  * Also the only route back to `/home` itself: the overview has no row of
  * its own in the list.
@@ -50,14 +48,6 @@ export function RailLockup({
           />
         </Link>
       </div>
-
-      {/* Flush to the rail's right edge like every row below it, and for
-          the same reason: the shell's margin is the chrome on that side. */}
-      <RailToggle
-        to="closed"
-        label="Collapse sidebar"
-        className="ml-auto hidden size-9 rounded-lg rail-wide wide:flex"
-      />
     </div>
   );
 }

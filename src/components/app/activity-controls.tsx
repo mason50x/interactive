@@ -42,8 +42,16 @@ export function ActivityControls({
   canFull,
   onToggleFull,
   onPanic,
+  backHref = ACTIVITIES_HREF,
+  backLabel = "Back to activities",
+  contentLabel = "activity",
+  positioned = true,
 }: {
   title: string;
+  backHref?: string;
+  backLabel?: string;
+  contentLabel?: string;
+  positioned?: boolean;
   open: boolean;
   onToggle: () => void;
   onReload: () => void;
@@ -56,7 +64,8 @@ export function ActivityControls({
   return (
     <div
       className={cn(
-        "absolute top-3 left-3 z-20 flex items-center rounded-full p-1",
+        "pointer-events-auto flex max-w-full items-center rounded-full p-1",
+        positioned && "absolute top-3 left-3 z-20",
         // Its own palette, not the app's. This sits on whatever the activity
         // happens to be drawing, so it cannot borrow a surface token and
         // expect contrast — a dark glass plate reads against all of them.
@@ -67,7 +76,7 @@ export function ActivityControls({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        aria-label={open ? "Hide activity controls" : "Show activity controls"}
+        aria-label={`${open ? "Hide" : "Show"} ${contentLabel} controls`}
         className="flex size-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/15"
       >
         <LogoMark className="h-4 w-[1.1rem]" />
@@ -104,11 +113,11 @@ export function ActivityControls({
             focus disappears. */}
         <div className="overflow-hidden" inert={!open}>
           <div className="flex items-center gap-0.5 pl-0.5">
-            <ControlLink href={ACTIVITIES_HREF} label="Back to activities">
+            <ControlLink href={backHref} label={backLabel}>
               <ArrowLeftIcon className="size-4" />
             </ControlLink>
 
-            <Control onClick={onReload} label="Restart activity">
+            <Control onClick={onReload} label={`Restart ${contentLabel}`}>
               <ArrowPathIcon className="size-4" />
             </Control>
 
@@ -125,7 +134,7 @@ export function ActivityControls({
               </Control>
             )}
 
-            <span className="max-w-[14rem] truncate px-2 text-[0.875rem] whitespace-nowrap text-white/85">
+            <span className="hidden max-w-[14rem] truncate px-2 text-[0.875rem] whitespace-nowrap text-white/85 sm:block">
               {title}
             </span>
           </div>

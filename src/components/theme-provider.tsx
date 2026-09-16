@@ -4,6 +4,7 @@ import { useLayoutEffect, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import {
   applyTheme,
+  isEntertainmentPlayer,
   usesAppTheme,
   readStoredPreference,
   resolveTheme,
@@ -23,7 +24,9 @@ export function ThemeProvider() {
       const preference = usesAppTheme(pathname)
         ? readStoredPreference()
         : "system";
-      applyTheme(resolveTheme(preference));
+      applyTheme(
+        isEntertainmentPlayer(pathname) ? "dark" : resolveTheme(preference),
+      );
     };
     update();
     return subscribeToTheme(update);

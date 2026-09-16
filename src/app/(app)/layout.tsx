@@ -1,12 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { ActivitiesProvider } from "@/components/app/activities-provider";
 import { AppProviders } from "@/components/app-providers";
 import { CLIENT_ACTIVITIES } from "@/lib/activities";
-import { RAIL_COOKIE, railState } from "@/lib/rail";
 
 export const metadata: Metadata = {
   // Nothing behind a session is indexable. This is now the same answer the
@@ -55,11 +53,6 @@ export default async function DashboardLayout({
 }) {
   await auth.protect();
 
-  // The rail's width, for the same reason: drawn at the remembered width in
-  // the first frame rather than sliding there once React is up. See
-  // `src/lib/rail.ts`.
-  const rail = railState((await cookies()).get(RAIL_COOKIE)?.value);
-
   return (
     <AppProviders>
       {/* Wraps both the rail and shell: the
@@ -78,7 +71,7 @@ export default async function DashboardLayout({
               load and never on a navigation. See `ActivitiesProvider`. */}
         <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
           <div className="flex h-svh overflow-hidden bg-sidebar">
-            <AppSidebar initialRail={rail} />
+            <AppSidebar />
             <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
               {children}
             </main>

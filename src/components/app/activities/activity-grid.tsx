@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { ActivityRequests } from "@/components/app/activity-requests";
 import { ActivityCard } from "@/components/app/activity-card";
 import type { ActivityEntry } from "@/lib/activity";
@@ -20,6 +21,26 @@ export function ActivityGrid({
   shown: readonly ActivityEntry[];
   notes?: Record<string, string>;
 }) {
+  return (
+    <CatalogueGrid
+      shown={shown}
+      renderCard={(activity) => (
+        <ActivityCard activity={activity} note={notes?.[activity.slug]} />
+      )}
+      footer={<ActivityRequests />}
+    />
+  );
+}
+
+export function CatalogueGrid<T extends { slug: string }>({
+  shown,
+  renderCard,
+  footer,
+}: {
+  shown: readonly T[];
+  renderCard: (item: T) => ReactNode;
+  footer?: ReactNode;
+}) {
   const { frame, ghosts } = useFlip(shown);
 
   return (
@@ -35,12 +56,10 @@ export function ActivityGrid({
       <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((activity) => (
           <li key={activity.slug} data-flip={activity.slug}>
-            <ActivityCard activity={activity} note={notes?.[activity.slug]} />
+            {renderCard(activity)}
           </li>
         ))}
-        <li key="activity-request">
-          <ActivityRequests />
-        </li>
+        {footer && <li key="catalogue-footer">{footer}</li>}
       </ul>
 
       {/* Where cards that no longer match are held for the fifth of a second
