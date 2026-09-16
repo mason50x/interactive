@@ -95,7 +95,7 @@ export function ActivityRequests() {
         className="group flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border border-border bg-surface-muted p-5 text-center transition-[box-shadow] duration-300 outline-none hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <PlusIcon
-          className="size-12 text-black"
+          className="size-12 text-black dark:text-foreground"
           strokeWidth={3.5}
           aria-hidden="true"
         />
