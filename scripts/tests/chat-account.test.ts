@@ -56,7 +56,7 @@ test("Clerk identity is read from one user row and exposes no private account fi
   expect(await t.run((ctx) => ctx.db.query("users").take(10))).toHaveLength(1);
 });
 
-test("same first names keep Clerk spelling and distinct usernames; any account can open a private DM", async () => {
+test("same first names use app casing and keep distinct usernames; any account can open a private DM", async () => {
   const t = convexTest(schema, modules);
   for (const [id, username] of [
     ["one", "alice"],
@@ -68,7 +68,7 @@ test("same first names keep Clerk spelling and distinct usernames; any account c
   }
   const one = t.withIdentity({ subject: "one" });
   expect(await one.query(api.chat.accounts.mine, {})).toMatchObject({
-    displayName: "MASON",
+    displayName: "Mason",
   });
   const dm = await one.mutation(api.chat.conversations.openDm, {
     peerClerkId: "two",
@@ -82,7 +82,7 @@ test("same first names keep Clerk spelling and distinct usernames; any account c
   expect(hits[0]).toMatchObject({
     clerkId: "two",
     handle: "al1ce",
-    displayName: "MASON",
+    displayName: "Mason",
   });
   expect(hits[0]).not.toHaveProperty("email");
   await expect(t.action(api.accountSync.mine, {})).rejects.toThrow(
@@ -220,4 +220,20 @@ test("directory paginates every account without friendship records and DMs remai
       peerClerkId: "missing",
     }),
   ).toEqual({ ok: false, reason: "unknown" });
+});
+
+
+test("provider names are normalized on onboarding and subsequent Clerk syncs", async () => {
+  const t = convexTest(schema, modules);
+  const mine = t.withIdentity({ subject: "casing", name: "JANE DOE" });
+  await mine.mutation(api.users.store, {});
+  expect(await mine.query(api.users.current, {})).toMatchObject({ name: "Jane Doe" });
+  for (const updated_at of [1, 2]) {
+    await t.mutation(internal.users.upsertFromClerk, {
+      data: { id: "casing", username: "JaneDOE", first_name: "  JANE  ", last_name: "DOE", updated_at },
+    });
+    expect(await mine.query(api.users.current, {})).toMatchObject({
+      firstName: "Jane", lastName: "Doe", name: "Jane Doe", username: "JaneDOE",
+    });
+  }
 });

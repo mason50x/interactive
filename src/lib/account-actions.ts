@@ -1,6 +1,7 @@
 "use server";
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { normalizePersonName } from "@/lib/person-name";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type FunctionArgs } from "convex/server";
 import { fetchAction } from "convex/nextjs";
@@ -10,6 +11,22 @@ import { api, internal } from "@convex/_generated/api";
 export async function syncChatAccount() {
   const { userId, getToken } = await auth();
   if (!userId) throw new Error("Not signed in");
+  let user = await currentUser();
+  if (!user || user.id !== userId || !user.username)
+    throw new Error("Account needs a username");
+  const firstName = normalizePersonName(user.firstName);
+  const lastName = normalizePersonName(user.lastName);
+  if (
+    (firstName && firstName !== user.firstName) ||
+    (lastName && lastName !== user.lastName)
+  ) {
+    user = await (
+      await clerkClient()
+    ).users.updateUser(userId, {
+      ...(firstName ? { firstName } : {}),
+      ...(lastName ? { lastName } : {}),
+    });
+  }
   const deployKey = process.env.CONVEX_DEPLOY_KEY;
   if (!deployKey) {
     // Local Convex development has its own Clerk key and authenticates the same caller.
@@ -18,9 +35,6 @@ export async function syncChatAccount() {
     await fetchAction(api.accountSync.mine, {}, { token });
     return;
   }
-  const user = await currentUser();
-  if (!user || user.id !== userId || !user.username)
-    throw new Error("Account needs a username");
   const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
   // Convex supports admin authentication for trusted server-to-server internal calls.
   (

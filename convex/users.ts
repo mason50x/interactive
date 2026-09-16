@@ -1,4 +1,5 @@
 import { ensureGlobalMembership } from "./chat/shared";
+import { normalizePersonName } from "../src/lib/person-name";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import {
@@ -43,6 +44,12 @@ async function upsertUser(
   clerkId: string,
   fields: UserFields,
 ) {
+  fields = {
+    ...fields,
+    name: normalizePersonName(fields.name),
+    firstName: normalizePersonName(fields.firstName),
+    lastName: normalizePersonName(fields.lastName),
+  };
   const existing = await userByClerkId(ctx, clerkId);
   if (existing?.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt < existing.clerkUpdatedAt) return existing._id;
   const id = existing === null

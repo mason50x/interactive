@@ -24,6 +24,7 @@ import { onSettingsRequest } from "@/lib/preferences";
 import { useClickOutside } from "@/lib/use-click-outside";
 import { useCachedAdminBadge } from "@/lib/use-cached-admin-badge";
 import { cn } from "@/lib/utils";
+import { normalizePersonName } from "@/lib/person-name";
 
 /**
  * The account control at the foot of the rail: who you are, and the two
@@ -89,9 +90,9 @@ export function UserMenu() {
     return <div className="h-14" aria-hidden />;
   }
 
-  const name = user.firstName ?? user.username ?? "Account";
+  const name = normalizePersonName(user.firstName) ?? user.username ?? "Account";
   const chipClassName =
-    "inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200 bg-gradient-to-b from-white to-zinc-100 px-1.5 py-0.5 text-[0.5625rem] leading-none font-bold shadow-[0_1px_2px_rgb(0_0_0/0.16),inset_0_1px_0_rgb(255_255_255/0.9)] dark:border-zinc-300 dark:from-zinc-100 dark:to-zinc-200";
+    "inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200 bg-gradient-to-b from-white to-zinc-100 px-1.5 py-0.5 text-[0.5625rem] leading-none font-bold shadow-[0_1px_2px_rgb(0_0_0/0.16),inset_0_1px_0_rgb(255_255_255/0.9)] dark:border-zinc-600 dark:from-zinc-700 dark:to-zinc-800 dark:shadow-[0_2px_3px_rgb(0_0_0/0.4),inset_0_1px_0_rgb(255_255_255/0.12)]";
 
   return (
     <>
@@ -119,7 +120,7 @@ export function UserMenu() {
             </span>
             <span className="hidden min-w-0 flex-1 pb-5 text-left rail-wide wide:block">
               <span className="block truncate text-[0.9375rem] leading-tight">
-                {user.fullName ?? name}
+                {normalizePersonName(user.fullName) ?? name}
               </span>
             </span>
             {/* Points at the popup: up while it is closed because that is where
@@ -144,7 +145,7 @@ export function UserMenu() {
               <span
                 className={cn(
                   chipClassName,
-                  "release-unread-glow relative text-orange-600 [--release-rim-color:var(--color-orange-500)] [--release-rim-duration:4s] [--release-rim-glow:1px] [--release-rim-width:1px]",
+                  "release-unread-glow relative text-orange-600 dark:text-orange-400 [--release-rim-color:var(--color-orange-500)] [--release-rim-duration:4s] [--release-rim-glow:1px] [--release-rim-width:1px]",
                 )}
               >
                 <StaffBadge role={showAdminBadge} sidebar />
@@ -157,7 +158,7 @@ export function UserMenu() {
               aria-label="OSS — source code on GitHub"
               className={cn(
                 chipClassName,
-                "text-zinc-600 transition-colors hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               )}
             >
               <GitHubIcon className="size-3 shrink-0" />
