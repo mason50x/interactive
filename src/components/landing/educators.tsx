@@ -1,7 +1,5 @@
 import { accent } from "@/components/landing/palette";
-import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckList } from "@/components/ui/check-list";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { educators } from "@/lib/content";
 
@@ -83,26 +81,17 @@ export function Educators() {
   return (
     <Section
       id="educators"
+      divider
       width="default"
-      className="bg-panel text-panel-foreground"
+      className="bg-panel text-panel-foreground [--section-fill:var(--panel)]"
     >
       <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
         <div className="flex flex-col items-start gap-6">
           <SectionHeading
             tone="inverted"
-            eyebrow={educators.eyebrow}
             title={educators.heading}
             body={educators.body}
           />
-          <CheckList tone="inverted" items={educators.bullets} />
-          <ButtonLink
-            href="/contact"
-            variant="inverted"
-            size="md"
-            className="mt-2"
-          >
-            {educators.cta}
-          </ButtonLink>
         </div>
 
         <CohortHeatmap />

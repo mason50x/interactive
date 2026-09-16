@@ -1,11 +1,10 @@
 "use client";
 
 import { AtSymbolIcon } from "@heroicons/react/24/outline";
-import { UserPlusIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { People, SearchField } from "@/components/app/chat/chat-search";
+import { SearchField } from "@/components/app/chat/chat-search";
 import { ChatTools, type Panel } from "@/components/app/chat/chat-tools";
 import {
   GroupColumn,
@@ -14,6 +13,7 @@ import {
 import { useChat } from "@/components/app/chat/chat-provider";
 import { GlideList } from "@/components/app/chat/glide-list";
 import { Monogram } from "@/components/app/chat/monogram";
+import { AccountDirectory } from "@/components/app/chat/account-directory";
 import { Waiting } from "@/components/app/chat/waiting";
 import {
   conversationName,
@@ -63,7 +63,14 @@ import { CountBadge } from "@/components/ui/badge";
 export function ConversationList() {
   const { conversations } = useChat();
   const pathname = usePathname();
-  const [panel, setPanel] = useState<Panel | null>(null);
+  const params = useSearchParams();
+  const requestedPanel = params.get("panel");
+  const [panel, setPanel] = useState<Panel | null>(
+    requestedPanel === "group" ? "group" : null,
+  );
+  useEffect(() => {
+    if (requestedPanel === "group") setPanel("group");
+  }, [requestedPanel]);
   const [groupPanel, setGroupPanel] = useState<GroupPanelRequest | null>(null);
 
   const [term, setTerm] = useState("");
@@ -107,12 +114,6 @@ export function ConversationList() {
       ),
     [conversations],
   );
-
-  // Somebody with no direct messages has a room full of strangers and nothing
-  // else. The gap where their first one would be says what it is and puts the
-  // caret in the field, and it goes the moment there is a thread to fill it.
-  const alone =
-    needle === "" && !conversations.some((row) => row.kind === "dm");
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
@@ -253,7 +254,20 @@ export function ConversationList() {
                       {/* A count where a count means something, a dot where
                           it does not. See the note at the top of this file. */}
                       {unread ? (
-                        conversation.unreadExact ? (
+                        conversation.kind === "announcements" ? (
+                          <span
+                            aria-label="New announcement"
+                            className="flex shrink-0 items-center gap-1.5 text-red-500"
+                          >
+                            <span className="text-shimmer-periodic text-xs font-semibold [--shimmer-base:var(--color-red-500)]">
+                              NEW!
+                            </span>
+                            <span
+                              aria-hidden
+                              className="size-2 rounded-full bg-current"
+                            />
+                          </span>
+                        ) : conversation.unreadExact ? (
                           <CountBadge size="md">
                             {conversation.unread > 99
                               ? "99+"
@@ -277,31 +291,6 @@ export function ConversationList() {
                 );
               })}
 
-              {alone ? (
-                <li data-glide-row>
-                  <button
-                    type="button"
-                    onClick={() => field.current?.focus()}
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left"
-                  >
-                    <span
-                      aria-hidden
-                      className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-border text-muted-foreground"
-                    >
-                      <UserPlusIcon className="size-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[0.9375rem] font-medium text-muted-foreground">
-                        Message someone
-                      </span>
-                      <span className="block truncate text-[0.75rem] text-faint">
-                        Search a handle, or press a name in the room
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ) : null}
-
               {conversations.length === 0 ? (
                 <li className="px-2 py-6 text-[0.875rem] leading-relaxed text-muted-foreground">
                   Nothing yet. The room should be here in a moment.
@@ -309,11 +298,7 @@ export function ConversationList() {
               ) : null}
             </GlideList>
 
-            {needle === "" ? null : (
-              <div className="px-2">
-                <People term={term} exclude={known} />
-              </div>
-            )}
+            <AccountDirectory term={term} exclude={known} />
           </div>
         </div>
       </div>

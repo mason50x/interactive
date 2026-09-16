@@ -1,6 +1,5 @@
 /** The landing page: the sections, in the order they are read. */
 import type { Metadata } from "next";
-import { ClosingCta } from "@/components/landing/closing-cta";
 import { Educators } from "@/components/landing/educators";
 import { Faq } from "@/components/landing/faq";
 import { Features } from "@/components/landing/features";
@@ -14,7 +13,7 @@ import { TrustStrip } from "@/components/landing/trust-strip";
 import { brand } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: `${brand.name} — ${brand.tagline}`,
+  title: "Home",
   description: brand.metaDescription,
 };
 
@@ -31,7 +30,6 @@ export default function Home() {
       <Testimonials />
       <Pricing />
       <Faq />
-      <ClosingCta />
     </>
   );
 }

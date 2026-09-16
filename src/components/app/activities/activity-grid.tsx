@@ -1,5 +1,6 @@
 "use client";
 
+import { ActivityRequests } from "@/components/app/activity-requests";
 import { ActivityCard } from "@/components/app/activity-card";
 import type { ActivityEntry } from "@/lib/activity";
 import { useFlip } from "@/lib/use-flip";
@@ -12,7 +13,13 @@ import { useFlip } from "@/lib/use-flip";
  * set of cards in a different order — so the grid animates the difference
  * rather than each control animating itself. See `useFlip`.
  */
-export function ActivityGrid({ shown }: { shown: readonly ActivityEntry[] }) {
+export function ActivityGrid({
+  shown,
+  notes,
+}: {
+  shown: readonly ActivityEntry[];
+  notes?: Record<string, string>;
+}) {
   const { frame, ghosts } = useFlip(shown);
 
   return (
@@ -28,9 +35,12 @@ export function ActivityGrid({ shown }: { shown: readonly ActivityEntry[] }) {
       <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((activity) => (
           <li key={activity.slug} data-flip={activity.slug}>
-            <ActivityCard activity={activity} />
+            <ActivityCard activity={activity} note={notes?.[activity.slug]} />
           </li>
         ))}
+        <li key="activity-request">
+          <ActivityRequests />
+        </li>
       </ul>
 
       {/* Where cards that no longer match are held for the fifth of a second

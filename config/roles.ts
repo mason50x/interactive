@@ -1,7 +1,6 @@
 /** Site-wide roles; group membership remains scoped to its conversation. */
 const staffPrivileges = {
   deleteChatMessages: true,
-  manageVoting: true,
   adminBadge: true,
   botTagsPerDay: 50,
   experienceSecondsPerDay: 2 * 60 * 60,
@@ -10,7 +9,6 @@ const staffPrivileges = {
 export const ROLES = {
   member: {
     deleteChatMessages: false,
-    manageVoting: false,
     adminBadge: false,
     botTagsPerDay: 5,
     experienceSecondsPerDay: 30 * 60,

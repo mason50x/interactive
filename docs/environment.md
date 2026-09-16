@@ -15,7 +15,6 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Public key from your Clerk instance |
 | `CLERK_SECRET_KEY` | Server-side Clerk operations; never public |
 | `NEXT_PUBLIC_CLERK_*_URL` | Sign-in/up routes and fallback redirects from the example |
-| `SITE_URL` | Optional runtime invitation origin override for staging |
 | `NEXT_PUBLIC_SITE_URL` | App origin; use localhost locally and your HTTPS domain in production |
 | `NEXT_PUBLIC_BRAND_DOMAIN` | Optional email/brand domain override |
 | `ASSET_ORIGIN` | Optional separate public bucket origin for hosted activities |
@@ -29,7 +28,7 @@ exports are migration backups, not automatically uploaded Worker configuration.
 deploy this setting. Update the Wrangler value when moving the Experience Worker.
 
 Public variables are embedded at build time; changing them requires rebuilding.
-Set `SITE_URL` or `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.
+Set `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.
 Public variables must never contain secrets.
 
 ## Convex deployment environment
@@ -60,7 +59,7 @@ Set one server-owned key, `STAFF_ROLES`, on each Convex deployment:
 Add an exact Clerk ID with `ceo` or `moderator`; remove it to revoke staff
 privileges. Unknown roles and malformed configuration grant no access.
 `config/roles.ts` defines the privileges for each role. Both currently retain
-chat moderation, voting management, 50 bot uses per rolling day and two hours
+chat moderation, 50 bot uses per rolling day and two hours
 of Experience per UTC day. CEO displays a crown and CEO text; moderator displays
 a shield. Group membership is independent.
 
@@ -76,7 +75,6 @@ optional and subject to their providers' terms, availability, and pricing.
 `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_BUCKET` are
 for the asset maintenance scripts only. Keep them out of Next.js hosting and
 fork workflows. `GITHUB_TOKEN` optionally raises catalogue API rate limits.
-`PROD_SITE_URL` overrides the invitation script's production target.
 
 Use separate development data and credentials. Rotate a credential if it is
 committed; removing the file from the latest commit does not remove Git history.

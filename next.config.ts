@@ -1,32 +1,6 @@
 import type { NextConfig } from "next";
 
 /**
- * Files that exist only on a developer's machine.
- *
- * Two rules, one convention:
- *
- * - A route file named `page.dev.tsx` is a page under `next dev` and nothing
- *   at all under `next build`. The extension is not registered, so the folder
- *   has no page, the route does not exist, and none of its imports reach a
- *   bundle.
- * - A module `foo.dev.ts` is what `import "./foo"` resolves to under `next
- *   dev`, and `foo.ts` is what it resolves to in a build, because `.dev.ts`
- *   is tried first only in development. That lets a production module be the
- *   empty answer and its `.dev.ts` sibling the real one, with neither the
- *   importer nor the build ever naming what the sibling contains.
- *
- * Both conditions are read once at startup, not at request time, and neither
- * leaves a runtime check behind in the output. Previews are builds, so they
- * are excluded like production. `src/lib/nav-extras.ts` is the one user of
- * the second rule; the pages under `src/app/dashboard` that end in `.dev.tsx`
- * are the users of the first.
- */
-const dev = process.env.NODE_ENV === "development";
-
-/** Turbopack's defaults, which `resolveExtensions` replaces rather than extends. */
-const defaultExtensions = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"];
-
-/**
  * Response headers: who may crawl this site (nobody) and who may frame it.
  *
  * Framing policy for one origin:
@@ -44,19 +18,11 @@ const defaultExtensions = [".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"];
  */
 
 const nextConfig: NextConfig = {
-  pageExtensions: ["tsx", "ts", "jsx", "js", ...(dev ? ["dev.tsx"] : [])],
-
-  turbopack: {
-    resolveExtensions: dev
-      ? [".dev.tsx", ".dev.ts", ...defaultExtensions]
-      : defaultExtensions,
-  },
-
   experimental: {
     /**
      * How long the router may reuse what it has already fetched.
      *
-     * The pair matters more than either number. Every route under `/dashboard`
+     * The pair matters more than either number. Every route in the signed-in app
      * reads cookies through `auth.protect()` and is therefore dynamic, and a
      * dynamic route's client cache is off by default — `dynamic: 0` means the
      * router throws away the payload the moment it has rendered it, so leaving
@@ -74,6 +40,13 @@ const nextConfig: NextConfig = {
      * because the warming reads as deliberate only next to a number.
      */
     staleTimes: { dynamic: 30, static: 300 },
+  },
+
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/home", permanent: true },
+      { source: "/dashboard/:path+", destination: "/:path+", permanent: true },
+    ];
   },
 
   async headers() {

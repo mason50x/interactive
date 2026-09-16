@@ -24,9 +24,13 @@ vm.runInNewContext(output, {
 });
 
 for (const path of [
-  "/dashboard",
-  "/dashboard/activities/missing.png",
-  "/dashboard/chat/room.js",
+  "/home",
+  "/activities",
+  "/chat",
+  "/experience/release",
+  "/learning-simulator/html/test.html",
+  "/activities/missing.png",
+  "/chat/room.js",
   "/learn/missing.html",
   "/auth/sign-in/test.css",
   "/__clerk/test",
@@ -45,7 +49,12 @@ for (const path of [
         url: path,
       }),
     ).toBe(true);
-    expect(matchesMiddleware(new URL(path, "https://test.invalid").pathname, moduleExports.config.matcher)).toBe(true);
+    expect(
+      matchesMiddleware(
+        new URL(path, "https://test.invalid").pathname,
+        moduleExports.config.matcher,
+      ),
+    ).toBe(true);
   });
 }
 for (const path of [
@@ -62,6 +71,11 @@ for (const path of [
         url: path,
       }),
     ).toBe(false);
-    expect(matchesMiddleware(new URL(path, "https://test.invalid").pathname, moduleExports.config.matcher)).toBe(false);
+    expect(
+      matchesMiddleware(
+        new URL(path, "https://test.invalid").pathname,
+        moduleExports.config.matcher,
+      ),
+    ).toBe(false);
   });
 }

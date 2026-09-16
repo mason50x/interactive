@@ -15,12 +15,13 @@ const icons = [ArrowUpTrayIcon, ShareIcon, CursorArrowRaysIcon];
  */
 export function HowItWorks() {
   return (
-    <Section id="how-it-works" divider width="default" className="bg-surface">
-      <SectionHeading
-        eyebrow={howItWorks.eyebrow}
-        title={howItWorks.heading}
-        body={howItWorks.body}
-      />
+    <Section
+      id="how-it-works"
+      divider
+      width="default"
+      className="bg-surface [--section-fill:var(--surface)]"
+    >
+      <SectionHeading title={howItWorks.heading} body={howItWorks.body} />
 
       <ol className="relative mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
         {/* The line the steps sit on. */}

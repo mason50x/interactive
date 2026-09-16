@@ -1,5 +1,6 @@
 "use client";
 
+import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
 import type { Hit } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -50,14 +51,18 @@ export function ResultRow({
         active && "bg-foreground/[0.05]",
       )}
     >
-      <Icon
-        aria-hidden
-        style={hit.tint ? { color: hit.tint } : undefined}
-        className={cn(
-          "size-4 shrink-0",
-          hit.tint ? undefined : active ? "text-foreground" : "text-faint",
-        )}
-      />
+      {hit.experienceId ? (
+        <ExperienceAppIcon id={hit.experienceId} className="size-4 shrink-0" />
+      ) : (
+        <Icon
+          aria-hidden
+          style={hit.tint ? { color: hit.tint } : undefined}
+          className={cn(
+            "size-4 shrink-0",
+            hit.tint ? undefined : active ? "text-foreground" : "text-faint",
+          )}
+        />
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[0.875rem] font-medium text-foreground">
           {hit.title}

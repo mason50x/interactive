@@ -10,7 +10,7 @@ import type { useWarmRoutes } from "@/lib/warm";
  * The head of the rail: the mark, the name beside it, and the control that
  * puts the rail away.
  *
- * Also the only route back to `/dashboard` itself: the overview has no row of
+ * Also the only route back to `/home` itself: the overview has no row of
  * its own in the list.
  *
  * One lockup at both widths, not two. The mark is sized in `em`, so easing
@@ -38,9 +38,9 @@ export function RailLockup({
     <div className="flex h-16 items-center overflow-hidden pl-[2.0625rem] transition-[padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:pl-5">
       <div className="flex flex-col items-start gap-1.5">
         <Link
-          href="/dashboard"
+          href="/home"
           aria-label={`${brand.name} dashboard`}
-          {...warm("/dashboard")}
+          {...warm("/home")}
           className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
         >
           <Wordmark

@@ -130,10 +130,35 @@ function PageIntro({
  * `rhythm` is the vertical breathing room, and there are three steps of it
  * rather than a number per section: the default for the run of the page,
  * `tight` for a strip that is a single row, `hero` for the opening band that
- * has the header's space above it already. `divider` draws the hairline
+ * has the header's space above it already. `divider` draws a gentle wave
  * between one band and the next. `width` puts a `Container` inside, which is
  * what every section wants and what none of them should have to repeat.
  */
+function SectionDivider() {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      data-slot="section-divider"
+      viewBox="0 0 1200 32"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-x-0 -top-8 h-8 w-full overflow-visible"
+    >
+      <path
+        d="M0 16 Q50 0 100 16 T200 16 T300 16 T400 16 T500 16 T600 16 T700 16 T800 16 T900 16 T1000 16 T1100 16 T1200 16 V32 H0 Z"
+        fill="var(--section-fill, var(--background))"
+      />
+      <path
+        d="M0 16 Q50 0 100 16 T200 16 T300 16 T400 16 T500 16 T600 16 T700 16 T800 16 T900 16 T1000 16 T1100 16 T1200 16"
+        fill="none"
+        className="stroke-border"
+        strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
 function Section({
   id,
   className,
@@ -156,14 +181,15 @@ function Section({
         rhythm === "default" && "py-20 sm:py-24 lg:py-32",
         rhythm === "tight" && "py-14 sm:py-16",
         rhythm === "hero" && "pt-14 pb-20 sm:pt-20 sm:pb-24 lg:pt-24 lg:pb-32",
-        divider && "border-t border-border",
+        divider && "relative bg-background",
         className,
       )}
       {...props}
     >
+      {divider ? <SectionDivider /> : null}
       {width ? <Container width={width}>{children}</Container> : children}
     </section>
   );
 }
 
-export { Eyebrow, PageIntro, Section, SectionHeading };
+export { Eyebrow, PageIntro, Section, SectionDivider, SectionHeading };

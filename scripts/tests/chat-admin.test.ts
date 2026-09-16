@@ -45,15 +45,6 @@ async function setup() {
       target: mason,
       authorClerkId: "other",
     });
-    for (let i = 0; i < 105; i++)
-      await ctx.db.insert("reports", {
-        conversationId,
-        messageId,
-        reporterClerkId: `reporter${i}`,
-        targetClerkId: "other",
-        reason: "spam",
-        createdAt: 1,
-      });
     return { messageId, memberId };
   });
   return { t, ...ids };
@@ -79,7 +70,7 @@ test("only the verified account receives admin capability, regardless of names",
   expect(await t.run((ctx) => ctx.db.get(messageId))).not.toBeNull();
 });
 
-test("admin hard deletes old hidden messages, mentions and batched reports; retries are safe", async () => {
+test("admin hard deletes old hidden messages and mentions; retries are safe", async () => {
   vi.useFakeTimers();
   try {
     const { t, messageId } = await setup();
@@ -90,7 +81,6 @@ test("admin hard deletes old hidden messages, mentions and batched reports; retr
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect(await t.run((ctx) => ctx.db.get(messageId))).toBeNull();
     expect(await t.run((ctx) => ctx.db.query("mentions").take(1))).toEqual([]);
-    expect(await t.run((ctx) => ctx.db.query("reports").take(1))).toEqual([]);
   } finally {
     vi.useRealTimers();
   }
@@ -208,7 +198,7 @@ test("legacy keys cannot assign the admin role", async () => {
   expect(roleFor(mason)).toBe("member");
   expect(roleFor("")).toBe("member");
   expect(privilegesFor(mason)).toEqual({
-    deleteChatMessages: false, manageVoting: false, adminBadge: false,
+    deleteChatMessages: false, adminBadge: false,
     botTagsPerDay: 5, experienceSecondsPerDay: 1800,
   });
 });

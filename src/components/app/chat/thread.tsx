@@ -184,9 +184,6 @@ function ConversationThread({
       authorHandle: profile.handle,
       authorName: profile.displayName,
       authorAvatarUrl: profile.avatarUrl,
-      authorAvatarHue: profile.avatarHue,
-      authorAvatarEmoji: profile.avatarEmoji,
-      authorAvatarInitials: profile.avatarInitials,
       body: text,
       replyTo: replyTo === null ? undefined : replyFromMessage(replyTo),
       // What the composer resolved from the people it offered. The server

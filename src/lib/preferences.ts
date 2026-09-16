@@ -133,7 +133,7 @@ const settingsChannel = channel<SettingsPage>(SETTINGS_EVENT);
 
 /** Ask the account modal to open, on the settings page unless told
  *  otherwise. Nothing happens if the rail is not mounted, which is every page
- *  outside `/dashboard`. */
+ *  outside the signed-in app. */
 export function requestSettings(page: SettingsPage = "settings") {
   settingsChannel.request(page);
 }

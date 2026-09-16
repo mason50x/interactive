@@ -19,6 +19,7 @@ import { popupVariants } from "@/components/ui/popup";
 import { Spinner } from "@/components/ui/spinner";
 import { ACTIVITIES_HREF } from "@/lib/nav";
 import { requestSettings } from "@/lib/preferences";
+import { signOutRequest } from "@/lib/search-actions";
 import type { Hit, SearchAction } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,7 @@ import { cn } from "@/lib/utils";
  * you have asked it to be.
  *
  * Focus is the asking. The row then grows out of the rail on the same curve
- * and duration the invite cards grow on, and takes a surface and
+ * and duration the rail cards grow on, and takes a surface and
  * a border while it does: one gesture, shared by every part of this chrome
  * that changes shape, so a blooming search reads as the same kind of object as
  * a widening card rather than a new trick. It holds that shape while there is
@@ -55,7 +56,7 @@ import { cn } from "@/lib/utils";
  * and the rest of the rail does not shift to make room.
  *
  * The results panel underneath is measured with a `ResizeObserver` and its
- * height transitioned, which is the invite card's trick and is there for the
+ * height transitioned, to animate it for the
  * same reason: `height: auto` is not interpolable, and this panel changes size
  * under itself constantly as sections arrive. Chat's answer lands a beat after
  * everything else — it is the only source across a network — and that has to
@@ -105,6 +106,10 @@ export function RailSearch() {
       requestSettings(action);
       return;
     }
+    if (action === "sign-out") {
+      signOutRequest.request();
+      return;
+    }
     setPreference(action.slice("theme:".length) as "system" | "light" | "dark");
   }
 
@@ -131,8 +136,7 @@ export function RailSearch() {
 
   // The panel changes height under itself: chat answers late, the query
   // narrows, a section empties. Each of those should carry the box to its new
-  // size rather than snap it there. Same technique and same reasoning as
-  // `InviteCard`.
+  // size rather than snap it there.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
@@ -172,8 +176,7 @@ export function RailSearch() {
       <search className="relative hidden h-11 rail-wide wide:block">
         <div
           className={cn(
-            // Anchored top-left, which is this end of the rail's answer to the
-            // invite card's bottom-left: the corner nearest the thing that
+            // Anchored top-left, which is the corner nearest the thing that
             // opened it stays exactly where it was, and the box grows away
             // from it in both directions. Pinning the other corner would slide
             // the icon and the word out from under the pointer that just
@@ -187,9 +190,7 @@ export function RailSearch() {
             expanded
               ? // Both widths are absolute lengths so there is something to
                 // interpolate. The resting one is the rail (`wide:w-60`) less
-                // this wrapper's `pl-3`; the open one is wider than the invite
-                // card because it
-                // has to hold two lines of somebody else's sentence. The
+                // this wrapper's `pl-3`; the open one has to hold two lines of somebody else's sentence. The
                 // extra comes off the shell, which is why the open state is
                 // the one that carries a shadow.
                 //

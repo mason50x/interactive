@@ -33,7 +33,7 @@ const CHAT_DEBOUNCE_MS = 180;
  *  They are capped as one list so the best few survive whichever kind they
  *  are, rather than three mediocre pages holding a place above an exact
  *  settings match. */
-const ENTRY_LIMIT = 4;
+const ENTRY_LIMIT = 12;
 
 /** How many activities. The catalogue is by far the largest source and would
  *  otherwise be the whole panel for any common word. */
@@ -155,6 +155,10 @@ export function useSearchHits(
         hits: entryHits.filter((hit) => hit.source === "page"),
       },
       {
+        label: "Experience",
+        hits: entryHits.filter((hit) => hit.source === "experience"),
+      },
+      {
         label: "Account",
         hits: entryHits.filter((hit) => hit.source === "account"),
       },
@@ -177,6 +181,6 @@ export function useSearchHits(
     needle,
     sections,
     hits,
-    waiting: found === undefined && chatText !== "",
+    waiting: isAuthenticated && found === undefined && chatText !== "",
   };
 }

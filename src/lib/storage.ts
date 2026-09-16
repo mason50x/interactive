@@ -4,7 +4,7 @@
  * Storage access throws outright — not returns null — in a browser set to
  * block site data, in a private window on some engines, and when the quota
  * is spent. None of the things this app keeps there (a theme, an accent, a
- * weather cache, a device preference) is worth taking the page down for, so
+ * cached response, a device preference) is worth taking the page down for, so
  * every read falls back and every write is best-effort. Callers say what the
  * fallback is; nothing here guesses.
  */

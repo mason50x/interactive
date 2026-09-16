@@ -11,10 +11,9 @@ import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type MutationCtx } from "../_generated/server";
 import {
   avatarAppearance,
-  blockedEitherWay,
-  callerProfile,
+  callerAccount,
   membership,
-  profileFor,
+  accountFor,
 } from "./shared";
 
 /**
@@ -61,7 +60,7 @@ function canAdminister(role: Role): boolean {
  *
  * Ownership is re-established from the conversation every time rather than
  * trusted from the argument, for the reason `ownedInvite` gives in
- * `convex/invites.ts`: an id that has been through a browser is an id anybody
+ * the other ownership checks: an id that has been through a browser is an id anybody
  * could have sent back.
  */
 async function asAdmin(
@@ -81,7 +80,7 @@ export type GroupResult =
   | {
       ok: false;
       reason:
-        "not-allowed" | "unknown" | "full" | "already" | "blocked" | "closed";
+        "not-allowed" | "unknown" | "full" | "already" | "closed";
     };
 
 async function memberCount(
@@ -104,18 +103,15 @@ export const invite = mutation({
     ctx,
     { conversationId, peerClerkId },
   ): Promise<GroupResult> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, reason: "closed" };
 
     const me = await asAdmin(ctx, conversationId, profile.clerkId);
     if (me === null) return { ok: false, reason: "not-allowed" };
 
-    const peer = await profileFor(ctx, peerClerkId);
+    const peer = await accountFor(ctx, peerClerkId);
     if (peer === null) {
       return { ok: false, reason: "unknown" };
-    }
-    if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) {
-      return { ok: false, reason: "blocked" };
     }
     if ((await memberCount(ctx, conversationId)) >= MAX_MEMBERS) {
       return { ok: false, reason: "full" };
@@ -157,7 +153,7 @@ export const invite = mutation({
 export const respondToInvite = mutation({
   args: { conversationId: v.id("conversations"), accept: v.boolean() },
   handler: async (ctx, { conversationId, accept }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -185,7 +181,7 @@ export const respondToInvite = mutation({
 export const requestJoin = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }): Promise<GroupResult> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, reason: "closed" };
     const conversation = await ctx.db.get(conversationId);
     if (conversation === null || conversation.kind !== "group") {
@@ -235,7 +231,7 @@ export const decide = mutation({
     approve: v.boolean(),
   },
   handler: async (ctx, { conversationId, clerkId, approve }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     if ((await asAdmin(ctx, conversationId, profile.clerkId)) === null) return;
 
@@ -265,7 +261,7 @@ export const decide = mutation({
 export const kick = mutation({
   args: { conversationId: v.id("conversations"), clerkId: v.string() },
   handler: async (ctx, { conversationId, clerkId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     if (clerkId === profile.clerkId) return;
 
@@ -291,7 +287,7 @@ export const setRole = mutation({
     role: v.union(v.literal("admin"), v.literal("member")),
   },
   handler: async (ctx, { conversationId, clerkId, role }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     if (clerkId === profile.clerkId) return;
 
@@ -313,7 +309,7 @@ export const setRole = mutation({
  * by what role the leaver held:
  *
  * Nobody is left, and the group is over. The row, every message ever sent in
- * it, every report filed inside it, and any invitation still outstanding are
+ * it and any invitation still outstanding are
  * all deleted — see `purgeConversation` in `convex/chat/sweep.ts` for why that
  * is scheduled rather than done here. Keeping an empty group would be keeping a
  * room that nothing can ever reach again and that no one can ever close, and
@@ -334,7 +330,7 @@ export const setRole = mutation({
 export const leave = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -386,7 +382,7 @@ export const setJoinPolicy = mutation({
     ),
   },
   handler: async (ctx, { conversationId, joinPolicy }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const me = await membership(ctx, conversationId, profile.clerkId);
@@ -406,7 +402,7 @@ export const setJoinPolicy = mutation({
 export const rename = mutation({
   args: { conversationId: v.id("conversations"), title: v.string() },
   handler: async (ctx, { conversationId, title }): Promise<GroupResult> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, reason: "closed" };
     if ((await asAdmin(ctx, conversationId, profile.clerkId)) === null) {
       return { ok: false, reason: "not-allowed" };
@@ -420,22 +416,7 @@ export const rename = mutation({
   },
 });
 
-/**
- * Give a group a face, or take it back.
- *
- * The whole face every time, the same shape as `setAvatar` in
- * `convex/chat/profiles.ts`: what arrives is what the group ends up with, and
- * anything not sent is cleared. So resetting is this mutation with nothing in
- * it, and there is no second mutation, no `clear` flag, and no way to end up
- * having changed a half somebody did not mean to touch.
- *
- * Every part is checked against the fixed sets in
- * `convex/moderation/limits.ts` and a value outside them is dropped rather than
- * refused — this is a picker, and the only way to send something else is to not
- * be using it. That check is the whole reason a group may have a face at all on
- * a site with nobody reviewing what its users put on screen: there is nothing
- * here that was not already in the app before anybody typed anything.
- */
+
 export const setLook = mutation({
   args: {
     conversationId: v.id("conversations"),
@@ -444,7 +425,7 @@ export const setLook = mutation({
     hue: v.optional(v.number()),
   },
   handler: async (ctx, { conversationId, emoji, initials, hue }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     if ((await asAdmin(ctx, conversationId, profile.clerkId)) === null) return;
 
@@ -484,7 +465,7 @@ export type GroupInvitation = {
 export const invitations = query({
   args: {},
   handler: async (ctx): Promise<GroupInvitation[]> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return [];
 
     const rows = await ctx.db
@@ -501,7 +482,7 @@ export const invitations = query({
       const inviter =
         row.invitedBy === undefined
           ? null
-          : await profileFor(ctx, row.invitedBy);
+          : await accountFor(ctx, row.invitedBy);
       waiting.push({
         conversationId: row.conversationId,
         title: conversation.title ?? "Group",
@@ -527,7 +508,7 @@ export type JoinRequest = {
 export const requests = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }): Promise<JoinRequest[]> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return [];
 
     const me = await membership(ctx, conversationId, profile.clerkId);
@@ -543,7 +524,7 @@ export const requests = query({
 
     const waiting: JoinRequest[] = [];
     for (const row of rows) {
-      const theirs = await profileFor(ctx, row.clerkId);
+      const theirs = await accountFor(ctx, row.clerkId);
       if (theirs === null) continue;
       waiting.push({
         clerkId: row.clerkId,

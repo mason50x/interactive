@@ -131,7 +131,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [cacheRead, preferences.accent]);
 
   // The mask is the same story with one addition: it has to be *held*. React
-  // owns the `<title>` and the icon links, and every route under `/dashboard`
+  // owns the `<title>` and the icon links, and every route in the signed-in app
   // declares a title of its own, so a mask written once on mount lasts until
   // the first click. `watchTabMask` writes it back — see `src/lib/tab-mask.ts`.
   useEffect(() => {

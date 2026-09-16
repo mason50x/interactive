@@ -222,19 +222,6 @@
   --panel-muted: #a3a3a3;
   --panel-border: #2a2a2a;
 
-  /* The streak fire. The only warm colour in the app, and deliberately not
-     an accent: the accent is a preference and six of them are selectable,
-     while the flame has to stay the colour of fire under all of them.
-
-     Two values because one cannot do both jobs. `--fire` is the flame itself
-     and the tint under the chip, and is the same in both themes because a
-     flame that changed hue with the page would stop reading as one.
-     `--fire-ink` is the number beside it, which is type and therefore has to
-     meet the background it is set on: a burnt orange on white, and a much
-     lighter one on black. */
-  --fire: #ff6a00;
-  --fire-ink: #b8430b;
-
   /* The brand blue as it reads on the inverted panel: a step lighter, so a
      label or a link set in it clears the dark ground. */
   --primary-soft: #9cc0fb;
@@ -311,8 +298,6 @@
   --panel-muted: #9c9c9c;
   --panel-border: #303030;
 
-  --fire: #ff6a00;
-  --fire-ink: #ffa457;
 
   --primary-soft: #9cc0fb;
 }
@@ -364,8 +349,6 @@
   --color-panel-foreground: var(--panel-foreground);
   --color-panel-muted: var(--panel-muted);
   --color-panel-border: var(--panel-border);
-  --color-fire: var(--fire);
-  --color-fire-ink: var(--fire-ink);
   --color-primary-soft: var(--primary-soft);
 
   /* `shadow-card` / `shadow-card-hover`. Named off the raw tokens rather than
@@ -983,8 +966,7 @@
  * three rather than three things bouncing. The stagger is `--i`, one delay
  * per dot, so the keyframes are written once.
  *
- * Everything is transform and opacity, on three elements, for the same reason
- * the streak flame is: it stays on the compositor and asks the main thread
+ * Everything is transform and opacity, on three elements, so it stays on the compositor and asks the main thread
  * for nothing while a conversation sits open.
  *
  * The row itself arrives from the bottom-left corner of the bubble, slightly
@@ -1032,79 +1014,6 @@
   transform-origin: bottom left;
   animation: typing-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--i, 0) * 0.06s);
-}
-
-/* ---------------------------------------------------------------------------
- * The streak fire.
- *
- * All of it is transform and opacity, on a handful of elements, so a flame
- * burning in the corner of the rail for an entire session stays on the
- * compositor and never asks the main thread for anything. Nothing here uses a
- * blur filter for the same reason — the glow is a radial gradient scaling in
- * place, which costs the same whether it is 8px across or 300.
- *
- * `transform-box: fill-box` is what makes the SVG halves usable at all: an
- * SVG element's transform origin is the *viewport's* corner by default, so a
- * flame asked to sway about its own base would instead swing about the top
- * left of the icon. The box has to be the shape's own, and then the origin
- * can be its foot.
- *
- * The reduced-motion block at the foot of this file already stops every one
- * of these dead, so none of them repeat the media query.
- * ------------------------------------------------------------------------ */
-
-/* The flame body: a slow lean, never quite repeating on the same beat as the
-   core inside it. The scale pair is deliberately reciprocal-ish — taller is
-   narrower — because a flame that grew in both directions reads as a throb. */
-@keyframes flame-sway {
-  0%,
-  100% {
-    transform: scale(1, 1) rotate(0deg);
-  }
-  25% {
-    transform: scale(1.05, 0.96) rotate(-1.8deg);
-  }
-  50% {
-    transform: scale(0.96, 1.06) rotate(1deg);
-  }
-  75% {
-    transform: scale(1.03, 0.98) rotate(1.6deg);
-  }
-}
-
-/* The hot core, on a faster and less regular cycle than the body. The two
-   periods are picked not to divide into each other, so the flame takes about
-   a minute to repeat a frame it has already shown. */
-@keyframes flame-core {
-  0%,
-  100% {
-    opacity: 0.92;
-    transform: scale(1) translateY(0);
-  }
-  30% {
-    opacity: 0.68;
-    transform: scale(0.84) translateY(0.35px);
-  }
-  55% {
-    opacity: 1;
-    transform: scale(1.14) translateY(-0.5px);
-  }
-  78% {
-    opacity: 0.84;
-    transform: scale(0.94) translateY(0);
-  }
-}
-
-.flame-body {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: flame-sway 2.9s ease-in-out infinite;
-}
-
-.flame-core {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: flame-core 1.13s ease-in-out infinite;
 }
 
 /* Rail icon microanimations.

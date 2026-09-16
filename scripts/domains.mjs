@@ -91,14 +91,7 @@ lines.push(
   dim(
     "     change lands, not before. It is the one with no build-time signal.",
   ),
-  dim("  6. Send yourself one invitation and click it. Clerk stamps"),
-  dim("     redirect_url at send time; there is no editing it afterwards."),
-  "",
-  good(
-    "  scripts/invite.mjs resolves the production origin from PROD_SITE_URL",
-  ),
-  good("  or config/domains.json, so it moves with step 1 or 2 by itself."),
-  "",
+
 );
 
 console.log(lines.join("\n"));

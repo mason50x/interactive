@@ -1,5 +1,5 @@
 {
-  "$comment": "Every site the experience will fetch. The Worker in experience/src/worker.js enforces `host` (exact match or any subdomain) and, when `paths` is present, only URLs under one of those path prefixes. Entries that also carry `id`, `label` and `start` are the apps listed on /dashboard/experience; the rest are dependencies, enforced but not shown. Edit here, then redeploy both: `npm run deploy` in experience/ and the app.",
+  "$comment": "Every site the experience will fetch. The Worker in experience/src/worker.js enforces `host` (exact match or any subdomain) and, when `paths` is present, only URLs under one of those path prefixes. Entries that also carry `id`, `label` and `start` are the apps listed on /experience; the rest are dependencies, enforced but not shown. Edit here, then redeploy both: `npm run deploy` in experience/ and the app.",
   "sites": [
     {"host": "wikipedia.org", "label": null, "start": null},
     {"host": "wikimedia.org", "label": null, "start": null},
@@ -14,6 +14,14 @@
     {"host": "gstatic.com", "label": null, "start": null},
     {"host": "fonts.googleapis.com", "label": null, "start": null},
     {"host": "www.google.com", "label": null, "start": null, "paths": ["/js/th/", "/js/bg/", "/recaptcha/", "/sorry/"]},
+    {"host": "tiktok.com", "id": "tiktok", "label": "TikTok", "start": "https://www.tiktok.com/"},
+    {"host": "tiktokcdn-us.com", "label": null, "start": null},
+    {"host": "tiktokcdn.com", "label": null, "start": null},
+    {"host": "tiktokv.us", "label": null, "start": null},
+    {"host": "tiktokw.us", "label": null, "start": null},
+    {"host": "tiktokv.com", "label": null, "start": null},
+    {"host": "ttwstatic.com", "label": null, "start": null},
+    {"host": "muscdn.com", "label": null, "start": null},
     {"host": "netflix.com", "id": "netflix", "label": "Netflix", "start": "https://www.netflix.com/"},
     {"host": "nflxext.com", "label": null, "start": null},
     {"host": "nflxso.net", "label": null, "start": null},

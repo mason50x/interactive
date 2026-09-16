@@ -5,13 +5,7 @@ import { RECENT_RING } from "../moderation/limits";
 
 import type { RecentSend } from "../moderation/rules";
 
-/**
- * The pieces every chat module needs, so none of them keeps its own copy.
- *
- * The same argument as `convex/days.ts`: five modules were about to grow their
- * own way of finding the caller and their own idea of what a pair of user ids
- * sorts to.
- */
+
 
 /** The caller's Clerk id, or `null` when signed out. */
 export async function callerId(ctx: QueryCtx): Promise<string | null> {
@@ -19,17 +13,23 @@ export async function callerId(ctx: QueryCtx): Promise<string | null> {
   return identity?.subject ?? null;
 }
 
-export async function profileFor(
-  ctx: QueryCtx,
-  clerkId: string,
-): Promise<Doc<"chatProfiles"> | null> {
-  return await ctx.db
-    .query("chatProfiles")
-    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-    .unique();
+/** A read-only view of the existing Clerk account mirror, never a second identity row. */
+export type ChatAccount = Doc<"users"> & {
+  handle: string;
+  displayName?: string;
+  createdAt: number;
+};
+
+export function chatAccount(user: Doc<"users"> | null): ChatAccount | null {
+  if (!user?.username) return null;
+  return { ...user, handle: user.username, displayName: user.firstName || user.username,
+    createdAt: user.clerkCreatedAt ?? user._creationTime };
 }
 
-/** Account picture URLs are read directly from the existing users mirror. */
+export async function accountFor(ctx: QueryCtx, clerkId: string): Promise<ChatAccount | null> {
+  return chatAccount(await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique());
+}
+
 export type AvatarAppearance = {
   avatarUrl?: string;
   avatarHue?: number;
@@ -37,82 +37,27 @@ export type AvatarAppearance = {
   avatarInitials?: string;
 };
 
-export async function avatarAppearance(
-  ctx: QueryCtx,
-  profile: Doc<"chatProfiles">,
-): Promise<AvatarAppearance> {
-  const user = profile.avatarMode !== "custom"
-    ? await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", profile.clerkId)).unique()
-    : null;
-  const avatarUrl = user?.imageUrl;
-
-  return {
-    avatarUrl,
-    avatarHue: profile.avatarHue,
-    avatarEmoji: profile.avatarEmoji,
-    avatarInitials: profile.avatarInitials,
-  };
+export async function avatarAppearance(_ctx: QueryCtx, account: ChatAccount): Promise<AvatarAppearance> {
+  return { avatarUrl: account.imageUrl };
 }
 
-/** Exact, case-insensitive Clerk username lookup; distinct usernames never fold together. */
-export async function profileByHandle(
-  ctx: QueryCtx,
-  handle: string,
-): Promise<Doc<"chatProfiles"> | null> {
-  const key = handle.toLowerCase();
-  return await ctx.db
-    .query("chatProfiles")
-    .withIndex("byHandleKey", (q) => q.eq("handleKey", key))
-    .first();
+export async function accountByHandle(ctx: QueryCtx, handle: string): Promise<ChatAccount | null> {
+  return chatAccount(await ctx.db.query("users").withIndex("byUsernameKey", q => q.eq("usernameKey", handle.toLowerCase())).unique());
 }
 
-/**
- * The caller's profile, or `null` if they are signed out or have never claimed
- * a handle. Both cases read the same to every caller: no handle, no chat.
- */
-export async function callerProfile(
-  ctx: QueryCtx,
-): Promise<Doc<"chatProfiles"> | null> {
+export async function callerAccount(ctx: QueryCtx): Promise<ChatAccount | null> {
   const clerkId = await callerId(ctx);
-  if (clerkId === null) return null;
-  return await profileFor(ctx, clerkId);
+  return clerkId === null ? null : await accountFor(ctx, clerkId);
 }
 
-/**
- * The sender state for an account, and the seed for the row that holds it.
- *
- * `messagesSent` and `recent` used to live on the profile, and moved off it
- * because they are written on every send while everything else on a profile is
- * written almost never — see `chatSenders` in `convex/schema.ts` for what that
- * was costing every query that joins a profile to get a handle.
- *
- * `senderState` is the read half, and it is what makes the move need no
- * backfill: an account with no row yet falls back to the two fields still
- * sitting on its profile, which is exactly where its totals were left. The
- * first send writes the row and the profile's copies are never read again.
- */
 export type SenderState = { messagesSent: number; recent: RecentSend[] };
 
-export async function senderRow(
-  ctx: QueryCtx,
-  clerkId: string,
-): Promise<Doc<"chatSenders"> | null> {
-  return await ctx.db
-    .query("chatSenders")
-    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-    .unique();
+export async function senderRow(ctx: QueryCtx, clerkId: string): Promise<Doc<"chatSenders"> | null> {
+  return await ctx.db.query("chatSenders").withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique();
 }
 
-export function senderState(
-  row: Doc<"chatSenders"> | null,
-  profile: Doc<"chatProfiles">,
-): SenderState {
-  if (row !== null)
-    return { messagesSent: row.messagesSent, recent: row.recent };
-  return {
-    messagesSent: profile.messagesSent ?? 0,
-    recent: profile.recent ?? [],
-  };
+export function senderState(row: Doc<"chatSenders"> | null): SenderState {
+  return { messagesSent: row?.messagesSent ?? 0, recent: row?.recent ?? [] };
 }
 
 /**
@@ -212,7 +157,7 @@ export async function deleteMessage(
 /**
  * Take back what a message said about who it named.
  *
- * Called when the message goes, and when reports hide it — a hidden message
+ * Called when the message goes — a hidden message
  * draws as a gap in the thread, and a gap should not be lighting anybody's
  * list up. Nothing is written on the message itself: its own `mentions` stay
  * as the record of what it said, and the thread empties a hidden body anyway.
@@ -272,54 +217,6 @@ export async function membership(
       q.eq("conversationId", conversationId).eq("clerkId", clerkId),
     )
     .unique();
-}
-
-export async function friendship(
-  ctx: QueryCtx,
-  a: string,
-  b: string,
-): Promise<Doc<"friendships"> | null> {
-  const { userA, userB } = pairOf(a, b);
-  return await ctx.db
-    .query("friendships")
-    .withIndex("byPair", (q) => q.eq("userA", userA).eq("userB", userB))
-    .unique();
-}
-
-/** Whether `blocker` has blocked `blocked`. One direction only. */
-export async function hasBlocked(
-  ctx: QueryCtx,
-  blocker: string,
-  blocked: string,
-): Promise<boolean> {
-  const row = await ctx.db
-    .query("blocks")
-    .withIndex("byBlocker", (q) =>
-      q.eq("blocker", blocker).eq("blocked", blocked),
-    )
-    .unique();
-  return row !== null;
-}
-
-/** Either direction. A block stops the conversation both ways. */
-export async function blockedEitherWay(
-  ctx: QueryCtx,
-  a: string,
-  b: string,
-): Promise<boolean> {
-  return (await hasBlocked(ctx, a, b)) || (await hasBlocked(ctx, b, a));
-}
-
-/** Everyone the caller has blocked, for filtering a thread in one read. */
-export async function blockedBy(
-  ctx: QueryCtx,
-  clerkId: string,
-): Promise<Set<string>> {
-  const rows = await ctx.db
-    .query("blocks")
-    .withIndex("byBlocker", (q) => q.eq("blocker", clerkId))
-    .collect();
-  return new Set(rows.map((row) => row.blocked));
 }
 
 /**
@@ -388,18 +285,7 @@ export async function ensureGlobalMembership(
   return conversationId;
 }
 
-/**
- * The direct message thread for a pair, created if it is not there yet.
- *
- * Idempotent on `dmKey`, which is what lets more than one caller reach for it:
- * `openDm` when somebody presses the button, and `chat/friends.ts` the moment a
- * request is accepted. Two people arriving at the same instant land on the same
- * row rather than on two half-built conversations, because the key is derived
- * from the pair rather than from who asked first.
- *
- * It decides nothing about whether the pair may talk. Every caller settles that
- * first — see `openDm` for the full set of bars.
- */
+
 export async function ensureDm(
   ctx: MutationCtx,
   clerkId: string,

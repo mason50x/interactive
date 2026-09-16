@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,15 +16,55 @@ export function StatList({
   items,
   size = "default",
   className,
+  animate = false,
 }: {
   items: readonly { value: string; label: string }[];
   size?: "default" | "large";
   className?: string;
+  animate?: boolean;
 }) {
   const large = size === "large";
+  const listRef = useRef<HTMLDListElement>(null);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!animate || !list || !("IntersectionObserver" in window)) return;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const animations: Animation[] = [];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          if (motion.matches) return;
+          animations.push(
+            entry.target.animate(
+              [
+                { opacity: 0.35, transform: "translateY(10px)" },
+                { opacity: 1, transform: "translateY(0)" },
+              ],
+              { duration: 550, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+            ),
+          );
+        });
+      },
+      { threshold: 0.6 },
+    );
+    Array.from(list.children).forEach((item) => observer.observe(item));
+    const stopMotion = () => {
+      if (motion.matches) animations.forEach((animation) => animation.cancel());
+    };
+    motion.addEventListener("change", stopMotion);
+    return () => {
+      observer.disconnect();
+      animations.forEach((animation) => animation.cancel());
+      motion.removeEventListener("change", stopMotion);
+    };
+  }, [animate]);
 
   return (
     <dl
+      ref={listRef}
       className={cn(
         "grid grid-cols-2 gap-x-6 lg:grid-cols-4",
         large ? "gap-y-10" : "gap-y-8",

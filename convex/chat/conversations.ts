@@ -9,14 +9,11 @@ import { mutation, query, type QueryCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import {
   avatarAppearance,
-  blockedBy,
-  blockedEitherWay,
-  callerProfile,
+  callerAccount,
   ensureDm,
   dmKeyFor,
-  friendship,
   membership,
-  profileFor,
+  accountFor,
 } from "./shared";
 
 /**
@@ -91,13 +88,8 @@ async function unreadFor(
   return rows.length;
 }
 
-/**
- * How many unread mentions are looked at before giving up on finding one
- * from somebody who is not blocked. Nearly always the first row is the
- * answer; this is only so that one blocked account naming the caller over
- * and over cannot hide a real mention behind it.
- */
-const MENTION_SCAN = 5;
+
+
 
 /**
  * Whether anything unread in a conversation names the caller.
@@ -111,7 +103,6 @@ const MENTION_SCAN = 5;
 async function mentionedIn(
   ctx: QueryCtx,
   member: Doc<"conversationMembers">,
-  blocked: ReadonlySet<string>,
 ): Promise<boolean> {
   const targets =
     member.kind === "group" ? [member.clerkId, EVERYONE] : [member.clerkId];
@@ -124,8 +115,8 @@ async function mentionedIn(
           .eq("conversationId", member.conversationId)
           .gt("_creationTime", member.lastReadAt),
       )
-      .take(MENTION_SCAN);
-    if (rows.some((row) => !blocked.has(row.authorClerkId))) return true;
+      .take(1);
+    if (rows.length > 0) return true;
   }
   return false;
 }
@@ -141,7 +132,7 @@ async function mentionedIn(
 export const list = query({
   args: {},
   handler: async (ctx): Promise<ConversationSummary[]> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return [];
 
     const members = await ctx.db
@@ -160,9 +151,6 @@ export const list = query({
       if (botMember?.status === "active") members.push(botMember);
     }
 
-    // For the mentions alone: a mention from somebody the caller has blocked
-    // is not one. One read, and it only changes when the caller blocks.
-    const blocked = await blockedBy(ctx, profile.clerkId);
 
     const summaries: ConversationSummary[] = [];
     for (const member of members) {
@@ -204,13 +192,13 @@ export const list = query({
       // The room always is, by construction — and the read for it is one
       // row, invalidated by nothing but somebody naming the caller there.
       const mentioned =
-        unread === 0 ? false : await mentionedIn(ctx, member, blocked);
+        unread === 0 ? false : await mentionedIn(ctx, member);
 
       let peerHandle: string | undefined;
       let peerName: string | undefined;
       let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
       if (member.dmPeer !== undefined) {
-        const peer = await profileFor(ctx, member.dmPeer);
+        const peer = await accountFor(ctx, member.dmPeer);
         peerHandle = member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle;
         peerName = member.dmPeer === BOT_ID ? BOT_NAME : peer?.displayName;
         if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
@@ -254,32 +242,14 @@ export type OpenResult =
   | { ok: true; conversationId: Id<"conversations"> }
   | {
       ok: false;
-      reason: "no-profile" | "unknown" | "blocked" | "not-friends";
+      reason: "no-profile" | "unknown";
     };
 
-/**
- * Open a direct message, or find the one that is already open.
- *
- * The thread itself is `ensureDm`'s job, and it is idempotent — so this is the
- * gate rather than the construction. What is left here is the set of bars a
- * pair has to clear before a thread between them is allowed to exist at all.
- *
- * Friends only, for everybody, and this is where that becomes real: a
- * stranger cannot open a thread with you at all, so the friend request is the
- * gate rather than a formality that a determined person can walk around. It
- * used to be a per-account policy with an open and a shut setting either side
- * of this one; both are gone, and the rule is written here rather than read
- * off the profile.
- *
- * Called from the person card — the one that opens when a name is pressed in a
- * thread, in search, or in the friends list. Accepting a request builds the
- * same thread — see `linkDm` in `convex/chat/friends.ts` — so for friends this
- * is nearly always a lookup.
- */
+/** Any signed-in account can start a private DM with another existing account. */
 export const openDm = mutation({
   args: { peerClerkId: v.string() },
   handler: async (ctx, { peerClerkId }): Promise<OpenResult> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
     if (peerClerkId === profile.clerkId)
       return { ok: false, reason: "unknown" };
@@ -288,22 +258,11 @@ export const openDm = mutation({
       return { ok: true, conversationId: await ensureDm(ctx, profile.clerkId, BOT_ID) };
     }
 
-    const peer = await profileFor(ctx, peerClerkId);
+    const peer = await accountFor(ctx, peerClerkId);
     if (peer === null) {
       return { ok: false, reason: "unknown" };
     }
-    if (await blockedEitherWay(ctx, profile.clerkId, peerClerkId)) {
-      return { ok: false, reason: "blocked" };
-    }
 
-    const friends = await friendship(ctx, profile.clerkId, peerClerkId);
-    if (friends === null || friends.status !== "accepted") {
-      return { ok: false, reason: "not-friends" };
-    }
-
-    // Usually already there: accepting a friend request builds the thread, so
-    // by the time anybody presses "message" this is a lookup. See `linkDm` in
-    // `convex/chat/friends.ts`.
     const conversationId = await ensureDm(ctx, profile.clerkId, peerClerkId);
     return { ok: true, conversationId };
   },
@@ -330,7 +289,7 @@ export const createGroup = mutation({
     ),
   },
   handler: async (ctx, { title, joinPolicy }): Promise<CreateResult> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, reason: "no-profile" };
     const screened = screenStatic(title, MAX_TITLE);
     if (!screened.ok) return { ok: false, reason: screened.refusal };
@@ -415,7 +374,7 @@ export const get = query({
     ctx,
     { conversationId },
   ): Promise<ConversationDetail | null> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return null;
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -428,7 +387,7 @@ export const get = query({
     let peerName: string | undefined;
     let peerAvatar: Awaited<ReturnType<typeof avatarAppearance>> = {};
     if (member.dmPeer !== undefined) {
-      const peer = await profileFor(ctx, member.dmPeer);
+      const peer = await accountFor(ctx, member.dmPeer);
       peerHandle = member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle;
       peerName = member.dmPeer === BOT_ID ? BOT_NAME : peer?.displayName;
       if (peer !== null) peerAvatar = await avatarAppearance(ctx, peer);
@@ -470,7 +429,7 @@ export const get = query({
 export const members = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }): Promise<ConversationMember[]> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return [];
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -487,7 +446,7 @@ export const members = query({
     const people: ConversationMember[] = [];
     for (const row of rows) {
       if (row.status === "left" || row.status === "banned") continue;
-      const theirs = await profileFor(ctx, row.clerkId);
+      const theirs = await accountFor(ctx, row.clerkId);
       if (theirs === null) continue;
       people.push({
         clerkId: row.clerkId,
@@ -530,7 +489,7 @@ export const preview = query({
     ctx,
     { conversationId },
   ): Promise<ConversationPreview | null> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return null;
 
     const conversation = await ctx.db.get(conversationId);
@@ -571,7 +530,7 @@ export const preview = query({
 export const markRead = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     const member = await membership(ctx, conversationId, profile.clerkId);
     // Active members only, the same bar `get` and `list` set: an invitation

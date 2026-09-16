@@ -37,16 +37,6 @@ export default defineConfig(({ command }) => ({
         ),
       ),
     },
-    extensions: [
-      ...(command === "serve" ? [".dev.tsx", ".dev.ts"] : []),
-      ".mjs",
-      ".js",
-      ".mts",
-      ".ts",
-      ".jsx",
-      ".tsx",
-      ".json",
-    ],
   },
   plugins: [
     // Clerk's ESM distribution still contains require() calls in its server

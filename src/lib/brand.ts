@@ -17,9 +17,7 @@
 import domains from "@config/domains.json";
 import { withoutTrailingSlash } from "@/lib/origin";
 
-/** The site's own origin, most-explicit first. Preview deployments set nothing
- *  and resolve their own host at runtime — see `src/lib/site-url.ts`, which
- *  does the same walk for the invitation links that must not guess wrong. */
+/** The site's configured origin, falling back to the canonical domain. */
 function resolveUrl(): string {
   return withoutTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL ?? domains.site);
 }

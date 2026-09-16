@@ -1,8 +1,6 @@
 import { CheckIcon } from "@heroicons/react/16/solid";
 import { ink, stroke } from "@/components/landing/palette";
-import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckList } from "@/components/ui/check-list";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { practice } from "@/lib/content";
 import { cn } from "@/lib/utils";
@@ -164,19 +162,10 @@ export function Practice() {
       <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="flex flex-col items-start gap-6 lg:col-span-5">
           <SectionHeading
-            eyebrow={practice.eyebrow}
             title={practice.heading}
             body={practice.body}
+            className="[&_h2]:whitespace-pre-line [&_p]:whitespace-pre-line"
           />
-          <CheckList items={practice.bullets} />
-          <ButtonLink
-            href="#product"
-            variant="outline"
-            size="md"
-            className="mt-2"
-          >
-            {practice.cta}
-          </ButtonLink>
         </div>
 
         <div className="grid gap-4 lg:col-span-7 lg:grid-cols-5">

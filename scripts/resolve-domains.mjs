@@ -1,7 +1,7 @@
 /**
  * What this checkout resolves each domain to, for the plain-Node scripts.
  *
- * The app resolves the same origins in `src/lib/site-url.ts` and
+ * The app resolves the same origins in `src/lib/brand.ts` and
  * `src/lib/assets.ts`. This is not a third opinion: it reads the same
  * variables in the same order and falls back to the same
  * `config/domains.json`. It exists because `scripts/dev-urls.mjs` and

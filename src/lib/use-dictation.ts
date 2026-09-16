@@ -21,7 +21,7 @@ import {
  * ## Why the prompt is tied to the tap
  *
  * `start()` runs synchronously inside the click that asked for it, the same
- * rule the weather card follows for geolocation (see `src/lib/weather.ts`).
+ * rule used for other browser permissions.
  * The microphone permission dialog hangs off that gesture; started from an
  * effect it would either be blocked or land on somebody who did not ask.
  * Nothing here starts in an effect, which is also what makes StrictMode's

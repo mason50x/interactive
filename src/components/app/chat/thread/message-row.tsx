@@ -196,7 +196,7 @@ export function MessageRow({
 
         {gone ? (
           <p className="rounded-3xl border border-border px-3.5 py-2 text-[0.9375rem] text-faint italic">
-            Message removed after reports
+            Message removed
           </p>
         ) : null}
 
@@ -284,6 +284,22 @@ export function MessageRow({
             mine && "flex-row-reverse",
           )}
         >
+          {!mine && endsGroup && staffRole ? (
+            <TooltipProvider delay={250}>
+              <AdminTooltip>
+                <TooltipTrigger
+                  aria-label={staffRole === "ceo" ? "CEO" : "Moderator"}
+                  className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                >
+                  <StaffBadge role={staffRole} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  {staffRole === "ceo" ? "CEO" : "Moderator"}
+                </TooltipContent>
+              </AdminTooltip>
+            </TooltipProvider>
+          ) : null}
+
           {mine || !endsGroup ? null : bot ? (
             <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
               {personName(author)}
@@ -296,22 +312,6 @@ export function MessageRow({
               {personName(author)}
             </PersonCard>
           )}
-
-          {!mine && endsGroup && staffRole ? (
-            <TooltipProvider delay={250}>
-              <AdminTooltip>
-                <TooltipTrigger
-                  aria-label={staffRole === "ceo" ? "CEO" : "Moderator"}
-                  className="-ml-1 inline-flex shrink-0 items-center gap-1 rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                >
-                  <StaffBadge role={staffRole} />
-                </TooltipTrigger>
-                <TooltipContent>
-                  {staffRole === "ceo" ? "CEO" : "Moderator"}
-                </TooltipContent>
-              </AdminTooltip>
-            </TooltipProvider>
-          ) : null}
 
           {/* Every message, not just the grouped ones. A column of times down
               the edge of the thread is a lot of ink for something nobody reads
@@ -361,8 +361,7 @@ export function MessageRow({
                   message={message}
                   mine={mine}
                   gone={gone}
-                  bot={bot}
-                  deletable={deletable}
+                          deletable={deletable}
                   isAdmin={isAdmin}
                   open={choosing}
                   onOpenChange={setChoosing}

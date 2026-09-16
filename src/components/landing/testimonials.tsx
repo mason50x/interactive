@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cardVariants } from "@/components/ui/card";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { testimonials, testimonialsSection } from "@/lib/content";
@@ -6,17 +7,12 @@ import { testimonials, testimonialsSection } from "@/lib/content";
  * Three quotes on three cards. Each is a `figure` with the quote as its
  * `blockquote` and the speaker as its caption — the markup a quotation
  * actually has — so it takes the card's classes rather than the `Card`
- * element. The initial in a disc stands in for a photograph we would
- * rather not ask people for.
+ * element. Generated portrait avatars serve as profile placeholders.
  */
 export function Testimonials() {
   return (
-    <Section width="default">
-      <SectionHeading
-        eyebrow={testimonialsSection.eyebrow}
-        title={testimonialsSection.heading}
-        align="center"
-      />
+    <Section divider width="default">
+      <SectionHeading title={testimonialsSection.heading} align="center" />
 
       <div className="mt-14 grid gap-4 lg:grid-cols-3">
         {testimonials.map((t) => (
@@ -43,12 +39,13 @@ export function Testimonials() {
               {t.quote}
             </blockquote>
             <figcaption className="mt-7 flex items-center gap-3 border-t border-border pt-5">
-              <span
-                aria-hidden
-                className="flex size-9 items-center justify-center rounded-full bg-accent text-[0.8125rem] font-semibold text-accent-foreground"
-              >
-                {t.name[0]}
-              </span>
+              <Image
+                src={`/avatars/${t.name.split(" ")[0].toLowerCase()}.png`}
+                alt=""
+                width={36}
+                height={36}
+                className="size-9 rounded-full bg-accent"
+              />
               <span className="flex flex-col">
                 <span className="text-[0.875rem] font-medium text-foreground">
                   {t.name}

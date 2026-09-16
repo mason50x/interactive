@@ -1,4 +1,4 @@
-import { syncAccountProfile } from "./chat/account";
+import { ensureGlobalMembership } from "./chat/shared";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import {
@@ -19,6 +19,7 @@ type ClerkUserJSON = {
   image_url?: string | null;
   username?: string | null;
   updated_at?: number;
+  created_at?: number;
 };
 
 type UserFields = {
@@ -26,6 +27,8 @@ type UserFields = {
   name?: string;
   imageUrl?: string;
   username?: string;
+  usernameKey?: string;
+  clerkCreatedAt?: number;
   firstName?: string;
   lastName?: string;
   clerkUpdatedAt?: number;
@@ -45,8 +48,10 @@ async function upsertUser(
   const id = existing === null
     ? await ctx.db.insert("users", { clerkId, ...fields })
     : existing._id;
-  if (existing !== null) await ctx.db.patch(id, fields);
-  if (fields.username) await syncAccountProfile(ctx, clerkId, fields.username, fields.firstName, fields.lastName);
+  if (existing !== null && Object.entries(fields).some(([key, value]) => existing[key as keyof UserFields] !== value)) {
+    await ctx.db.patch(id, fields);
+  }
+  if (fields.username) await ensureGlobalMembership(ctx, clerkId);
   return id;
 }
 
@@ -66,7 +71,7 @@ async function usersByClerkId(ctx: QueryCtx, clerkId: string) {
   return await ctx.db
     .query("users")
     .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-    .collect();
+    .take(100);
 }
 
 /** The signed-in user's row, or null when signed out / not synced yet. */
@@ -118,6 +123,8 @@ export const upsertFromClerk = internalMutation({
       name: name === "" ? undefined : name,
       imageUrl: data.image_url ?? undefined,
       username: data.username ?? undefined,
+      usernameKey: data.username?.toLowerCase() ?? undefined,
+      ...(data.created_at === undefined ? {} : { clerkCreatedAt: data.created_at }),
       firstName: data.first_name ?? undefined,
       lastName: data.last_name ?? undefined,
       clerkUpdatedAt: data.updated_at,
@@ -141,73 +148,40 @@ export const deleteFromClerk = internalMutation({
       await ctx.db.delete(user._id);
     }
 
-    // The invitations this user spent their allowance on. Their own pending
-    // invitations stay live at Clerk — an invitation already in someone's
-    // inbox is addressed to that person, not to the account that sent it, and
-    // there is no signed-in caller here to revoke them as.
-    const invites = await ctx.db
-      .query("invites")
-      .withIndex("byInviter", (q) => q.eq("inviterClerkId", clerkId))
-      .collect();
-    for (const invite of invites) {
-      await ctx.db.delete(invite._id);
-    }
-
     // Their accent, panic key, and the rest. Nothing else erases this row —
     // it is keyed by the Clerk id rather than owned by the `users` document,
     // so deleting the user above leaves it behind.
     const preferences = await ctx.db
       .query("preferences")
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-      .collect();
+      .take(100);
     for (const row of preferences) {
       await ctx.db.delete(row._id);
     }
 
-    // What they opened, and how long for. Both are keyed by the Clerk id
-    // rather than owned by the user document, so neither goes with it.
-    //
-    // `activityDays` is deliberately *not* swept. It is the global board, and
-    // a row in it is a count with nobody's name on it — there is no per-account
-    // contribution recorded there to subtract, and decrementing it from the
-    // rows below would be inventing one. What leaves with the account is
-    // everything that says *who*, which is these two tables.
-    const views = await ctx.db
-      .query("views")
-      .withIndex("byUserCount", (q) => q.eq("clerkId", clerkId))
-      .collect();
-    for (const row of views) {
-      await ctx.db.delete(row._id);
+    // Keep webhook work bounded even for accounts with many related records.
+    const more = [users, preferences].some(rows => rows.length === 100);
+    if (more) {
+      await ctx.scheduler.runAfter(0, internal.users.deleteFromClerk, { clerkId });
     }
 
-    const days = await ctx.db
-      .query("userDays")
-      .withIndex("byUserDay", (q) => q.eq("clerkId", clerkId))
-      .collect();
-    for (const row of days) {
-      await ctx.db.delete(row._id);
-    }
-
-    // Everything they said, everyone they blocked, and the record of both.
+    // Remove their chat content and membership records in bounded batches.
     //
     // Scheduled rather than done here. This handler is a webhook with a timeout
     // on it and a Convex mutation has one second; the number of messages an
     // account has sent is bounded by nothing at all. A scheduled mutation runs
     // exactly once, so booking it is not a weaker guarantee than doing it —
     // only a later one. See `purgeAuthor` in `convex/chat/sweep.ts`.
-    await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
-
-    await ctx.scheduler.runAfter(0, internal.simulator.cleanup.purgeOwner, { clerkId });
-    await ctx.scheduler.runAfter(0, internal.voting.purgeAccount, { clerkId });
+    if (!more) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
+      await ctx.scheduler.runAfter(0, internal.simulator.cleanup.purgeOwner, { clerkId });
+    }
 
     // Add deletes for any other table keyed by this user above this line.
 
     return {
       deleted: users.length,
-      invites: invites.length,
       preferences: preferences.length,
-      views: views.length,
-      days: days.length,
     };
   },
 });

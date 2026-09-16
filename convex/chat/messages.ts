@@ -1,3 +1,4 @@
+import type { ChatAccount } from "./shared";
 import { adminId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
@@ -21,14 +22,12 @@ import { mutation, query, type QueryCtx } from "../_generated/server";
 import { BOT_HANDLE, BOT_ID, BOT_NAME, botRateLimiter } from "./botConfig";
 import {
   avatarAppearance,
-  blockedBy,
-  blockedEitherWay,
-  callerProfile,
+  callerAccount,
   clearTyping,
   deleteMessage,
   membership,
-  profileByHandle,
-  profileFor,
+  accountByHandle,
+  accountFor,
   pushRecent,
   senderRow,
   senderState,
@@ -44,9 +43,8 @@ import {
  * broke a rule cannot be recovered, cannot leak through a query that forgot to
  * exclude it, and never existed to be replicated to anybody's client.
  *
- * `status` on a message is therefore about the one thing that happens after it
- * is already real: reports piling up on it. Its author taking it back is not a
- * status — see `remove` below, which deletes the row.
+ * `status` retains compatibility with legacy hidden messages. New messages are
+ * visible; `remove` deletes the row when its author takes it back.
  *
  * ## What the thread query costs
  *
@@ -164,7 +162,7 @@ export const send = mutation({
     ctx,
     { conversationId, body, attachmentIds, replyToId },
   ): Promise<SendResult> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, refusal: "not-a-member" };
 
 
@@ -177,15 +175,6 @@ export const send = mutation({
       return { ok: false, refusal: "read-only" };
     }
 
-    // A block ends the conversation for both people, and it can land after the
-    // thread already exists — which is the only reason this is checked on every
-    // send rather than once when the thread opened.
-    if (member.dmPeer !== undefined) {
-      if (await blockedEitherWay(ctx, profile.clerkId, member.dmPeer)) {
-        return { ok: false, refusal: "blocked" };
-      }
-    }
-
     // A reply is a relationship the server proves, not a client-authored
     // quote. It must still be visible, in this conversation, and between
     // people who may see each other. If it changes while the composer is open,
@@ -196,8 +185,7 @@ export const send = mutation({
         target === null ||
         target.conversationId !== conversationId ||
         target.status !== "visible" ||
-        target.authorClerkId === profile.clerkId ||
-        (await blockedEitherWay(ctx, profile.clerkId, target.authorClerkId))
+        target.authorClerkId === profile.clerkId
       ) {
         return { ok: false, refusal: "reply-unavailable" };
       }
@@ -242,9 +230,8 @@ export const send = mutation({
     // The counter and the ring, which are the sender's own row rather than
     // their profile — see `chatSenders` in `convex/schema.ts`. `null` is an
     // account that has not sent anything since the two fields moved, and
-    // `senderState` reads them off the profile one last time to seed it.
     const sender = await senderRow(ctx, profile.clerkId);
-    const state = senderState(sender, profile);
+    const state = senderState(sender);
 
     const context: SendContext = {
       surface: member.kind === "announcements" ? "global" : member.kind,
@@ -351,7 +338,6 @@ export const send = mutation({
 
     // The one document a send writes that anybody else's query could have
     // read is now not written at all: this is the sender's own row, and the
-    // profile beside it — which every conversation list, friends list and
     // invitation joins for a handle — is left alone.
     if (sender === null) {
       await ctx.db.insert("chatSenders", {
@@ -430,7 +416,7 @@ type ResolvedMentions =
  * question, which is asked next.
  *
  * A word that *is* somebody's handle has to be somebody in the room. Naming a
- * person who is not — not a member or on either side of a block — is
+ * person who is not — not a member — is
  * refused with `mention`, and refused rather than quietly left as text: text
  * that says `@name` goes on to the contact rule and would return the wrong
  * reason. The refusal hands the words back.
@@ -451,7 +437,7 @@ type ResolvedMentions =
  */
 async function resolveMentions(
   ctx: QueryCtx,
-  profile: Doc<"chatProfiles">,
+  profile: ChatAccount,
   member: Doc<"conversationMembers">,
   body: string,
 ): Promise<ResolvedMentions> {
@@ -464,7 +450,7 @@ async function resolveMentions(
   for (const token of findMentionTokens(body)) {
     if (tokens.has(token.handle)) continue;
 
-    // The old man. A reserved handle, so `profileByHandle` below would find
+    // The old man. A reserved handle, so `accountByHandle` below would find
     // nobody and the contact rule would take it from there — which is the
     // right answer everywhere but the room, the one place he lives. He is
     // put in `people` so the thread draws him as a chip; `send` knows not to
@@ -489,7 +475,7 @@ async function resolveMentions(
       continue;
     }
 
-    const theirs = await profileByHandle(ctx, token.handle);
+    const theirs = await accountByHandle(ctx, token.handle);
     if (theirs === null) continue;
 
     if (seen.size >= MAX_MENTIONS) return { ok: false, refusal: "mention" };
@@ -503,9 +489,6 @@ async function resolveMentions(
           theirs.clerkId,
         );
         if (seat === null || seat.status !== "active") {
-          return { ok: false, refusal: "mention" };
-        }
-        if (await blockedEitherWay(ctx, profile.clerkId, theirs.clerkId)) {
           return { ok: false, refusal: "mention" };
         }
       }
@@ -535,16 +518,10 @@ function readReactions(
 
 const REPLY_PREVIEW_CHARS = 160;
 
-/**
- * Resolve a reply against the original's current state.
- *
- * Missing, hidden and blocked originals keep their place in the conversation
- * without copying content the caller should no longer see.
- */
+
 async function replyOf(
   ctx: QueryCtx,
   message: Doc<"messages">,
-  blocked: Set<string>,
   originals: Map<Id<"messages">, Doc<"messages"> | null>,
 ): Promise<ChatReply | undefined> {
   if (message.replyToId === undefined) return undefined;
@@ -556,8 +533,7 @@ async function replyOf(
   if (
     target === null ||
     target.status !== "visible" ||
-    target.conversationId !== message.conversationId ||
-    blocked.has(target.authorClerkId)
+    target.conversationId !== message.conversationId
   ) {
     return { messageId: message.replyToId, unavailable: true };
   }
@@ -573,7 +549,7 @@ async function replyOf(
           ? `${pictures} photos`
           : "Message";
 
-  const author = await profileFor(ctx, target.authorClerkId);
+  const author = await accountFor(ctx, target.authorClerkId);
   return {
     messageId: target._id,
     unavailable: false,
@@ -584,19 +560,7 @@ async function replyOf(
   };
 }
 
-/**
- * A page of a conversation, newest first.
- *
- * Returns the raw message rows and nothing joined. That is what makes an
- * optimistic send possible: the client already knows its own handle and can
- * build the row it is about to receive, which it could not do if this query
- * enriched each message with something only the server has.
- *
- * A message from somebody the caller has blocked is dropped outright. One that
- * reports have hidden keeps its place with its body emptied, so the
- * conversation still reads in order and the gap is visible rather than silently
- * closed.
- */
+
 export const list = query({
   args: {
     conversationId: v.id("conversations"),
@@ -614,7 +578,7 @@ export const list = query({
     ctx,
     { conversationId, dayStart, dayEnd, paginationOpts },
   ): Promise<PaginationResult<ChatMessage>> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) {
       return { page: [], isDone: true, continueCursor: "" };
     }
@@ -624,7 +588,6 @@ export const list = query({
       return { page: [], isDone: true, continueCursor: "" };
     }
 
-    const blocked = await blockedBy(ctx, profile.clerkId);
 
     const result = await ((member.kind === "global" || member.kind === "announcements")
       ? ctx.db
@@ -644,7 +607,6 @@ export const list = query({
       .paginate(paginationOpts);
 
     const page: ChatMessage[] = [];
-    // Reuse this transaction's page rows, including hidden/blocked originals:
     // replyOf still applies every visibility check before exposing a preview.
     const originals = new Map<Id<"messages">, Doc<"messages"> | null>(
       result.page.map((message) => [message._id, message]),
@@ -654,11 +616,10 @@ export const list = query({
       Awaited<ReturnType<typeof avatarAppearance>> & { handle?: string; displayName?: string }
     >();
     for (const message of result.page) {
-      if (blocked.has(message.authorClerkId)) continue;
       const gone = message.status !== "visible";
       let avatar = appearances.get(message.authorClerkId);
       if (avatar === undefined) {
-        const author = await profileFor(ctx, message.authorClerkId);
+        const author = await accountFor(ctx, message.authorClerkId);
         avatar = author === null ? {} : { ...(await avatarAppearance(ctx, author)), handle: author.handle, displayName: author.displayName };
         appearances.set(message.authorClerkId, avatar);
       }
@@ -673,7 +634,7 @@ export const list = query({
         authorAvatarEmoji: avatar.avatarEmoji,
         authorAvatarInitials: avatar.avatarInitials,
         body: gone ? "" : message.body,
-        replyTo: gone ? undefined : await replyOf(ctx, message, blocked, originals),
+        replyTo: gone ? undefined : await replyOf(ctx, message, originals),
         mentions: gone ? [] : (message.mentions ?? []),
         mentionsEveryone: gone ? false : (message.mentionsEveryone ?? false),
         status: message.status,
@@ -729,7 +690,7 @@ async function imagesOf(
 export const react = mutation({
   args: { messageId: v.id("messages"), emoji: v.string() },
   handler: async (ctx, { messageId, emoji }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     if (!(REACTIONS as readonly string[]).includes(emoji)) return;
 
@@ -787,7 +748,7 @@ export const reactors = query({
     }),
   ),
   handler: async (ctx, { messageId, emoji }): Promise<ReactionPerson[]> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return [];
     if (!(REACTIONS as readonly string[]).includes(emoji)) return [];
 
@@ -804,11 +765,9 @@ export const reactors = query({
     const reaction = message.reactions?.find((entry) => entry.emoji === emoji);
     if (reaction === undefined) return [];
 
-    const blocked = await blockedBy(ctx, profile.clerkId);
     const people: ReactionPerson[] = [];
     for (const clerkId of reaction.by.slice(0, MAX_REACTORS)) {
-      if (blocked.has(clerkId)) continue;
-      const reactor = await profileFor(ctx, clerkId);
+      const reactor = await accountFor(ctx, clerkId);
       if (reactor === null) continue;
       people.push({
         clerkId,
@@ -841,22 +800,13 @@ export const reactors = query({
 export const remove = mutation({
   args: { messageId: v.id("messages") },
   handler: async (ctx, { messageId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const message = await ctx.db.get(messageId);
     if (message === null) return;
     if (message.authorClerkId !== profile.clerkId) return;
     if (Date.now() - message._creationTime > DELETE_WINDOW_MS) return;
-
-    // Reports are about a message and do not outlive it — the same rule the
-    // `byConversation` index on `reports` exists to serve when a whole
-    // conversation goes. Within thirty seconds there is rarely one to find.
-    const reports = await ctx.db
-      .query("reports")
-      .withIndex("byMessage", (q) => q.eq("messageId", messageId))
-      .collect();
-    for (const report of reports) await ctx.db.delete(report._id);
 
     // The pictures go with it — the row alone would leave their files in
     // storage with nothing pointing at them. See `deleteMessage`.
@@ -901,30 +851,7 @@ export type MessageHit = {
   body: string;
 };
 
-/**
- * Full-text search across every message the caller is allowed to read.
- *
- * The permission check is the whole of this function. Convex's search index
- * has no idea who is asking, so a naive handler here would hand back the
- * contents of every direct message on the site to anyone who guessed a word
- * in one — which is the single worst bug this file could have. Three things
- * stand between the index and the reply, and all three run per row:
- *
- * - the caller has to be an *active* member of the conversation. `invited`,
- *   `requested`, `banned` and `left` all fail, so a group somebody was thrown
- *   out of stops being searchable the moment they leave it;
- * - the author must not have blocked them, or be blocked by them, which is
- *   the same set `list` above hides from the thread;
- * - the message has to be `visible`, which the index itself enforces.
- *
- * Membership and conversation naming are cached per conversation for the
- * length of one call. A search that matches forty messages in the global room
- * is one membership read, not forty.
- *
- * Nothing here is paginated and nothing is ordered by time: the index returns
- * rows by relevance, the handler keeps the first `SEARCH_RESULTS` that
- * survive, and a search that wants different results is a search you retype.
- */
+
 export const search = query({
   args: { text: v.string() },
   handler: async (ctx, { text }): Promise<MessageHit[]> => {
@@ -933,10 +860,9 @@ export const search = query({
     // anyway — this is the state the palette is in before the first keystroke.
     if (needle === "") return [];
 
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return [];
 
-    const blocked = await blockedBy(ctx, profile.clerkId);
 
     const rows = await ctx.db
       .query("messages")
@@ -955,7 +881,6 @@ export const search = query({
 
     for (const message of rows) {
       if (hits.length >= SEARCH_RESULTS) break;
-      if (blocked.has(message.authorClerkId)) continue;
 
       let named = known.get(message.conversationId);
       if (named === undefined) {
@@ -968,7 +893,7 @@ export const search = query({
         _id: message._id,
         _creationTime: message._creationTime,
         conversationId: message.conversationId,
-        authorHandle: (await profileFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
+        authorHandle: (await accountFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
         body: message.body,
         ...named,
       });
@@ -996,7 +921,7 @@ async function nameFor(
 
   if (member.kind === "dm") {
     const peer =
-      member.dmPeer === undefined ? null : await profileFor(ctx, member.dmPeer);
+      member.dmPeer === undefined ? null : await accountFor(ctx, member.dmPeer);
     return { kind: "dm", peerHandle: member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle };
   }
 

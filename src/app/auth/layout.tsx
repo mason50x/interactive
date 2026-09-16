@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   // Every page under /auth resolves to a form or a redirect. Nothing here is
   // worth a search result — and since the root layout says the same of the
   // whole site now, this is belt and braces rather than the only line of
-  // defence. See the note in `src/app/dashboard/layout.tsx`.
+  // defence. See the note in `src/app/(app)/layout.tsx`.
   robots: { index: false, follow: false },
 };
 

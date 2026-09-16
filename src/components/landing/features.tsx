@@ -17,7 +17,6 @@ export function Features() {
   return (
     <Section id="product" divider width="default">
       <SectionHeading
-        eyebrow={featuresSection.eyebrow}
         title={featuresSection.heading}
         body={featuresSection.body}
       />

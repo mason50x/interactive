@@ -11,17 +11,18 @@ async function setup() {
   rateLimiter.register(t);
   for (const name of ["alice", "bob"]) {
     await t.run((ctx) =>
-      ctx.db.insert("chatProfiles", {
+      ctx.db.insert("users", {
         clerkId: name,
-        handle: name,
-        handleKey: name,
-        createdAt: 0,
-        messagesSent: 100,
+        username: name,
+        usernameKey: name,
+        clerkCreatedAt: 0,
+
       }),
     );
+    await t.run(ctx => ctx.db.insert("chatSenders", { clerkId: name, messagesSent: 100, recent: [] }));
     await t
       .withIdentity({ subject: name })
-      .mutation(api.chat.profiles.joinGlobal, {});
+      .mutation(api.chat.accounts.joinGlobal, {});
   }
   const alice = t.withIdentity({ subject: "alice" });
   const bob = t.withIdentity({ subject: "bob" });

@@ -10,7 +10,7 @@ plan. A experience engine in the browser handles the pages; a small Bare v3 serv
 That hostname is on the same zone as the R2 bucket. The workers.dev address is
 switched off, so this is the only place the Worker answers.
 
-The app frames that page from `/dashboard/experience` — see `src/lib/experience.ts`.
+The app frames that page from `/experience` — see `src/lib/experience.ts`.
 The route and sidebar entry are included in production and development builds.
 Set `EXPERIENCE_ORIGIN` to the Experience Worker origin in the app deployment.
 Signed-in accounts share ten minutes per UTC day across apps; verified admins
@@ -56,8 +56,8 @@ no environment variables; the allowlist is compiled in.
 Edit `config/experience-allowlist.json`, then run `npm run deploy` here and deploy
 the app. `host` is what the Worker enforces, as an exact match or any
 subdomain, so `wikipedia.org` covers `en.wikipedia.org`. An entry with `id`,
-`label` and `start` is an app: it gets a tile on `/dashboard/experience` and
-opens at `/dashboard/experience/<id>` inside a browser-shaped shell. Sites usually pull
+`label` and `start` is an app: it gets a tile on `/experience` and
+opens at `/experience/<id>` inside a browser-shaped shell. Sites usually pull
 scripts and images from a second domain; add that too, with `label` and
 `start` set to `null` so it is enforced but not listed. When the dependency is
 one path on a domain you do not want to open, add `paths`: a list of path
@@ -125,3 +125,28 @@ upstream "Unable to load site" page; Claude remained blank after loading its
 scripts; Apple's nested sign-in navigation still reached a missing page.
 Do not treat these services as fully verified until login and actual playback
 or chat have been tested through the deployed proxy and app frame.
+
+## TikTok
+
+TikTok is a catalog app with a locally bundled favicon. Its allowlist includes
+`tiktok.com`, `tiktokcdn-us.com`, `tiktokcdn.com`, `tiktokv.us`, `tiktokw.us`,
+`tiktokv.com`, `ttwstatic.com`, and `muscdn.com` (including subdomains).
+The US homepage and live browser requests on 2026-09-15 identified the regional
+API, verification, login, script, image, and video hosts; the homepage also
+references the international CDN and muscdn image host. Do not open all of
+ByteDance or unrelated social networks to resolve an individual failed request.
+
+Local browser checks at localhost:8788 rendered TikTok's navigation and login
+modal and opened the phone login form. The local app served the bundled logo
+as a decoded 32×32 image. The observed login run had no relay allowlist denials.
+Feed loading was inconsistent: TikTok showed “Something went wrong”, an earlier
+run returned feed API 403 responses and a script error (`a.init is not a function`).
+Adding hosts does not establish that those failures are fixed. Authenticated
+login, third-party OAuth, video playback, and other regions remain unverified.
+Deploy both the app and Experience Worker for the catalog and relay changes
+to take effect in production.
+
+Regression coverage: the Experience Vitest tests exercise TikTok's catalog,
+route, logo, all eight host families, representative dependency URLs, and
+lookalike-host rejection. The Experience Playwright suite checks the shared
+proxy engine. These deterministic tests do not assert live TikTok playback.

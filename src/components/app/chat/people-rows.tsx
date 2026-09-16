@@ -9,10 +9,7 @@ import { personName } from "@/lib/chat";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import { Separator } from "@/components/ui/separator";
 
-/**
- * The pieces every list of people is built from, so the three lists — search
- * results, requests, friends — are one kind of row seen three times.
- */
+
 
 export type Person = {
   clerkId: string;

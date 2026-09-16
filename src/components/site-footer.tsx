@@ -6,13 +6,15 @@
  */
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
+import { SectionDivider } from "@/components/ui/section";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
 import { footer } from "@/lib/content";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-surface">
+    <footer className="relative bg-surface [--section-fill:var(--surface)]">
+      <SectionDivider />
       <Container>
         <div className="grid gap-12 py-16 md:grid-cols-12 md:gap-8">
           <div className="flex max-w-sm flex-col gap-5 md:col-span-5">
@@ -54,7 +56,6 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} {brand.name}. All rights reserved.
           </p>
-          <p>Made for people who want to understand, not just remember.</p>
         </div>
       </Container>
     </footer>

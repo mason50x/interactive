@@ -103,21 +103,7 @@ export const terms: LegalDocument = {
         },
         {
           kind: "p",
-          text: "Accounts are personal and are created by invitation. One account belongs to one person. Do not share your account, your password, or your invitations with anyone you are not willing to be responsible for, because everything done through your account is treated as done by you.",
-        },
-      ],
-    },
-    {
-      id: "invitations",
-      heading: "Invitations",
-      blocks: [
-        {
-          kind: "p",
-          text: "Each account can invite a limited number of other people. An invitation is sent to an email address you supply, which means you are handing us someone else's address: only invite people who would expect to hear from you, and only at an address you have a reason to use.",
-        },
-        {
-          kind: "p",
-          text: "We may withdraw unspent invitations, refuse to send one, or revoke one that has already been sent, at our discretion and without notice.",
+          text: "Accounts are personal. One account belongs to one person. Do not share your account or your password with anyone you are not willing to be responsible for, because everything done through your account is treated as done by you.",
         },
       ],
     },
@@ -217,7 +203,7 @@ export const terms: LegalDocument = {
       blocks: [
         {
           kind: "p",
-          text: "The Service includes chat: a room open to everyone with an account, private messages between two people, and groups. You choose a handle when you first use it, and that handle is the only thing other people see. Your name and your email address are not shown to anyone.",
+          text: "The Service includes chat: a room open to everyone with an account, private messages between two people, and groups. Chat uses your account username, first name, and picture. Your email address and last name are not shown to other users.",
         },
         { kind: "p", text: "In chat you agree not to:" },
         {
@@ -243,7 +229,7 @@ export const terms: LegalDocument = {
         },
         {
           kind: "p",
-          text: "You can report a message and you can block an account. A report is counted, weighted by your own record, and acted on automatically when enough separate people report the same message; it is not read by anyone. Reports alone will never close an account. Blocking is immediate and needs no reason.",
+          text: "Every signed-in account can find and directly message other accounts. Direct messages are visible to their participants.",
         },
         {
           kind: "p",
@@ -408,15 +394,7 @@ export const privacy: LegalDocument = {
         },
         {
           kind: "p",
-          text: "Invitations. If you invite someone, we store the email address you gave us and whether the invitation was sent, accepted, or revoked. If you arrived by invitation, the address it was sent to is linked to your account when you sign up, which is how the person who invited you learns their invitation was used.",
-        },
-        {
-          kind: "p",
           text: "Your settings. The choices you make in the app — the accent colour, whether the background animates, and the shortcut settings — are stored against your account so they follow you to another browser. A copy is also kept in your own browser's storage, which is what the page actually reads.",
-        },
-        {
-          kind: "p",
-          text: "Your streak. We store how many days in a row you have visited, your best run, and the date of the last one. To count a day in your own time rather than in UTC, your browser tells us its time-zone offset. We do not keep a log of individual visits.",
         },
         {
           kind: "p",
@@ -440,8 +418,7 @@ export const privacy: LegalDocument = {
           kind: "list",
           items: [
             "to give you an account, sign you in, and keep you signed in",
-            "to run the invitation system and count what each account has used",
-            "to remember your settings and your streak",
+            "to remember your settings",
             "to keep the Service working, diagnose faults, and protect it from abuse",
             "to understand in aggregate how the Service is used, so we can decide what to work on",
             "to meet a legal obligation where one applies to us",
@@ -459,7 +436,7 @@ export const privacy: LegalDocument = {
       blocks: [
         {
           kind: "p",
-          text: "We provide the Service to individuals, and an account belongs to the person who holds it. We do not give any school, district, university, employer, network operator, or other institution access to your account, your activity, your settings, your streak, or any report about your use of the Service.",
+          text: "We provide the Service to individuals, and an account belongs to the person who holds it. We do not give any school, district, university, employer, network operator, or other institution access to your account, your activity, your settings, or any report about your use of the Service.",
         },
         {
           kind: "p",
@@ -501,7 +478,7 @@ export const privacy: LegalDocument = {
           kind: "list",
           items: [
             "our authentication provider, which holds accounts and credentials and signs you in",
-            "our database and backend platform, which stores your account record, invitations, settings, and streak",
+            "our database and backend platform, which stores your account record and settings",
             "our hosting and content delivery providers, which serve the site and store the files the activities are made of",
             "Google Analytics, for aggregate usage measurement",
           ],
@@ -536,7 +513,7 @@ export const privacy: LegalDocument = {
       blocks: [
         {
           kind: "p",
-          text: "The Service is not directed to children under 13 and we do not knowingly collect personal information from them. Accounts are created by invitation and require the account holder to be 13 or older.",
+          text: "The Service is not directed to children under 13 and we do not knowingly collect personal information from them. Account holders must be 13 or older.",
         },
         {
           kind: "p",
@@ -554,11 +531,11 @@ export const privacy: LegalDocument = {
         },
         {
           kind: "p",
-          text: "Against each message we store the handle that sent it, the conversation it belongs to, and the time. Your name and email address are not attached to it and are never shown to another user.",
+          text: "Against each message we store the handle that sent it, the conversation it belongs to, and the time. Your current account username, first name, and picture are shown with your messages. Your email address and last name are not exposed.",
         },
         {
           kind: "p",
-          text: "A message that our automatic checks refuse is never stored at all. What is stored instead is a record against your account: the rule it broke, a short extract of what you wrote, and the date the record stops counting. Only you can see that record. Reports you make, and reports made about you, are stored with them.",
+          text: "A message that our automatic checks refuse is never stored at all. What is stored instead is a record against your account: the rule it broke, a short extract of what you wrote, and the date the record stops counting. Only you can see that record.",
         },
         {
           kind: "p",
@@ -566,7 +543,7 @@ export const privacy: LegalDocument = {
         },
         {
           kind: "p",
-          text: "When an account is closed, everything above goes with it: the handle, the messages, the records, the reports, and the list of who was blocked. Private conversations that account was part of are deleted for both people, because a conversation with a closed account has nobody on the other side of it.",
+          text: "When an account is closed, everything above goes with it: the handle, the messages, the records. Private conversations that account was part of are deleted for both people, because a conversation with a closed account has nobody on the other side of it.",
         },
       ],
     },
@@ -580,7 +557,7 @@ export const privacy: LegalDocument = {
         },
         {
           kind: "p",
-          text: "When your account is deleted, we delete the record we hold for it, together with your settings and the invitation records belonging to it. Deletion is not reversible and we cannot restore an account afterwards. An invitation already sitting in someone else's inbox is addressed to that person rather than to your account, and is not withdrawn by your account going away.",
+          text: "When your account is deleted, we delete the record we hold for it, together with your settings. Deletion is not reversible and we cannot restore an account afterwards.",
         },
       ],
     },

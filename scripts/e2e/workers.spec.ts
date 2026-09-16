@@ -49,9 +49,9 @@ test("anonymous requests cannot read protected HTML or RSC, including dotted slu
   request,
 }) => {
   for (const path of [
-    "/dashboard",
-    "/dashboard/chat/room.js",
-    "/dashboard/activities/missing.png",
+    "/home",
+    "/chat/room.js",
+    "/activities/missing.png",
     "/learn/crossy",
     "/learn/missing.html",
   ]) {

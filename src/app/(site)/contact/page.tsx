@@ -25,11 +25,7 @@ export default function ContactPage() {
         className="relative overflow-hidden pb-0 sm:pb-0 lg:pb-0"
       >
         <DotBand height="32rem" />
-        <PageIntro
-          eyebrow={contact.eyebrow}
-          title={contact.heading}
-          body={contact.lede}
-        />
+        <PageIntro title={contact.heading} body={contact.lede} />
       </Section>
 
       <Section width="default" className="py-14 sm:py-20 lg:py-20">

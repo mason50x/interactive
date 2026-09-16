@@ -39,8 +39,14 @@ export default {
     }
     if (
       learn ||
-      path === "/dashboard" ||
-      path.startsWith("/dashboard/") ||
+      [
+        "/home",
+        "/activities",
+        "/chat",
+        "/experience",
+        "/learning-simulator",
+        "/dashboard",
+      ].some((root) => path === root || path.startsWith(`${root}/`)) ||
       path === "/auth" ||
       path.startsWith("/auth/")
     ) {

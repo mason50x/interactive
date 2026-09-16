@@ -34,7 +34,7 @@ export const hero = {
   /** The last word is set in the display serif. */
   headline: "Visual learning that makes hard ideas",
   headlineAccent: "obvious.",
-  body: "Bring a chapter, a lecture, or a set of notes. Interactive Learning turns it into a concept map you can walk through, animate, and get tested on, with every idea linked back to the page it came from.",
+  body: "Turn your notes into interactive concept maps. Explore ideas, test yourself, and trace every concept to its source.",
   primaryCta: "Get started",
   secondaryCta: "See how it works",
   footnote: "Free for students. No credit card required.",
@@ -42,13 +42,23 @@ export const hero = {
 
 export const trust = {
   label: "Used by learners and teaching teams at",
-  names: [
-    "Northgate Academy",
-    "Riverside Unified",
-    "Lakeshore College",
-    "Meridian Prep",
-    "Westbrook STEM",
-    "Halden University",
+  colleges: [
+    {
+      name: "Stanford University",
+      logo: "/logos/colleges/stanford.png",
+      width: 160,
+    },
+    {
+      name: "Massachusetts Institute of Technology",
+      logo: "/logos/colleges/mit-red.svg",
+      width: 82,
+    },
+    {
+      name: "Harvard University",
+      logo: "/logos/colleges/harvard-wordmark.svg",
+      width: 160,
+    },
+    { name: "Yale University", logo: "/logos/colleges/yale.svg", width: 92 },
   ],
 } as const;
 
@@ -62,7 +72,7 @@ export type Feature = {
 
 export const featuresSection = {
   eyebrow: "The platform",
-  heading: "Six ways a map beats a page of text",
+  heading: "Five ways a map beats a page of text",
   body: "Every feature exists for one reason: to move a subject out of prose and into a form your memory can hold onto.",
 } as const;
 
@@ -98,12 +108,6 @@ export const features: readonly Feature[] = [
     body: "Draw a rough version of what you think is happening. Interactive Learning corrects it and shows you where the model breaks.",
     visual: "sketch",
   },
-  {
-    id: "group",
-    title: "One canvas, the whole study group",
-    body: "Shared maps update live. See which parts your group has covered and which nobody has touched.",
-    visual: "group",
-  },
 ];
 
 export const howItWorks = {
@@ -131,9 +135,8 @@ export const howItWorks = {
 
 export const practice = {
   eyebrow: "Practice",
-  heading:
-    "Questions aimed at the exact thing you were pretending to understand",
-  body: "Flashcards test facts in isolation. Interactive Learning tests whether you can connect them. Every recall session is generated from the edges of your map you keep skipping, then scheduled so the answer is still there in three weeks.",
+  heading: "Find the gaps.\nMake it stick.",
+  body: "Practice the connections you miss.\nRemember them longer.",
   bullets: [
     "Spaced repetition tuned per concept, not per deck",
     "Explanations quote the source passage, never a summary of it",
@@ -161,8 +164,6 @@ export const stats = {
     { value: "240k", label: "Maps built by students this term" },
     { value: "41", label: "Subjects covered end to end" },
   ],
-  footnote:
-    "Figures reflect Interactive Learning pilot cohorts, spring term 2026. Individual results vary.",
 } as const;
 
 export const testimonialsSection = {
@@ -278,9 +279,9 @@ export const faqs = [
       "Flashcards test facts in isolation. Interactive Learning tests whether you can connect them, then generates recall practice from the connections you keep missing.",
   },
   {
-    question: "How do I get an invitation?",
+    question: "How do I get started?",
     answer:
-      "The beta is invitation-only while we grow the cohort. Every member can invite five people, and teaching teams can request a pilot for a whole class from the contact page.",
+      "Create an account to get started. Teaching teams can request a pilot for a whole class from the contact page.",
   },
 ] as const;
 
@@ -336,7 +337,7 @@ export const about = {
   story: [
     "The first version was a weekend project for one biology course: a script that turned a chapter into a diagram, and a group of students who found they could finally hold cellular respiration in their heads. The diagram was the point. The prose had been hiding the shape of the idea all along.",
     "Two years on, the same principle runs through everything we ship. A reading becomes a map. A derivation becomes frames you can scrub. Practice is generated from the parts of the map you keep skipping, and every node cites the passage it came from, so the structure is always something you can check rather than something you have to trust.",
-    "We are a small team of teachers, engineers, and former students of the subjects we map. We run the beta by invitation so that every cohort gets our attention, and we grow it as fast as we can keep that promise.",
+    "We are a small team of teachers, engineers, and former students of the subjects we map. We grow the beta at a pace that lets us give every cohort our attention.",
   ],
   principles: [
     {

@@ -18,11 +18,11 @@ for (const inPage of [true, false]) {
         createdBy: "alice",
         createdAt: Date.now(),
       });
-      await ctx.db.insert("chatProfiles", {
+      await ctx.db.insert("users", {
         clerkId: "alice",
-        handle: "alice",
-        handleKey: "alice",
-        createdAt: Date.now(),
+        username: "alice",
+        usernameKey: "alice",
+        clerkCreatedAt: Date.now(),
       });
       await ctx.db.insert("conversationMembers", {
         conversationId: room,
@@ -106,14 +106,9 @@ for (const inPage of [true, false]) {
         status: "visible",
         authorClerkId: "bob",
       });
-      await ctx.db.insert("blocks", {
-        blocker: "alice",
-        blocked: "bob",
-        createdAt: Date.now(),
-      });
     });
     page = (await alice.query(api.chat.messages.list, args)).page;
-    expect(page.filter((m) => m.replyTo?.unavailable)).toHaveLength(9);
+    expect(page.filter((m) => m.replyTo?.preview)).toHaveLength(9);
     await t.run(async (ctx) => {
       const other = await ctx.db.insert("conversations", {
         kind: "group",

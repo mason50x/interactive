@@ -20,7 +20,7 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /** Only authenticated app routes use the saved appearance preference. */
 export function usesAppTheme(pathname: string): boolean {
-  return /^\/(dashboard|learn)(?:\/|$)/.test(pathname);
+  return /^\/(home|activities|chat|experience|learning-simulator|learn)(?:\/|$)/.test(pathname);
 }
 
 function isThemePreference(value: unknown): value is ThemePreference {

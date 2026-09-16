@@ -14,41 +14,15 @@ import {
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ConversationSummary } from "@convex/chat/conversations";
-import type { MyProfile } from "@convex/chat/profiles";
+import type { MyAccount } from "@convex/chat/accounts";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { useConvexAuth } from "convex/react";
 
-/**
- * Everything about chat that something outside chat needs to know.
- *
- * Which is less than it sounds: the rail wants a dot, and the chat pages want
- * the conversation list and the caller's own profile without each of them
- * opening its own subscription to the same two queries. Mounted in the
- * dashboard layout rather than inside `/dashboard/chat`, because the dot has to
- * be right on the activities page too.
- *
- * The `isAuthenticated ? {} : "skip"` on every query is not defensive
- * boilerplate. A Convex query that runs before Clerk's token has reached the
- * server comes back `null`, which is the same value `profiles.mine` returns for
- * "this account has no handle" — so without the skip, every sign-in would flash
- * the handle screen at somebody who already has one. The invite card uses the same authentication guard.
- *
- * ## The conversation being read
- *
- * `reading` is the conversation whose thread is open at its live end, and
- * nothing here ever counts it as unread. The server does, for a beat: a
- * message that arrives in it is one the reading position has not been moved
- * past until the thread has written `markRead` and the list has come back —
- * a round trip during which the row's count, the rail's dot and its glint all
- * lit and then went out again. Somebody looking at a conversation has read
- * what is in it, so this settles the answer here rather than waiting for the
- * server to agree. The thread still needs the server's own view to know
- * whether there is a reading position to move — that is `behind`.
- */
+
 
 export type Chat = {
   /** `null` while unknown *or* when no handle has been claimed. */
-  profile: MyProfile | null;
+  profile: MyAccount | null;
   /** True until the first answer arrives, which is not the same as no profile. */
   loading: boolean;
   conversations: ConversationSummary[];
@@ -61,7 +35,7 @@ export type Chat = {
    * in a group. The rail says "Mentioned" instead of "Unread" when it does.
    */
   mentioned: boolean;
-  /** Friend requests waiting on you, plus group invitations. */
+
   waiting: number;
   /**
    * Whether pictures may be sent. Read off the deployment — see
@@ -112,9 +86,8 @@ export function useChat() {
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
-  const profile = useAuthedQuery(api.chat.profiles.mine, {});
+  const profile = useAuthedQuery(api.chat.accounts.mine, {});
   const conversations = useAuthedQuery(api.chat.conversations.list, {});
-  const pending = useAuthedQuery(api.chat.friends.pending, {});
   const invitations = useAuthedQuery(api.chat.groups.invitations, {});
   const staffRoles = useAuthedQuery(api.chat.admin.roles, {});
   const isAdmin = useAuthedQuery(api.chat.admin.mine, {});
@@ -124,7 +97,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // accounts that claimed a handle before the room did — and for anyone who
   // left it. Latched, because in StrictMode an effect runs twice and this is a
   // write.
-  const joinGlobal = useMutation(api.chat.profiles.joinGlobal);
+  const joinGlobal = useMutation(api.chat.accounts.joinGlobal);
   const joined = useRef(false);
 
   useEffect(() => {
@@ -161,7 +134,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const mentioned = list.some((row) => row.mentioned);
 
   const waiting =
-    (pending ?? []).filter((request) => !request.outgoing).length +
     (invitations ?? []).length;
 
   const value: Chat = {

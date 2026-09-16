@@ -22,7 +22,7 @@ export function Line({
   name?: string;
   detail?: string;
   imageUrl?: string;
-  /** The disc, when the row's source carries one. See `PublicProfile`. */
+  /** The disc, when the row's source carries one. See `PublicAccount`. */
   hue?: number;
   emoji?: string;
   initials?: string;

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { VersionCard } from "@/components/app/version-card";
-import { InviteCard } from "@/components/app/invite-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import { RailContext } from "@/components/app/rail-context";
 import { RailLockup } from "@/components/app/rail/rail-lockup";
@@ -68,15 +67,17 @@ import { useWarmRoutes } from "@/lib/warm";
  *
  * `z-30` is what keeps the rail *above* the shell beside it. The rail comes
  * first in document order, so with both at `z-index: auto` anything positioned
- * inside the shell paints over it — and the invite panel is the one thing here
- * that leaves the rail's own column, widening across the shell's left edge
- * when it opens. Everything the shell floats sits below this: the activities
+ * inside the shell paints over it. Everything the shell floats sits below this: the activities
  * filter bar at `z-20`, its shelf arrows at `z-10`.
  */
 export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   const pathname = usePathname();
   const { preferences } = usePreferences();
-  const { hasUnread, mentioned } = useChat();
+  const { hasUnread, mentioned, conversations } = useChat();
+  const hasNewAnnouncement = conversations.some(
+    (conversation) =>
+      conversation.kind === "announcements" && conversation.unread > 0,
+  );
 
   const { rail, moved, railContext } = useRailState(initialRail);
   const { pendingHref, report } = useNavPending();
@@ -92,10 +93,10 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
   // leave the activity. Every other route has it at full strength.
   //
   // Read off the path rather than signalled from the page, because the page is
-  // a server component — see `src/app/dashboard/activities/[slug]/page.tsx`.
-  // `/dashboard/activities` itself is the browser, not an activity, so this wants
+  // a server component — see `src/app/(app)/activities/[slug]/page.tsx`.
+  // `/activities` itself is the browser, not an activity, so this wants
   // the trailing segment and not just the prefix.
-  const viewing = /^\/dashboard\/activities\/[^/]+/.test(pathname);
+  const viewing = /^\/home\/activities\/[^/]+/.test(pathname);
 
   const warm = useWarmRoutes(pathname);
 
@@ -258,13 +259,30 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
                   {item.unread && hasUnread && !lit ? (
                     <span
                       aria-label={
-                        mentioned ? "You were mentioned" : "Unread messages"
+                        hasNewAnnouncement
+                          ? "New announcement"
+                          : mentioned
+                            ? "You were mentioned"
+                            : "Unread messages"
                       }
                       role="status"
-                      className="absolute top-2.5 right-2 flex items-center gap-1.5 text-primary [transition:top_300ms_cubic-bezier(0.32,0.72,0,1),right_300ms_cubic-bezier(0.32,0.72,0,1),translate_300ms_cubic-bezier(0.32,0.72,0,1)] wide:top-1/2 wide:right-3 wide:-translate-y-1/2"
+                      className={cn(
+                        "absolute top-2.5 right-2 flex items-center gap-1.5 [transition:top_300ms_cubic-bezier(0.32,0.72,0,1),right_300ms_cubic-bezier(0.32,0.72,0,1),translate_300ms_cubic-bezier(0.32,0.72,0,1)] wide:top-1/2 wide:right-3 wide:-translate-y-1/2",
+                        hasNewAnnouncement ? "text-red-500" : "text-primary",
+                      )}
                     >
-                      <span className="text-xs leading-none font-medium opacity-0 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:opacity-100">
-                        {mentioned ? "Mentioned" : "Unread"}
+                      <span
+                        className={cn(
+                          "text-xs leading-none font-medium opacity-0 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:opacity-100",
+                          hasNewAnnouncement &&
+                            "text-shimmer-periodic [--shimmer-base:var(--color-red-500)]",
+                        )}
+                      >
+                        {hasNewAnnouncement
+                          ? "NEW!"
+                          : mentioned
+                            ? "Mentioned"
+                            : "Unread"}
                       </span>
                       {/* The ring is Tailwind's ping slowed to the beat the
                         chat header's presence dot uses: at this size the stock
@@ -276,7 +294,6 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
                       </span>
                     </span>
                   ) : null}
-                  {item.badge && !lit && <item.badge />}
 
                   <NavPending href={item.href} report={report} />
                 </Link>
@@ -285,13 +302,7 @@ export function AppSidebar({ initialRail }: { initialRail: RailState }) {
           })}
         </ul>
 
-        {/* The allowance sits above the account button rather than inside its
-          menu: it is the one thing in this chrome that moves on its own, and
-          a number you have to open a popup to read is a number nobody reads.
-          It renders nothing while invites are switched off on the server.
-          See `InviteCard`. */}
         <VersionCard />
-        <InviteCard />
 
         {/* Nothing links back to the marketing site: `/` bounces a live session
           straight back here, so it would be a round trip to nowhere. */}

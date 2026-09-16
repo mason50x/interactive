@@ -1,16 +1,15 @@
 "use client";
 
 import {
-  ArrowLeftIcon,
   ArrowPathIcon,
-  ArrowRightIcon,
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
+  HomeIcon,
   LockClosedIcon,
-  Squares2X2Icon,
+  MagnifyingGlassIcon,
+  PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
 import {
   ExperienceQuotaDonut,
@@ -18,102 +17,172 @@ import {
 } from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { EXPERIENCE_HREF, type ExperienceApp } from "@/lib/experience";
+import { Button } from "@/components/ui/button";
+import type { ExperienceApp } from "@/lib/experience";
+import { cn } from "@/lib/utils";
 
-/**
- * A browser, drawn around a frame.
- *
- * The frame points at the experience origin, which is cross-origin to the
- * app, so the shell can see nothing of what happens inside it: not the URL
- * after the first click, not the title, not whether there is history to go
- * back to. Everything the chrome shows is therefore either ours (the app's
- * name and mark, the address it opened on) or a real browser control that
- * happens to work across the boundary:
- *
- * - Back and forward call the window's own history. The browser keeps one
- *   joint history for the page and every frame in it, so a navigation inside
- *   the app is what these step through. At the start of that history they
- *   step out of the app instead, which is also what a real tab does.
- * - Reload remounts the frame. Re-assigning the same `src` is a no-op, and
- *   there is no reaching into a cross-origin document to refresh it.
- * - Fullscreen takes the whole shell, so the controls come along.
- *
- * The sandbox reasoning is the one `HostedActivity` gives: `allow-same-origin`
- * is safe because the experience origin is not ours, and it is what lets the
- * service worker there register. `allow-forms` is a search box; `allow-popups`
- * lets a link that insists on a new tab open one rather than die silently.
- */
+export type ExperienceService = ExperienceApp & { src: string | null };
+type BrowserTab = { id: number; appId: string | null; run: number };
+
+/** Each tab owns its frame. Switching tabs hides it without reloading it. */
 export function ExperienceChrome({
-  app,
-  src,
+  services,
+  initialAppId,
 }: {
-  app: ExperienceApp;
-  src: string;
+  services: ExperienceService[];
+  initialAppId?: string;
 }) {
-  const quota = useExperienceQuota(true);
+  const [tabs, setTabs] = useState<BrowserTab[]>([
+    { id: 0, appId: initialAppId ?? null, run: 0 },
+  ]);
+  const [activeId, setActiveId] = useState(0);
+  const nextId = useRef(1);
   const stage = useRef<HTMLDivElement>(null);
-  const [run, setRun] = useState(0);
-
+  // One lease for the entire browser, including services in background tabs.
+  const quota = useExperienceQuota(
+    tabs.some((tab) =>
+      services.some((service) => service.id === tab.appId && service.src),
+    ),
+  );
   const { full, canFull, toggleFull } = useStageFullscreen(stage);
+  const active = tabs.find((tab) => tab.id === activeId)!;
+  const app = services.find((service) => service.id === active.appId);
 
-  const start = new URL(app.start);
-  const path =
-    start.pathname === "/" && !start.search
-      ? ""
-      : start.pathname + start.search;
+  function newTab() {
+    const id = nextId.current++;
+    setTabs((current) => [...current, { id, appId: null, run: 0 }]);
+    setActiveId(id);
+  }
+
+  function closeTab(id: number) {
+    const index = tabs.findIndex((tab) => tab.id === id);
+    const remaining = tabs.filter((tab) => tab.id !== id);
+    if (!remaining.length) {
+      const freshId = nextId.current++;
+      setTabs([{ id: freshId, appId: null, run: 0 }]);
+      setActiveId(freshId);
+    } else {
+      setTabs(remaining);
+      if (activeId === id) {
+        setActiveId(remaining[Math.min(index, remaining.length - 1)].id);
+      }
+    }
+  }
+
+  function openService(appId: string) {
+    setTabs((current) =>
+      current.map((tab) => (tab.id === activeId ? { ...tab, appId } : tab)),
+    );
+  }
 
   return (
     <div ref={stage} className="flex h-full min-h-0 flex-col bg-sidebar">
-      {/* Tab strip: the window buttons, and one tab. */}
-      <div className="flex items-end gap-3 px-3 pt-2">
+      <div className="flex shrink-0 items-center gap-1 px-2 pt-2">
         <div
-          className="mb-2.5 flex items-center gap-1.5 pl-1"
-          aria-hidden="true"
+          className="flex min-w-0 items-end overflow-x-auto"
+          role="tablist"
+          aria-label="Experience tabs"
         >
-          <span className="size-3 rounded-full bg-[#ff5f57]" />
-          <span className="size-3 rounded-full bg-[#febc2e]" />
-          <span className="size-3 rounded-full bg-[#28c840]" />
+          {tabs.map((tab, index) => {
+            const service = services.find((item) => item.id === tab.appId);
+            const selected = tab.id === activeId;
+            const label = service?.label ?? "Start";
+            return (
+              <div
+                key={tab.id}
+                className={cn(
+                  "flex h-10 w-56 min-w-28 items-center rounded-t-xl pr-1",
+                  selected ? "bg-surface" : "hover:bg-surface/50",
+                )}
+              >
+                <button
+                  id={`experience-tab-${tab.id}`}
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={`experience-panel-${tab.id}`}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setActiveId(tab.id)}
+                  onKeyDown={(event) => {
+                    let target: BrowserTab | undefined;
+                    if (event.key === "ArrowRight")
+                      target = tabs[(index + 1) % tabs.length];
+                    if (event.key === "ArrowLeft")
+                      target = tabs[(index - 1 + tabs.length) % tabs.length];
+                    if (event.key === "Home") target = tabs[0];
+                    if (event.key === "End") target = tabs[tabs.length - 1];
+                    if (target) {
+                      event.preventDefault();
+                      setActiveId(target.id);
+                      document
+                        .getElementById(`experience-tab-${target.id}`)
+                        ?.focus();
+                    }
+                  }}
+                  className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-t-xl px-3 text-sm outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  {service ? (
+                    <ExperienceAppIcon
+                      id={service.id}
+                      className="size-4 shrink-0"
+                    />
+                  ) : (
+                    <HomeIcon className="size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="truncate">{label}</span>
+                </button>
+                <button
+                  onClick={() => closeTab(tab.id)}
+                  aria-label={`Close ${label} tab`}
+                  className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <XMarkIcon className="size-3.5" />
+                </button>
+              </div>
+            );
+          })}
         </div>
-        <div className="flex h-9 max-w-xs items-center gap-2 rounded-t-xl bg-surface pr-1 pl-3 text-sm">
-          <ExperienceAppIcon id={app.id} className="size-4 shrink-0" />
-          <span className="truncate">{app.label}</span>
-          <Link
-            href={EXPERIENCE_HREF}
-            aria-label="Close tab"
-            className="ml-1 flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <XMarkIcon className="size-4" />
-          </Link>
-        </div>
+        <ChromeButton label="New tab" onClick={newTab}>
+          <PlusIcon className="size-4" />
+        </ChromeButton>
       </div>
 
-      {/* Toolbar: navigation, the address, and the shell's own controls. */}
-      <div className="flex items-center gap-1 border-b border-border bg-surface px-2 py-1.5">
-        <ChromeButton label="Back" onClick={() => window.history.back()}>
-          <ArrowLeftIcon className="size-4" />
-        </ChromeButton>
-        <ChromeButton label="Forward" onClick={() => window.history.forward()}>
-          <ArrowRightIcon className="size-4" />
+      <div className="flex shrink-0 items-center gap-1 border-b border-border bg-surface px-2 py-1.5">
+        <ChromeButton
+          label="Start page"
+          onClick={() => {
+            const start = tabs.find((tab) => tab.appId === null);
+            if (start) setActiveId(start.id);
+            else newTab();
+          }}
+        >
+          <HomeIcon className="size-4" />
         </ChromeButton>
         <ChromeButton
           label="Reload"
-          onClick={() => setRun((value) => value + 1)}
+          disabled={!app}
+          onClick={() =>
+            setTabs((current) =>
+              current.map((tab) =>
+                tab.id === activeId ? { ...tab, run: tab.run + 1 } : tab,
+              ),
+            )
+          }
         >
           <ArrowPathIcon className="size-4" />
         </ChromeButton>
-
         <div
           className="mx-1 flex h-8 min-w-0 flex-1 items-center gap-2 rounded-full bg-muted px-3 text-sm"
-          title={app.start}
+          title={app?.start ?? "Interoogle Start"}
         >
-          <LockClosedIcon className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="truncate">
-            <span className="text-foreground">{start.host}</span>
-            <span className="text-muted-foreground">{path}</span>
+          {app ? (
+            <LockClosedIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <MagnifyingGlassIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          )}
+          <span className="truncate text-muted-foreground">
+            {app ? new URL(app.start).host : "Interoogle / Start"}
           </span>
         </div>
-
         <ExperienceQuotaDonut quota={quota} container={stage} />
         {canFull && (
           <ChromeButton
@@ -127,56 +196,150 @@ export function ExperienceChrome({
             )}
           </ChromeButton>
         )}
-        <ButtonLink
-          href={EXPERIENCE_HREF}
-          aria-label="All apps"
-          title="All apps"
-          variant="ghost"
-          size="icon"
-          shape="circle"
-          className="text-foreground"
-        >
-          <Squares2X2Icon className="size-4" />
-        </ButtonLink>
       </div>
 
-      {quota.allowed ? (
-        <iframe
-          key={run}
-          src={src}
-          title={app.label}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          allow="fullscreen; autoplay; encrypted-media"
-          referrerPolicy="no-referrer"
-          className="min-h-0 w-full flex-1 border-0 bg-white"
+      <div className="relative min-h-0 flex-1 bg-surface">
+        {tabs.map((tab) => {
+          const service = services.find((item) => item.id === tab.appId);
+          return (
+            <div
+              key={tab.id}
+              id={`experience-panel-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`experience-tab-${tab.id}`}
+              hidden={tab.id !== activeId}
+              className="h-full"
+            >
+              {!service ? (
+                <StartPage services={services} onOpen={openService} />
+              ) : !service.src ? (
+                <div
+                  role="status"
+                  className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground"
+                >
+                  This service is currently unavailable. Try another service
+                  from a new tab.
+                </div>
+              ) : quota.allowed ? (
+                <iframe
+                  key={tab.run}
+                  src={service.src}
+                  title={`${service.label} — tab ${tab.id + 1}`}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  allow="fullscreen; autoplay; encrypted-media"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full border-0 bg-white"
+                />
+              ) : (
+                <div
+                  role="status"
+                  className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground"
+                >
+                  {quota.error
+                    ? "Unable to check your daily time. Retrying…"
+                    : quota.remaining === 0
+                      ? "Your daily Experience time is used up. Come back after midnight UTC."
+                      : !quota.visible
+                        ? "Experience is paused while this tab is hidden."
+                        : "Checking your daily Experience time…"}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StartPage({
+  services,
+  onOpen,
+}: {
+  services: ExperienceService[];
+  onOpen: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const shown = services.filter((service) =>
+    `${service.label} ${service.host}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
+  return (
+    <div className="flex h-full flex-col items-center overflow-y-auto px-5 pt-[clamp(3rem,12vh,8rem)] pb-10">
+      <h1
+        aria-label="Interoogle"
+        className="mb-8 text-[clamp(2.75rem,6vw,4.5rem)] leading-tight font-medium tracking-[-0.055em]"
+      >
+        {Array.from("Interoogle").map((letter, index) => (
+          <span
+            key={index}
+            style={{
+              color: [
+                "#4285f4",
+                "#ea4335",
+                "#fbbc05",
+                "#4285f4",
+                "#34a853",
+                "#ea4335",
+              ][index % 6],
+            }}
+          >
+            {letter}
+          </span>
+        ))}
+      </h1>
+      <form
+        className="mb-8 flex w-full max-w-lg items-center gap-3 rounded-full border border-border bg-background px-5 py-3 shadow-sm focus-within:ring-2 focus-within:ring-ring/30"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (shown.length === 1) onOpen(shown[0].id);
+        }}
+        role="search"
+      >
+        <MagnifyingGlassIcon className="size-5 shrink-0 text-muted-foreground" />
+        <input
+          aria-label="Find a service"
+          placeholder="Find a service"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
-      ) : (
-        <div
-          className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground"
-          role="status"
-        >
-          {quota.error
-            ? "Unable to check your daily time. Retrying…"
-            : quota.remaining === 0
-              ? "Your daily Experience time is used up. Come back after midnight UTC."
-              : !quota.visible
-                ? "Experience is paused while this tab is hidden."
-                : "Checking your daily Experience time…"}
-        </div>
+      </form>
+      <ul className="flex w-full max-w-xl flex-wrap justify-center gap-x-2 gap-y-3">
+        {shown.map((service) => (
+          <li key={service.id}>
+            <button
+              onClick={() => onOpen(service.id)}
+              className="flex w-24 flex-col items-center gap-3 rounded-2xl px-2 py-3 text-xs transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring sm:w-28"
+            >
+              <span className="flex size-14 items-center justify-center rounded-full bg-muted">
+                <ExperienceAppIcon id={service.id} className="size-7" />
+              </span>
+              <span>{service.label}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {!shown.length && (
+        <p className="text-sm text-muted-foreground">
+          No services match “{query}”.
+        </p>
       )}
     </div>
   );
 }
 
-/** One round control in the toolbar: the ghost icon button, in a circle. */
 function ChromeButton({
   label,
   onClick,
   children,
+  disabled,
 }: {
   label: string;
   onClick: () => void;
   children: ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <Button
@@ -184,9 +347,10 @@ function ChromeButton({
       size="icon"
       shape="circle"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
-      className="text-foreground"
+      className="shrink-0 text-foreground"
     >
       {children}
     </Button>

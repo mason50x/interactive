@@ -23,38 +23,6 @@ import type { ChatMention } from "@convex/chat/messages";
 import { useDebounced } from "@/lib/use-debounced";
 import { popupVariants } from "@/components/ui/popup";
 
-/**
- * Naming somebody in a message, on screen.
- *
- * Three pieces, and they are together because they agree on one thing: what
- * a `@word` looks like once it is a person. `MentionText` draws the chips in
- * a message that has been sent, and under the composer's textarea while one
- * is being typed; `useMentionPeople` is who the composer offers when `@` is
- * pressed; `MentionPicker` is the list they are offered in.
- *
- * ## Who is offered
- *
- * Whoever has spoken in the part of the thread that is loaded, first —
- * people who just said something are who a reply is nearly always to. Then
- * the people of the place: a group's members, a direct message's other
- * person, and in the room — which has no member list, by design, see
- * `members` in `convex/chat/conversations.ts` — the caller's friends and,
- * from the second character, whoever the handle index finds. The server
- * checks all of it again on send: offering somebody is not the same as being
- * allowed to name them, and `resolveMentions` in `convex/chat/messages.ts`
- * is where that is settled.
- *
- * The member list is asked for only while the picker is open. It is the one
- * query in chat that subscribes to every membership row in a group — rows
- * that are written by every reader on every message — and the thread was
- * built specifically not to hold that subscription. Opening the picker holds
- * it for as long as the `@` is under the caret, which is seconds.
- *
- * Everybody ever offered is remembered for the life of the composer, so a
- * chip in the box keeps its colour after the picker has closed and its
- * queries have gone quiet.
- */
-
 export type MentionPerson = {
   clerkId: string;
   handle: string;
@@ -123,7 +91,6 @@ export function useMentionPeople({
     api.chat.conversations.members,
     group ? { conversationId } : "skip",
   );
-  const friends = useQuery(api.chat.friends.list, global ? {} : "skip");
 
   // The index is asked once typing has paused, and only in the room: a group
   // has its members and a direct message has its one person, and neither
@@ -131,7 +98,7 @@ export function useMentionPeople({
   const term = useDebounced(query, SEARCH_DEBOUNCE_MS);
   const searching = global && term.length >= 2;
   const found = useQuery(
-    api.chat.profiles.search,
+    api.chat.accounts.search,
     searching ? { term } : "skip",
   );
 
@@ -160,10 +127,9 @@ export function useMentionPeople({
         avatarInitials: member.avatarInitials,
       });
     }
-    for (const friend of friends ?? []) add(friend);
     for (const person of found ?? []) add(person);
     return list;
-  }, [authors, peer, members, friends, found, me, global]);
+  }, [authors, peer, members, found, me, global]);
 
   // Remembered across the picker closing. Set during render, which is the
   // sanctioned shape for state that mirrors other state — see `ghost` in the
@@ -207,9 +173,7 @@ export function useMentionPeople({
 
   const loading =
     (group && members === undefined) ||
-    (global &&
-      (friends === undefined ||
-        (query.length >= 2 && (term !== query || found === undefined))));
+    (global && query.length >= 2 && (term !== query || found === undefined));
 
   return { candidates, known, loading };
 }

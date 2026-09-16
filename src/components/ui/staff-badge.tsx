@@ -16,7 +16,7 @@ export function StaffBadge({
       ) : (
         <ShieldCheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
       )}
-      {role === "ceo" || sidebar ? (
+      {sidebar ? (
         <span className="text-[0.5625rem] leading-none font-bold">
           {role === "ceo" ? "CEO" : "MOD"}
         </span>

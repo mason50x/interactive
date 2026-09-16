@@ -25,6 +25,95 @@ export type Release = {
 
 export const releases: readonly Release[] = [
   {
+    version: "1.1",
+    importance: "important",
+    date: "2026-09-15",
+    title: "More to explore.",
+    body: `More to explore, easier ways to connect, and a fresh starting point. Here’s everything that changed since v1.0.1.
+
+- Home has a new layout. The starting page now brings together game suggestions, recently opened games, a daily quote, and a preview of the community conversation.
+- A greeting that fits your day. Home welcomes you by name and changes its greeting for the morning, afternoon, and evening.
+- Discover something to play. A new Suggestions shelf puts games directly on Home, giving you somewhere to start without opening the full collection.
+- Jump back into recent games. Switch to “Jump back in” to find games you recently opened.
+- Browse games in a carousel. Home presents games in a scrollable shelf with large artwork and controls for moving through the selection.
+- Suggestions reflect community activity. As games collect views, the Suggestions shelf uses their popularity to help decide what to show.
+- A fresh quote each day. The new Quote of the Day card adds a little encouragement to Home and refreshes when the day changes.
+- Catch up before opening Chat. Home previews recent messages from Everyone, with links that take you into the conversation.
+- See when you joined. A new account card on Home displays your join date.
+- A simpler Home experience. The old weather, streak, and activity-stat cards have been removed as part of the redesign.
+- No more daily streak counter. Visiting the app no longer builds or maintains the old streak system.
+
+- Popular games now follow actual views. The activity collection ranks games using views from the last seven days, with overall views helping break ties.
+- See what people are opening. Activity cards now show recent view counts, with ranking labels for games that have views.
+- Request an activity from the collection. A new “Request an activity” card gives you a direct way to suggest something you want added.
+- Tell us why your suggestion belongs here. Requests include the activity’s name and your reason for wanting it, with room for a working link and extra details.
+- Two activity requests per day. Each signed-in account can submit up to two requests daily, with the allowance resetting at midnight UTC.
+- Clear feedback after submitting. The request form shows a confirmation when your suggestion is sent and explains when delivery cannot be confirmed.
+- Activity browsing does less work up front. Changes to how the collection loads and displays reduce unnecessary work when opening a large catalogue.
+
+- Experience has a new browser-style layout. Supported services now open inside a shared space with tabs and a toolbar.
+- Keep several services open. Add tabs to move between different services without replacing everything you already have open.
+- Switch tabs without restarting the page. Moving between Experience tabs keeps their pages loaded while your session remains active.
+- Close tabs individually. Remove a tab when you are finished, and Experience takes you to another open tab.
+- Always have somewhere to start. Closing your last tab opens a fresh start page.
+- Meet the Interoogle start page. Experience now has a central starting point with recognizable service icons and a search box.
+- Find a service by name. Filter the available services from the start page instead of scanning the whole collection.
+- Return to the start page from the toolbar. The Home button brings you back to an existing start tab or opens one for you.
+- Reload the service you are using. A dedicated reload button refreshes the current Experience tab.
+- Use Experience in fullscreen. The browser controls include a fullscreen option where your browser supports it.
+- Navigate Experience tabs with your keyboard. Arrow keys move between tabs, while Home and End jump to the first and last.
+- More services to choose from. The Experience collection has expanded to include Netflix, Spotify, Apple Music, ChatGPT, Claude, Gemini, and TikTok alongside YouTube.
+- Updated service icons. The expanded collection includes recognizable icons to make services easier to spot in search and tabs.
+- More daily Experience time for members. The member allowance increased from five minutes to thirty minutes per day.
+- A separate allowance for staff. CEO and moderator accounts receive two hours of Experience time per day.
+- A smaller, clearer time display. A circular indicator in the toolbar gives you quick access to your remaining daily time.
+- Time pauses when the app’s browser tab is hidden. Experience stops counting active use while you are away from that tab.
+- Experience tabs share one allowance. Opening several services inside Experience does not give each one a separate timer.
+- Clearer messages when a service cannot open. Experience explains when a service is unavailable, when it is checking your time, and when your daily allowance has run out.
+- More reliable service startup. Fixes address cases where an Experience page or popup could try to open before its connection was ready.
+- Better handling of service popups and verification screens. Compatibility work improves how supported sites open additional windows and handle checks such as Claude’s verification page.
+
+- Start a direct message without a friend request. You can now find another account and open a conversation immediately.
+- Browse people directly in Chat. An account directory makes other members available alongside your existing conversations.
+- Search for someone by name or username. The people list helps you find the person you want to message.
+- Load more people as you browse. The directory can reveal additional accounts without putting everyone on screen at once.
+- Chat now uses your main account identity. Your username, first name, and account picture appear in conversations.
+- One place to manage your identity. Separate chat profiles and custom chat-profile uploads have been removed.
+- Friend requests have been retired. The old friendship system is no longer required for direct messages or finding people.
+- Blocking and message reporting have been removed. These controls are no longer part of Chat; automatic message checks and staff message deletion remain.
+- Private conversations remain limited to their participants. Opening messaging to other accounts does not make direct messages publicly readable.
+- Announcements have their own conversation. Official updates now have a dedicated place in Chat.
+- Staff publish announcements. Members can read the announcement conversation, while posting is limited to staff.
+- New announcements stand out in the sidebar. A red “NEW!” indicator helps distinguish official updates from ordinary unread messages.
+- Staff roles are more clearly defined. CEO and moderator roles now determine staff access and allowances.
+- Staff badge preferences stick. Fixes preserve the chosen badge state more reliably.
+
+- Search reaches more of the app. The main search now includes Experience services, useful actions, and more destinations.
+- Open an Experience service from search. Search for a service such as YouTube or Spotify and go straight to it.
+- Reach the right simulator library faster. Search includes direct shortcuts to the Game Boy and HTML simulator libraries.
+- Find activity requests through search. Searching for an activity request or suggestion can take you straight to the request form.
+- Start a group from search. A “New group” result opens the group-creation flow.
+- Find the people directory from search. Searches for people, members, or direct messages can take you into Chat.
+- Find account help and information pages. About, Contact, Privacy Policy, and Terms of Service are now included among searchable destinations.
+- Find tab disguise settings more easily. Search recognizes terms for changing the browser tab’s title and icon.
+- Find your escape destination settings. Search can take you to the setting that controls where the panic shortcut sends you.
+- Sign out through search. A dedicated result opens the sign-out confirmation.
+
+- Shorter page addresses. Home, Activities, Chat, Experience, and Learning Simulator now use simpler addresses without the old dashboard prefix.
+- Older dashboard links redirect. Existing links are directed toward their corresponding new locations.
+- The invitation interface has been removed. Invitation cards, invite management, and the separate invitation-acceptance page are no longer part of the app.
+- The sign-up page is simpler. The custom invitation messaging has been removed from the account-creation screen.
+- The public website has been refreshed. Updates cover the opening section, feature descriptions, getting-started information, pricing presentation, and supporting sections.
+- A clearer opening action. The public homepage now puts more emphasis on its main sign-up button.
+- Updated About and Contact pages. Their wording and presentation have been adjusted alongside the broader website changes.
+- Updated account and privacy explanations. The site’s policies now describe the revised chat identity and messaging behavior and remove references to retired features.
+- The project’s source link is easier to reach. The open-source link has moved into the account area of the sidebar.
+- Account menus display correctly above their window. A fix prevents selection menus from appearing behind the account panel.
+- Simulator playback does less unnecessary work. Rendering and saved-preview changes reduce background work during play.
+- Lighter sidebar animation. The animated background has been adjusted to reduce unnecessary work.
+- A dedicated page for missing destinations. Invalid links now have an app-specific not-found page.`,
+  },
+  {
     version: "1.0.1",
     importance: "minor",
     date: "2026-09-13",

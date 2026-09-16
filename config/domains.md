@@ -14,7 +14,7 @@ what has to change outside the repo for each move.
 | --- | --- | --- | --- |
 | Assets (R2 bucket) | `ASSET_ORIGIN`, or `NEXT_PUBLIC_ASSET_ORIGIN` | none — hosted activities disappear | one variable |
 | Site (root) | `NEXT_PUBLIC_SITE_URL` | `config/domains.json` | one variable, plus the identity providers below |
-| Experience (Worker) | `EXPERIENCE_ORIGIN`, or `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | none — `/dashboard/experience` reports it | one variable, plus the `frame-ancestors` list in `experience/site/_headers` if the site moves |
+| Experience (Worker) | `EXPERIENCE_ORIGIN`, or `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | none — `/experience` reports it | one variable, plus the `frame-ancestors` list in `experience/site/_headers` if the site moves |
 
 The asset origin has **no fallback on purpose**. A stale default would
 silently keep serving the old bucket, and it fails quietly: hosted activities
@@ -72,9 +72,3 @@ Outside the repo:
 6. **Convex** — `npx convex env set CLERK_JWT_ISSUER_DOMAIN https://clerk.<new
    domain> --prod`. Miss this one and every authenticated query fails after
    the Clerk change lands, not before.
-7. Send one invitation to yourself and click it. Clerk stamps `redirect_url`
-   into the email at send time; there is no editing it afterwards.
-
-`scripts/invite.mjs` reads the production origin from `PROD_SITE_URL`, falling
-back to `config/domains.json`, so it moves with step 1 or 3 rather than
-carrying a literal of its own.

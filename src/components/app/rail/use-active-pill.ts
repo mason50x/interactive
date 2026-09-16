@@ -8,12 +8,11 @@ import { navItems } from "@/lib/nav";
  *
  * Exactly one item is lit: the one whose href is the *longest* prefix of the
  * current path. Testing each item on its own would light every ancestor too,
- * and since every route here sits under `/dashboard`, an item pointing at
- * the root would be lit on every page of the app.
+ * so nested destinations use the most specific matching item.
  *
  * `litHref` is which row wears the pill. A click lights its row *now* and
- * lets the URL catch up, rather than the other way round: every route under
- * `/dashboard` reads cookies and so is rendered on demand, and until
+ * lets the URL catch up, rather than the other way round: every signed-in route
+ * reads cookies and so is rendered on demand, and until
  * `src/lib/warm.ts` has been round the rail the answer arrives some hundreds
  * of milliseconds after the click. Waiting for `pathname` to move means
  * waiting all of that with the rail showing the row you just left — which

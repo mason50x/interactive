@@ -88,7 +88,7 @@ export function People({
   const query = useDebounced(wanted, 250);
 
   const found = useQuery(
-    api.chat.profiles.search,
+    api.chat.accounts.search,
     query.length >= 2 ? { term: query } : "skip",
   );
 

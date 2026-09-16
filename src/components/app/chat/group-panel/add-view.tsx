@@ -46,7 +46,7 @@ export function AddView({
   const query = useDebounced(wanted, 250);
 
   const found = useQuery(
-    api.chat.profiles.search,
+    api.chat.accounts.search,
     query.length >= 2 ? { term: query } : "skip",
   );
 
@@ -94,9 +94,7 @@ export function AddView({
           ? "This group is full"
           : result.reason === "already"
             ? "Already here"
-            : result.reason === "blocked"
-              ? "You cannot invite them"
-              : "That did not work",
+            : "That did not work",
     }));
   }
 

@@ -3,9 +3,17 @@ import { v } from "convex/values";
 
 import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
-import { nominationFields } from "./voting/model";
 
 export default defineSchema({
+  // Compact aggregates only: no sessions, heartbeats, or raw view events.
+  personalGameViews: defineTable({
+    clerkId: v.string(), slug: v.string(), views: v.number(), lastOpenedAt: v.number(),
+  }).index("by_clerkId_and_slug", ["clerkId", "slug"])
+    .index("by_clerkId_and_lastOpenedAt", ["clerkId", "lastOpenedAt"]),
+  globalGameViews: defineTable({
+    slug: v.string(), views: v.number(),
+    days: v.array(v.object({ day: v.number(), views: v.number() })),
+  }).index("by_slug", ["slug"]),
   experienceLeases: defineTable({
     clerkId: v.string(),
     day: v.number(),
@@ -13,26 +21,6 @@ export default defineSchema({
     allowanceSeconds: v.optional(v.number()),
     sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
-  nominations: defineTable(nominationFields)
-    .index("by_status", ["status"])
-    .index("by_status_and_delivery", ["status", "delivery"])
-    .index("by_email", ["email"])
-    .index("by_nameKey", ["nameKey"])
-    .index("by_authorClerkId", ["authorClerkId"]),
-  nominationVotes: defineTable({
-    nominationId: v.id("nominations"),
-    clerkId: v.string(),
-    yes: v.boolean(),
-  })
-    .index("by_nominationId_and_clerkId", ["nominationId", "clerkId"])
-    .index("by_clerkId", ["clerkId"]),
-  nominationCooldowns: defineTable({
-    email: v.string(),
-    nameKey: v.string(),
-    until: v.number(),
-  }).index("by_email", ["email"]).index("by_nameKey_and_until", ["nameKey", "until"]),
-  votingReads: defineTable({ clerkId: v.string(), seenAt: v.number() })
-    .index("by_clerkId", ["clerkId"]),
   htmlSimulatorEntries: defineTable(htmlFields)
     .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"]),
   simulatorEntries: defineTable(entryFields)
@@ -49,87 +37,19 @@ export default defineSchema({
     name: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     username: v.optional(v.string()),
+    usernameKey: v.optional(v.string()),
+    clerkCreatedAt: v.optional(v.number()),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     clerkUpdatedAt: v.optional(v.number()),
 
-    /**
-     * The daily streak, kept on the user row rather than in a table of visits.
-     *
-     * A row per day would be the honest log, but nothing ever asks for the
-     * log: the only questions are "how many days in a row" and "is today one
-     * of them", and both are answered by these three fields without reading
-     * anything but the document the caller already has. It also bounds the
-     * write: `convex/streaks.ts` patches this at most once per user per day,
-     * and every other visit that day is a read that finds `streakLastDay`
-     * already set and returns.
-     *
-     * `streakLastDay` is a `YYYY-MM-DD` key in the *user's* local day, not
-     * UTC — a streak is a human counting bedtimes, so the boundary has to be
-     * their midnight. The client sends its UTC offset and the server does the
-     * arithmetic; see `convex/streaks.ts` for why the date itself is never
-     * taken from the client.
-     *
-     * `streakCount` is the run that ended on `streakLastDay`, which is not the
-     * same as the run in effect now — a count of 9 last seen three weeks ago
-     * is a lapsed streak, and it stays 9 here because it is a record of what
-     * happened. Deciding whether it is still alive is the reader's job.
-     *
-     * `streakBest` is the high-water mark, and is the reason a lapse is
-     * allowed to reset `streakCount` to 1 without losing anything.
-     *
-     * All optional: every account that existed before this shipped has none of
-     * them, and an absent field reads as "no streak yet" rather than needing a
-     * backfill.
-     */
-    streakCount: v.optional(v.number()),
-    streakBest: v.optional(v.number()),
-    streakLastDay: v.optional(v.string()),
     // Legacy data only: retain compatibility with existing user documents.
     // Agreement UI and enforcement have been removed.
     agreementVersion: v.optional(v.number()),
     agreedAt: v.optional(v.number()),
-  }).index("byClerkId", ["clerkId"]),
-
-  /**
-   * One row per invitation a user has spent, which is what makes this table
-   * the quota rather than a log of one. Clerk has no notion of an invite
-   * budget — `invitations.createInvitation` is a Backend API call with a
-   * secret key behind it and no per-user accounting — so the allowance is
-   * counted here and enforced before that call is ever made.
-   *
-   * Counting rows rather than decrementing a number on the user is what makes
-   * revoking refund the credit for free: the row leaves the count instead of
-   * some other write having to put a number back. It also survives a lost
-   * response, which a read-modify-write on Clerk's `publicMetadata` would not.
-   *
-   * `email` is always normalized (see `normalizeEmail`), because it is a key
-   * here — the duplicate check and the webhook that marks an invite accepted
-   * both look rows up by it.
-   */
-  invites: defineTable({
-    /** The Clerk id of whoever spent the credit. */
-    inviterClerkId: v.string(),
-    email: v.string(),
-    /**
-     * `sending` is the reservation held while the Clerk call is in flight, so
-     * two fast clicks cannot both pass the quota check. Every status but
-     * `revoked` counts against the allowance.
-     */
-    status: v.union(
-      v.literal("sending"),
-      v.literal("sent"),
-      v.literal("accepted"),
-      v.literal("revoked"),
-    ),
-    /** Set once Clerk has the invitation; the handle needed to revoke it. */
-    clerkInvitationId: v.optional(v.string()),
-    /** Set by the `user.created` webhook when the recipient signs up. */
-    acceptedClerkId: v.optional(v.string()),
-    acceptedAt: v.optional(v.number()),
-  })
-    .index("byInviter", ["inviterClerkId"])
-    .index("byEmail", ["email"]),
+  }).index("byClerkId", ["clerkId"])
+    .index("byUsernameKey", ["usernameKey"])
+    .searchIndex("searchUsername", { searchField: "username" }),
 
   /**
    * One row per user, holding the choices that are theirs rather than the
@@ -180,242 +100,7 @@ export default defineSchema({
     tabMask: v.optional(v.string()),
   }).index("byClerkId", ["clerkId"]),
 
-  /**
-   * One row per account per activity, holding everything that account has ever
-   * done with it.
-   *
-   * A row per *view* would be the honest log and is what a real analytics
-   * pipeline keeps. Nothing here ever asks a question that needs one: the home
-   * page wants "what do I open most", "what did I open last", and "how long
-   * have I spent", and all three are a running total that a view folds into.
-   * Keeping the total means the reads are a handful of indexed rows rather
-   * than a scan over every session an account has ever had, and it bounds the
-   * table at one row per activity you have opened — 318 in the worst case,
-   * against a log that grows forever.
-   *
-   * What it gives up is history: this cannot say what you opened on a Tuesday
-   * in March. `userDays` carries the shape of that answer at day resolution,
-   * which is the only resolution anything on the dashboard draws.
-   *
-   * `count` is opens and `seconds` is time actually spent with the frame on
-   * screen, and they are deliberately two numbers. Opening something and
-   * bouncing straight out is a view and nearly no seconds, which is exactly
-   * the difference between an activity you keep trying and one you keep using.
-   */
-  views: defineTable({
-    clerkId: v.string(),
-    /** A slug from `src/lib/activities.ts`. Not validated against the
-     *  catalogue here — see `convex/views.ts` for why the shape is the check. */
-    slug: v.string(),
-    /** Times this account has opened it. */
-    count: v.number(),
-    /** Seconds the frame has been open *and visible*, accumulated. */
-    seconds: v.number(),
-    firstViewedAt: v.number(),
-    lastViewedAt: v.number(),
-  })
-    // The upsert path: find this account's row for this activity, or learn there
-    // isn't one.
-    .index("byUserActivity", ["clerkId", "slug"])
-    // "Your favourites" — descending on this index is most-viewed-first,
-    // without reading a row that isn't in the answer.
-    .index("byUserCount", ["clerkId", "count"])
-    // "Jump back in", the same way.
-    .index("byUserLastViewed", ["clerkId", "lastViewedAt"]),
-
-  /**
-   * The global daily board: one row per activity per day, across everyone.
-   *
-   * Separate from `views` because it answers a question no per-account table
-   * can — what the *room* is opening — and because it has to be cheap to read
-   * top-first. A "most popular today" computed by scanning every account's
-   * rows would grow with the user count on every dashboard load; this is one
-   * indexed range over a table whose size is bounded by (activities opened
-   * today), and old days are simply never read again.
-   *
-   * ## The day here is UTC, and the day in `userDays` is not
-   *
-   * A global bucket has to have one definition or it is not a bucket: if the
-   * key were each reader's local day, someone in Auckland and someone in Los
-   * Angeles would write the same moment into two different rows and the
-   * board would be counting two overlapping half-days. So this one is
-   * UTC and the same for everybody. `userDays` is the opposite case — it is a
-   * person's own record of their own day, and their midnight is the only
-   * boundary that makes sense there.
-   */
-  activityDays: defineTable({
-    /** `YYYY-MM-DD`, UTC. */
-    day: v.string(),
-    slug: v.string(),
-    views: v.number(),
-    seconds: v.number(),
-  })
-    .index("byDayActivity", ["day", "slug"])
-    // The read: `eq(day)` then descending is the top of today's board.
-    .index("byDayViews", ["day", "views"]),
-
-  /**
-   * One row per account per day they were here, in *their* local day.
-   *
-   * Two things read it. The stats card sums `seconds` over a window — today,
-   * and the last seven days — which is a range over this index and nothing
-   * else. And the streak strip asks which of the last seven days are marked
-   * `visited`.
-   *
-   * The strip does not trust this table alone, though, and it should not: the
-   * table began mid-streak for every account that existed when it was added,
-   * so the count on the user row knows about days no row here has ever
-   * described. `runDays` in `convex/streaks.ts` reconciles the two on read, and
-   * `healRun` writes the difference back on the next claim — which is why this
-   * is a table that converges rather than one that was ever backfilled.
-   *
-   * `visited` is written by the streak claim and `views`/`seconds` by the
-   * viewer, so a row can exist with zero of either: turning up and opening
-   * nothing is still a day on the streak. The reverse cannot happen — the
-   * claim runs when the app shell mounts, which is strictly before any activity
-   * can be opened inside it.
-   */
-  userDays: defineTable({
-    clerkId: v.string(),
-    /** `YYYY-MM-DD` in the account's local day — see `convex/days.ts`. */
-    day: v.string(),
-    /** The streak claim landed on this day. */
-    visited: v.boolean(),
-    views: v.number(),
-    seconds: v.number(),
-  }).index("byUserDay", ["clerkId", "day"]),
-
-  /**
-   * Who somebody is in chat.
-   *
-   * ## Why this is not fields on `users`
-   *
-   * Because `users` is not ours. It is rebuilt by the Clerk webhook — see
-   * `upsertFromClerk` in `convex/users.ts` — and it holds a real name and a real
-   * email address, which are exactly the two things chat must never show. A
-   * separate row keyed by the Clerk id survives webhook updates and can exist
-   * before the webhook has ever run.
-   *
-   * ## Why a handle instead of a name
-   *
-   * The account has a real first name on it because Clerk collected one at
-   * signup. Putting that in a room of strangers, on a site whose users are
-   * thirteen and up, is the single worst default available, and it is a default
-   * nobody would have chosen deliberately — it happens by reaching for the name
-   * that was already there. So chat has an identity of its own, chosen once, and
-   * no query in `convex/chat/` returns anything from `users` at all.
-   *
-   * `handleKey` is what uniqueness is actually enforced on: the handle with
-   * confusables and leet folded and separators removed, so `adm1n`, `а𝖽min` and
-   * `a_d_m_i_n` all collapse onto `admin` and cannot be claimed to shadow it.
-   * `handle` is what gets displayed. They are written together and only here.
-   *
-   * ## What is not here any more
-   *
-   * The send counter and the ring of recent sends, which are `chatSenders`
-   * below. They were the only two fields on this row that a message rewrote,
-   * and a row that a message rewrites is a row no other query can afford to
-   * join — which this one is joined by nearly all of them, for a handle.
-   *
-   * What is left is written when somebody renames themselves or picks a disc.
-   * So a profile read is a read of something that mostly does not change, and
-   * the subscriptions that join one stop being recomputed by other people
-   * talking.
-   *
-   * ## What is not a setting any more
-   *
-   * Who may open a direct message is friends, for everybody, and everybody can
-   * be found by handle. Both used to be fields here and both are gone: a
-   * policy with one value is not a policy, it is the rule in `openDm` and
-   * `friends.linkDm`, and a flag that is always on is a row-per-account copy
-   * of `true`. A one-off migration cleared both columns off every row that
-   * had them, in every deployment, before the declarations came out.
-   */
-  chatProfiles: defineTable({
-    clerkId: v.string(),
-    /** Clerk username and first name, refreshed by account sync. */
-    handle: v.string(),
-    displayName: v.optional(v.string()),
-    displayNameKey: v.optional(v.string()),
-    /** Case-insensitive Clerk username; no confusable folding. */
-    handleKey: v.string(),
-    /** Legacy fields retained for existing data; no new uploads or chat renames. */
-    handleChanges: v.optional(v.number()),
-    avatarAttachmentId: v.optional(v.id("attachments")),
-    avatarMode: v.optional(v.union(v.literal("account"), v.literal("custom"))),
-    /** Emoji/text alternatives to the account picture. */
-    avatarHue: v.optional(v.number()),
-    avatarEmoji: v.optional(v.string()),
-    avatarInitials: v.optional(v.string()),
-    createdAt: v.number(),
-    /**
-     * Where the send counter and the ring used to live. Both moved to
-     * `chatSenders`; see the note there. They stay declared, and optional,
-     * because every profile written before the move still carries the totals
-     * this table was keeping — `senderState` in `convex/chat/shared.ts` reads
-     * them once, as the seed for that account's first sender row, and nothing
-     * writes either field again.
-    */
-    messagesSent: v.optional(v.number()),
-    recent: v.optional(
-      v.array(
-        v.object({
-          at: v.number(),
-          conversationId: v.string(),
-          hash: v.string(),
-          flagged: v.boolean(),
-        }),
-      ),
-    ),
-  })
-    .index("byClerkId", ["clerkId"])
-    .index("byHandleKey", ["handleKey"])
-    .index("byDisplayNameKey", ["displayNameKey"])
-    // Convex allows one search field per index, which is the whole reason chat
-    // identity is a handle and nothing else: there is no display name to search
-    // as well, so one index is all this ever needed.
-    .searchIndex("searchHandle", { searchField: "handle" }),
-
-  /**
-   * The two things about a sender that change every time they say something.
-   *
-   * They were fields on `chatProfiles` and they were the most expensive two
-   * fields in the schema, for the same reason `lastMessageAt` is deliberately
-   * not written for the global room: a document that is rewritten on every
-   * message recomputes every subscription that has read it. And a profile is
-   * read by almost every query in `convex/chat/` — the conversation list joins
-   * one per direct message to get a handle, the friends list joins one per
-   * friend, invitations join the inviter's. So one person talking in the global
-   * room invalidated the left-hand column of everybody who had ever befriended
-   * them, and each of those re-runs re-read every profile it joined.
-   *
-   * Splitting them out leaves `chatProfiles` a cold table: a handle, a disc, a
-   * policy, written when somebody changes one of them. The
-   * documents got smaller too — `recent` is twenty objects, and it was being
-   * read by every join that only ever wanted `handle`.
-   *
-   * One row per account, made on that account's first send. There is no
-   * backfill: a profile written before this existed still carries the two
-   * fields, and `senderState` in `convex/chat/shared.ts` reads them as the seed
-   * for the row it is about to write. After that the profile's copies are dead
-   * and nothing looks at them again.
-   *
-   * `messagesSent` feeds the trust tier, and is shown back to the account
-   * itself in the settings panel. `recent` is the last twenty sends — when,
-   * where, a hash of what, and a `flagged` that is now always false for the
-   * reason `flags` on `messages` is empty. It is the entire cross-message
-   * memory of the moderation system: rate windows, duplicate detection,
-   * broadcast detection and repeat-targeting all read this one bounded array on
-   * the sender's own row, which means none of them costs a second index or a
-   * read of anybody else's. It is a hash rather than the text because twenty
-   * copies of everything everyone said, kept forever, is a different product
-   * than this one.
-   *
-   * It is deleted with the profile, never separately — see `purgeAuthor` in
-   * `convex/chat/sweep.ts`. A ring that outlived the identity it belongs to
-   * would be a rate limit on a stranger, and a `messagesSent` that outlived one
-   * would hand a new handle the trust tier the old one earned.
-   */
+  /** Per-account moderation counters, separate from Clerk identity. */
   chatSenders: defineTable({
     clerkId: v.string(),
     /** Feeds the trust tier, and the one number the settings panel shows. */
@@ -434,7 +119,7 @@ export default defineSchema({
    * A room, a group, or a pair.
    *
    * One table for all three because everything above them — membership,
-   * messages, reads, reports — is identical, and the differences are three
+   * messages and reads — is identical, and the differences are three
    * fields. `kind` is the only thing that varies behaviour, and it is copied
    * onto every membership row so that sending a message never has to read this
    * document at all. That is not a micro-optimisation: reading the conversation
@@ -527,15 +212,7 @@ export default defineSchema({
     /** Everything after this is unread. Written only by its own owner. */
     lastReadAt: v.number(),
     invitedBy: v.optional(v.string()),
-    /**
-     * Direct messages only: the Clerk id of the other person.
-     *
-     * Copied here so the send path can check whether the two of you have
-     * blocked each other without reading the conversation document or the other
-     * member's row — the first would put a shared document in the read set of
-     * every send, and the second would make your message conflict with them
-     * marking the thread read.
-     */
+    /** Direct messages only: the Clerk id of the other person. */
     dmPeer: v.optional(v.string()),
   })
     .index("byConversation", ["conversationId", "status"])
@@ -625,22 +302,13 @@ export default defineSchema({
    * because Convex already keeps one and a second copy could only ever disagree
    * with it.
    *
-   * ## `authorHandle` is stored on the message
-   *
-   * Denormalised on purpose, and it is the field that makes the thread work.
-   * Resolving the author for each row would mean the thread query joined against
-   * `chatProfiles`, and a joined row cannot be constructed on the client, which
-   * is what an optimistic send has to do to put your own message on screen the
-   * instant you press enter. Carrying the handle makes the page self-contained.
-   * The cost is that a handle could go stale — which it cannot, because handles
-   * are claimed once and never renamed.
+   * Author fields are snapshots for optimistic sends; reads resolve current Clerk identity.
    *
    * ## Only survivors are here
    *
    * A message that fails the filter is never inserted. There is no row for it,
    * no id, and nothing to leak: the refusal happens in `convex/chat/messages.ts`
-   * before any write. `status` is therefore about the one thing that happens
-   * *afterwards* — `hidden`, when reports pile up on it. An author taking their
+   * before any write. `hidden` is retained for legacy messages. An author taking their
    * own message back is not a status either: within `DELETE_WINDOW_MS` the row
    * is deleted outright, and after it nothing can be taken back at all.
    *
@@ -739,9 +407,7 @@ export default defineSchema({
      *
      * `status` is a filter field rather than something the handler drops
      * afterwards, because a hidden message must not consume one of the rows
-     * the search returns — reports pile up on the worst things anybody said
-     * here, so the hidden set is exactly the set most likely to match a
-     * search and would otherwise crowd out the results that survive.
+     * the search returns. Legacy hidden rows must not crowd out visible results.
      *
      * Who is allowed to see a match is *not* expressible here. It depends on
      * the caller's membership rows, which no filter field can name, so the
@@ -773,10 +439,7 @@ export default defineSchema({
    * is one row rather than one per member: the list asks about both targets,
    * and a hundred writes per message would be the cost of not doing so.
    *
-   * `authorClerkId` is here so the list can drop a mention from somebody the
-   * caller has blocked without fetching the message. The rows go with the
-   * message — see `deleteMessage` in `convex/chat/shared.ts` — and with a
-   * message reports have hidden, and with the account they name.
+   * Mention rows are removed with their message and target account.
    */
   mentions: defineTable({
     conversationId: v.id("conversations"),
@@ -807,11 +470,8 @@ export default defineSchema({
    * ## The lifecycle
    *
    * `checking` is a file that has been claimed and is waiting on the verdict.
-   * `ready` is one that passed and has not been used yet. `sent` is on a
-   * message and `avatar` is on a chat profile — and from then on that owner
-   * keeps it: `deleteMessage` and `setAvatar` in
-   * `convex/chat/shared.ts` deletes the file, this row and the message
-   * together, and nothing else ever removes a `sent` row.
+   * `ready` passed moderation and has not been sent. `sent` belongs to a message
+   * and is removed with that message by `deleteMessage`.
    *
    * A picture that fails has no state. The file is deleted and so is this row —
    * there is nothing to keep, for the same reason a refused message is never
@@ -830,15 +490,10 @@ export default defineSchema({
    * `byStorage` is also what makes a claim exclusive: one file, one row, and a
    * second claim on somebody else's storage id is refused before it is read.
    *
-   * `purpose` separates composer uploads from profile-picture uploads. It is
-   * optional so rows created before avatars existed remain message pictures.
-   * Both purposes go through the same ownership checks and moderation pass, and
-   * storage cleanup; an avatar upload cannot later be smuggled into a message,
-   * or vice versa.
    */
   attachmentUploadReservations: defineTable({
     ownerClerkId: v.string(),
-    purpose: v.union(v.literal("message"), v.literal("avatar")),
+    purpose: v.literal("message"),
     expiresAt: v.number(),
   })
     .index("byOwner", ["ownerClerkId"])
@@ -851,9 +506,8 @@ export default defineSchema({
       v.literal("checking"),
       v.literal("ready"),
       v.literal("sent"),
-      v.literal("avatar"),
     ),
-    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
+    purpose: v.optional(v.literal("message")),
     /** The message it went out in. Set with `sent` and never cleared. */
     messageId: v.optional(v.id("messages")),
     contentType: v.string(),
@@ -866,87 +520,5 @@ export default defineSchema({
     // How many an account has in flight, and everything of theirs to remove
     // when they go. `status` second so the count skips what is already sent.
     .index("byOwner", ["ownerClerkId", "status"]),
-
-  /**
-   * One row per pair of people, in either state.
-   *
-   * `userA` is always the lexicographically smaller Clerk id, which is what
-   * makes a friendship a single row rather than two that can disagree. The cost
-   * is that listing your friends is two indexed reads — one for each side you
-   * might be on — merged in the handler. That is cheaper than the alternative,
-   * which is two mirrored rows and a bug the first time one of them fails to
-   * update.
-   *
-   * `requestedBy` is kept because it is the only thing that distinguishes a
-   * request you sent from one you received, and both appear in the same list.
-   */
-  friendships: defineTable({
-    userA: v.string(),
-    userB: v.string(),
-    status: v.union(v.literal("pending"), v.literal("accepted")),
-    requestedBy: v.string(),
-    requestedAt: v.number(),
-    respondedAt: v.optional(v.number()),
-  })
-    .index("byPair", ["userA", "userB"])
-    .index("byUserA", ["userA", "status"])
-    .index("byUserB", ["userB", "status"]),
-
-  /**
-   * One row per direction, because blocking is not mutual.
-   *
-   * Blocking somebody stops them reaching you and stops you seeing them, and
-   * says nothing about what they can see of anybody else. The `byBlocked` index
-   * exists so the send path can ask "has the person I am writing to blocked me"
-   * without reading their profile, and `byBlocker` so a thread can be filtered
-   * against the viewer's own list in one read.
-   *
-   * Not an array on the profile: Convex caps an array field at 8,192 elements
-   * and a document at a megabyte, and more immediately, a list that has to be
-   * rewritten in full to add one entry is a write conflict waiting to happen.
-   */
-  blocks: defineTable({
-    blocker: v.string(),
-    blocked: v.string(),
-    createdAt: v.number(),
-  })
-    .index("byBlocker", ["blocker", "blocked"])
-    .index("byBlocked", ["blocked"]),
-
-  /**
-   * Somebody saying that something was wrong.
-   *
-   * Nobody reads these. That is not an oversight — there are no moderators, by
-   * design — so a report is not a message to a human. Enough distinct reports
-   * hide a message; they never change the author's account.
-   *
-   * `byReporterMessage` enforces one report per person per message, so a single
-   * account cannot become a crowd. The rest of the guard is the daily cap in
-   * `convex/moderation/limits.ts`.
-   */
-  reports: defineTable({
-    reporterClerkId: v.string(),
-    messageId: v.optional(v.id("messages")),
-    targetClerkId: v.string(),
-    conversationId: v.optional(v.id("conversations")),
-    reason: v.union(
-      v.literal("abuse"),
-      v.literal("harassment"),
-      v.literal("sexual"),
-      v.literal("self-harm"),
-      v.literal("spam"),
-      v.literal("contact"),
-      v.literal("other"),
-    ),
-    createdAt: v.number(),
-  })
-    .index("byReporterMessage", ["reporterClerkId", "messageId"])
-    .index("byMessage", ["messageId"])
-    .index("byReporter", ["reporterClerkId", "createdAt"])
-    .index("byTarget", ["targetClerkId"])
-    // So a conversation being deleted can take the reports filed inside it.
-    // Without this they outlive the messages they are about and point at ids
-    // that no longer resolve.
-    .index("byConversation", ["conversationId"]),
 
 });

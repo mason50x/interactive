@@ -45,7 +45,7 @@ process (do not replace your development `.env.local`). For example, Node's
 values with the same Worker version. Never commit or print that file.
 
 The Worker preserves dashboard-managed variables (`keep_vars`) and enables logs
-and traces, with query strings redacted so invitation tickets do not enter invocation logs. Static assets are separate from dynamic rendering. The wrapper in
+and traces, with query strings redacted so authentication parameters do not enter invocation logs. Static assets are separate from dynamic rendering. The wrapper in
 `worker.ts` sets framing/crawler policy and prevents shared caching on auth,
 dashboard and learn routes. `public/_headers` covers static responses.
 
@@ -77,7 +77,7 @@ Do not use `build:production` for untrusted PRs. Build with isolated Clerk/Conve
 credentials and `npm run build`, then use `npm run deploy:preview` to upload an
 inactive Worker version. A version preview is not a separate backend. Configure
 its credentials deliberately, or use a separate staging Worker/Convex deployment.
-Set `SITE_URL` (runtime invitation origin) or `NEXT_PUBLIC_SITE_URL` explicitly;
+Set `NEXT_PUBLIC_SITE_URL` explicitly;
 Workers preview URLs are not inferred from Vercel system variables. Set
 `NEXT_PUBLIC_BRAND_DOMAIN` if staging mail must use the production brand domain.
 

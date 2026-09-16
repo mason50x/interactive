@@ -37,7 +37,7 @@ import { safePanicUrl } from "@/lib/panic-key";
  * `{ source: "activity", type: "score", slug, score }` to the app's origin,
  * the app checks `event.origin` against the asset origin exactly, and the
  * value is treated as a *claim* — display only. Anything durable, a ranking or
- * a streak, has to be written by code the framed document cannot reach.
+ * a score, has to be written by code the framed document cannot reach.
  *
  * The edge blends the live embed through a narrow backdrop blur. It uses
  * the browser's compositing rather than sampling cross-origin pixels in JS,

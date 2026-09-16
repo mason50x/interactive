@@ -28,7 +28,7 @@ type ExperienceSite = {
 
 /** An allowlist entry that is also an app: it has a name and a front door. */
 export type ExperienceApp = {
-  /** The route segment, `/dashboard/experience/<id>`. */
+  /** The route segment, `/experience/<id>`. */
   id: string;
   label: string;
   host: string;
@@ -45,7 +45,7 @@ export const EXPERIENCE_APPS: ExperienceApp[] = SITES.flatMap((site) =>
 );
 
 /** The apps list. */
-export const EXPERIENCE_HREF = "/dashboard/experience";
+export const EXPERIENCE_HREF = "/experience";
 
 export function experienceAppHref(id: string): string {
   return `${EXPERIENCE_HREF}/${encodeURIComponent(id)}`;

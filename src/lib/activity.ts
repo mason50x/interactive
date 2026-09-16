@@ -50,9 +50,7 @@ export type Activity = {
   title: string;
   genre: Genre;
   /**
-   * Position in the catalogue, ascending, and the app's only popularity
-   * signal — upstream hand-orders its index most-viewed first and this
-   * preserves that. `POPULAR_COUNT` slices the head of it.
+   * Original position in the upstream catalogue. Live popularity uses game views.
    */
   rank: number;
   /**
@@ -121,7 +119,7 @@ export function thumbnailSrc(activity: Pick<Activity, "thumbnail">): string {
  * where the activity sits in upstream's hand-ordered, most-viewed-first index.
  */
 export function popularityLabel(activity: Pick<Activity, "rank">): string {
-  return `#${activity.rank + 1} most viewed`;
+  return `Catalogue #${activity.rank + 1}`;
 }
 
 /** Lower-cased and stripped of everything but letters and digits, so that

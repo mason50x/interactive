@@ -49,16 +49,7 @@ export const MAX_CHAR_RUN = 16;
  */
 export const MAX_COMBINING_RUN = 2;
 
-/**
- * Distinct reports needed on one message before it is hidden.
- *
- * One report per account is enforced separately, so this is a count of people
- * rather than presses of the same button.
- */
-export const REPORTS_TO_HIDE = 3;
 
-/** The most reports one account's opinion is worth in a day. */
-export const MAX_REPORTS_PER_DAY = 10;
 
 /**
  * How long after sending a message may still be deleted outright.
@@ -172,26 +163,6 @@ export const GROUP_HUES = [
 
 
 /**
- * The same wheel, for a person.
- *
- * Shared with `GROUP_HUES` on purpose: a person and a group drawn from two
- * different palettes would read as two different kinds of object in a list
- * that is deliberately one list.
- */
-export const AVATAR_HUES = GROUP_HUES;
-
-/**
- * The same faces, for a person.
- *
- * Shared with `GROUP_EMOJI` for the reason the wheel is shared, and closed for
- * the reason that one is closed: a picture somebody picks out of a list is a
- * picture nobody has to look at afterwards. This is as far as "choose your
- * avatar" goes on a site with thirteen-year-olds on it and no upload path — see
- * `monogram.tsx` in the app for the longer version of that argument.
- */
-export const AVATAR_EMOJI = GROUP_EMOJI;
-
-/**
  * What a picture may be, before anybody looks at what is in it.
  *
  * Four formats, which are the four a browser can both decode and display
@@ -250,29 +221,8 @@ export const MAX_UNSENT_IMAGES = 8;
  */
 export const IMAGE_TTL_MS = 60 * 60 * 1000;
 
-/**
- * How many letters somebody may put on their own disc.
- *
- * Two, because that is initials. It is also the whole of why this is not a
- * display name: two characters cannot carry a sentence, an address, or an
- * insult, so the field needs no moderation pass — only a shape check. See
- * `setAvatar` in `convex/chat/profiles.ts`.
- */
+/** Maximum initials on a group icon. */
 export const MAX_INITIALS = 2;
-
-/**
- * How many times an account may change its handle. Ever, not per period.
- *
- * The old rule was none, and the reason was good: somebody who has made
- * themselves unpleasant should not be able to shed the name people know them
- * by. Two is the compromise — enough for a name typed wrong or regretted early,
- * few enough that it cannot be used to keep moving. There is no reset.
- *
- * Note that renaming does not rewrite history: `authorHandle` is stored on
- * every message and stays as it was, so old messages keep the name they were
- * sent under. That is a feature of this limit rather than a defect of it.
- */
-export const MAX_HANDLE_CHANGES = 2;
 
 /**
  * How many different people one message may name.

@@ -11,17 +11,18 @@ async function setup() {
   rateLimiter.register(t);
   for (const name of ["alice", "bob"]) {
     await t.run((ctx) =>
-      ctx.db.insert("chatProfiles", {
+      ctx.db.insert("users", {
         clerkId: name,
-        handle: name,
-        handleKey: name,
-        createdAt: 0,
-        messagesSent: 100,
+        username: name,
+        usernameKey: name,
+        clerkCreatedAt: 0,
+
       }),
     );
+    await t.run(ctx => ctx.db.insert("chatSenders", { clerkId: name, messagesSent: 100, recent: [] }));
     await t
       .withIdentity({ subject: name })
-      .mutation(api.chat.profiles.joinGlobal, {});
+      .mutation(api.chat.accounts.joinGlobal, {});
   }
   const alice = t.withIdentity({ subject: "alice" });
   const list = await alice.query(api.chat.conversations.list, {});
@@ -30,7 +31,7 @@ async function setup() {
 
 test("everyone receives a private pinned bot DM, without duplicates or a bot profile", async () => {
   const { t, alice, dm } = await setup();
-  await alice.mutation(api.chat.profiles.joinGlobal, {});
+  await alice.mutation(api.chat.accounts.joinGlobal, {});
   const list = await alice.query(api.chat.conversations.list, {});
   expect(list.filter((conversation) => conversation.peerClerkId === "bot")).toHaveLength(1);
   expect(list[0].kind).toBe("global");
@@ -52,7 +53,7 @@ test("everyone receives a private pinned bot DM, without duplicates or a bot pro
     await alice.mutation(api.chat.conversations.openDm, { peerClerkId: "bot" }),
   ).toEqual({ ok: true, conversationId: dm });
   expect(
-    await t.run((ctx) => ctx.db.query("chatProfiles").take(10)),
+    await t.run((ctx) => ctx.db.query("users").take(10)),
   ).toHaveLength(2);
 });
 

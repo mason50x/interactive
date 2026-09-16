@@ -18,13 +18,13 @@ import { cn } from "@/lib/utils";
  */
 export function Pricing() {
   return (
-    <Section id="pricing" divider width="default" className="bg-surface">
-      <SectionHeading
-        eyebrow={pricingSection.eyebrow}
-        title={pricingSection.heading}
-        body={pricingSection.body}
-        align="center"
-      />
+    <Section
+      id="pricing"
+      divider
+      width="default"
+      className="bg-surface [--section-fill:var(--surface)]"
+    >
+      <SectionHeading title={pricingSection.heading} align="center" />
 
       <div className="mx-auto mt-14 grid max-w-5xl gap-4 lg:grid-cols-3">
         {pricing.map((plan) => (

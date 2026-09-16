@@ -1,8 +1,9 @@
+import type { ChatAccount } from "./shared";
 import { v } from "convex/values";
 import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { imagesEnabled } from "../features";
 import { components, internal } from "../_generated/api";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import {
   action,
   internalAction,
@@ -19,7 +20,7 @@ import {
   MAX_UNSENT_IMAGES,
 } from "../moderation/limits";
 import type { Refusal } from "../moderation/rules";
-import { callerProfile, deleteAttachment, profileFor } from "./shared";
+import { callerAccount, deleteAttachment } from "./shared";
 
 /**
  * Getting a picture in, and looking at it before anybody else does.
@@ -68,7 +69,7 @@ export type CheckResult =
   | { ok: true; attachmentId: Id<"attachments"> }
   | { ok: false; refusal: Refusal };
 
-type UploadPurpose = "message" | "avatar";
+type UploadPurpose = "message";
 
 const UPLOAD_RESERVATION_TTL_MS = 10 * 60 * 1000;
 
@@ -92,14 +93,14 @@ const uploadRateLimiter = new RateLimiter(components.rateLimiter, {
 async function maySend(
   ctx: MutationCtx,
 ): Promise<
-  | { ok: true; profile: Doc<"chatProfiles">; unsent: number }
+  | { ok: true; profile: ChatAccount; unsent: number }
   | { ok: false; refusal: Refusal }
 > {
   // The switch, before anything is read. Off means the button is not on
   // screen, so a call here is a client that was asked to make one.
   if (!imagesEnabled()) return { ok: false, refusal: "image" };
 
-  const profile = await callerProfile(ctx);
+  const profile = await callerAccount(ctx);
   if (profile === null) return { ok: false, refusal: "not-a-member" };
 
   // The storage bound. Both unsent states count, and `take` on each keeps the
@@ -131,10 +132,9 @@ async function maySend(
  */
 export const uploadUrl = mutation({
   args: {
-    purpose: v.optional(v.union(v.literal("message"), v.literal("avatar"))),
+    purpose: v.optional(v.literal("message")),
   },
   handler: async (ctx, { purpose }): Promise<UploadResult> => {
-    if (purpose === "avatar") return { ok: false, refusal: "image" };
     const allowed = await maySend(ctx);
     if (!allowed.ok) return allowed;
 
@@ -356,13 +356,13 @@ export const settle = internalMutation({
 export const discard = mutation({
   args: { attachmentId: v.id("attachments") },
   handler: async (ctx, { attachmentId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const row = await ctx.db.get(attachmentId);
     if (row === null) return;
     if (row.ownerClerkId !== profile.clerkId) return;
-    if (row.status === "sent" || row.status === "avatar") return;
+    if (row.status === "sent") return;
 
     await deleteAttachment(ctx, row);
   },
@@ -449,10 +449,6 @@ export const sweep = internalMutation({
         .unique();
 
       if (row !== null && row.status === "sent") continue;
-      if (row !== null && row.status === "avatar") {
-        const owner = await profileFor(ctx, row.ownerClerkId);
-        if (owner?.avatarAttachmentId === row._id) continue;
-      }
 
       if (row !== null) await deleteAttachment(ctx, row);
       else await ctx.storage.delete(file._id);

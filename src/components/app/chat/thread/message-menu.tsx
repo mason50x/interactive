@@ -7,14 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuSubmenu,
-  MenuSubmenuTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import { REACTIONS } from "@/lib/chat";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -69,7 +62,6 @@ export function MessageMenu({
   message,
   mine,
   gone,
-  bot,
   deletable,
   isAdmin,
   open,
@@ -79,9 +71,8 @@ export function MessageMenu({
 }: {
   message: ChatMessage;
   mine: boolean;
-  /** Removed after reports; only an admin has anything left to do to it. */
+  /** Legacy hidden message; only an admin has anything left to do to it. */
   gone: boolean;
-  bot: boolean;
   /** Still inside the window in which your own message may be unsent. */
   deletable: boolean;
   isAdmin: boolean;
@@ -93,7 +84,6 @@ export function MessageMenu({
 }) {
   const remove = useMutation(api.chat.messages.remove);
   const adminRemove = useMutation(api.chat.admin.remove);
-  const block = useMutation(api.chat.blocks.block);
   const [adminDeleting, setAdminDeleting] = useState(false);
 
   return (
@@ -144,68 +134,9 @@ export function MessageMenu({
               Delete
             </MenuItem>
           ) : null
-        ) : bot ? null : (
-          <>
-            <ReportSubmenu message={message} />
+        ) : null}
 
-            <MenuItem
-              tone="destructive"
-              onClick={() => void block({ peerClerkId: message.authorClerkId })}
-            >
-              Block {message.authorHandle}
-            </MenuItem>
-          </>
-        )}
       </MenuContent>
     </Menu>
-  );
-}
-
-/** The reasons, in the order somebody scanning them would find theirs. */
-const REPORT_REASONS = [
-  ["harassment", "Aimed at someone"],
-  ["abuse", "Hateful"],
-  ["sexual", "Sexual"],
-  ["self-harm", "About self-harm"],
-  ["contact", "Asking for contact"],
-  ["spam", "Spam"],
-  ["other", "Something else"],
-] as const;
-
-/**
- * Reporting is not a message to anybody. It is weighted by the reporter's
- * own record and counted against a threshold — see `convex/chat/reports.ts`.
- * Saying so here would be a paragraph nobody reads; what the copy does
- * instead is avoid promising a review that is never going to happen.
- */
-function ReportSubmenu({ message }: { message: ChatMessage }) {
-  const report = useMutation(api.chat.reports.report);
-
-  return (
-    <MenuSubmenu>
-      <MenuSubmenuTrigger>Report this</MenuSubmenuTrigger>
-      <MenuContent
-        side="right"
-        align="start"
-        sideOffset={4}
-        padding="xs"
-        className="flex w-40 flex-col gap-0.5"
-      >
-        {REPORT_REASONS.map(([reason, label]) => (
-          <MenuItem
-            key={reason}
-            onClick={() =>
-              void report({
-                messageId: message._id,
-                targetClerkId: message.authorClerkId,
-                reason,
-              })
-            }
-          >
-            {label}
-          </MenuItem>
-        ))}
-      </MenuContent>
-    </MenuSubmenu>
   );
 }

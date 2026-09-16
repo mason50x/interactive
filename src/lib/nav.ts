@@ -4,7 +4,6 @@ import {
   HomeModernIcon,
   GlobeAltIcon,
 } from "@heroicons/react/24/outline";
-import type { ComponentType } from "react";
 import type { IconPair } from "@/lib/icons";
 import { ControllerIcon } from "@/components/app/controller-icon";
 import {
@@ -14,7 +13,6 @@ import {
   HomeIconSolid,
   GlobeIconSolid,
 } from "@/components/app/nav-icons";
-import { extraNavItems } from "@/lib/nav-extras";
 
 export type NavItem = {
   label: string;
@@ -29,15 +27,14 @@ export type NavItem = {
    * more line here rather than a different shape.
    */
   unread?: boolean;
-  badge?: ComponentType;
 };
 
 /** The catalogue. Has a search box of its own, separate from the rail's. */
-export const ACTIVITIES_HREF = "/dashboard/activities";
+export const ACTIVITIES_HREF = "/activities";
 
-const SIMULATOR_HREF = "/dashboard/learning-simulator";
+const SIMULATOR_HREF = "/learning-simulator";
 
-export const CHAT_HREF = "/dashboard/chat";
+export const CHAT_HREF = "/chat";
 
 /**
  * Every destination inside the signed-in app, in the order the rail shows
@@ -50,7 +47,7 @@ export const CHAT_HREF = "/dashboard/chat";
 export const navItems: NavItem[] = [
   {
     label: "Home",
-    href: "/dashboard",
+    href: "/home",
     icon: { outline: HomeModernIcon, solid: HomeIconSolid },
   },
   {
@@ -69,12 +66,9 @@ export const navItems: NavItem[] = [
   },
   {
     label: "Experience",
-    href: "/dashboard/experience",
+    href: "/experience",
     icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
   },
-  // Rows that exist only on a developer's machine; an empty list in every
-  // build. See `src/lib/nav-extras.ts` for how the swap works.
-  ...extraNavItems,
   {
     label: "Simulators",
     href: SIMULATOR_HREF,

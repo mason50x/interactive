@@ -26,7 +26,7 @@ import { useOriginalFilePicker } from "./file-picker";
 import { HtmlFilePrompt } from "./html-file-prompt";
 import { HtmlPlayerControls } from "./html-player-controls";
 
-const BACK = "/dashboard/learning-simulator?mode=html";
+const BACK = "/learning-simulator?mode=html";
 
 /**
  * One HTML session: an imported page running in a sandboxed frame, with

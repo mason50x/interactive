@@ -29,7 +29,7 @@ describe("Worker availability", () => {
     vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
     fetchApp.mockResolvedValue(new Response("app"));
     const response = await worker.fetch(
-      new Request("http://localhost:3000/dashboard"),
+      new Request("http://localhost:3000/home"),
       env,
       {} as ExecutionContext,
     );
@@ -47,7 +47,7 @@ describe("Worker availability", () => {
   ])("serves production requests at %s", async (time) => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(time));
-    for (const path of ["/", "/dashboard", "/learn/test", "/api/test"]) {
+    for (const path of ["/", "/home", "/learn/test", "/api/test"]) {
       fetchApp.mockResolvedValue(new Response("app"));
       const response = await worker.fetch(
         new Request(`https://example.com${path}`),
@@ -65,7 +65,7 @@ describe("Worker availability", () => {
     vi.setSystemTime(new Date("2026-09-14T07:30:00-05:00"));
     fetchApp.mockResolvedValue(new Response("app"));
     const response = await worker.fetch(
-      new Request("https://example.com/dashboard"),
+      new Request("https://example.com/home"),
       env,
       {} as ExecutionContext,
     );
@@ -159,16 +159,22 @@ describe("asset browser caching", () => {
     expect(response.headers.get("cache-control")).toBeNull();
   });
 
-  it.each(["/dashboard/private.js", "/learn/activity.html", "/auth/sign-in"])(
-    "keeps %s uncacheable even if the asset binding answers",
-    async (path) => {
-      fetchAsset.mockResolvedValue(new Response("private"));
-      const response = await worker.fetch(
-        new Request(`https://example.com${path}`),
-        env,
-        {} as ExecutionContext,
-      );
-      expect(response.headers.get("cache-control")).toBe("private, no-store");
-    },
-  );
+  it.each([
+    "/home/private.js",
+    "/activities/game.html",
+    "/chat/room.js",
+    "/experience/app",
+    "/learning-simulator/test",
+    "/dashboard/chat",
+    "/learn/activity.html",
+    "/auth/sign-in",
+  ])("keeps %s uncacheable even if the asset binding answers", async (path) => {
+    fetchAsset.mockResolvedValue(new Response("private"));
+    const response = await worker.fetch(
+      new Request(`https://example.com${path}`),
+      env,
+      {} as ExecutionContext,
+    );
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
 });

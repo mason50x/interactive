@@ -30,8 +30,8 @@ export const metadata: Metadata = {
   // Lets every URL-based field below be written as a relative path.
   metadataBase: new URL(brand.url),
   title: {
-    default: `${brand.name} — ${brand.tagline}`,
-    template: `%s — ${brand.name}`,
+    default: `${brand.shortName} \\ Home`,
+    template: `${brand.shortName} \\ %s`,
   },
   description: brand.metaDescription,
   applicationName: brand.name,
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   /**
    * The whole site, not just the signed-in half.
    *
-   * `/dashboard`, `/auth`, and `/learn` each already set this in their own
+   * `(app)`, `/auth`, and `/learn` each already set this in their own
    * layout, and those stay: a nested `robots` overrides rather than merges,
    * so removing them would leave those trees inheriting this and nothing
    * else. What changed is that the default is now the same answer, so the

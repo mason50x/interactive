@@ -46,7 +46,7 @@ const lines = [
   bold("  Dev server"),
   "",
   `  App          ${app}`,
-  `  Activities   ${app}/dashboard/activities`,
+  `  Activities   ${app}/activities`,
   "",
 ];
 
@@ -58,7 +58,7 @@ if (assets) {
   // couple of openable URLs is the whole point of printing any.
   for (const activity of activities.slice(0, 2)) {
     lines.push(
-      dim(`               ${app}/dashboard/activities/${activity.slug}`),
+      dim(`               ${app}/activities/${activity.slug}`),
     );
   }
 } else {

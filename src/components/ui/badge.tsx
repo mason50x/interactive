@@ -45,7 +45,7 @@ function Badge({
 }
 
 /**
- * A number in a dot: unread messages, invitations left.
+ * A number in a dot: unread messages, pending requests.
  *
  * Tabular figures, so a count that ticks from 9 to 10 widens by a digit and
  * not by a wobble. `min-w` equal to the height keeps a single digit round.

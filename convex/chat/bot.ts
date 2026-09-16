@@ -1,5 +1,5 @@
 import { botQuotaName } from "./botConfig";
-import { callerId, callerProfile, dmKeyFor, membership } from "./shared";
+import { callerId, callerAccount, dmKeyFor, membership } from "./shared";
 import type { QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { Agent } from "@convex-dev/agent";
@@ -726,7 +726,7 @@ export const welcome = mutation({
   args: { conversationId: v.id("conversations") },
   returns: v.null(),
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     const conversation = await ctx.db.get(conversationId);
     if (!profile || conversation?.kind !== "dm" ||
         !(await canAnswer(ctx, conversation, profile.clerkId))) return null;

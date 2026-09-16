@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
  * case. The browser renders every one of the 318 in the catalogue at once —
  * the shelves are not virtualised, and lazy images still leave the elements in
  * the tree — so a hint on four of its nodes was asking for roughly 1,200
- * permanently-resident GPU layers on `/dashboard/activities`, for hovers that
+ * permanently-resident GPU layers on `/activities`, for hovers that
  * happen one at a time. Past its layer budget the compositor starts evicting
  * and re-rasterising, and the page spends the whole session doing it.
  *
@@ -141,7 +141,7 @@ export function ActivityCard({
 
   return (
     <Link
-      href={`/dashboard/activities/${activity.slug}`}
+      href={`/activities/${activity.slug}`}
       prefetch={false}
       style={hue}
       className={shell}

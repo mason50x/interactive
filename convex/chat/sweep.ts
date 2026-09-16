@@ -70,12 +70,10 @@ export const trimGlobal = internalMutation({
  * memberships and the conversation row follow — which also means an interrupted
  * purge leaves a conversation nobody can reach rather than a conversation with
  * half its history missing.
- *
- * Reports go too. A report is a claim about a message, and once the message
- * does not exist the claim is an id that resolves to nothing.
  */
 export const purgeConversation = internalMutation({
   args: { conversationId: v.id("conversations") },
+  returns: v.object({ stage: v.union(v.literal("messages"), v.literal("related"), v.literal("done")), deleted: v.number() }),
   handler: async (ctx, { conversationId }) => {
     const messages = await ctx.db
       .query("messages")
@@ -93,23 +91,13 @@ export const purgeConversation = internalMutation({
       return { stage: "messages" as const, deleted: messages.length };
     }
 
-    const reports = await ctx.db
-      .query("reports")
-      .withIndex("byConversation", (q) =>
-        q.eq("conversationId", conversationId),
-      )
-      .take(BATCH);
-    for (const report of reports) await ctx.db.delete(report._id);
-
-    // Whoever was mid-sentence. Bounded by `MAX_TYPING`-ish in practice and
-    // by the window in any case; the sweep below would take them within the
-    // day, but a purged room should not leave anybody "typing" in it.
+    // Expired rows can accumulate beyond the number currently visible.
     const typing = await ctx.db
       .query("typing")
       .withIndex("byConversationUntil", (q) =>
         q.eq("conversationId", conversationId),
       )
-      .collect();
+      .take(BATCH);
     for (const row of typing) await ctx.db.delete(row._id);
 
     const members = await ctx.db
@@ -117,8 +105,19 @@ export const purgeConversation = internalMutation({
       .withIndex("byConversation", (q) =>
         q.eq("conversationId", conversationId),
       )
-      .collect();
+      .take(BATCH);
     for (const member of members) await ctx.db.delete(member._id);
+
+    const presence = await ctx.db
+      .query("presence")
+      .withIndex("byConversationSeen", q => q.eq("conversationId", conversationId))
+      .take(BATCH);
+    for (const row of presence) await ctx.db.delete(row._id);
+
+    if ([typing, members, presence].some(rows => rows.length === BATCH)) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, { conversationId });
+      return { stage: "related" as const, deleted: messages.length };
+    }
 
     // Last, so that every earlier step can be replayed against a conversation
     // that still exists. Already gone is not an error — two callers can
@@ -317,53 +316,25 @@ export const purgeAuthor = internalMutation({
       return { stage: "memberships" as const, deleted: 0 };
     }
 
-    for (const table of ["byUserA", "byUserB"] as const) {
-      const friendships = await ctx.db
-        .query("friendships")
-        .withIndex(table, (q) =>
-          table === "byUserA" ? q.eq("userA", clerkId) : q.eq("userB", clerkId),
-        )
-        .collect();
-      for (const row of friendships) await ctx.db.delete(row._id);
-    }
-
-    const blocksMade = await ctx.db
-      .query("blocks")
-      .withIndex("byBlocker", (q) => q.eq("blocker", clerkId))
-      .collect();
-    const blocksReceived = await ctx.db
-      .query("blocks")
-      .withIndex("byBlocked", (q) => q.eq("blocked", clerkId))
-      .collect();
-    for (const row of [...blocksMade, ...blocksReceived]) {
-      await ctx.db.delete(row._id);
-    }
-
+    let moreRelated = false;
     // Every picture still owned directly by this account. The ones on messages
-    // went with the messages above; these are unfinished uploads plus the
-    // active profile picture. The general sweep would eventually find an
+    // went with the messages above; these are unfinished uploads. The general sweep would eventually find an
     // orphan, but an account erasure must remove its bytes immediately.
-    for (const status of ["checking", "ready", "avatar"] as const) {
+    for (const status of ["checking", "ready"] as const) {
       const owned = await ctx.db
         .query("attachments")
         .withIndex("byOwner", (q) =>
           q.eq("ownerClerkId", clerkId).eq("status", status),
         )
-        .collect();
+        .take(BATCH);
+      moreRelated ||= owned.length === BATCH;
       for (const row of owned) await deleteAttachment(ctx, row);
     }
 
-    // Reports they filed and reports filed against them. Once the account a
-    // report was about is gone there is nothing left for it to describe.
-    const filed = await ctx.db
-      .query("reports")
-      .withIndex("byReporter", (q) => q.eq("reporterClerkId", clerkId))
-      .collect();
-    const against = await ctx.db
-      .query("reports")
-      .withIndex("byTarget", (q) => q.eq("targetClerkId", clerkId))
-      .collect();
-    for (const row of [...filed, ...against]) await ctx.db.delete(row._id);
+    if (moreRelated) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, again);
+      return { stage: "related" as const, deleted: messages.length };
+    }
 
     // Whoever was first through the door does not own the door.
     //
@@ -383,16 +354,6 @@ export const purgeAuthor = internalMutation({
       await ctx.db.patch(room._id, { createdBy: "" });
     }
 
-    // The profile itself, last. This is reached from the Clerk deletion
-    // webhook, so nothing before this point had a reason to touch it.
-    const profile = await ctx.db
-      .query("chatProfiles")
-      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-      .unique();
-    if (profile !== null) await ctx.db.delete(profile._id);
-
-    // The sender row goes with the profile wherever the profile goes. See
-    // `chatSenders` in `convex/schema.ts`.
     await clearSender(ctx, clerkId);
 
     return { stage: "done" as const, deleted: messages.length };

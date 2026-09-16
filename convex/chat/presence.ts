@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { callerProfile, membership } from "./shared";
+import { callerAccount, membership } from "./shared";
 
 /**
  * Who is in the room right now.
@@ -101,7 +101,7 @@ export type Presence = {
 export const here = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -156,7 +156,7 @@ export const here = mutation({
 export const gone = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
 
     const existing = await ctx.db
@@ -187,7 +187,7 @@ export const gone = mutation({
 export const count = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }): Promise<Presence | null> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return null;
 
     const member = await membership(ctx, conversationId, profile.clerkId);

@@ -3,12 +3,10 @@ import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import {
   avatarAppearance,
-  blockedBy,
-  blockedEitherWay,
-  callerProfile,
+  callerAccount,
   clearTyping,
   membership,
-  profileFor,
+  accountFor,
 } from "./shared";
 
 /**
@@ -83,22 +81,11 @@ export type Typist = {
   left: number;
 };
 
-/**
- * I have words in the box.
- *
- * Called on the first keystroke and then at most every `TYPING_BEAT_MS` for as
- * long as keys keep coming. Silent about everything, exactly as a presence
- * beat is: signed out, no handle, or not a member all write nothing, and none
- * of them is a fact this function has any reason to hand back.
- *
- * A blocked direct message writes nothing either. The send would be refused,
- * and "typing" from somebody whose message can never arrive is a promise of
- * a thing that will not happen.
- */
+
 export const start = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     const now = Date.now();
 
@@ -106,9 +93,6 @@ export const start = mutation({
     if (member === null || member.status !== "active") return;
     if (member.kind === "announcements" && (await adminId(ctx)) === null) return;
 
-    if (member.dmPeer !== undefined) {
-      if (await blockedEitherWay(ctx, profile.clerkId, member.dmPeer)) return;
-    }
 
     const existing = await ctx.db
       .query("typing")
@@ -159,27 +143,17 @@ export const start = mutation({
 export const stop = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }) => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return;
     await clearTyping(ctx, conversationId, profile.clerkId);
   },
 });
 
-/**
- * Who is writing in this conversation, other than me.
- *
- * `null` to anybody who is not an active member, the same bar every other
- * question about a conversation sets. People the caller has blocked are left
- * out: their messages are hidden from this reader already, and a "typing"
- * for a message that will never be shown is worse than nothing.
- *
- * Read from the far end of the index — the rows with the most time left —
- * so that under the cap it is the freshest typists who are named.
- */
+
 export const who = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, { conversationId }): Promise<Typist[] | null> => {
-    const profile = await callerProfile(ctx);
+    const profile = await callerAccount(ctx);
     if (profile === null) return null;
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -194,12 +168,11 @@ export const who = query({
       .order("desc")
       .take(MAX_TYPING);
 
-    const blocked = await blockedBy(ctx, profile.clerkId);
 
     const typists: Typist[] = [];
     for (const row of rows) {
-      if (row.clerkId === profile.clerkId || blocked.has(row.clerkId)) continue;
-      const current = await profileFor(ctx, row.clerkId);
+      if (row.clerkId === profile.clerkId) continue;
+      const current = await accountFor(ctx, row.clerkId);
       typists.push({
         clerkId: row.clerkId,
         handle: row.handle,

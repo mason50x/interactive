@@ -1,22 +1,26 @@
+import Image from "next/image";
 import { Section } from "@/components/ui/section";
 import { trust } from "@/lib/content";
 
-/**
- * The row of names under the hero. Set as type rather than logos: six marks
- * in six brand colours would be the loudest thing on the page, and the point
- * of the row is to be believed, not noticed.
- */
 export function TrustStrip() {
   return (
     <Section rhythm="tight" width="default">
       <p className="text-center text-[0.875rem] text-faint">{trust.label}</p>
-      <ul className="mt-7 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 sm:gap-x-14">
-        {trust.names.map((name) => (
+      <ul className="mx-auto mt-8 grid max-w-4xl grid-cols-2 items-center justify-items-center gap-x-8 gap-y-8 sm:grid-cols-4 sm:gap-x-12">
+        {trust.colleges.map((college) => (
           <li
-            key={name}
-            className="text-serif-display text-[1.375rem] text-muted-foreground/80 sm:text-[1.5rem]"
+            key={college.name}
+            className="flex h-14 items-center justify-center"
           >
-            {name}
+            <Image
+              src={college.logo}
+              alt={college.name}
+              width={college.width}
+              height={48}
+              unoptimized
+              className="h-auto max-h-12 max-w-full object-contain"
+              style={{ width: college.width }}
+            />
           </li>
         ))}
       </ul>

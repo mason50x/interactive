@@ -8,6 +8,8 @@ import { CodeBracketSquareIcon, CpuChipIcon } from "@heroicons/react/24/solid";
 import styles from "./library.module.css";
 import { GameBoyLibrary } from "./library";
 import { CenteredSpinner } from "@/components/ui/spinner";
+import { Page, PageTitle } from "@/components/ui/page";
+import { ChipIconSolid } from "@/components/app/nav-icons";
 import { readStorage, writeStorage } from "@/lib/storage";
 
 // The HTML library is the default view, and the Game Boy one is small; only
@@ -49,11 +51,9 @@ function Library() {
     }
   }, [selected, mode, userId, router]);
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-6 py-8 sm:px-8 lg:px-10">
+    <Page>
       <header className="flex flex-wrap items-center justify-between gap-5">
-        <h1 className="text-display text-display-title text-3xl sm:text-4xl">
-          Interactive Simulators
-        </h1>
+        <PageTitle icon={<ChipIconSolid />}>Simulators</PageTitle>
         <div
           role="group"
           aria-label="Simulation format"
@@ -82,7 +82,7 @@ function Library() {
       ) : (
         <GameBoyLibrary key={userId} />
       )}
-    </div>
+    </Page>
   );
 }
 

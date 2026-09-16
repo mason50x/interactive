@@ -36,11 +36,7 @@ import { overRate, tierFor } from "./rate";
  * Plenty. A deterministic filter reads spelling, not meaning, so it does not
  * catch a sentence that is cruel without containing a single listed word, or a
  * grooming conversation conducted entirely in ordinary vocabulary, or sarcasm
- * of any kind. That is the accepted cost of the design, and it is why blocking,
- * reporting and the DM policy exist alongside it rather than as afterthoughts:
- * the filter handles what is mechanical, and the people in the room handle what
- * is not. Anyone extending this should be honest about which half a new rule is
- * in.
+ * of any kind. The filter only handles mechanically detectable content.
  */
 
 /** Everything the decision depends on, gathered by the caller. */

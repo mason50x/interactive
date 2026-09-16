@@ -22,7 +22,7 @@
  * privacy feature is someone trusting it further than it goes.
  *
  * Three things make it stick. The title and the icon links are *managed by
- * React* — every route under `/dashboard` sets its own title, so a navigation
+ * React* — every route in the signed-in app sets its own title, so a navigation
  * overwrites whatever we wrote — which is why `watchTabMask` puts a
  * `MutationObserver` on the head and writes it back rather than setting it once
  * on mount. The browser keeps its own list of the page's icons and rebuilds it
@@ -248,7 +248,7 @@ function reannounce(link: HTMLLinkElement, head: HTMLHeadElement): void {
  * effect's cleanup.
  *
  * A mask set once on mount lasts until the first click. Every route under
- * `/dashboard` declares its own `metadata.title`, so a client-side navigation
+ * `/home` declares its own `metadata.title`, so a client-side navigation
  * has React replace the `<title>` and re-render the icon links from the route's
  * payload — and the tab goes back to saying "Home — Dashboard" halfway through
  * a lesson, which is the exact moment the feature was for.

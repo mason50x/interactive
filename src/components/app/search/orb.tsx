@@ -111,7 +111,7 @@ export function Resting() {
         Search anything
       </p>
       <p className="mt-1 text-center text-[0.8125rem] leading-relaxed text-muted-foreground">
-        Activities, messages, pages, settings, and your account.
+        Activities, experiences, messages, pages, settings, and actions.
       </p>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "@/components/ui/menu";
+import { signOutRequest } from "@/lib/search-actions";
 import { onSettingsRequest } from "@/lib/preferences";
 import { useClickOutside } from "@/lib/use-click-outside";
 import { useCachedAdminBadge } from "@/lib/use-cached-admin-badge";
@@ -51,6 +52,7 @@ export function UserMenu() {
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
   const { open: openAccount, pages: accountPages } = useAccountModal();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const signOutRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +60,15 @@ export function UserMenu() {
   // the account, and what it does with either is open the modal on that page.
   // See `requestSettings`.
   useEffect(() => onSettingsRequest(openAccount), [openAccount]);
+
+  useEffect(
+    () =>
+      signOutRequest.subscribe(() => {
+        setMenuOpen(true);
+        setConfirmingSignOut(true);
+      }),
+    [],
+  );
 
   // A press on anything but the sign-out row puts it back. This listens on the
   // document rather than on the popup because the theme submenu is portalled
@@ -89,6 +100,8 @@ export function UserMenu() {
         turn backwards through the closing popup. This waits for the popup to
         be gone, so the row is simply back the next time it is opened. */}
       <Menu
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
         onOpenChangeComplete={(open) => {
           if (!open) setConfirmingSignOut(false);
         }}
@@ -139,6 +152,8 @@ export function UserMenu() {
             ) : null}
             <a
               href="https://github.com/mason50x/interactive"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="OSS — source code on GitHub"
               className={cn(
                 chipClassName,

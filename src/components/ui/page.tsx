@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -28,16 +28,29 @@ function Page({ className, ...props }: ComponentProps<"div">) {
  * `text-display-title` is the half-step down from the display weight; see
  * `globals.css` for why the two headings that carry the title size want it.
  */
-function PageTitle({ className, ...props }: ComponentProps<"h1">) {
+function PageTitle({
+  className,
+  icon,
+  children,
+  ...props
+}: ComponentProps<"h1"> & { icon?: ReactNode }) {
   return (
     <h1
       data-slot="page-title"
       className={cn(
         "text-display text-display-title text-[2.25rem] text-balance text-foreground sm:text-[2.75rem]",
+        icon && "flex items-center gap-3 sm:gap-4",
         className,
       )}
       {...props}
-    />
+    >
+      {icon && (
+        <span aria-hidden="true" className="size-[0.8em] shrink-0 [&>svg]:size-full">
+          {icon}
+        </span>
+      )}
+      {children}
+    </h1>
   );
 }
 

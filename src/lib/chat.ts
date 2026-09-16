@@ -74,7 +74,6 @@ const REFUSALS: Record<string, string> = {
   "too-fast": "Slow down a moment.",
 
   "not-a-member": "You are not in this conversation.",
-  blocked: "You cannot message this person.",
   "reply-unavailable": "That message is no longer available to reply to.",
   mention: "You can only mention people who are in this conversation.",
   "mention-everyone": "@everyone only works in a group.",
@@ -235,7 +234,7 @@ export function typingLabel(
 export function groupNameError(reason: Refusal | "no-profile"): string {
   switch (reason) {
     case "no-profile":
-      return "Pick a handle first.";
+      return "Your account is still syncing. Try again shortly.";
     case "empty":
       return "Give it a name first.";
     case "too-long":
@@ -245,25 +244,15 @@ export function groupNameError(reason: Refusal | "no-profile"): string {
   }
 }
 
-/**
- * Why a direct message did not open, in the words the card says it in.
- *
- * `not-friends` is the one worth getting right: it is the rule for everybody,
- * so it is the refusal nearly everybody meets first, and it is not a refusal
- * at all so much as the next thing to press.
- */
+
 export function openDmError(
-  reason: "no-profile" | "unknown" | "blocked" | "not-friends",
+  reason: "no-profile" | "unknown",
 ): string {
   switch (reason) {
-    case "not-friends":
-      return "They only take messages from friends. Add them first.";
-    case "blocked":
-      return "You cannot message this person.";
     case "unknown":
       return "That account is gone.";
     case "no-profile":
-      return "Pick a handle first.";
+      return "Your account is still syncing. Try again shortly.";
   }
 }
 

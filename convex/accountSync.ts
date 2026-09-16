@@ -39,7 +39,7 @@ export const profilePage = internalQuery({
   args: { paginationOpts: paginationOptsValidator },
   returns: v.object({ ids: v.array(v.string()), cursor: v.string(), done: v.boolean() }),
   handler: async (ctx, args) => {
-    const page = await ctx.db.query("chatProfiles").paginate(args.paginationOpts);
+    const page = await ctx.db.query("users").paginate(args.paginationOpts);
     return { ids: page.page.map(p => p.clerkId), cursor: page.continueCursor, done: page.isDone };
   },
 });

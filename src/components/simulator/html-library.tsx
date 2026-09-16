@@ -28,7 +28,7 @@ import {
 import { LibraryShell } from "./library-shell";
 import { PixelCode } from "./pixel-code";
 
-const ROOT = "/dashboard/learning-simulator/html";
+const ROOT = "/learning-simulator/html";
 
 /**
  * The HTML library: the self-contained pages this account has opened,

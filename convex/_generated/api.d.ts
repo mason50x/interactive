@@ -9,28 +9,24 @@
  */
 
 import type * as accountSync from "../accountSync.js";
-import type * as chat_account from "../chat/account.js";
+import type * as activityRequests from "../activityRequests.js";
+import type * as chat_accounts from "../chat/accounts.js";
 import type * as chat_admin from "../chat/admin.js";
 import type * as chat_attachments from "../chat/attachments.js";
-import type * as chat_blocks from "../chat/blocks.js";
 import type * as chat_bot from "../chat/bot.js";
 import type * as chat_botConfig from "../chat/botConfig.js";
 import type * as chat_conversations from "../chat/conversations.js";
-import type * as chat_friends from "../chat/friends.js";
 import type * as chat_groups from "../chat/groups.js";
 import type * as chat_messages from "../chat/messages.js";
 import type * as chat_presence from "../chat/presence.js";
-import type * as chat_profiles from "../chat/profiles.js";
-import type * as chat_reports from "../chat/reports.js";
 import type * as chat_shared from "../chat/shared.js";
 import type * as chat_sweep from "../chat/sweep.js";
 import type * as chat_typing from "../chat/typing.js";
 import type * as crons from "../crons.js";
-import type * as days from "../days.js";
 import type * as experience from "../experience.js";
 import type * as features from "../features.js";
+import type * as gameViews from "../gameViews.js";
 import type * as http from "../http.js";
-import type * as invites from "../invites.js";
 import type * as moderation_confusables from "../moderation/confusables.js";
 import type * as moderation_images from "../moderation/images.js";
 import type * as moderation_inspect from "../moderation/inspect.js";
@@ -51,11 +47,7 @@ import type * as simulator_limits from "../simulator/limits.js";
 import type * as simulator_model from "../simulator/model.js";
 import type * as simulator_saves from "../simulator/saves.js";
 import type * as simulator_shared from "../simulator/shared.js";
-import type * as streaks from "../streaks.js";
 import type * as users from "../users.js";
-import type * as views from "../views.js";
-import type * as voting from "../voting.js";
-import type * as voting_model from "../voting/model.js";
 
 import type {
   ApiFromModules,
@@ -65,28 +57,24 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accountSync: typeof accountSync;
-  "chat/account": typeof chat_account;
+  activityRequests: typeof activityRequests;
+  "chat/accounts": typeof chat_accounts;
   "chat/admin": typeof chat_admin;
   "chat/attachments": typeof chat_attachments;
-  "chat/blocks": typeof chat_blocks;
   "chat/bot": typeof chat_bot;
   "chat/botConfig": typeof chat_botConfig;
   "chat/conversations": typeof chat_conversations;
-  "chat/friends": typeof chat_friends;
   "chat/groups": typeof chat_groups;
   "chat/messages": typeof chat_messages;
   "chat/presence": typeof chat_presence;
-  "chat/profiles": typeof chat_profiles;
-  "chat/reports": typeof chat_reports;
   "chat/shared": typeof chat_shared;
   "chat/sweep": typeof chat_sweep;
   "chat/typing": typeof chat_typing;
   crons: typeof crons;
-  days: typeof days;
   experience: typeof experience;
   features: typeof features;
+  gameViews: typeof gameViews;
   http: typeof http;
-  invites: typeof invites;
   "moderation/confusables": typeof moderation_confusables;
   "moderation/images": typeof moderation_images;
   "moderation/inspect": typeof moderation_inspect;
@@ -107,11 +95,7 @@ declare const fullApi: ApiFromModules<{
   "simulator/model": typeof simulator_model;
   "simulator/saves": typeof simulator_saves;
   "simulator/shared": typeof simulator_shared;
-  streaks: typeof streaks;
   users: typeof users;
-  views: typeof views;
-  voting: typeof voting;
-  "voting/model": typeof voting_model;
 }>;
 
 /**

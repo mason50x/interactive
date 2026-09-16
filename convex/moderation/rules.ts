@@ -36,7 +36,6 @@ export type Refusal =
   | "too-fast"
   | "read-only"
   | "not-a-member"
-  | "blocked"
   | "reply-unavailable"
   // A mention that could not be honoured: somebody named who is not in the
   // conversation, or `@everyone` outside a group. Both are the word being

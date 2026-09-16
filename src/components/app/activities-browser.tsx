@@ -7,10 +7,11 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { useGamePopularity } from "@/components/app/game-views";
+import { gameViewLabel, rankGames } from "@/lib/game-popularity";
 import { useActivities } from "@/components/app/activities-provider";
 import { ActivityGrid } from "@/components/app/activities/activity-grid";
 import { CategoryMenu } from "@/components/app/activities/category-menu";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { filterActivities, type Genre } from "@/lib/activity";
@@ -82,6 +83,27 @@ const SORTS: readonly { value: Sort; label: string }[] = [
 
 export function ActivitiesBrowser() {
   const catalogue = useActivities();
+  const popularity = useGamePopularity();
+  const ranked = useMemo(
+    () => rankGames(catalogue, popularity ?? []),
+    [catalogue, popularity],
+  );
+  const notes = useMemo(() => {
+    const counts = new Map(
+      popularity?.map((row) => [row.slug, row.weeklyViews]),
+    );
+    return Object.fromEntries(
+      ranked.map((game, index) => {
+        const views = counts.get(game.slug) ?? 0;
+        return [
+          game.slug,
+          popularity === undefined
+            ? "Loading views…"
+            : gameViewLabel(views, views > 0 ? index + 1 : undefined),
+        ];
+      }),
+    );
+  }, [ranked, popularity]);
   // This page's own string, not the rail's. The two used to be one, and typing
   // here filled the rail's box and opened it too. See `ActivitiesProvider`.
   const [query, setQuery] = useState("");
@@ -110,17 +132,16 @@ export function ActivitiesBrowser() {
   const shown = useMemo(() => {
     const inGenre =
       genre === "all"
-        ? catalogue
-        : catalogue.filter((activity) => activity.genre === genre);
+        ? ranked
+        : ranked.filter((activity) => activity.genre === genre);
 
     const matched = searching ? filterActivities(inGenre, needle) : inGenre;
 
-    // The catalogue is already rank-ascending, so "popular" is the array as it
-    // stands and only the alphabetical order costs a sort.
+    // Weekly views lead; lifetime views break ties.
     return sort === "title"
       ? [...matched].sort((a, b) => a.title.localeCompare(b.title))
       : matched;
-  }, [catalogue, genre, needle, searching, sort]);
+  }, [ranked, genre, needle, searching, sort]);
 
   const filtered = searching || genre !== "all";
 
@@ -196,10 +217,10 @@ export function ActivitiesBrowser() {
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState>
+        <p className="-mb-2 text-sm text-muted-foreground" role="status">
           Nothing matches “{needle}”
           {genre !== "all" ? ` in ${GENRES[genre].label}` : ""}.
-        </EmptyState>
+        </p>
       ) : (
         /* Only once something has been narrowed. Unfiltered, the count is the
            number already sitting in the placeholder of the field above it, and
@@ -213,7 +234,7 @@ export function ActivitiesBrowser() {
         )
       )}
 
-      <ActivityGrid shown={painted} />
+      <ActivityGrid shown={painted} notes={notes} />
     </div>
   );
 }

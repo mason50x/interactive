@@ -5,6 +5,7 @@ owners and identify the linked services; their inclusion does not imply endorsem
 
 | File | Source |
 | --- | --- |
+| `tiktok.png` | https://www.tiktok.com/favicon.ico (PNG bytes, linked by TikTok) |
 | `spotify.ico` | https://open.spotifycdn.com/cdn/images/favicon.0f31d2ea.ico (linked by Spotify's web player) |
 | `claude.svg` | https://claude.ai/favicon.svg |
 | `gemini.svg` | https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg (linked by Gemini) |

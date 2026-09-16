@@ -13,10 +13,7 @@ export function Faq() {
     <Section id="faq" divider width="default">
       <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-4">
-          <SectionHeading
-            eyebrow={faqSection.eyebrow}
-            title={faqSection.heading}
-          />
+          <SectionHeading title={faqSection.heading} />
         </div>
 
         <div className="lg:col-span-8">

@@ -18,6 +18,7 @@ it("offers each service and allows its front door through the actual relay", asy
   for (const id of [
     "youtube",
     "netflix",
+    "tiktok",
     "spotify",
     "chatgpt",
     "claude",
@@ -32,7 +33,7 @@ it("offers each service and allows its front door through the actual relay", asy
   expect(new Set(EXPERIENCE_APPS.map((app) => app.id)).size).toBe(
     EXPERIENCE_APPS.length,
   );
-  expect(upstream).toHaveBeenCalledTimes(7);
+  expect(upstream).toHaveBeenCalledTimes(8);
 });
 
 it.each([
@@ -70,4 +71,37 @@ it.each([
   expect(response.status).toBe(403);
   expect(await response.json()).toMatchObject({ code: "HOST_NOT_ALLOWED" });
   expect(upstream).not.toHaveBeenCalled();
+});
+
+const tiktokHosts = [
+  "tiktok.com", "tiktokcdn-us.com", "tiktokcdn.com", "tiktokv.us",
+  "tiktokw.us", "tiktokv.com", "ttwstatic.com", "muscdn.com",
+];
+
+it.each(tiktokHosts)("allows TikTok dependency %s and rejects hostname lookalikes", async (host) => {
+  const upstream = vi.fn(async () => new Response("ok"));
+  vi.stubGlobal("fetch", upstream);
+  for (const hostname of [host, `regional.${host}`]) {
+    const response = await relay(`https://${hostname}/asset?signature=example`);
+    expect(response.headers.get("x-bare-status")).toBe("200");
+  }
+  upstream.mockClear();
+  for (const hostname of [`evil${host}`, `${host}.evil.example`]) {
+    expect((await relay(`https://${hostname}/`)).status).toBe(403);
+  }
+  expect(upstream).not.toHaveBeenCalled();
+});
+
+it.each([
+  "https://www.tiktok.com/login/phone-or-email/email",
+  "https://vm.tiktok.com/shortlink/",
+  "https://login-us.www.tiktok.com/passport/web/account/info/",
+  "https://lf16-tiktok-web.tiktokcdn-us.com/obj/tiktok-web-tx/app.js",
+  "https://sf16-website-login.neutral.ttwstatic.com/obj/login/app.js",
+  "https://v16m-webapp.tiktokcdn-us.com/video/tos/example/?signature=test",
+  "https://verification-ttp2.tiktokw.us/captcha/get",
+  "https://libra16-normal-useast8.tiktokv.us/",
+])("relays TikTok navigation, login, scripts, video and verification: %s", async (url) => {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("ok")));
+  expect((await relay(url)).headers.get("x-bare-status")).toBe("200");
 });

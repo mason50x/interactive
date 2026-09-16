@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 /**
  * A count out of a small total, as a row of pips.
  *
- * For an allowance — invitations left, changes left — where the whole is
+ * For an allowance — uses left, changes left — where the whole is
  * small enough to draw and the number alone would not say how much of it is
  * gone. The filled ones are what is left, and they drain right to left, the
  * way a bar that fills left to right empties: the run of colour starts at

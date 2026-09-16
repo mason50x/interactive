@@ -1,4 +1,8 @@
 import {
+  ArrowRightStartOnRectangleIcon,
+  GlobeAltIcon,
+  CpuChipIcon,
+  DocumentTextIcon,
   ChatBubbleLeftRightIcon,
   Cog6ToothIcon,
   ComputerDesktopIcon,
@@ -11,44 +15,11 @@ import {
 } from "@heroicons/react/24/solid";
 import type { Icon } from "@/lib/icons";
 import { navItems } from "@/lib/nav";
+import { EXPERIENCE_APPS, experienceAppHref } from "@/lib/experience";
 
-/**
- * Everything the rail's search can find, and how it decides what matches.
- *
- * The app has four kinds of thing worth looking for and they live nowhere near
- * each other: the activity catalogue is a generated JSON file behind a
- * `server-only` import, chat messages are rows in Convex behind a full-text
- * index and a permission check, the settings are React controls inside a
- * modal, and the destinations are a list in `src/lib/nav.ts`. None of them can
- * be put in one table — a search that needed that would be a search that
- * needed a crawler and a copy of everything.
- *
- * So they are not indexed together. Each source answers for itself, in the
- * place it already lives, and this module is the small amount that has to be
- * shared: what a result looks like, how a query is scored against a piece of
- * text, and the two sources that are static enough to simply be written down.
- * `RailSearch` is what asks all four and interleaves the answers.
- *
- * The two written down here are the ones with no data behind them at all. A
- * setting is a control in `SettingsPanel`, not a record; the only way to find
- * "the drifting web behind the sidebar" by typing "background" is for someone
- * to have said so, which is what `keywords` is for. When a control is added
- * there, its entry is added here — nothing derives one from the other, and
- * nothing can, because the searchable words for a switch are not in the
- * switch.
- */
-
-/**
- * Which source a result came from.
- *
- * `account` is one entry rather than a source with a list behind it, and it
- * gets its own name anyway because the modal it opens draws that line: the
- * site's settings are one page and Clerk's account pages are the ones after
- * it — one is about the site and the others are about you — and a search that
- * filed your password under the site's appearance options would be undoing a
- * distinction the modal's own navigation makes.
- */
-export type HitSource = "page" | "activity" | "setting" | "account" | "message";
+/** Searchable destinations, commands, and their matching rules. */
+export type HitSource =
+  "page" | "experience" | "activity" | "setting" | "account" | "message";
 
 /**
  * One thing you can find, in the shape the list draws.
@@ -70,13 +41,19 @@ export type Hit = {
   icon: Icon;
   /** A tint for the icon, when the source has one worth carrying. */
   tint?: string;
+  experienceId?: string;
   href?: string;
   action?: SearchAction;
 };
 
 /** The things a result can do that are not navigation. */
 export type SearchAction =
-  "settings" | "account" | "theme:system" | "theme:light" | "theme:dark";
+  | "settings"
+  | "account"
+  | "sign-out"
+  | "theme:system"
+  | "theme:light"
+  | "theme:dark";
 
 /**
  * A static entry before it is scored — a `Hit` plus the words that should find
@@ -197,49 +174,113 @@ const pages: readonly Entry[] = navItems.map((item) => ({
   icon: item.icon.solid,
   href: item.href,
   keywords:
-    item.href === "/dashboard"
+    item.href === "/home"
       ? ["overview", "dashboard", "start"]
       : item.href.endsWith("/chat")
         ? ["messages", "dms", "groups", "friends", "everyone"]
-        : ["games", "catalogue", "catalog", "play", "browse"],
+        : item.href.endsWith("/experience")
+          ? ["browser", "websites", "apps", "streaming", "browse web"]
+          : item.href.endsWith("/learning-simulator")
+            ? ["emulator", "simulation", "rom", "import", "upload"]
+            : ["games", "catalogue", "catalog", "play", "browse"],
 }));
 
-/**
- * The settings, as results.
- *
- * Every one of these opens the settings page rather than changing anything, with the
- * exception of the three themes — those are a single value with three possible
- * states, so a result that says "Dark" and then makes you find a menu to pick
- * it is a worse answer than one that just does it. Everything else is a
- * control with shape to it: a palette, a key recorder, a URL. Those want the
- * panel they were designed in.
- */
-/**
- * The account, as a result.
- *
- * Opens the hosted account UI — profile, email addresses, password, connected
- * devices — on its own page of the modal the menu's "Settings" row opens, one
- * past the settings. None of it is ours to rebuild. None of that is a page in this app, so this is an
- * action rather than an `href`.
- *
- * The keywords are what make it findable, because the one word on the row is
- * not a word anybody types. People search for the thing they want to change:
- * "password", "email", "sign out". Naming the vendor is not among them — this
- * is your account, and whose software renders the panel is not something the
- * search should be teaching anyone.
- */
+const experiences: readonly Entry[] = EXPERIENCE_APPS.map((app) => ({
+  source: "experience",
+  title: app.label,
+  detail: `Experience · ${app.host}`,
+  icon: GlobeAltIcon,
+  experienceId: app.id,
+  href: experienceAppHref(app.id),
+  keywords: [
+    app.id,
+    app.host,
+    "experience",
+    "website",
+    ...(app.id === "youtube" ? ["videos", "watch", "yt"] : []),
+  ],
+}));
+
+const extraPages: readonly Entry[] = [
+  { title: "About", href: "/about", keywords: ["about us", "mission"] },
+  {
+    title: "Contact",
+    href: "/contact",
+    keywords: ["help", "support", "feedback"],
+  },
+  { title: "Privacy policy", href: "/pp", keywords: ["privacy", "data"] },
+  {
+    title: "Terms of service",
+    href: "/tos",
+    keywords: ["terms", "legal", "rules"],
+  },
+  { title: "50x website", href: "/", keywords: ["landing", "pricing"] },
+  { title: "Sign in", href: "/auth/sign-in", keywords: ["login", "log in"] },
+  {
+    title: "Sign up",
+    href: "/auth/sign-up",
+    keywords: ["register", "create account"],
+  },
+].map((page) => ({ ...page, source: "page", icon: DocumentTextIcon }));
+
+const features: readonly Entry[] = [
+  {
+    source: "page",
+    title: "HTML simulators",
+    detail: "Open the HTML library to import and play",
+    href: "/learning-simulator?mode=html",
+    icon: CpuChipIcon,
+    keywords: ["html", "upload html", "import html", "simulations"],
+  },
+  {
+    source: "page",
+    title: "Game Boy",
+    detail: "Open the ROM library to import and play",
+    href: "/learning-simulator?mode=gb",
+    icon: CpuChipIcon,
+    keywords: ["gb", "gbc", "rom", "emulator", "upload rom", "import rom"],
+  },
+  {
+    source: "page",
+    title: "Request an activity",
+    detail: "Suggest a game or activity",
+    href: "/activities?request=1",
+    icon: SparklesIcon,
+    keywords: ["request game", "suggest", "submit activity"],
+  },
+  {
+    source: "page",
+    title: "New group",
+    detail: "Create a group chat",
+    href: "/chat?panel=group",
+    icon: ChatBubbleLeftRightIcon,
+    keywords: ["create group", "group chat"],
+  },
+  {
+    source: "page",
+    title: "Find people",
+    detail: "Find accounts and start a conversation in Chat",
+    href: "/chat",
+    icon: UserCircleIcon,
+    keywords: ["users", "friends", "direct message", "dm", "members"],
+  },
+];
+
 const account: readonly Entry[] = [
+  {
+    source: "account",
+    title: "Sign out",
+    detail: "Open sign-out confirmation",
+    icon: ArrowRightStartOnRectangleIcon,
+    action: "sign-out",
+    keywords: ["signout", "logout", "log out", "sign off"],
+  },
   {
     source: "account",
     title: "User account",
     detail: "Profile, email, password, and devices",
     icon: UserCircleIcon,
     action: "account",
-    // No "sign out". This row opens the account panel, and a result that
-    // answers that search by showing you a different screen is worse than one
-    // that finds nothing — signing out is deliberately left where it is, on a
-    // row in the menu you have to travel to, rather than one Enter away from a
-    // box you type into by reflex.
     keywords: [
       "profile",
       "email",
@@ -254,6 +295,22 @@ const account: readonly Entry[] = [
 ];
 
 const settings: readonly Entry[] = [
+  {
+    source: "setting",
+    title: "Tab disguise",
+    detail: "Change this tab’s title and icon",
+    icon: GlobeAltIcon,
+    action: "settings",
+    keywords: ["tab mask", "camouflage", "favicon", "disguise"],
+  },
+  {
+    source: "setting",
+    title: "Escape destination",
+    detail: "Choose where the panic key takes you",
+    icon: KeyIcon,
+    action: "settings",
+    keywords: ["escape to", "panic url", "redirect", "destination"],
+  },
   {
     source: "setting",
     title: "Settings",
@@ -319,7 +376,14 @@ const settings: readonly Entry[] = [
  * order they are wanted in: "chat" is far more often a place you are trying to
  * get to than a thing you are trying to configure.
  */
-const entries: readonly Entry[] = [...pages, ...account, ...settings];
+const entries: readonly Entry[] = [
+  ...pages,
+  ...extraPages,
+  ...features,
+  ...experiences,
+  ...account,
+  ...settings,
+];
 
 /** Chat's mark, for the message results. Held here so `RailSearch` does not
  *  import a second icon set to draw one row. */
@@ -363,6 +427,8 @@ export function searchEntries(needle: string, limit: number): Hit[] {
         title: entry.title,
         detail: entry.detail,
         icon: entry.icon,
+        tint: entry.tint,
+        experienceId: entry.experienceId,
         href: entry.href,
         action: entry.action,
       },
@@ -370,8 +436,13 @@ export function searchEntries(needle: string, limit: number): Hit[] {
     });
   }
 
+  const counts = new Map<HitSource, number>();
   return scored
     .sort((first, second) => second.rank - first.rank)
-    .slice(0, limit)
+    .filter(({ hit }) => {
+      const count = counts.get(hit.source) ?? 0;
+      counts.set(hit.source, count + 1);
+      return count < limit;
+    })
     .map((entry) => entry.hit);
 }

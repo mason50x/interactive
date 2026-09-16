@@ -9,7 +9,7 @@ import { StoreUser } from "@/components/store-user";
  * Everything the app needs and an activity must never get.
  *
  * This sits in the three route trees that make up the app — `(site)`, `/auth`,
- * `/dashboard` — rather than in the root layout, because the root layout also
+ * the `(app)` route group — rather than in the root layout, because the root layout also
  * wraps `/learn`, the shell an activity is framed in. That shell is deliberately
  * bare (see `src/app/learn/layout.tsx`): mounting `ClerkProvider` there would
  * load Clerk's script and a Convex client into a page whose only job is to
