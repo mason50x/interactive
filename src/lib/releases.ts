@@ -62,7 +62,7 @@ export const releases: readonly Release[] = [
 - Reload the service you are using. A dedicated reload button refreshes the current Experience tab.
 - Use Experience in fullscreen. The browser controls include a fullscreen option where your browser supports it.
 - Navigate Experience tabs with your keyboard. Arrow keys move between tabs, while Home and End jump to the first and last.
-- More services to choose from. The Experience collection has expanded to include Netflix, Spotify, Apple Music, ChatGPT, Claude, Gemini, and TikTok alongside YouTube.
+- More services to choose from. The Experience collection has expanded to include Netflix, Spotify, Apple Music, Gemini, and TikTok alongside YouTube.
 - Updated service icons. The expanded collection includes recognizable icons to make services easier to spot in search and tabs.
 - More daily Experience time for members. The member allowance increased from five minutes to thirty minutes per day.
 - A separate allowance for staff. CEO and moderator accounts receive two hours of Experience time per day.
@@ -71,7 +71,7 @@ export const releases: readonly Release[] = [
 - Experience tabs share one allowance. Opening several services inside Experience does not give each one a separate timer.
 - Clearer messages when a service cannot open. Experience explains when a service is unavailable, when it is checking your time, and when your daily allowance has run out.
 - More reliable service startup. Fixes address cases where an Experience page or popup could try to open before its connection was ready.
-- Better handling of service popups and verification screens. Compatibility work improves how supported sites open additional windows and handle checks such as Claude’s verification page.
+- Better handling of service popups. Compatibility work improves how supported sites open additional windows.
 
 - Start a direct message without a friend request. You can now find another account and open a conversation immediately.
 - Browse people directly in Chat. An account directory makes other members available alongside your existing conversations.

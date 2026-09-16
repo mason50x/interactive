@@ -11,7 +11,7 @@ export const ROLES = {
     deleteChatMessages: false,
     adminBadge: false,
     botTagsPerDay: 5,
-    experienceSecondsPerDay: 30 * 60,
+    experienceSecondsPerDay: 90 * 60,
   },
   moderator: { ...staffPrivileges },
   ceo: { ...staffPrivileges },

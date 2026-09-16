@@ -199,7 +199,7 @@ test("legacy keys cannot assign the admin role", async () => {
   expect(roleFor("")).toBe("member");
   expect(privilegesFor(mason)).toEqual({
     deleteChatMessages: false, adminBadge: false,
-    botTagsPerDay: 5, experienceSecondsPerDay: 1800,
+    botTagsPerDay: 5, experienceSecondsPerDay: 5400,
   });
 });
 

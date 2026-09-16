@@ -95,20 +95,18 @@ options/transfer-list form and original script-src lookup used by consent SDKs.
 
 ## Authentication and additional apps
 
-The catalog also includes Spotify, ChatGPT, Claude, Gemini, and Apple Music.
+The catalog also includes Spotify, Gemini, and Apple Music.
 Google account/consent hosts and the `/js/bg/` authentication scripts are
 allowed for YouTube and Gemini. Google Search remains outside the allowlist.
-Spotify's separate asset domains, Apple's account/media hosts, and Claude's
-asset and CAPTCHA hosts are dependencies rather than additional tiles.
-ChatGPT's authentication and asset entries follow the relevant domains in
-[OpenAI's network guidance](https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps).
+Spotify's separate asset domains and Apple's account/media hosts are
+dependencies rather than additional tiles.
 
 The published engine also needs two module compatibility corrections, applied
 in `scripts/build-site.mjs` to both page and service-worker engines:
 
 - Use pinned Meriyah 6.1.4 instead of the older parser embedded in the bundle.
-  Claude uses a valid `for (const item of await of(...))` loop that the embedded
-  parser rejects, leaving the entire script's imports unrewritten.
+  The embedded parser rejects valid `for (const item of await of(...))` loops,
+  leaving the entire script's imports unrewritten.
 - Resolve dynamic imports with the emitted argument order `(base, specifier)`.
   The upstream method reverses these arguments, importing the calling module
   itself. Apple Music consequently loses its player and sign-in controls.
@@ -120,16 +118,16 @@ prove third-party account login, chat completion, or licensed playback.
 
 Live local testing on 2026-09-15 reached YouTube and Spotify sign-in forms,
 Gemini's signed-out screen and Google sign-in, and Apple Music's catalog and
-player controls. Full account testing is still pending. ChatGPT returned an
-upstream "Unable to load site" page; Claude remained blank after loading its
-scripts; Apple's nested sign-in navigation still reached a missing page.
+player controls. Full account testing is still pending. Apple's nested sign-in
+navigation still reached a missing page.
 Do not treat these services as fully verified until login and actual playback
 or chat have been tested through the deployed proxy and app frame.
 
 ## TikTok
 
 TikTok is a catalog app with a locally bundled favicon. Its allowlist includes
-`tiktok.com`, `tiktokcdn-us.com`, `tiktokcdn.com`, `tiktokv.us`, `tiktokw.us`,
+`tiktok.com`, `tiktokcdn-us.com`, `tiktokcdn-eu.com`, `tiktokcdn.com`,
+`tiktokv.us`, `tiktokw.us`, `tiktokv.eu`, `tiktokw.eu`,
 `tiktokv.com`, `ttwstatic.com`, and `muscdn.com` (including subdomains).
 The US homepage and live browser requests on 2026-09-15 identified the regional
 API, verification, login, script, image, and video hosts; the homepage also
@@ -147,6 +145,25 @@ Deploy both the app and Experience Worker for the catalog and relay changes
 to take effect in production.
 
 Regression coverage: the Experience Vitest tests exercise TikTok's catalog,
-route, logo, all eight host families, representative dependency URLs, and
+route, logo, all eleven host families, representative dependency URLs, and
 lookalike-host rejection. The Experience Playwright suite checks the shared
 proxy engine. These deterministic tests do not assert live TikTok playback.
+
+
+On 2026-09-16, production reproduced a completely blank TikTok skeleton:
+its homepage selected `sf16-website-login.neutral.tiktokcdn-eu.com` for app
+scripts, while local connections selected the already allowed US CDN. The
+relay rejected every EU script, so hydration never ran. The fix adds the
+observed EU CDN plus `tiktokw.eu` and `tiktokv.eu` for regional configuration
+and SDK requests. Hostname lookalikes remain denied. Denials now log only the
+host under `experience_destination_denied`, without signed paths or queries.
+The production relay hotfix preserves existing assets and unrelated settings.
+Browser verification must use a ChromeOS user agent, including worker requests,
+because this deployment intentionally restricts its hostname to ChromeOS.
+
+The repaired production flow was verified in a nested sandboxed Chromium frame
+with a ChromeOS user agent at 1365×900: EU app scripts and the feed returned
+200, and video reached readyState 4 with advancing playback time. The Log in → Use phone or email interaction displayed the phone-number and
+verification-code inputs. No relay destination denials were observed after the
+complete fix. This verifies the
+reported skeleton failure, not authenticated login or every regional variant.

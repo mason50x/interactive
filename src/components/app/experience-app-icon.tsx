@@ -5,8 +5,6 @@ import { SolidIcon } from "@/components/ui/icon";
 const SERVICE_ICONS: Record<string, string> = {
   tiktok: "/experience/tiktok.png",
   spotify: "/experience/spotify.ico",
-  chatgpt: "/experience/chatgpt.svg",
-  claude: "/experience/claude.svg",
   gemini: "/experience/gemini.svg",
   "apple-music": "/experience/apple-music.png",
 };
@@ -32,9 +30,7 @@ export function ExperienceAppIcon({
         width={40}
         height={40}
         unoptimized
-        className={[className, id === "chatgpt" ? "dark:invert" : ""]
-          .filter(Boolean)
-          .join(" ")}
+        className={className}
       />
     );
   }

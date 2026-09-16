@@ -29,29 +29,29 @@ test("requires authentication and reads do not spend time or create records", as
     "Sign in",
   );
   const status = await user.query(api.experience.status, { day: 0 });
-  expect(status.remainingSeconds).toBe(1800);
+  expect(status.remainingSeconds).toBe(5400);
   expect(status.resetsAt).toBe(Math.floor(start / DAY) * DAY + DAY);
   expect(
     await t.run((ctx) => ctx.db.query("experienceLeases").take(10)),
   ).toEqual([]);
 });
 
-test("reloads and concurrent tabs reuse one lease; regular accounts stop at thirty minutes", async () => {
+test("reloads and concurrent tabs reuse one lease; regular accounts stop at ninety minutes", async () => {
   const { t, user } = setup();
   const results = await Promise.all([
     user.mutation(api.experience.acquire, {}),
     user.mutation(api.experience.acquire, {}),
   ]);
   expect(results[0]).toEqual(results[1]);
-  expect(results[0].remainingSeconds).toBe(1785);
-  for (let i = 1; i < 120; i++) {
+  expect(results[0].remainingSeconds).toBe(5385);
+  for (let i = 1; i < 360; i++) {
     vi.setSystemTime(start + i * 15_000);
     await user.mutation(api.experience.acquire, {});
   }
-  vi.setSystemTime(start + 1_800_000);
+  vi.setSystemTime(start + 5_400_000);
   const exhausted = await user.mutation(api.experience.acquire, {});
   expect(exhausted.remainingSeconds).toBe(0);
-  expect(exhausted.leaseUntil).toBe(start + 1_800_000);
+  expect(exhausted.leaseUntil).toBe(start + 5_400_000);
   expect(
     await t.run((ctx) => ctx.db.query("experienceLeases").take(10)),
   ).toHaveLength(1);
@@ -66,7 +66,7 @@ test("only server-authorized admins receive two hours, independently of other ac
   const other = await t
     .withIdentity({ subject: "impostor", name: "admin" })
     .mutation(api.experience.acquire, {});
-  expect(other.remainingSeconds).toBe(1785);
+  expect(other.remainingSeconds).toBe(5385);
 });
 
 test("early renewal never reserves more than fifteen seconds ahead", async () => {
@@ -75,7 +75,7 @@ test("early renewal never reserves more than fifteen seconds ahead", async () =>
   vi.setSystemTime(start + 10_000);
   const result = await user.mutation(api.experience.acquire, {});
   expect(result.leaseUntil).toBe(start + 25_000);
-  expect(result.remainingSeconds).toBe(1775);
+  expect(result.remainingSeconds).toBe(5375);
 });
 
 test("idle time is not charged; only short prepaid intervals are consumed", async () => {
@@ -83,7 +83,7 @@ test("idle time is not charged; only short prepaid intervals are consumed", asyn
   await user.mutation(api.experience.acquire, {});
   vi.setSystemTime(start + 3_600_000);
   const result = await user.mutation(api.experience.acquire, {});
-  expect(result.remainingSeconds).toBe(1770);
+  expect(result.remainingSeconds).toBe(5370);
   expect(result.leaseUntil).toBe(start + 3_615_000);
 });
 
@@ -93,11 +93,11 @@ test("midnight clips the lease, restores quota, and deletes old limiter and leas
   vi.setSystemTime(midnight - 2_000);
   const result = await user.mutation(api.experience.acquire, {});
   expect(result.leaseUntil).toBe(midnight);
-  expect(result.remainingSeconds).toBe(1798);
+  expect(result.remainingSeconds).toBe(5398);
   vi.setSystemTime(midnight);
   // Create the next day's state before running delayed cleanup of yesterday.
   const next = await user.mutation(api.experience.acquire, {});
-  expect(next.remainingSeconds).toBe(1785);
+  expect(next.remainingSeconds).toBe(5385);
   await t.finishInProgressScheduledFunctions();
   // Run just yesterday's scheduled cleanup (not tomorrow's).
   await vi.advanceTimersByTimeAsync(2_000);
@@ -111,7 +111,7 @@ test("midnight clips the lease, restores quota, and deletes old limiter and leas
       key: `person:${Math.floor(start / DAY)}`,
       config: {
         kind: "fixed window",
-        rate: 1800,
+        rate: 5400,
         period: DAY,
         start: Math.floor(start / DAY) * DAY,
       },
@@ -120,7 +120,7 @@ test("midnight clips the lease, restores quota, and deletes old limiter and leas
   expect(old.ts).toBe(0);
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1785);
+  ).toBe(5385);
 });
 
 test("leaving returns unused seconds and the overview stays frozen", async () => {
@@ -129,16 +129,16 @@ test("leaving returns unused seconds and the overview stays frozen", async () =>
   vi.setSystemTime(start + 3_000);
   await user.mutation(api.experience.release, { sessionId: "tab" });
   const stopped = await user.query(api.experience.status, { day: 0 });
-  expect(stopped.remainingSeconds).toBe(1797);
+  expect(stopped.remainingSeconds).toBe(5397);
   expect(stopped.leaseUntil).toBe(start + 3_000);
   vi.setSystemTime(start + 3_600_000);
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1797);
+  ).toBe(5397);
   await user.mutation(api.experience.release, { sessionId: "tab" });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1797);
+  ).toBe(5397);
 });
 
 test("closing one tab does not refund time reserved by another active tab", async () => {
@@ -149,12 +149,12 @@ test("closing one tab does not refund time reserved by another active tab", asyn
   await user.mutation(api.experience.release, { sessionId: "one" });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1785);
+  ).toBe(5385);
   vi.setSystemTime(start + 5_000);
   await user.mutation(api.experience.release, { sessionId: "two" });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1795);
+  ).toBe(5395);
 });
 
 test("delayed closes cannot stop a new session or refund another account", async () => {
@@ -168,15 +168,15 @@ test("delayed closes cannot stop a new session or refund another account", async
     .mutation(api.experience.release, { sessionId: "resumed" });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1785);
+  ).toBe(5385);
   vi.setSystemTime(start + 4_000);
   await user.mutation(api.experience.release, { sessionId: "resumed" });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1796);
+  ).toBe(5396);
 });
 
-test("existing five-minute accounts gain twenty-five minutes without losing time already used", async () => {
+test("existing five-minute accounts gain eighty-five minutes without losing time already used", async () => {
   const { t, user } = setup();
   await user.mutation(api.experience.acquire, { sessionId: "old" });
   await t.run(async (ctx) => {
@@ -185,10 +185,10 @@ test("existing five-minute accounts gain twenty-five minutes without losing time
     await ctx.runMutation(components.rateLimiter.lib.rateLimit, {
       name: "experienceSeconds",
       key: `person:${Math.floor(start / DAY)}`,
-      count: 1500,
+      count: 5100,
       config: {
         kind: "fixed window",
-        rate: 1800,
+        rate: 5400,
         period: DAY,
         start: Math.floor(start / DAY) * DAY,
       },
@@ -196,12 +196,12 @@ test("existing five-minute accounts gain twenty-five minutes without losing time
   });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1785);
+  ).toBe(5385);
   await user.mutation(api.experience.acquire, { sessionId: "old" });
   await user.mutation(api.experience.acquire, { sessionId: "old" });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1785);
+  ).toBe(5385);
 });
 
 
@@ -210,14 +210,16 @@ test("removing an admin reduces the existing allowance without resetting spent t
   await user.mutation(api.experience.acquire, {});
   vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   const revoked = await user.mutation(api.experience.acquire, {});
-  expect(revoked.allowanceSeconds).toBe(1800);
-  expect(revoked.remainingSeconds).toBe(1785);
-  expect((await user.query(api.experience.status, { day: 0 })).remainingSeconds).toBe(1785);
+  expect(revoked.allowanceSeconds).toBe(5400);
+  expect(revoked.remainingSeconds).toBe(5385);
+  expect((await user.query(api.experience.status, { day: 0 })).remainingSeconds).toBe(5385);
 });
 
 
 test.each([
-  ["person", 600, 120, 1680],
+  ["person", 600, 120, 5280],
+  ["person", 1800, 120, 5280],
+  ["person", 1800, 1800, 3600],
   ["admin", 18_000, 120, 7080],
   ["admin", 18_000, 8000, 0],
 ] as const)("migrates %s from %i seconds after %i used", async (subject, oldAllowance, used, remaining) => {

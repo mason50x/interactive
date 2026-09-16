@@ -56,7 +56,7 @@ if (bundle.split(brokenUrlMatcher).length !== 2) {
   throw new Error("Review the experience CSS compatibility patch for this engine version.");
 }
 // The parser embedded in the published engine rejects valid `for (const x of
-// await of(...))` syntax used by Claude. Its installed, pinned parser fixes
+// await of(...))` syntax. Its installed, pinned parser fixes
 // this. Use it in both page and service-worker engines so a parse failure does
 // not silently leave relative module imports pointing at the proxy root.
 const parser = readFileSync(join(modules, "meriyah", "dist", "meriyah.umd.min.js"), "utf8");

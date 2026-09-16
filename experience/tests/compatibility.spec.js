@@ -48,7 +48,7 @@ test("module imports are rewritten when a for-of loop awaits a function named of
   const result = await page.evaluate(async () => {
     const engine = new Ultraviolet(experienceConfig);
     engine.meta.origin = location.origin;
-    engine.meta.base = engine.meta.url = new URL("https://claude.ai/assets/app.js");
+    engine.meta.base = engine.meta.url = new URL("https://music.apple.com/assets/app.js");
     const source = 'import { of } from "./vendor.js"; async function run() { for (const item of await of()) { console.log(item); } }';
     const rewritten = engine.rewriteJS(source);
     const executable = engine.rewriteJS('return (async () => { const of = async () => [42]; for (const item of await of()) return item; })()');

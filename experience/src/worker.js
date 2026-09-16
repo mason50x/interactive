@@ -337,6 +337,8 @@ function parseTarget(raw, protocols) {
     };
   }
   if (!isAllowed(url)) {
+    // Host-only diagnostics: never log signed URLs, queries, or credentials.
+    console.warn("experience_destination_denied", { host: url.hostname });
     return {
       error: bareError(
         403,
