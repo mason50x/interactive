@@ -2,7 +2,6 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import { useMemo } from "react";
-import { useChat } from "@/components/app/chat/chat-provider";
 import type { ActivityEntry } from "@/lib/activity";
 import { conversationName } from "@/lib/chat";
 import { GENRES } from "@/lib/genres";
@@ -73,7 +72,6 @@ export function useSearchHits(
   activities: readonly ActivityEntry[],
 ) {
   const needle = needleOf(query);
-  const { isAdmin } = useChat();
 
   // The catalogue, folded once. See `scoreFolded` — this is the array that
   // makes it worth having: 318 activities scored on every keystroke, against
@@ -93,13 +91,7 @@ export function useSearchHits(
     [activities],
   );
 
-  const entryHits = useMemo(
-    () =>
-      searchEntries(needle, ENTRY_LIMIT).filter(
-        (hit) => isAdmin || hit.href !== "/entertainment",
-      ),
-    [needle, isAdmin],
-  );
+  const entryHits = useMemo(() => searchEntries(needle, ENTRY_LIMIT), [needle]);
 
   const activityHits = useMemo<Hit[]>(() => {
     if (needle === "") return [];

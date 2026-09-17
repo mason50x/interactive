@@ -25,6 +25,27 @@ export type Release = {
 
 export const releases: readonly Release[] = [
   {
+    version: "1.1.1",
+    importance: "minor",
+    date: "2026-09-17",
+    title: "More to watch. Fewer hiccups.",
+    body: `TikTok fixes, a full Entertainment gallery, and a round of improvements across the app.
+
+- Improved TikTok compatibility in Experience, including support for additional European TikTok services. Some issues may still remain.
+- The full Entertainment gallery is now available to everyone, with cover artwork and dedicated pages for watching.
+- Find something to watch with title search, category filters, and featured or alphabetical sorting.
+- Browse animation and anime with episode counts shown on gallery cards, then choose an episode directly from the player.
+- Added a video setup guide for Entertainment, with captions and an explanation of the Google Drive sign-in and cookie settings used for playback.
+- Entertainment remembers completed setup in your browser, with a fallback for the current session when preferences cannot be saved.
+- Watching now uses a dark viewing theme, while keeping your saved appearance preference for the rest of the app.
+- Entertainment playback includes controls to reload, return to the gallery, and enter fullscreen where supported.
+- Refreshed the activity gallery with a shared card layout and consistent search, filtering, and sorting controls.
+- Simplified the sidebar so it adapts to the available screen width, with updated navigation styling.
+- Improved player controls on smaller screens so long titles take up less space.
+- Cleaned up account-name formatting when saving and syncing profiles.
+- Fixed the activity-request icon’s appearance in dark mode.`,
+  },
+  {
     version: "1.1",
     importance: "important",
     date: "2026-09-15",

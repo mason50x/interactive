@@ -1,5 +1,4 @@
-import { canAccessEntertainment } from "@/lib/entertainment-access";
-import { EntertainmentSoon } from "@/components/app/tv/entertainment-soon";
+import { auth } from "@clerk/nextjs/server";
 import { EntertainmentSetup } from "@/components/app/tv/entertainment-setup";
 
 export default async function EntertainmentLayout({
@@ -7,6 +6,6 @@ export default async function EntertainmentLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (!(await canAccessEntertainment())) return <EntertainmentSoon />;
+  await auth.protect();
   return <EntertainmentSetup>{children}</EntertainmentSetup>;
 }

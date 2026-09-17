@@ -11,7 +11,9 @@ function release(version: string, importance?: Release["importance"]): Release {
 }
 
 test("1.0.1 keeps the existing 1.0 storage key for read and unread users", () => {
-  const previousReleases = releases.slice(1);
+  const previousReleases = releases.slice(
+    releases.findIndex((entry) => entry.version === "1.0.1"),
+  );
   expect(previousReleases[0].version).toBe("1.0.1");
   const key = `release-seen:${releaseSeenVersion(previousReleases)}`;
   const storage = new Map<string, string>();
@@ -31,13 +33,13 @@ test("skipping consecutive minor updates preserves the read state", () => {
 });
 
 test("an important release starts a fresh state that subsequent minor updates inherit", () => {
-  expect(currentRelease.version).toBe("1.1");
-  expect(currentRelease.importance).toBe("important");
-  const history = releases;
+  expect(currentRelease.version).toBe("1.1.1");
+  expect(currentRelease.importance).toBe("minor");
+  const history = releases.slice(1);
+  expect(history[0].version).toBe("1.1");
+  expect(history[0].importance).toBe("important");
   expect(releaseSeenVersion(history)).toBe("1.1");
-  expect(releaseSeenVersion([release("1.1.1", "minor"), ...history])).toBe(
-    "1.1",
-  );
+  expect(releaseSeenVersion(releases)).toBe("1.1");
 });
 
 test("releases are important by default", () => {

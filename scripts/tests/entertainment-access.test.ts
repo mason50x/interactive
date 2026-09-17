@@ -18,13 +18,11 @@ vi.mock("@/components/app/tv/entertainment-setup", () => ({
   EntertainmentSetup: () => null,
 }));
 
-import { canAccessEntertainment } from "@/lib/entertainment-access";
 import Layout from "@/app/(app)/entertainment/layout";
 import Catalogue from "@/app/(app)/entertainment/page";
 import Player, {
   generateMetadata,
 } from "@/app/(app)/entertainment/[slug]/page";
-import { EntertainmentSoon } from "@/components/app/tv/entertainment-soon";
 import { EntertainmentSetup } from "@/components/app/tv/entertainment-setup";
 import { TvPlayer } from "@/components/app/tv/tv-player";
 
@@ -33,51 +31,42 @@ beforeEach(() => {
   protect.mockResolvedValue({});
   getToken.mockResolvedValue("verified-clerk-token");
   fetchQuery.mockResolvedValue(false);
-  findTvShow.mockReturnValue({ slug: "test-show", title: "Staff-only show" });
+  findTvShow.mockReturnValue({ slug: "test-show", title: "Available show" });
 });
 
-test("members get SOON on catalogue, layout, and direct player links without show data", async () => {
-  expect((await Layout({ children: "private content" })).type).toBe(
-    EntertainmentSoon,
-  );
-  expect((await Catalogue()).type).toBe(EntertainmentSoon);
-  expect(
-    (await Player({ params: Promise.resolve({ slug: "test-show" }) })).type,
-  ).toBe(EntertainmentSoon);
-  expect(
-    await generateMetadata({ params: Promise.resolve({ slug: "test-show" }) }),
-  ).toEqual({ title: "Entertainment" });
-  expect(findTvShow).not.toHaveBeenCalled();
-});
-
-test("verified staff can see the setup and player", async () => {
-  fetchQuery.mockResolvedValue(true);
-  expect((await Layout({ children: "private content" })).type).toBe(
-    EntertainmentSetup,
-  );
+test("all members can access setup, catalogue, player, and show metadata without staff authorization", async () => {
+  expect((await Layout({ children: "content" })).type).toBe(EntertainmentSetup);
+  expect((await Catalogue()).props.children[1].props.shows).toEqual([]);
   expect(
     (await Player({ params: Promise.resolve({ slug: "test-show" }) })).type,
   ).toBe(TvPlayer);
-  expect(fetchQuery).toHaveBeenCalledWith(
-    expect.anything(),
-    {},
-    { token: "verified-clerk-token" },
-  );
-  expect(protect).toHaveBeenCalled();
-});
-
-test("missing token denies access without querying as an anonymous user", async () => {
-  getToken.mockResolvedValue(null);
-  expect(await canAccessEntertainment()).toBe(false);
+  expect(
+    await generateMetadata({ params: Promise.resolve({ slug: "test-show" }) }),
+  ).toEqual({ title: "Available show" });
+  expect(protect).toHaveBeenCalledTimes(4);
+  expect(getToken).not.toHaveBeenCalled();
   expect(fetchQuery).not.toHaveBeenCalled();
 });
 
-test("authentication or authorization service failure cannot return protected content", async () => {
-  protect.mockRejectedValueOnce(new Error("Sign in required"));
+test("a missing Convex token does not prevent authenticated members from watching", async () => {
+  getToken.mockResolvedValue(null);
+  expect(
+    (await Player({ params: Promise.resolve({ slug: "test-show" }) })).type,
+  ).toBe(TvPlayer);
+  expect(fetchQuery).not.toHaveBeenCalled();
+});
+
+test("signed-out requests still require authentication on every entry point", async () => {
+  protect.mockRejectedValue(new Error("Sign in required"));
+  await expect(Layout({ children: "content" })).rejects.toThrow(
+    "Sign in required",
+  );
   await expect(Catalogue()).rejects.toThrow("Sign in required");
-  fetchQuery.mockRejectedValueOnce(new Error("Authorization unavailable"));
   await expect(
     Player({ params: Promise.resolve({ slug: "test-show" }) }),
-  ).rejects.toThrow("Authorization unavailable");
+  ).rejects.toThrow("Sign in required");
+  await expect(
+    generateMetadata({ params: Promise.resolve({ slug: "test-show" }) }),
+  ).rejects.toThrow("Sign in required");
   expect(findTvShow).not.toHaveBeenCalled();
 });
