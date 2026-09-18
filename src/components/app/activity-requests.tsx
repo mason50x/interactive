@@ -40,9 +40,11 @@ export function ActivityRequests() {
   const params = useSearchParams();
   const requested = params.get("request") === "1";
   const [open, setOpen] = useState(requested);
-  useEffect(() => {
+  const [prevRequested, setPrevRequested] = useState(requested);
+  if (prevRequested !== requested) {
+    setPrevRequested(requested);
     if (requested) setOpen(true);
-  }, [requested]);
+  }
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);

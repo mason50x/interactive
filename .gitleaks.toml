@@ -9,3 +9,15 @@ useDefault = true
 description = "OpenAI moderation category enum is not an API credential"
 regexTarget = "line"
 regexes = ['''^\s*\{ key: "sexual/minors", refusal: "exploitation"(?:, banOnSight: true)? \},$''']
+
+# Google Drive "share with anyone who has the link" folder URLs in
+# src/lib/tv.catalogue.json carry a `resourcekey` query parameter. It is a
+# public link component, not a credential: it grants no account or API access
+# and only works together with the folder ID in the same public URL.
+# Gitleaks' generic-api-key rule flags these as false positives, which fails
+# the Secrets job in CI. Match the parameter on the source line; never exempt
+# a file, commit, or real key format.
+[[allowlists]]
+description = "Google Drive share-link resource keys are public URL components, not secrets"
+regexTarget = "line"
+regexes = ['''[?&]resourcekey=0-[A-Za-z0-9_-]+''']
