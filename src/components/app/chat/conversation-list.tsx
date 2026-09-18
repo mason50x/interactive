@@ -68,9 +68,11 @@ export function ConversationList() {
   const [panel, setPanel] = useState<Panel | null>(
     requestedPanel === "group" ? "group" : null,
   );
-  useEffect(() => {
+  const [prevRequestedPanel, setPrevRequestedPanel] = useState(requestedPanel);
+  if (prevRequestedPanel !== requestedPanel) {
+    setPrevRequestedPanel(requestedPanel);
     if (requestedPanel === "group") setPanel("group");
-  }, [requestedPanel]);
+  }
   const [groupPanel, setGroupPanel] = useState<GroupPanelRequest | null>(null);
 
   const [term, setTerm] = useState("");
