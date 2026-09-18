@@ -48,6 +48,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (
     [
       "/home",
+      "/admin",
       "/activities",
       "/entertainment",
       "/chat",
@@ -73,6 +74,7 @@ export const config = {
     // These are application routes even when a dynamic segment looks like a
     // filename. Otherwise their layouts call auth() without Clerk context.
     "/home/:path*",
+    "/admin/:path*",
     "/activities/:path*",
     "/entertainment/:path*",
     "/chat/:path*",

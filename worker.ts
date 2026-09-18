@@ -41,6 +41,7 @@ export default {
       learn ||
       [
         "/home",
+        "/admin",
         "/activities",
         "/chat",
         "/experience",
