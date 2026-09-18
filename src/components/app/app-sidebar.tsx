@@ -3,6 +3,10 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  ShieldCheckIcon,
+  ShieldExclamationIcon,
+} from "@heroicons/react/24/outline";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { VersionCard } from "@/components/app/version-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
@@ -15,7 +19,7 @@ import {
 import { usePreferences } from "@/components/preferences-provider";
 import { RailSearch } from "@/components/app/rail-search";
 import { UserMenu } from "@/components/app/user-menu";
-import { navItems } from "@/lib/nav";
+import { navItems, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
 
@@ -56,7 +60,20 @@ import { useWarmRoutes } from "@/lib/warm";
 export function AppSidebar() {
   const pathname = usePathname();
   const { preferences } = usePreferences();
-  const { hasUnread, mentioned, conversations } = useChat();
+  const { hasUnread, mentioned, conversations, profile, staffRoles } = useChat();
+  const isCeo = staffRoles.some(
+    (entry) => entry.clerkId === profile?.clerkId && entry.role === "ceo",
+  );
+  const destinations: NavItem[] = isCeo
+    ? [
+        ...navItems,
+        {
+          label: "Admin",
+          href: "/admin",
+          icon: { outline: ShieldCheckIcon, solid: ShieldExclamationIcon },
+        },
+      ]
+    : navItems;
   const hasNewAnnouncement = conversations.some(
     (conversation) =>
       conversation.kind === "announcements" && conversation.unread > 0,
@@ -94,7 +111,7 @@ export function AppSidebar() {
           destinations, so the list — and only the list — is allowed to
           scroll inside it. */}
       <ul className="relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pb-2 pl-3">
-        {navItems.map((item) => {
+        {destinations.map((item) => {
           const active = item.href === activeHref;
           const lit = item.href === litHref;
           const Icon = item.icon.solid;

@@ -10,6 +10,7 @@
 
 import type * as accountSync from "../accountSync.js";
 import type * as activityRequests from "../activityRequests.js";
+import type * as adminQuotas from "../adminQuotas.js";
 import type * as chat_accounts from "../chat/accounts.js";
 import type * as chat_admin from "../chat/admin.js";
 import type * as chat_attachments from "../chat/attachments.js";
@@ -58,6 +59,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   accountSync: typeof accountSync;
   activityRequests: typeof activityRequests;
+  adminQuotas: typeof adminQuotas;
   "chat/accounts": typeof chat_accounts;
   "chat/admin": typeof chat_admin;
   "chat/attachments": typeof chat_attachments;
