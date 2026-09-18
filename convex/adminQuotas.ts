@@ -16,6 +16,16 @@ async function requireCeo(ctx: QueryCtx | MutationCtx) {
   return identity.subject;
 }
 
+/** Lets the client gate the page without duplicating role config in Next.js. */
+export const access = query({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    return Boolean(identity && roleFor(identity.subject) === "ceo");
+  },
+});
+
 /** A compact directory for the quota console. Clerk remains the source of truth. */
 export const users = query({
   args: {},

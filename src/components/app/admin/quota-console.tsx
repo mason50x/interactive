@@ -12,7 +12,8 @@ import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 type QuotaKind = "experience" | "bot";
 
 export function QuotaConsole() {
-  const users = useQuery(api.adminQuotas.users, {});
+  const access = useQuery(api.adminQuotas.access, {});
+  const users = useQuery(api.adminQuotas.users, access === true ? {} : "skip");
   const reset = useMutation(api.adminQuotas.reset);
   const [scope, setScope] = useState<"global" | "user">("global");
   const [selectedUser, setSelectedUser] = useState("");
@@ -71,6 +72,21 @@ export function QuotaConsole() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (access === undefined) {
+    return <p className="text-sm text-muted-foreground">Checking access…</p>;
+  }
+
+  if (!access) {
+    return (
+      <Card className="p-6 sm:p-7">
+        <h2 className="text-xl font-semibold text-foreground">Access restricted</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This page is available only to the CEO role.
+        </p>
+      </Card>
+    );
   }
 
   return (

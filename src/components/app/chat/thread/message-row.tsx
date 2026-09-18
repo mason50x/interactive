@@ -33,9 +33,9 @@ import type { ChatMessage } from "@convex/chat/messages";
  *
  * Yours on the right and everybody else's on the left, with the face and the
  * name only on theirs — the side is the whole of who said it. Messages close
- * together from the same person are one block: the face is drawn once, the
- * name once at the end, and the rows between sit tight. Everything that can
- * be done to a message hangs off the bar under it, which is always laid out
+ * together from the same person are one block: the face and name are drawn
+ * once at the beginning, and the rows after it sit tight. Everything that can
+ * be done to a message hangs off the bar above it, which is always laid out
  * and only sometimes visible, so nothing moves under the pointer that
  * summoned it.
  */
@@ -46,7 +46,6 @@ const GROUP_WINDOW_MS = 5 * 60_000;
 export function MessageRow({
   message,
   previous,
-  next,
   mine,
   me,
   canAct,
@@ -84,11 +83,6 @@ export function MessageRow({
     previous !== undefined &&
     previous.authorClerkId === message.authorClerkId &&
     message._creationTime - previous._creationTime < GROUP_WINDOW_MS;
-  const endsGroup =
-    next === undefined ||
-    next.authorClerkId !== message.authorClerkId ||
-    next._creationTime - message._creationTime >= GROUP_WINDOW_MS;
-
   const gone = message.status !== "visible";
   const bot = isBot(message.authorClerkId);
 
@@ -186,6 +180,116 @@ export function MessageRow({
           mine && "items-end",
         )}
       >
+        {/* The message header stays above the content. It always keeps its
+            height because appearing on hover must not move the bubble that
+            summoned it, and because Base UI needs a stable menu anchor. */}
+        <div
+          className={cn(
+            "mb-1 flex h-5 items-center gap-2 px-1",
+            mine && "flex-row-reverse",
+          )}
+        >
+          {!mine && !grouped && staffRole ? (
+            <TooltipProvider delay={250}>
+              <AdminTooltip>
+                <TooltipTrigger
+                  aria-label={staffRole === "ceo" ? "CEO" : "Moderator"}
+                  className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                >
+                  <StaffBadge role={staffRole} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  {staffRole === "ceo" ? "CEO" : "Moderator"}
+                </TooltipContent>
+              </AdminTooltip>
+            </TooltipProvider>
+          ) : null}
+
+          {mine || grouped ? null : bot ? (
+            <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
+              {personName(author)}
+            </span>
+          ) : (
+            <PersonCard
+              person={author}
+              className="cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+            >
+              {personName(author)}
+            </PersonCard>
+          )}
+
+          <span
+            className={cn(
+              "text-[0.6875rem] text-faint transition-opacity duration-150",
+              menuOpen
+                ? "opacity-100"
+                : "opacity-0 group-focus-within/message:opacity-100 group-hover/message:opacity-100 pointer-coarse:opacity-100",
+            )}
+          >
+            {time}
+          </span>
+
+          {adminError ? (
+            <span role="alert" className="text-xs text-destructive">
+              {adminError}
+            </span>
+          ) : null}
+          {(gone && !isAdmin) || !canAct ? null : (
+            <div
+              className={cn(
+                "flex items-center gap-0.5 transition-opacity duration-150",
+                menuOpen
+                  ? "opacity-100"
+                  : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
+                !menuOpen && "pointer-events-none",
+              )}
+            >
+              <ReactionPicker
+                messageId={message._id}
+                open={reacting}
+                onOpenChange={setReacting}
+              />
+
+              {choosable ? (
+                <MessageMenu
+                  message={message}
+                  mine={mine}
+                  gone={gone}
+                  deletable={deletable}
+                  isAdmin={isAdmin}
+                  open={choosing}
+                  onOpenChange={setChoosing}
+                  onReply={onReply}
+                  onAdminError={setAdminError}
+                />
+              ) : null}
+            </div>
+          )}
+        </div>
+
+        {message.reactions.length > 0 ? (
+          <Tooltip.Provider delay={250} closeDelay={100}>
+            <div
+              className={cn("mb-1 flex flex-wrap gap-1", mine && "justify-end")}
+            >
+              {message.reactions.map((reaction) => (
+                <ReactionPill
+                  key={reaction.emoji}
+                  messageId={message._id}
+                  reaction={reaction}
+                  canAct={canAct}
+                  onReact={() =>
+                    void react({
+                      messageId: message._id,
+                      emoji: reaction.emoji,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </Tooltip.Provider>
+        ) : null}
+
         {gone || message.replyTo === undefined ? null : (
           <ReplyPreview
             reply={message.replyTo}
@@ -248,130 +352,6 @@ export function MessageRow({
           </p>
         )}
 
-        {message.reactions.length > 0 ? (
-          <Tooltip.Provider delay={250} closeDelay={100}>
-            <div
-              className={cn("mt-1 flex flex-wrap gap-1", mine && "justify-end")}
-            >
-              {message.reactions.map((reaction) => (
-                <ReactionPill
-                  key={reaction.emoji}
-                  messageId={message._id}
-                  reaction={reaction}
-                  canAct={canAct}
-                  onReact={() =>
-                    void react({
-                      messageId: message._id,
-                      emoji: reaction.emoji,
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </Tooltip.Provider>
-        ) : null}
-
-        {/* Under the message, not over it — the bubble is the thing being
-            read and it should start at the top of its own row. Always drawn,
-            whether or not it has anything to say, because it is what the hover
-            controls sit in: a line that appeared on hover would move the
-            message out from under the pointer that summoned it. The row keeps
-            its height for the same reason, so what is inside it can come and
-            go without anything moving. */}
-        <div
-          className={cn(
-            "mt-1 flex h-5 items-center gap-2 px-1",
-            mine && "flex-row-reverse",
-          )}
-        >
-          {!mine && endsGroup && staffRole ? (
-            <TooltipProvider delay={250}>
-              <AdminTooltip>
-                <TooltipTrigger
-                  aria-label={staffRole === "ceo" ? "CEO" : "Moderator"}
-                  className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                >
-                  <StaffBadge role={staffRole} />
-                </TooltipTrigger>
-                <TooltipContent>
-                  {staffRole === "ceo" ? "CEO" : "Moderator"}
-                </TooltipContent>
-              </AdminTooltip>
-            </TooltipProvider>
-          ) : null}
-
-          {mine || !endsGroup ? null : bot ? (
-            <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
-              {personName(author)}
-            </span>
-          ) : (
-            <PersonCard
-              person={author}
-              className="cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
-            >
-              {personName(author)}
-            </PersonCard>
-          )}
-
-          {/* Every message, not just the grouped ones. A column of times down
-              the edge of the thread is a lot of ink for something nobody reads
-              until they want to know when — so on a screen with a pointer it
-              waits to be asked, and comes up with the controls it shares the
-              row with. On a touch screen there is no hover to ask with, so it
-              is simply there. It stays up while either menu is open for the
-              same reason they do: the pointer has left the message to go to
-              the popup. */}
-          <span
-            className={cn(
-              "text-[0.6875rem] text-faint transition-opacity duration-150",
-              menuOpen
-                ? "opacity-100"
-                : "opacity-0 group-focus-within/message:opacity-100 group-hover/message:opacity-100 pointer-coarse:opacity-100",
-            )}
-          >
-            {time}
-          </span>
-
-          {adminError ? (
-            <span role="alert" className="text-xs text-destructive">
-              {adminError}
-            </span>
-          ) : null}
-          {(gone && !isAdmin) || !canAct ? null : (
-            <div
-              className={cn(
-                // `opacity` and not `display`: a `display: none` element has no
-                // box, and no box means no anchor for the popup that is measuring
-                // it. This one is always laid out and merely invisible.
-                "flex items-center gap-0.5 transition-opacity duration-150",
-                menuOpen
-                  ? "opacity-100"
-                  : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
-                !menuOpen && "pointer-events-none",
-              )}
-            >
-              <ReactionPicker
-                messageId={message._id}
-                open={reacting}
-                onOpenChange={setReacting}
-              />
-
-              {choosable ? (
-                <MessageMenu
-                  message={message}
-                  mine={mine}
-                  gone={gone}
-                          deletable={deletable}
-                  isAdmin={isAdmin}
-                  open={choosing}
-                  onOpenChange={setChoosing}
-                  onReply={onReply}
-                  onAdminError={setAdminError}
-                />
-              ) : null}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
