@@ -62,6 +62,10 @@ import {
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  materializeCuratedActivities,
+  readCuratedActivities,
+} from "./materialize-curated-activities.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOGUE = join(ROOT, "src", "lib", "activities.catalogue.json");
@@ -337,6 +341,9 @@ export function assertPatched(path, html) {
 
 async function main() {
   const games = JSON.parse(await readFile(CATALOGUE, "utf8"));
+  const curated = await readCuratedActivities();
+  const curatedSlugs = new Set(curated.map((activity) => activity.slug));
+  const upstreamGames = games.filter((game) => !curatedSlugs.has(game.slug));
   const planned = games.reduce((sum, game) => sum + game.bytes, 0);
 
   console.log(`catalogue : ${games.length} games, ${bytes(planned)}`);
@@ -369,7 +376,7 @@ async function main() {
   try {
     await stat(join(staging, ".git"));
     await Promise.all(
-      games.map((game) =>
+      upstreamGames.map((game) =>
         stat(join(staging, UPSTREAM_PREFIX, game.slug, "index.html")),
       ),
     );
@@ -418,7 +425,7 @@ async function main() {
         "set",
         THUMBNAILS_SOURCE,
         RUFFLE_SOURCE,
-        ...games.map((game) => `${UPSTREAM_PREFIX}/${game.slug}`),
+        ...upstreamGames.map((game) => `${UPSTREAM_PREFIX}/${game.slug}`),
       ]);
 
       console.log("\n→ materialising files");
@@ -429,7 +436,7 @@ async function main() {
     // would otherwise surface as a tile that 404s. Catch it here, where the
     // fix is to re-run the catalogue generator, rather than in production.
     const absent = [];
-    for (const game of games) {
+    for (const game of upstreamGames) {
       try {
         await stat(join(staging, UPSTREAM_PREFIX, game.slug, "index.html"));
       } catch {
@@ -443,11 +450,11 @@ async function main() {
           "Re-run scripts/build-catalogue.mjs.",
       );
     }
-    console.log(`  ${games.length} bundles present`);
+    console.log(`  ${upstreamGames.length} upstream bundles present`);
 
     console.log("\n→ patching game pages");
     let patched = 0;
-    for (const game of games) {
+    for (const game of upstreamGames) {
       const directory = join(staging, UPSTREAM_PREFIX, game.slug);
       for (const file of await readdir(directory, { recursive: true })) {
         if (!file.endsWith(".html")) continue;
@@ -464,6 +471,11 @@ async function main() {
     console.log(
       `  ${patched} pages rewritten (analytics, cloaking, and upstream branding removed)`,
     );
+
+    console.log("\n→ materialising curated bundles");
+    const curatedMaterial = await materializeCuratedActivities({
+      fresh: FRESH,
+    });
 
     // The catalogue generator refuses to write two games onto one path, so a
     // collision here means the JSON was edited by hand. Stop before the
@@ -483,11 +495,10 @@ async function main() {
     await rm(BUCKET_LAYOUT, { recursive: true, force: true });
     await mkdir(BUCKET_LAYOUT, { recursive: true });
     for (const game of games) {
-      await symlink(
-        join(staging, UPSTREAM_PREFIX, game.slug),
-        join(BUCKET_LAYOUT, game.path),
-        "dir",
-      );
+      const source = curatedSlugs.has(game.slug)
+        ? join(curatedMaterial.staging, game.slug)
+        : join(staging, UPSTREAM_PREFIX, game.slug);
+      await symlink(source, join(BUCKET_LAYOUT, game.path), "dir");
     }
     console.log(`  ${games.length} directories linked under ${BUCKET_LAYOUT}`);
 

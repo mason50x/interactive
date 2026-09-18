@@ -22,7 +22,7 @@
  *   node scripts/build-catalogue.mjs
  */
 
-import { readdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -34,6 +34,7 @@ const GAMES_PREFIX = "games";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "src", "lib", "activities.catalogue.json");
 const THUMBNAILS = join(ROOT, "public", "thumbnails");
+const CURATED = join(ROOT, "scripts", "data", "curated-activities.json");
 
 /**
  * Console ROM containers. A directory holding one of these is dropped from the
@@ -390,10 +391,11 @@ async function localArt() {
 }
 
 async function main() {
-  const [html, tree, art] = await Promise.all([
+  const [html, tree, art, curated] = await Promise.all([
     fetchText("games/index.html"),
     fetchTree(),
     localArt(),
+    readFile(CURATED, "utf8").then(JSON.parse),
   ]);
 
   const entries = parseCatalogue(html).map((entry) => ({
@@ -447,6 +449,15 @@ async function main() {
       rank: index,
       bytes: bytesByDirectory.get(entry.slug) ?? 0,
     });
+  }
+
+  for (const activity of curated) {
+    const entry = { ...activity };
+    delete entry.source;
+    if (games.some((game) => game.slug === entry.slug)) {
+      throw new Error(`Curated slug ${entry.slug} already exists upstream.`);
+    }
+    games.push(entry);
   }
 
   // A listed slug that upstream no longer ships is stale, and the list should

@@ -12,6 +12,7 @@ logos, or trademarks. Dependencies retain their individual licenses.
 | `public/thumbnails/` | Catalogue imports from [a456pur/seraph](https://github.com/a456pur/seraph); individual games/art have different rightsholders | Per-image redistribution permission has not been established here; excluded from the MIT grant |
 | `public/chat/bot-avatar.png` | See [source attribution](public/chat/ASSETS.md) | Source recorded; character/art redistribution rights are not established by attribution alone; excluded from the MIT grant |
 | Hosted activity bundles | External asset bucket; maintenance scripts import from Seraph | Not part of the source distribution; upstream hosting does not establish rights to each game |
+| BlackJack 3D hosted bundle and `public/thumbnails/blackjack.webp` | Code This Lab S.r.l., [product page](https://codecanyon.net/item/html5-3d-blackjack-html5-casino-game/7909037), demo build retrieved 2026-09-18 | Commercial work; excluded from the repository MIT grant. Deployment requires a suitable Code This Lab / Envato license or direct written permission. The standalone copy disables the optional CTL Arcade ad event and uses documented deal-driven outcomes (`win_occurrence: -1`). |
 | Other image/audio/video/brand files under `public/` and icons under `src/app/` | Project media and third-party branding | Not included in the code license grant; verify provenance before redistributing or rebranding |
 | npm dependencies | Exact versions and license metadata in both lockfiles | Keep upstream notices when redistributing bundles |
 
