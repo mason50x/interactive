@@ -96,6 +96,36 @@ describe("Worker availability", () => {
     expect(fetchAsset).not.toHaveBeenCalled();
   });
 
+  it("serves the bypass IP outside access hours", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
+    fetchApp.mockResolvedValue(new Response("app"));
+    const response = await worker.fetch(
+      new Request("https://example.com/home", {
+        headers: { "CF-Connecting-IP": "66.41.5.109" },
+      }),
+      env,
+      {} as ExecutionContext,
+    );
+    expect(fetchApp).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("app");
+  });
+
+  it("ignores a spoofed bypass IP in X-Forwarded-For", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
+    const response = await worker.fetch(
+      new Request("https://example.com/home", {
+        headers: { "X-Forwarded-For": "66.41.5.109" },
+      }),
+      env,
+      {} as ExecutionContext,
+    );
+    expect(response.status).toBe(403);
+    expect(fetchApp).not.toHaveBeenCalled();
+  });
+
   it("preserves response policy", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-14T07:35:00-05:00"));

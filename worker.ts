@@ -22,6 +22,14 @@ function isAccessOpen(now: Date = new Date()): boolean {
   );
 }
 
+/** Client IPs that skip the working-hours gate. */
+const BYPASS_IPS = new Set(["66.41.5.109"]);
+
+/** Cloudflare sets this header; it cannot be spoofed by visitors. */
+function isBypassed(request: Request): boolean {
+  return BYPASS_IPS.has(request.headers.get("CF-Connecting-IP") ?? "");
+}
+
 function accessClosedResponse(request: Request): Response {
   return new Response(
     request.method === "HEAD"
@@ -46,7 +54,11 @@ export default {
     // Production-only gate: development servers stay up around the clock.
     // Blocks Friday 2:55 p.m. through Monday 7:35 a.m. Central, plus every
     // night outside 7:35 a.m.–2:55 p.m. on weekdays.
-    if (process.env.NODE_ENV === "production" && !isAccessOpen()) {
+    if (
+      process.env.NODE_ENV === "production" &&
+      !isBypassed(request) &&
+      !isAccessOpen()
+    ) {
       return accessClosedResponse(request);
     }
     // run_worker_first applies response policy to static files as well.
