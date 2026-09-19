@@ -96,6 +96,7 @@ export function Composer({
   peer,
   authors,
   me,
+  canMentionEveryone = false,
 }: {
   ref: Ref<ComposerHandle>;
   onSubmit: (
@@ -120,6 +121,8 @@ export function Composer({
   peer: MentionPerson | null;
   authors: MentionPerson[];
   me: string | null | undefined;
+  /** Staff in the Everyone room. The one place `@everyone` is offered. */
+  canMentionEveryone?: boolean;
 }) {
   const [body, setBody] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -179,6 +182,7 @@ export function Composer({
     peer,
     authors,
     me,
+    canMentionEveryone,
   });
 
   // Keep the newest words in view once the box has hit its height.
@@ -212,17 +216,21 @@ export function Composer({
 
     // Who the text names, from the people the picker offered, for the
     // placeholder to draw. The server reads the body and decides for itself.
+    // Nothing in a DM: `@words` there are plain text, with no picker behind
+    // them, so the placeholder draws them as typed.
     const mentions: ChatMention[] = [];
     let everyone = false;
-    for (const token of findMentionTokens(text)) {
-      if (token.handle === EVERYONE) {
-        if (kind === "group") everyone = true;
-        continue;
+    if (kind !== "dm") {
+      for (const token of findMentionTokens(text)) {
+        if (token.handle === EVERYONE) {
+          if (kind === "global" && canMentionEveryone) everyone = true;
+          continue;
+        }
+        const person = picker.people.known.get(token.handle);
+        if (person === undefined) continue;
+        if (mentions.some((entry) => entry.clerkId === person.clerkId)) continue;
+        mentions.push({ clerkId: person.clerkId, handle: person.handle });
       }
-      const person = picker.people.known.get(token.handle);
-      if (person === undefined) continue;
-      if (mentions.some((entry) => entry.clerkId === person.clerkId)) continue;
-      mentions.push({ clerkId: person.clerkId, handle: person.handle });
     }
 
     // Every entry in `sending` is `ready`, and `ready` always carries an id —

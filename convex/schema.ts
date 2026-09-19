@@ -349,7 +349,8 @@ export default defineSchema({
      * which is nearly all of them.
      *
      * `mentionsEveryone` is `@everyone`, which is a mention with no `clerkId`
-     * and no profile. Groups only, enforced on the way in.
+     * and no profile. The Everyone room only, staff only, enforced on the
+     * way in.
      *
      * Neither is what the conversation list reads to say "mentioned you" —
      * that is the `mentions` table below, which is indexed by who was named.

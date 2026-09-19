@@ -38,9 +38,10 @@ export type Refusal =
   | "not-a-member"
   | "reply-unavailable"
   // A mention that could not be honoured: somebody named who is not in the
-  // conversation, or `@everyone` outside a group. Both are the word being
-  // handed back to be changed, and neither costs anything — see
-  // `resolveMentions` in `convex/chat/messages.ts`.
+  // conversation, or `@everyone` outside the Everyone room (or from someone
+  // who is not staff). Both are the word being handed back to be changed,
+  // and neither costs anything — see `resolveMentions` in
+  // `convex/chat/messages.ts`.
   | "mention"
   | "mention-everyone"
   // Pictures. `sexual`, `self-harm` and `exploitation` above are shared with

@@ -397,6 +397,10 @@ function ConversationThread({
 
   const live = !daily || daysAgo === 0;
 
+  // A direct message is two people. `@words` in one are the plain text they
+  // were typed as — no chips, no "mentioned you" rim — however old the row.
+  const plainMentions = detail?.kind === "dm";
+
   return (
     <div
       // `min-w-0`: this is a flex item, and without it the pane is as wide as
@@ -472,6 +476,7 @@ function ConversationThread({
             mine={message.authorClerkId === userId}
             me={userId}
             canAct={profile !== null && !readOnly}
+            plainMentions={plainMentions}
             onReply={() => {
               setReplyingTo(message);
               composer.current?.focus();
@@ -491,6 +496,7 @@ function ConversationThread({
               mine
               me={userId}
               canAct={false}
+              plainMentions={plainMentions}
               onReply={() => {}}
               onJumpToMessage={jumpToMessage}
             />
@@ -522,6 +528,7 @@ function ConversationThread({
             peer={peer}
             authors={authors}
             me={userId}
+            canMentionEveryone={isAdmin}
           />
         ) : null}
       </div>

@@ -383,6 +383,44 @@ test.each(["@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot"])("%s resolve
   expect(jobs.filter(job => job.name.includes("bot:ask"))).toHaveLength(1);
 });
 
+test("@words in DMs send as plain text with no mentions, no pings, and no refusals", async () => {
+  const { t, alice, dm } = await setup();
+  await alice.mutation(api.chat.conversations.openDm, { peerClerkId: "bob" });
+  const bobDm = (await alice.query(api.chat.conversations.list, {}))
+    .find((row) => row.peerClerkId === "bob")!._id;
+  for (const body of [
+    "@bot hello",
+    "@bob are you there",
+    "@everyone hi",
+    "@nobody hello",
+  ]) {
+    expect(
+      await alice.mutation(api.chat.messages.send, {
+        conversationId: bobDm,
+        body,
+      }),
+    ).toEqual({ ok: true });
+  }
+  expect(
+    await alice.mutation(api.chat.messages.send, {
+      conversationId: dm,
+      body: "@bot what is 10 plus three?",
+    }),
+  ).toEqual({ ok: true });
+  const messages = await t.run((ctx) => ctx.db.query("messages").take(10));
+  expect(messages).toHaveLength(5);
+  for (const message of messages) {
+    expect(message.mentions).toBeUndefined();
+    expect(message.mentionsEveryone).toBeUndefined();
+  }
+  expect(await t.run((ctx) => ctx.db.query("mentions").take(10))).toEqual([]);
+  const jobs = await t.run((ctx) =>
+    ctx.db.system.query("_scheduled_functions").take(20),
+  );
+  // Only the bot DM still asks the bot — the user DM tags nothing.
+  expect(jobs.filter((job) => job.name.includes("bot:ask"))).toHaveLength(1);
+});
+
 test("bot replies bypass text moderation while preserving prompt visibility checks", async () => {
   const { t, dm } = await setup();
   const messageId = await t.run(ctx => ctx.db.insert("messages", {

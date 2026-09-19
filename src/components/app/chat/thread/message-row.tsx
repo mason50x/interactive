@@ -49,6 +49,7 @@ export function MessageRow({
   mine,
   me,
   canAct,
+  plainMentions = false,
   onReply,
   onJumpToMessage,
 }: {
@@ -59,6 +60,8 @@ export function MessageRow({
   /** The reader, for drawing a message that names them. */
   me: string | null | undefined;
   canAct: boolean;
+  /** A DM: `@words` are plain text, drawn with no chips and no highlight. */
+  plainMentions?: boolean;
   onReply: () => void;
   onJumpToMessage: (messageId: Id<"messages">) => void;
 }) {
@@ -124,9 +127,10 @@ export function MessageRow({
     avatarInitials: message.authorAvatarInitials,
   };
 
-  /** Somebody else said the reader's name in this one. */
+  /** Somebody else said the reader's name in this one. Never in a DM, where `@words` are plain text. */
   const named =
     !mine &&
+    !plainMentions &&
     (message.mentionsEveryone ||
       message.mentions.some((mention) => mention.clerkId === me));
 
@@ -341,10 +345,14 @@ export function MessageRow({
             <span className="relative">
               <MentionText
                 body={message.body}
-                resolve={resolverFor(
-                  message.mentions,
-                  message.mentionsEveryone,
-                )}
+                resolve={
+                  plainMentions
+                    ? () => undefined
+                    : resolverFor(
+                        message.mentions,
+                        message.mentionsEveryone,
+                      )
+                }
                 me={me}
                 mine={mine}
               />

@@ -2,11 +2,20 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
 
-import { adminClerkIds, privilegesFor, staffRoles } from "../../config/roles";
+import { adminClerkIds, privilegesFor, roleFor, staffRoles } from "../../config/roles";
 
 export async function adminId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity || !privilegesFor(identity.subject).deleteChatMessages) return null;
+  const user = await ctx.db.query("users")
+    .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
+  return user ? identity.subject : null;
+}
+
+/** Any staff (ceo or moderator) with a synced profile. Gates `@everyone`. */
+export async function staffId(ctx: QueryCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity || roleFor(identity.subject) === "member") return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;

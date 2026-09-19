@@ -39,11 +39,9 @@ describe("Worker availability", () => {
   });
 
   it.each([
-    "2026-09-14T07:29:59-05:00",
-    "2026-09-18T14:55:00-05:00",
-    "2026-09-19T12:00:00-05:00",
-    "2026-09-20T23:00:00-05:00",
-    "2026-01-05T23:00:00-06:00",
+    "2026-09-14T07:35:00-05:00",
+    "2026-09-14T10:00:00-05:00",
+    "2026-09-18T14:54:59-05:00",
   ])("serves production requests at %s", async (time) => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(time));
@@ -60,9 +58,47 @@ describe("Worker availability", () => {
     expect(fetchApp).toHaveBeenCalledTimes(4);
   });
 
+  it.each([
+    "2026-09-14T07:34:59-05:00",
+    "2026-09-18T14:55:00-05:00",
+    "2026-09-19T12:00:00-05:00",
+    "2026-09-20T23:00:00-05:00",
+    "2026-01-05T23:00:00-06:00",
+  ])("blocks production requests at %s", async (time) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(time));
+    for (const path of ["/", "/home", "/learn/test", "/api/test"]) {
+      fetchApp.mockResolvedValue(new Response("app"));
+      const response = await worker.fetch(
+        new Request(`https://example.com${path}`),
+        env,
+        {} as ExecutionContext,
+      );
+      expect(response.status).toBe(403);
+      expect(response.headers.get("content-type")).toContain("text/html");
+      expect(await response.text()).toContain("Outside working hours");
+    }
+    expect(fetchApp).not.toHaveBeenCalled();
+    expect(fetchAsset).not.toHaveBeenCalled();
+  });
+
+  it("blocks HEAD requests outside access hours with an empty body", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
+    const response = await worker.fetch(
+      new Request("https://example.com/home", { method: "HEAD" }),
+      env,
+      {} as ExecutionContext,
+    );
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("");
+    expect(fetchApp).not.toHaveBeenCalled();
+    expect(fetchAsset).not.toHaveBeenCalled();
+  });
+
   it("preserves response policy", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-14T07:30:00-05:00"));
+    vi.setSystemTime(new Date("2026-09-14T07:35:00-05:00"));
     fetchApp.mockResolvedValue(new Response("app"));
     const response = await worker.fetch(
       new Request("https://example.com/home"),
@@ -76,7 +112,7 @@ describe("Worker availability", () => {
   });
 
   it.each(["GET", "HEAD"])(
-    "serves assets on weekends for %s",
+    "blocks assets on weekends for %s",
     async (method) => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-09-19T12:00:00-05:00"));
@@ -90,11 +126,10 @@ describe("Worker availability", () => {
         env,
         {} as ExecutionContext,
       );
-      expect(response.status).toBe(200);
-      expect(response.headers.get("content-type")).toBe("text/css");
-      expect(response.headers.get("x-robots-tag")).toContain("noindex");
-      expect(await response.text()).toBe(method === "HEAD" ? "" : "body{}");
+      expect(response.status).toBe(403);
+      expect(response.headers.get("content-type")).toContain("text/html");
       expect(fetchApp).not.toHaveBeenCalled();
+      expect(fetchAsset).not.toHaveBeenCalled();
     },
   );
 });

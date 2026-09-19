@@ -76,7 +76,7 @@ const REFUSALS: Record<string, string> = {
   "not-a-member": "You are not in this conversation.",
   "reply-unavailable": "That message is no longer available to reply to.",
   mention: "You can only mention people who are in this conversation.",
-  "mention-everyone": "@everyone only works in a group.",
+  "mention-everyone": "Only staff can use @everyone, in the Everyone room.",
   // Nearly unreachable, and deliberately so: the wait is drawn as a ring above
   // the composer and the composer is shut until it closes, so the only way here
   // is a browser clock running ahead of the server's. Worded as the near miss

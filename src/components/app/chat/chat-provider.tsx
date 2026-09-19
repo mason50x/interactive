@@ -32,7 +32,8 @@ export type Chat = {
   hasUnread: boolean;
   /**
    * Whether something unread names the caller — by handle, or `@everyone`
-   * in a group. The rail says "Mentioned" instead of "Unread" when it does.
+   * in the Everyone room. The rail says "Mentioned" instead of "Unread"
+   * when it does.
    */
   mentioned: boolean;
 

@@ -65,6 +65,7 @@ export function useMentionPeople({
   me,
   open,
   query,
+  canMentionEveryone = false,
 }: {
   conversationId: Id<"conversations">;
   /** `null` until the conversation has answered about itself. */
@@ -78,6 +79,8 @@ export function useMentionPeople({
   open: boolean;
   /** What has been typed after the `@`, lowercased. */
   query: string;
+  /** Staff in the Everyone room. The one place `@everyone` is offered. */
+  canMentionEveryone?: boolean;
 }): {
   candidates: MentionCandidate[];
   /** Everybody ever offered, by handle. What the box's chips are drawn from. */
@@ -162,14 +165,15 @@ export function useMentionPeople({
           : first.index - second.index,
       );
 
-    const everyone = kind === "group" && EVERYONE.startsWith(query);
+    const everyone =
+      kind === "global" && canMentionEveryone && EVERYONE.startsWith(query);
     const room = everyone ? MAX_SHOWN - 1 : MAX_SHOWN;
     const list: MentionCandidate[] = ranked
       .slice(0, room)
       .map((entry) => ({ kind: "person", person: entry.person }));
     if (everyone) list.push({ kind: "everyone" });
     return list;
-  }, [people, query, kind]);
+  }, [people, query, kind, canMentionEveryone]);
 
   const loading =
     (group && members === undefined) ||
@@ -254,7 +258,7 @@ export function MentionPicker({
                     Everyone
                   </span>
                   <span className="block truncate text-[0.75rem] text-faint">
-                    Notify everyone in this group
+                    Notify everyone in this room
                   </span>
                 </span>
               </>
@@ -315,7 +319,7 @@ export function optionId(listId: string, index: number): string {
  * recognises and leave every other `@word` as the text it is.
  *
  * A chip for a person opens their card, the same door their name is
- * everywhere else — except a chip for the reader, and `@everyone`, which are
+ * everywhere else — except a chip for the reader, and `@everyone`, which is
  * nobody to open a card about. `plain` draws no cards at all, which is what
  * the layer under the textarea wants: it is behind the field, it takes no
  * pointer, and a button there would be a button nobody could press.
@@ -361,7 +365,7 @@ export function MentionText({
           className={chip}
           title={
             segment.clerkId === undefined
-              ? "Everyone in this group"
+              ? "Everyone in this room"
               : isBot(segment.clerkId)
                 ? "Room bot"
                 : undefined

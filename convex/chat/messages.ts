@@ -1,5 +1,5 @@
 import type { ChatAccount } from "./shared";
-import { adminId } from "./admin";
+import { adminId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
@@ -409,6 +409,11 @@ type ResolvedMentions =
 /**
  * Which of the `@words` in a body are people in this conversation.
  *
+ * Nowhere, in a direct message. Either side is one person away already, so
+ * there is nobody to pick out of a crowd — every `@word` there is plain
+ * text: no chips, no pings, no refusals. The bot's own direct message still
+ * answers every message, with or without `@bot` in it.
+ *
  * The server reads the body and decides, rather than trusting a list from the
  * client — see `convex/moderation/mentions.ts` for why. Each word is looked
  * up by its folded handle, and a word that is nobody's handle is left alone:
@@ -421,9 +426,10 @@ type ResolvedMentions =
  * that says `@name` goes on to the contact rule and would return the wrong
  * reason. The refusal hands the words back.
  *
- * `@everyone` is a group's alone. Anywhere else it is refused the same way,
- * for the same reason: `everyone` is a reserved handle, so it resolves to
- * nobody, and the contact rule would take it from there.
+ * `@everyone` is the Everyone room's alone, and staff's alone there.
+ * Anywhere else it is refused the same way, for the same reason: `everyone`
+ * is a reserved handle, so it resolves to nobody, and the contact rule would
+ * take it from there.
  *
  * ## What this reads
  *
@@ -447,6 +453,16 @@ async function resolveMentions(
   let everyone = false;
   let bot = member.kind === "dm" && member.dmPeer === BOT_ID;
 
+  // A direct message is two people. `@alice` there is not naming somebody
+  // out of a crowd, so there is nothing to resolve and nothing to refuse.
+  // Return every `@word` as a token anyway, so the filter reads them as the
+  // plain text they are rather than as contact details. The bot flag above
+  // is what still sends every bot-DM message to `ask`.
+  if (member.kind === "dm") {
+    for (const token of findMentionTokens(body)) tokens.add(token.handle);
+    return { ok: true, people, everyone, tokens, bot };
+  }
+
   for (const token of findMentionTokens(body)) {
     if (tokens.has(token.handle)) continue;
 
@@ -467,7 +483,10 @@ async function resolveMentions(
     }
 
     if (token.handle === EVERYONE) {
-      if (member.kind !== "group") {
+      if (member.kind !== "global") {
+        return { ok: false, refusal: "mention-everyone" };
+      }
+      if ((await staffId(ctx)) === null) {
         return { ok: false, refusal: "mention-everyone" };
       }
       everyone = true;

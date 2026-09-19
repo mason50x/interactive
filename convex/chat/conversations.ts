@@ -55,7 +55,8 @@ export type ConversationSummary = {
   unreadExact: boolean;
   /**
    * Whether something unread in here names the caller — by handle, or with
-   * `@everyone` in a group. The row says so instead of its usual subtitle.
+   * `@everyone` in the Everyone room. The row says so instead of its usual
+   * subtitle.
    */
   mentioned: boolean;
   peerClerkId?: string;
@@ -94,18 +95,18 @@ async function unreadFor(
 /**
  * Whether anything unread in a conversation names the caller.
  *
- * One bounded indexed read per target — the caller, and in a group
- * `@everyone` too — over the `mentions` table, from the reading position
- * forward. See that table in `convex/schema.ts` for why it exists rather
- * than this walking the messages. Not asked at all for a conversation with
- * nothing unread, which the caller settles first.
+ * One bounded indexed read per target — the caller, and in the Everyone
+ * room `@everyone` too — over the `mentions` table, from the reading
+ * position forward. See that table in `convex/schema.ts` for why it exists
+ * rather than this walking the messages. Not asked at all for a conversation
+ * with nothing unread, which the caller settles first.
  */
 async function mentionedIn(
   ctx: QueryCtx,
   member: Doc<"conversationMembers">,
 ): Promise<boolean> {
   const targets =
-    member.kind === "group" ? [member.clerkId, EVERYONE] : [member.clerkId];
+    member.kind === "global" ? [member.clerkId, EVERYONE] : [member.clerkId];
   for (const target of targets) {
     const rows = await ctx.db
       .query("mentions")

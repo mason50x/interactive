@@ -35,6 +35,7 @@ export function useMentionInput({
   peer,
   authors,
   me,
+  canMentionEveryone = false,
 }: {
   /** The text as the field holds it, dictation guess included. */
   shown: string;
@@ -49,6 +50,8 @@ export function useMentionInput({
   peer: MentionPerson | null;
   authors: MentionPerson[];
   me: string | null | undefined;
+  /** Staff in the Everyone room. The one place `@everyone` is offered. */
+  canMentionEveryone?: boolean;
 }) {
   /**
    * Where the caret is, for the picker.
@@ -85,7 +88,10 @@ export function useMentionInput({
    * list off the thread's subscriptions — see `useMentionPeople`.
    */
   const mention = mentionQueryAt(shown, caret);
-  const picking = mention !== null && dismissed !== mention.start;
+  // A direct message is two people: no crowd to pick from, so no picker.
+  // `@words` there stay the plain text they were typed as.
+  const picking =
+    kind !== "dm" && mention !== null && dismissed !== mention.start;
   const people = useMentionPeople({
     conversationId,
     kind,
@@ -94,13 +100,16 @@ export function useMentionInput({
     me,
     open: picking,
     query: mention?.query ?? "",
+    canMentionEveryone,
   });
   const candidates = picking ? people.candidates : [];
   const highlighted = Math.min(active, Math.max(0, candidates.length - 1));
 
-  /** What the box's chips are drawn from: everybody the picker has offered. */
+  /** What the box's chips are drawn from: everybody the picker has offered. `undefined` in a DM, where `@words` are plain text. */
   function resolveTyped(handle: string): string | null | undefined {
-    if (handle === EVERYONE) return kind === "group" ? null : undefined;
+    if (kind === "dm") return undefined;
+    if (handle === EVERYONE)
+      return kind === "global" && canMentionEveryone ? null : undefined;
     return people.known.get(handle)?.clerkId;
   }
 

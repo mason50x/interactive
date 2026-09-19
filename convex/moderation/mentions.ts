@@ -26,7 +26,7 @@
  * Change one, change the other. The server is the one that decides.
  */
 
-/** The one mention that is not a handle. Reserved, so nobody can own it. */
+/** The one mention that is not a handle. Reserved, so nobody can own it. The Everyone room only, staff only. */
 export const EVERYONE = "everyone";
 
 /**

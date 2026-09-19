@@ -16,7 +16,7 @@ import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
  * that decides.
  */
 
-/** The one mention that is not a person. Groups only. */
+/** The one mention that is not a person. The Everyone room only, staff only. */
 export const EVERYONE = "everyone";
 
 /** `@` then three to twenty handle characters, standing on its own. */
