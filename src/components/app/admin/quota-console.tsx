@@ -4,18 +4,12 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { CheckCircleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
+import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type QuotaKind = "experience" | "bot";
 
@@ -228,28 +222,30 @@ export function QuotaConsole() {
                   <span className="block truncate text-sm font-medium text-foreground">{displayName}</span>
                   <span className="block truncate text-xs text-muted-foreground">{user.username ? `@${user.username}` : user.email ?? user.clerkId}</span>
                 </button>
-                <Select
-                  value={user.role}
-                  disabled={isSelf || savingRole === user.clerkId}
-                  onValueChange={(next) => {
-                    if (typeof next === "string") void changeRole(user.clerkId, user.role, next);
-                  }}
-                >
-                  <SelectTrigger
+                {/*
+                  A native select, not the app's Base UI Select: its portalled
+                  popup never mounts in this runtime (verified in isolation,
+                  including raw primitives with no app code), while the
+                  OS-level list always opens. Same footprint and tokens as
+                  the shared trigger.
+                */}
+                <span className="relative inline-flex h-8 w-[8.5rem] shrink-0 items-center">
+                  <select
                     aria-label={`Role for ${displayName}`}
                     title={isSelf ? "You cannot change your own role." : undefined}
-                    className="h-8 w-[8.5rem] shrink-0 text-xs"
+                    value={user.role}
+                    disabled={isSelf || savingRole === user.clerkId}
+                    onChange={(event) => void changeRole(user.clerkId, user.role, event.target.value)}
+                    className="h-full w-full cursor-pointer appearance-none rounded-lg border border-border bg-background pr-7 pl-2.5 text-xs text-foreground outline-none transition-colors select-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
                     {SITE_ROLES.map((role) => (
-                      <SelectItem key={role} value={role}>
+                      <option key={role} value={role}>
                         {ROLE_LABEL[role]}
-                      </SelectItem>
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                  <ChevronUpDownIcon className="pointer-events-none absolute right-2 size-4 shrink-0 text-faint" />
+                </span>
               </div>
             );
           })}
