@@ -63,6 +63,22 @@ chat moderation, 50 bot uses per rolling day and two hours
 of Experience per UTC day. CEO displays a crown and CEO text; moderator displays
 a shield. Group membership is independent.
 
+A CEO can also change any account's role — including to `member` — from the
+role selector in the Admin page's user directory. Those edits are stored in
+the `staffRoles` table (`convex/adminQuotas.ts` `setRole`) and always win
+over this env map for that account, which is what makes them editable from a
+CEO client: env vars are deployment config with no runtime write API. A CEO
+cannot change their own role, and the change cannot leave zero CEOs, so the
+site cannot be locked out of the Admin page.
+
+After deploying the `staffRoles` table, copy the existing env staff into it
+once per deployment so nobody loses access in between — the migration skips
+anyone who already has a row, so CEO edits are never overwritten:
+
+```sh
+npx convex run roles:migrateFromEnv --prod
+```
+
 Before deploying, migrate `ADMIN_CLERK_IDS` into `STAFF_ROLES`, assigning existing
 staff the appropriate role. The old key is no longer read. Sidebar role caching
 is cosmetic and never grants backend access.

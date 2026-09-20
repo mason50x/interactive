@@ -1,6 +1,8 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
-import { roleFor, ROLES } from "../../config/roles";
+import { ROLES } from "../../config/roles";
 import { components } from "../_generated/api";
+import { resolveRole } from "../roles";
+import type { QueryCtx, MutationCtx } from "../_generated/server";
 
 export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "../../config/bot";
 
@@ -27,6 +29,11 @@ export const botRateLimiter = new RateLimiter(components.rateLimiter, {
   },
 });
 
-export function botQuotaName(clerkId: string) {
-  return roleFor(clerkId) !== "member" ? "adminBotTags" : "botTags";
+export async function botQuotaName(
+  ctx: QueryCtx | MutationCtx,
+  clerkId: string,
+) {
+  return (await resolveRole(ctx, clerkId)) !== "member"
+    ? "adminBotTags"
+    : "botTags";
 }

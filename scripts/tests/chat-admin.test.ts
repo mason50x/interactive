@@ -112,10 +112,12 @@ test("verified admin gets 50 bot uses; other accounts get five, with refunds in 
     ] as const) {
       const consume = (count = 1) =>
         t.run((ctx) =>
-          botRateLimiter.limit(ctx, botQuotaName(clerkId), {
-            key: clerkId,
-            count,
-          }),
+          botQuotaName(ctx, clerkId).then((name) =>
+            botRateLimiter.limit(ctx, name, {
+              key: clerkId,
+              count,
+            }),
+          ),
         );
       for (let i = 0; i < allowance; i++)
         expect((await consume()).ok).toBe(true);
@@ -128,10 +130,12 @@ test("verified admin gets 50 bot uses; other accounts get five, with refunds in 
     expect(
       (
         await t.run((ctx) =>
-          botRateLimiter.limit(ctx, botQuotaName(mason), {
-            key: mason,
-            count: 50,
-          }),
+          botQuotaName(ctx, mason).then((name) =>
+            botRateLimiter.limit(ctx, name, {
+              key: mason,
+              count: 50,
+            }),
+          ),
         )
       ).ok,
     ).toBe(true);
@@ -216,7 +220,7 @@ test("CEO and moderator keep the same capabilities but have distinct badges", as
   expect(roleFor(mason)).toBe("ceo");
   expect(privilegesFor(mason)).toEqual(privilegesFor("impostor"));
   const { botQuotaName } = await import("../../convex/chat/botConfig");
-  expect(botQuotaName(mason)).toBe("adminBotTags");
+  expect(await t.run((ctx) => botQuotaName(ctx, mason))).toBe("adminBotTags");
   vi.stubEnv("STAFF_ROLES", "not json");
   expect(await t.withIdentity({ subject: mason }).query(api.chat.admin.mine, {})).toBe(false);
 });

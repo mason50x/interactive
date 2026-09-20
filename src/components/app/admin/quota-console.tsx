@@ -4,17 +4,37 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { CheckCircleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
+import { useAuth } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type QuotaKind = "experience" | "bot";
 
+type SiteRole = "ceo" | "moderator" | "member";
+
+const ROLE_LABEL: Record<SiteRole, string> = {
+  ceo: "CEO",
+  moderator: "Moderator",
+  member: "Member",
+};
+
+const SITE_ROLES: SiteRole[] = ["ceo", "moderator", "member"];
+
 export function QuotaConsole() {
+  const { userId } = useAuth();
   const access = useQuery(api.adminQuotas.access, {});
   const users = useQuery(api.adminQuotas.users, access === true ? {} : "skip");
   const reset = useMutation(api.adminQuotas.reset);
+  const setRole = useMutation(api.adminQuotas.setRole);
   const [scope, setScope] = useState<"global" | "user">("global");
   const [selectedUser, setSelectedUser] = useState("");
   const [search, setSearch] = useState("");
@@ -22,6 +42,8 @@ export function QuotaConsole() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savingRole, setSavingRole] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -71,6 +93,22 @@ export function QuotaConsole() {
       setError(caught instanceof Error ? caught.message : "The reset failed.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function changeRole(clerkId: string, current: SiteRole, next: string) {
+    if (next !== "ceo" && next !== "moderator" && next !== "member") return;
+    if (next === current || savingRole !== null) return;
+    setRoleError(null);
+    setSavingRole(clerkId);
+    try {
+      await setRole({ clerkId, role: next });
+    } catch (caught) {
+      setRoleError(
+        caught instanceof Error ? caught.message : "The role change failed.",
+      );
+    } finally {
+      setSavingRole(null);
     }
   }
 
@@ -166,26 +204,55 @@ export function QuotaConsole() {
             <InputAddon><MagnifyingGlassIcon /></InputAddon>
             <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, handle, or email" aria-label="Search users" />
           </InputGroup>
+          {roleError && <p role="alert" className="mt-2 text-sm text-destructive">{roleError}</p>}
         </div>
         <div className="max-h-[32rem] overflow-y-auto">
           {users === undefined ? (
             <p className="p-5 text-sm text-muted-foreground">Loading users…</p>
           ) : filtered.length === 0 ? (
             <p className="p-5 text-sm text-muted-foreground">No users found.</p>
-          ) : filtered.map((user) => (
-            <button
-              key={user.clerkId}
-              type="button"
-              onClick={() => { setSelectedUser(user.clerkId); setScope("user"); setNotice(null); }}
-              className="flex w-full items-center justify-between gap-4 border-b border-border px-5 py-3 text-left last:border-0 hover:bg-muted/60"
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-foreground">{user.name ?? user.username ?? user.email ?? "Unnamed user"}</span>
-                <span className="block truncate text-xs text-muted-foreground">{user.username ? `@${user.username}` : user.email ?? user.clerkId}</span>
-              </span>
-              <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[0.6875rem] font-semibold text-muted-foreground">{user.role === "ceo" ? "CEO" : user.role}</span>
-            </button>
-          ))}
+          ) : filtered.map((user) => {
+            const displayName = user.name ?? user.username ?? user.email ?? "Unnamed user";
+            const isSelf = userId !== null && user.clerkId === userId;
+            return (
+              <div
+                key={user.clerkId}
+                className="flex w-full items-center justify-between gap-4 border-b border-border px-5 py-3 last:border-0 hover:bg-muted/60"
+              >
+                <button
+                  type="button"
+                  onClick={() => { setSelectedUser(user.clerkId); setScope("user"); setNotice(null); }}
+                  aria-pressed={selectedUser === user.clerkId && scope === "user"}
+                  className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                >
+                  <span className="block truncate text-sm font-medium text-foreground">{displayName}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{user.username ? `@${user.username}` : user.email ?? user.clerkId}</span>
+                </button>
+                <Select
+                  value={user.role}
+                  disabled={isSelf || savingRole === user.clerkId}
+                  onValueChange={(next) => {
+                    if (typeof next === "string") void changeRole(user.clerkId, user.role, next);
+                  }}
+                >
+                  <SelectTrigger
+                    aria-label={`Role for ${displayName}`}
+                    title={isSelf ? "You cannot change your own role." : undefined}
+                    className="h-8 w-[8.5rem] shrink-0 text-xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SITE_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {ROLE_LABEL[role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
         </div>
       </Card>
     </div>

@@ -2,11 +2,11 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
 
-import { adminClerkIds, privilegesFor, roleFor, staffRoles } from "../../config/roles";
+import { resolvePrivileges, resolveRole, resolveAdminClerkIds, resolveStaffRoles } from "../roles";
 
 export async function adminId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity || !privilegesFor(identity.subject).deleteChatMessages) return null;
+  if (!identity || !(await resolvePrivileges(ctx, identity.subject)).deleteChatMessages) return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;
@@ -15,7 +15,7 @@ export async function adminId(ctx: QueryCtx) {
 /** Any staff (ceo or moderator) with a synced profile. Gates `@everyone`. */
 export async function staffId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity || roleFor(identity.subject) === "member") return null;
+  if (!identity || (await resolveRole(ctx, identity.subject)) === "member") return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;
@@ -36,7 +36,7 @@ export const badges = query({
     if (!identity) return [];
     const user = await ctx.db.query("users")
       .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
-    return user ? adminClerkIds() : [];
+    return user ? await resolveAdminClerkIds(ctx) : [];
   },
 });
 
@@ -49,7 +49,7 @@ export const roles = query({
     if (!identity) return [];
     const user = await ctx.db.query("users")
       .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
-    return user ? staffRoles() : [];
+    return user ? await resolveStaffRoles(ctx) : [];
   },
 });
 

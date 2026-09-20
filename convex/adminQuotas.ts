@@ -3,18 +3,11 @@ import { ConvexError, v } from "convex/values";
 
 import { roleFor } from "../config/roles";
 import { components } from "./_generated/api";
-import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
 
 const experienceLimiter = new RateLimiter(components.rateLimiter);
-
-async function requireCeo(ctx: QueryCtx | MutationCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity || roleFor(identity.subject) !== "ceo") {
-    throw new ConvexError("CEO access required.");
-  }
-  return identity.subject;
-}
 
 /** Lets the client gate the page without duplicating role config in Next.js. */
 export const access = query({
@@ -22,9 +15,17 @@ export const access = query({
   returns: v.boolean(),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    return Boolean(identity && roleFor(identity.subject) === "ceo");
+    return Boolean(
+      identity && (await resolveRole(ctx, identity.subject)) === "ceo",
+    );
   },
 });
+
+const siteRole = v.union(
+  v.literal("ceo"),
+  v.literal("moderator"),
+  v.literal("member"),
+);
 
 /** A compact directory for the quota console. Clerk remains the source of truth. */
 export const users = query({
@@ -35,11 +36,17 @@ export const users = query({
       name: v.optional(v.string()),
       email: v.optional(v.string()),
       username: v.optional(v.string()),
-      role: v.union(v.literal("ceo"), v.literal("moderator"), v.literal("member")),
+      role: siteRole,
     }),
   ),
   handler: async (ctx) => {
     await requireCeo(ctx);
+    const overrides = new Map(
+      (await ctx.db.query("staffRoles").collect()).map((row) => [
+        row.clerkId,
+        row.role,
+      ]),
+    );
     const rows = await ctx.db.query("users").collect();
     return rows
       .map((user) => ({
@@ -47,7 +54,7 @@ export const users = query({
         name: user.name,
         email: user.email,
         username: user.username,
-        role: roleFor(user.clerkId),
+        role: overrides.get(user.clerkId) ?? roleFor(user.clerkId),
       }))
       .sort((a, b) =>
         (a.name ?? a.username ?? a.email ?? a.clerkId).localeCompare(
@@ -65,7 +72,9 @@ async function resetFor(
   quotas: ("experience" | "bot")[],
 ) {
   if (quotas.includes("bot")) {
-    await botRateLimiter.reset(ctx, botQuotaName(clerkId), { key: clerkId });
+    await botRateLimiter.reset(ctx, await botQuotaName(ctx, clerkId), {
+      key: clerkId,
+    });
   }
 
   if (quotas.includes("experience")) {
@@ -108,5 +117,69 @@ export const reset = mutation({
     const allUsers = await ctx.db.query("users").collect();
     for (const user of allUsers) await resetFor(ctx, user.clerkId, selected);
     return { usersReset: allUsers.length };
+  },
+});
+
+/**
+ * Sets one account's site role from the Admin user directory.
+ *
+ * CEO-gated. The write lands in the `staffRoles` table, which every
+ * authorization path reads ahead of the `STAFF_ROLES` env map — the env map
+ * is deployment config with no runtime write API, so a CEO client could
+ * never edit it directly.
+ *
+ * Two guards against locking the site out of this page: a CEO cannot change
+ * their own role, and the change cannot leave zero CEOs (counting table rows
+ * and env entries together).
+ */
+export const setRole = mutation({
+  args: {
+    clerkId: v.string(),
+    role: siteRole,
+  },
+  returns: v.object({ clerkId: v.string(), role: siteRole }),
+  handler: async (ctx, { clerkId, role }) => {
+    const caller = await requireCeo(ctx);
+    if (clerkId === caller) {
+      throw new ConvexError("You cannot change your own role.");
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .unique();
+    if (!user) throw new ConvexError("User not found.");
+
+    const staff = await resolveStaffRoles(ctx);
+    const ceosAfter = staff.filter(
+      (entry) =>
+        (entry.clerkId === clerkId ? role : entry.role) === "ceo",
+    ).length;
+    // Somebody outside the staff list (a member, or an env CEO the table
+    // demoted) can only count by being promoted, never by being demoted.
+    const promotesToCeo =
+      role === "ceo" && !staff.some((entry) => entry.clerkId === clerkId);
+    if (ceosAfter + (promotesToCeo ? 1 : 0) < 1) {
+      throw new ConvexError("The site needs at least one CEO.");
+    }
+
+    const existing = await ctx.db
+      .query("staffRoles")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        role,
+        updatedAt: Date.now(),
+        updatedBy: caller,
+      });
+    } else {
+      await ctx.db.insert("staffRoles", {
+        clerkId,
+        role,
+        updatedAt: Date.now(),
+        updatedBy: caller,
+      });
+    }
+    return { clerkId, role };
   },
 });

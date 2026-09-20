@@ -52,6 +52,25 @@ export default defineSchema({
     .searchIndex("searchUsername", { searchField: "username" }),
 
   /**
+   * CEO-editable role overrides, read alongside the server-owned `STAFF_ROLES`
+   * env map (see `config/roles.ts`). The env map is deployment config and has
+   * no runtime write API, so anything a CEO client can change has to live in
+   * a table. A row here always wins over the env map for that Clerk id —
+   * including an explicit `member`, which is how a CEO demotes somebody the
+   * env map still names.
+   */
+  staffRoles: defineTable({
+    clerkId: v.string(),
+    role: v.union(
+      v.literal("ceo"),
+      v.literal("moderator"),
+      v.literal("member"),
+    ),
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+  }).index("byClerkId", ["clerkId"]),
+
+  /**
    * One row per user, holding the choices that are theirs rather than the
    * device's.
    *
@@ -147,8 +166,6 @@ export default defineSchema({
     createdAt: v.number(),
     /** Absent on the global room, on purpose. See above. */
     lastMessageAt: v.optional(v.number()),
-    /** Central calendar date of the last scheduled greeting in Everyone. */
-    lastMorningGreetingDay: v.optional(v.string()),
     /** Groups only. `request` is the one that needs an owner to approve. */
     joinPolicy: v.optional(
       v.union(v.literal("invite"), v.literal("request"), v.literal("open")),

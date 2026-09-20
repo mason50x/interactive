@@ -1,6 +1,6 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
-import { privilegesFor, roleFor } from "../config/roles";
+import { resolvePrivileges, resolveRole } from "./roles";
 import { components, internal } from "./_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "./_generated/server";
 
@@ -18,14 +18,14 @@ async function quota(ctx: QueryCtx) {
   if (!identity) throw new ConvexError("Sign in to use Experience.");
   const now = Date.now();
   const day = Math.floor(now / DAY);
-  const allowanceSeconds = privilegesFor(identity.subject).experienceSecondsPerDay;
+  const allowanceSeconds = (await resolvePrivileges(ctx, identity.subject)).experienceSecondsPerDay;
   const key = `${identity.subject}:${day}`;
   const config = { kind: "fixed window" as const, rate: allowanceSeconds, period: DAY, start: day * DAY };
   const value = await limiter.getValue(ctx, "experienceSeconds", { key, config });
   const lease = await ctx.db.query("experienceLeases")
     .withIndex("by_clerkId_and_day", q => q.eq("clerkId", identity.subject).eq("day", day))
     .unique();
-  const previousAllowance = lease?.allowanceSeconds ?? (roleFor(identity.subject) !== "member" ? 18_000 : 300);
+  const previousAllowance = lease?.allowanceSeconds ?? ((await resolveRole(ctx, identity.subject)) !== "member" ? 18_000 : 300);
   const adjustment = lease ? allowanceSeconds - previousAllowance : 0;
   return { now, day, key, config, lease, adjustment, clerkId: identity.subject,
     status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value + adjustment)),

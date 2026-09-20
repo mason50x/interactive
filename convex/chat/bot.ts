@@ -39,9 +39,13 @@ export const quota = query({
   handler: async (ctx) => {
     const clerkId = await callerId(ctx);
     if (clerkId === null) return null;
-    const state = await botRateLimiter.getValue(ctx, botQuotaName(clerkId), {
-      key: clerkId,
-    });
+    const state = await botRateLimiter.getValue(
+      ctx,
+      await botQuotaName(ctx, clerkId),
+      {
+        key: clerkId,
+      },
+    );
     return {
       value: state.value,
       ts: state.ts,
@@ -573,6 +577,7 @@ export const ask = internalAction({
     exhausted: v.boolean(),
     retryAfter: v.optional(v.number()),
     metered: v.boolean(),
+    quotaName: v.union(v.literal("adminBotTags"), v.literal("botTags")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -693,7 +698,7 @@ export const ask = internalAction({
       });
       if (args.metered) {
         try {
-          await botRateLimiter.limit(ctx, botQuotaName(args.askerClerkId), {
+          await botRateLimiter.limit(ctx, args.quotaName, {
             key: args.askerClerkId,
             count: -1,
           });

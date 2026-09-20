@@ -3,10 +3,8 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ShieldCheckIcon,
-  ShieldExclamationIcon,
-} from "@heroicons/react/24/outline";
+import { ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon as ShieldCheckIconSolid } from "@heroicons/react/24/solid";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { VersionCard } from "@/components/app/version-card";
 import { RailConstellation } from "@/components/app/rail-constellation";
@@ -70,7 +68,7 @@ export function AppSidebar() {
         {
           label: "Admin",
           href: "/admin",
-          icon: { outline: ShieldCheckIcon, solid: ShieldExclamationIcon },
+          icon: { outline: ShieldCheckIcon, solid: ShieldCheckIconSolid },
         },
       ]
     : navItems;

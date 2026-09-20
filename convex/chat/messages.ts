@@ -330,9 +330,10 @@ export const send = mutation({
     // rate-limiter component rather than growing a row-per-tag usage log.
     // Missing configuration is free so setup never burns a real allowance.
     const botReady = Boolean(process.env.GEMINI_API_KEY);
+    const quotaName = await botQuotaName(ctx, profile.clerkId);
     const botLimit =
       named.bot && botReady
-        ? await botRateLimiter.limit(ctx, botQuotaName(profile.clerkId), { key: profile.clerkId })
+        ? await botRateLimiter.limit(ctx, quotaName, { key: profile.clerkId })
         : null;
     const botExhausted = botLimit?.ok === false;
 
@@ -360,6 +361,7 @@ export const send = mutation({
         exhausted: botExhausted,
         retryAfter: botLimit?.retryAfter,
         metered: botLimit?.ok === true,
+        quotaName,
       });
     }
 
