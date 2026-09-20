@@ -166,6 +166,12 @@ export default defineSchema({
     createdAt: v.number(),
     /** Absent on the global room, on purpose. See above. */
     lastMessageAt: v.optional(v.number()),
+    /**
+     * Retained while prod rows still carry it. The morning-greeting writer
+     * is gone, but deleting the field from the validator rejects the
+     * existing documents at deploy time — drop the data first, then this.
+     */
+    lastMorningGreetingDay: v.optional(v.string()),
     /** Groups only. `request` is the one that needs an owner to approve. */
     joinPolicy: v.optional(
       v.union(v.literal("invite"), v.literal("request"), v.literal("open")),
