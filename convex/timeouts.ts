@@ -9,7 +9,13 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { resolveRole } from "./roles";
-import { activeTimeout, requireNotTimedOut, timeoutRow } from "./timeoutState";
+import {
+  activeTimeout,
+  ceoClearedToday,
+  requireNotTimedOut,
+  timeoutDayStart,
+  timeoutRow,
+} from "./timeoutState";
 
 const ranks = { member: 0, moderator: 1, head_moderator: 2, ceo: 3 } as const;
 const timeoutView = v.object({
@@ -70,20 +76,22 @@ export const users = query({
   handler: async (ctx, args) => {
     const caller = await manager(ctx);
     const result = await ctx.db.query("users").paginate(args.paginationOpts);
+    const now = Date.now();
     const page = await Promise.all(
       result.page.map(async (user) => {
         const role = await resolveRole(ctx, user.clerkId);
         const row = await timeoutRow(ctx, user.clerkId);
-        const active = row?.enabled && row.expiresAt > Date.now();
+        const active = row?.enabled && row.expiresAt > now;
+        const ceoCleared = ceoClearedToday(row, now);
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
           username: user.username,
-          ceoCleared: row?.ceoCleared === true,
+          ceoCleared,
           canManage:
             ranks[role] < ranks[caller.role] &&
             (caller.role === "ceo" ||
-              (!row?.ceoCleared && !(active && row.issuedByRole === "ceo"))),
+              (!ceoCleared && !(active && row.issuedByRole === "ceo"))),
           timeout: active
             ? { rayId: row._id, reason: row.reason, expiresAt: row.expiresAt }
             : null,
@@ -120,7 +128,7 @@ export const set = mutation({
     const now = Date.now();
     if (
       caller.role !== "ceo" &&
-      (existing?.ceoCleared ||
+      (ceoClearedToday(existing, now) ||
         (existing?.enabled &&
           existing.expiresAt > now &&
           existing.issuedByRole === "ceo"))
@@ -197,6 +205,27 @@ export const expire = internalMutation({
       expiresAt <= Date.now()
     ) {
       await ctx.db.patch(id, { enabled: false });
+    }
+    return null;
+  },
+});
+
+/** Wake directory subscriptions at midnight; authorization also checks server time. */
+export const expireCeoClears = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("userTimeouts")
+      .withIndex("byCeoClearedAndUpdatedAt", (q) =>
+        q.eq("ceoCleared", true).lt("updatedAt", timeoutDayStart(Date.now())),
+      )
+      .take(100);
+    for (const row of rows) {
+      await ctx.db.patch(row._id, { ceoCleared: false });
+    }
+    if (rows.length === 100) {
+      await ctx.scheduler.runAfter(0, internal.timeouts.expireCeoClears, {});
     }
     return null;
   },

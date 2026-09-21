@@ -3,14 +3,9 @@
 import { useRef, useState } from "react";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import {
-  CheckCircleIcon,
-  ClockIcon,
-  LockClosedIcon,
-  MagnifyingGlassIcon,
-  ArrowDownIcon,
-} from "@heroicons/react/24/outline";
-import s from "./admin.module.css";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export function TimeoutConsole() {
   const { results, status, loadMore } = usePaginatedQuery(
@@ -72,247 +67,139 @@ export function TimeoutConsole() {
   }
 
   return (
-    <section
-      id="user_timeouts"
-      aria-labelledby="timeout-heading"
-      className={s.timeoutGrid}
-    >
-      <div className={`${s.panel} ${s.userPanel}`}>
-        <h2 id="timeout-heading" className={s.heading}>
-          User timeouts
-        </h2>
-        <p className={s.muted}>
-          Temporarily pause access for users below your role.
-        </p>
-        <label className={`${s.field} ${s.search}`}>
-          Search users
-          <MagnifyingGlassIcon aria-hidden="true" />
-          <input
-            className={s.control}
-            type="search"
-            placeholder="Name, handle, or account ID"
+    <Card className="p-6 sm:p-7">
+      <h2 className="text-xl font-semibold">User timeouts</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Temporarily pause access for users below your role. Timeouts expire
+        automatically and can be turned off early. This list is shared. Only
+        CEOs can change CEO-issued timeouts. CEO clearances protect against new
+        Head Moderator timeouts until midnight UTC.
+      </p>
+      <div className="mt-5 grid gap-6 md:grid-cols-2">
+        <div>
+          <Input
+            aria-label="Search timeout users"
+            placeholder="Search name or handle"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-        </label>
-        <div
-          className={s.list}
-          role="region"
-          aria-label="Timeout users"
-          tabIndex={0}
-        >
-          {filtered.map((user) => (
-            <button
-              key={user.clerkId}
-              type="button"
-              disabled={busy}
-              aria-pressed={selected === user.clerkId}
-              className={s.userRow}
-              onClick={() => {
-                setSelected(user.clerkId);
-                setReason(user.timeout?.reason ?? "");
-                setNotice(null);
-                setError(null);
-              }}
-            >
-              <span className={s.identity}>
-                <span className={s.name}>{user.label}</span>
-                <span className={s.meta}>
-                  {user.username ? `@${user.username}` : user.clerkId}
+          <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-border">
+            {filtered.map((user) => (
+              <button
+                key={user.clerkId}
+                type="button"
+                disabled={busy}
+                aria-pressed={selected === user.clerkId}
+                onClick={() => {
+                  setSelected(user.clerkId);
+                  setReason(user.timeout?.reason ?? "");
+                  setNotice(null);
+                  setError(null);
+                }}
+                className="block w-full border-b border-border p-3 text-left text-sm last:border-0 hover:bg-muted disabled:opacity-50 aria-pressed:bg-muted"
+              >
+                <span className="block font-medium">
+                  {user.label}
+                  {user.username ? ` (@${user.username})` : ""}
                 </span>
-                <span className={s.status}>
+                <span className="text-xs text-muted-foreground">
                   {user.ceoCleared
-                    ? "Cleared by CEO"
+                    ? "Cleared by CEO today"
                     : user.timeout
                       ? "Timed out"
                       : "No active timeout"}
                   {!user.canManage ? " · Restricted" : ""}
                 </span>
-              </span>
-              {selected === user.clerkId ? (
-                <CheckCircleIcon aria-hidden="true" />
-              ) : !user.canManage ? (
-                <LockClosedIcon aria-hidden="true" />
-              ) : null}
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <p className={s.empty} role="status">
-              {status === "LoadingFirstPage"
-                ? "Loading users…"
-                : "No matching users loaded."}
-            </p>
-          )}
-        </div>
-        <div className={s.listActions}>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <p className="p-3 text-sm">
+                {status === "LoadingFirstPage"
+                  ? "Loading users…"
+                  : "No matching users loaded."}
+              </p>
+            )}
+          </div>
           {status === "CanLoadMore" && (
-            <button
-              className={s.button}
-              type="button"
+            <Button
+              className="mt-3"
+              variant="outline"
               disabled={busy}
               onClick={() => loadMore(50)}
             >
               Load more users
-            </button>
+            </Button>
           )}
-          {target && (
-            <a
-              className={s.link}
-              href="#timeout-controls"
-              onClick={(event) => {
-                event.preventDefault();
-                document.getElementById("timeout-controls")?.focus();
-              }}
-            >
-              Timeout controls{" "}
-              <ArrowDownIcon width={16} height={16} aria-hidden="true" />
-            </a>
-          )}
+          {status === "LoadingMore" && <p role="status">Loading users…</p>}
         </div>
-        {status === "LoadingMore" && (
-          <p className={s.feedback} role="status">
-            Loading users…
-          </p>
-        )}
-      </div>
-      <div
-        className={`${s.panel} ${s.detailPanel} ${s.stack}`}
-        id="timeout-controls"
-        tabIndex={-1}
-      >
-        <div
-          className={`${s.detail} ${target ? s.detailEnter : ""}`}
-          key={selected}
-        >
-          <p className={s.muted}>Selected account</p>
-          <h3 className={s.subheading}>
+        <div className="space-y-4">
+          <p className="font-medium">
             {target ? target.label : "Select a user"}
-          </h3>
-          <div role="status" aria-live="polite" className={s.feedback}>
-            {target ? (
-              <>
-                <span className="sr-only">Selected {target.label}. </span>
-                <span className={s.meta}>
-                  {target.username ? `@${target.username}` : target.clerkId}
-                </span>
-                <span className={s.status}>
-                  <ClockIcon aria-hidden="true" />
-                  {target.ceoCleared
-                    ? "Cleared by CEO"
-                    : target.timeout
-                      ? "Timed out"
-                      : "No active timeout"}
-                </span>
-              </>
-            ) : (
-              <p className={s.muted}>
-                Choose an account to review its timeout.
-              </p>
-            )}
-          </div>
+          </p>
           {target?.timeout && (
-            <div className={`${s.feedback} ${s.numerals}`}>
-              <p>
-                Active until{" "}
-                {new Date(target.timeout.expiresAt).toLocaleString()}.
-              </p>
-              <p className={s.muted}>Reason: {target.timeout.reason}</p>
-            </div>
+            <p className="text-sm">
+              Active until {new Date(target.timeout.expiresAt).toLocaleString()}
+              . Reason: {target.timeout.reason}
+            </p>
+          )}
+          <label className="block text-sm font-medium">
+            Reason
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              maxLength={1000}
+              rows={3}
+              disabled={busy || !target?.canManage}
+              className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
+              placeholder="Explain why access is being paused"
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            Duration in minutes (1–43,200)
+            <Input
+              className="mt-2"
+              type="number"
+              min={1}
+              max={43200}
+              step={1}
+              value={minutes}
+              disabled={busy || !target?.canManage}
+              onChange={(event) => setMinutes(event.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              disabled={
+                busy || !target?.canManage || !validReason || !validDuration
+              }
+              onClick={() => void save(true)}
+            >
+              {busy
+                ? "Saving…"
+                : target?.timeout
+                  ? "Restart timeout"
+                  : "Turn timeout on"}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy || !target?.canManage || !target.timeout}
+              onClick={() => void save(false)}
+            >
+              Turn timeout off
+            </Button>
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" className="text-sm">
+              {notice}
+            </p>
           )}
         </div>
-        <label className={s.field}>
-          Reason
-          <textarea
-            className={s.control}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            maxLength={1000}
-            rows={5}
-            disabled={busy || !target?.canManage}
-            placeholder="Explain why access is being paused"
-            aria-describedby="timeout-reason-help"
-          />
-          <span id="timeout-reason-help" className={s.meta}>
-            Required to start a timeout. Up to 1,000 characters.
-          </span>
-        </label>
       </div>
-      <div className={`${s.panel} ${s.durationPanel} ${s.stack}`}>
-        <label className={s.field}>
-          Duration in minutes
-          <input
-            className={`${s.control} ${s.numerals}`}
-            type="number"
-            min={1}
-            max={43200}
-            step={1}
-            value={minutes}
-            disabled={busy || !target?.canManage}
-            onChange={(event) => setMinutes(event.target.value)}
-            aria-invalid={!validDuration}
-            aria-describedby="timeout-duration-help"
-          />
-        </label>
-        <p id="timeout-duration-help" className={s.muted}>
-          Enter a whole number from 1 to 43,200.
-        </p>
-        <p className={s.muted}>
-          Timeouts expire automatically and can be ended early.
-        </p>
-      </div>
-      <div
-        className={`${s.panel} ${s.actionPanel} ${s.stack}`}
-        aria-busy={busy}
-      >
-        <h3 className={s.subheading}>Manage timeout</h3>
-        <div className={s.actions}>
-          <button
-            className={`${s.button} ${s.primary}`}
-            type="button"
-            disabled={
-              busy || !target?.canManage || !validReason || !validDuration
-            }
-            onClick={() => void save(true)}
-          >
-            {busy
-              ? "Saving…"
-              : target?.timeout
-                ? "Restart timeout"
-                : "Start timeout"}
-          </button>
-          <button
-            className={s.button}
-            type="button"
-            disabled={busy || !target?.canManage || !target.timeout}
-            onClick={() => void save(false)}
-          >
-            End timeout
-          </button>
-        </div>
-        {!target ? (
-          <p className={s.muted}>Select an account to manage its timeout.</p>
-        ) : !target.canManage ? (
-          <p className={s.status}>
-            <LockClosedIcon aria-hidden="true" />
-            You cannot manage this account’s timeout.
-          </p>
-        ) : null}
-        <p className={s.muted}>
-          Only CEOs can change CEO-issued timeouts or restart a timeout cleared
-          by a CEO.
-        </p>
-        {error && (
-          <p role="alert" className={`${s.feedback} ${s.error}`}>
-            {error}
-          </p>
-        )}
-        {notice && (
-          <p role="status" className={s.status}>
-            <CheckCircleIcon aria-hidden="true" />
-            {notice}
-          </p>
-        )}
-      </div>
-    </section>
+    </Card>
   );
 }

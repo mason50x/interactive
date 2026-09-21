@@ -16,6 +16,13 @@ import { internal } from "./_generated/api";
 const crons = cronJobs();
 
 crons.daily(
+  "expire daily CEO timeout clears",
+  { hourUTC: 0, minuteUTC: 0 },
+  internal.timeouts.expireCeoClears,
+  {},
+);
+
+crons.daily(
   "trim the global room",
   { hourUTC: 8, minuteUTC: 20 },
   internal.chat.sweep.trimGlobal,

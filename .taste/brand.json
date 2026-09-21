@@ -3,116 +3,84 @@
   "foundation": {
     "strategy": "preserve",
     "existingAssets": [
-      "src/lib/brand.ts: Interactive Learning identity and IL monogram geometry.",
-      "public/brand/logo-mark.svg and public/brand/logo-mark-white.svg: existing monochrome marks.",
-      "public/brand/logo-lockup.png and public/brand/logo-lockup-white.png: existing wordmarks; dark lockup visually inspected.",
-      "src/app/layout.tsx: Inter variable font and Instrument Serif.",
-      "src/app/globals.css: light and dark palettes, typography, surfaces, radii, and elevation.",
-      "src/lib/accent.ts: default blue and account-selected accent preferences.",
-      "src/lib/icons.ts: established 24px Heroicons outline and solid conventions.",
-      "src/components/ui/card.tsx and src/components/ui/page.tsx: existing surface and page geometry.",
-      "src/lib/motion.ts: reactive reduced-motion preference.",
-      "All 24 selected reference images were visually inspected, including every supplied mobile counterpart."
+      "src/lib/brand.ts: Interactive Learning identity and IL monogram.",
+      "public/brand/: existing monochrome logos and app icons.",
+      "src/app/globals.css: established light and dark themes.",
+      "src/app/layout.tsx: shared Inter typography and current font-loading configuration.",
+      "src/components/ui/page.tsx, card.tsx, button.tsx, input.tsx: shared interface primitives.",
+      "dee8793: historical admin presentation, restored in the working tree."
     ],
     "assetActions": [
       {
-        "asset": "Interactive Learning name, IL monogram, and existing logo lockups",
+        "asset": "Interactive Learning name and existing IL logo assets",
         "action": "protect",
-        "reason": "Verified identity assets; the request concerns the admin interface, not a rebrand."
+        "reason": "The user requested a revert, with no identity changes."
       },
       {
-        "asset": "Inter in src/app/layout.tsx",
-        "action": "protect",
-        "reason": "Explicitly designated brand typeface and source of the monogram proportions."
-      },
-      {
-        "asset": "Instrument Serif in src/app/layout.tsx",
+        "asset": "Shared typography, theme tokens, controls and application shell",
         "action": "preserve",
-        "reason": "Retain its established marketing and legal roles without introducing it into dense admin controls."
+        "reason": "These define the original admin appearance."
       },
       {
-        "asset": "Theme and accent tokens",
+        "asset": "Admin presentation from dee8793",
         "action": "preserve",
-        "reason": "Keep established colors and account preferences; adapt foreground pairings where contrast requires it."
+        "reason": "This is the requested restoration baseline."
       },
       {
-        "asset": "Admin use of cards, typography, spacing, and control states",
-        "action": "evolve",
-        "reason": "The requested redesign requires clearer hierarchy and grouping while retaining shared application geometry."
-      },
-      {
-        "asset": "Heroicons",
-        "action": "preserve",
-        "reason": "Existing professional icon vocabulary already distinguishes selected and unselected states."
-      },
-      {
-        "asset": "Reduced-motion support",
-        "action": "preserve",
-        "reason": "Existing accessibility behavior must also govern the redesigned interface."
+        "asset": "Redesign-specific admin styles and entrance/reveal behavior",
+        "action": "retire",
+        "reason": "Their removal implements the explicit request to revert."
       }
     ],
     "lockedDecisions": [
-      "Preserve the Interactive Learning identity and monochrome IL logo without distortion, tinting, or replacement.",
-      "Inter remains the sole admin typeface. Existing brand requirements override the random typography draw.",
-      "Preserve light and dark themes and account-selected accent preferences. The palette recipe describes the default blue appearance.",
-      "Keep the existing application shell, authentication, permissions, workflows, and quota-reset confirmation.",
-      "Use existing Heroicons, with outline for unselected states and solid for selected states where paired icons exist.",
-      "Preserve dependable native role-selection behavior unless a replacement is demonstrably functional.",
-      "Do not introduce marketing sections, fictional statistics, testimonials, stock portraits, or invented administrative capabilities.",
-      "White on the existing #3c85f7 measures approximately 3.57:1. Preserve the blue but use #0f0f0f for ordinary button labels, approximately 5.38:1. White remains a brand surface and logo color.",
-      "Do not use the existing pale divider colors as the only visible boundary of otherwise indistinguishable controls. Derive stronger control borders and verify contrast.",
-      "The current Brand motion requirements supersede the earlier assumption that interaction feedback alone is sufficient."
+      "No new design. Preserve the restored admin appearance.",
+      "Keep unrelated changes and existing uncommitted work.",
+      "Keep current authentication, permissions, timeout behavior, validation, submission guards and account-specific feedback.",
+      "Keep Inter, the monochrome IL identity, shared light and dark themes, native role selects and responsive behavior.",
+      "The historical admin implementation takes priority over the supplied marketing references.",
+      "Do not introduce imagery, sections, dependencies, decorative treatments or new admin capabilities.",
+      "Do not reintroduce admin entrance or scroll-reveal animations."
     ],
     "assumptions": [
-      "The supplied images are composition references, not evidence that wedding, travel, agency, pricing, or testimonial content belongs in this admin interface.",
-      "Fabrica supplies relevant unequal panel proportions and clear surface grouping; Karo supplies selection-to-detail hierarchy and mobile stacking; Creatiie FAQ supplies explicit expanded-state emphasis.",
-      "Existing product typography, density, and shell take precedence over unrelated monumental marketing layouts.",
-      "Several desktop/mobile pairs change identity: Wedddingly changes the entire photographic composition; Creatiie FAQ changes font category and container treatment; Canvasly, Waveyu, and Creatiie footer change content or imagery. Preserve one project identity across breakpoints rather than reproduce these inconsistencies.",
-      "Fabrica, Stodio, Avoora, and Xodex have no supplied mobile counterpart; any later use requires responsive verification.",
-      "No new photographic or illustration assets are needed for the verified administrative workflows.",
-      "Motion and responsive behavior remain planned, not browser-verified in this Brand-only phase."
+      "Old design means the admin presentation immediately before dbaa281, represented by dee8793.",
+      "This response records the preservation direction after the requested revert; it authorizes no further redesign.",
+      "The completed revert passed TypeScript, targeted lint and 32 existing tests. Browser visual verification was not performed."
     ]
   },
   "creativeDirection": {
-    "summary": "A clear administrative workspace built from the established monochrome identity, readable Inter typography, deliberate neutral surfaces, and useful blue selection emphasis.",
+    "summary": "Preserve the familiar Interactive Learning admin interface exactly within the requested restoration scope.",
     "traits": [
       {
-        "quality": "Clear hierarchy through type size, alignment, and grouped controls",
-        "boundary": "not oversized promotional typography or equally prominent actions"
+        "quality": "Familiar shared controls",
+        "boundary": "not a separate visual identity for admin"
       },
       {
-        "quality": "Compact information with comfortable control spacing",
-        "boundary": "not cramped rows or large empty marketing intervals"
+        "quality": "Compact, readable account management",
+        "boundary": "not marketing typography or editorial imagery"
       },
       {
-        "quality": "Distinct surfaces with restrained depth",
-        "boundary": "not nested boxes, decorative grids, or glowing panels"
-      },
-      {
-        "quality": "Explicit account scope and action feedback",
-        "boundary": "not color-only meaning, hidden permissions, or ambiguous global actions"
+        "quality": "Clear selection and action feedback",
+        "boundary": "not decorative emphasis"
       }
     ],
-    "productiveTension": "An open, composed workspace around dense, practical account controls.",
+    "productiveTension": "Compact account lists balanced with enough space for clearly labeled controls.",
     "signatureDevice": {
-      "description": "The existing pale accent surface and stronger accent selection treatment, repeated consistently across actionable choices and their related context.",
+      "description": "Existing neutral rounded cards with blue emphasis on actions and selected choices.",
       "status": "existing",
       "invariants": [
-        "Use the active account accent, defaulting to established blue.",
-        "Tint means selected or active, never decorative categorization.",
-        "Pair tinted selection with an explicit label, checked state, or accessible selected state.",
-        "Use the same relationship between accent border, pale fill, and readable text across themes.",
-        "Keep unselected neighboring surfaces neutral."
+        "Use shared Card and control primitives.",
+        "Keep the established neutral surface hierarchy.",
+        "Use the existing primary token for actions, focus and selected allowance choices.",
+        "Do not turn this treatment into additional decoration."
       ]
     },
-    "restraint": "Reserve the accent for actions, focus, and selection. Ordinary explanations remain unboxed and decorative imagery is absent.",
+    "restraint": "Restore existing treatments without adding motifs or embellishments.",
     "avoid": [
-      "A different color or radius for every card.",
-      "Wedding imagery, studio portraits, surf photography, abstract botanical art, and fabricated charts copied from references.",
-      "Decorative serial numbers, ticker strips, ornamental dividers, gradients, or glass effects.",
-      "All-caps form labels, serif controls, or monospace body copy.",
-      "Treating an existing visual device as validated buyer recognition.",
-      "Hover-only information or motion that delays work."
+      "Reference-led recomposition",
+      "Oversized marketing headlines",
+      "Decorative gradients or image panels",
+      "New card systems",
+      "Changes to the surrounding application shell"
     ]
   },
   "colorPalette": [
@@ -158,12 +126,12 @@
     },
     {
       "name": "Light Accent hover",
-      "value": "#2E78E8",
+      "value": "#2A72E4",
       "usage": "Semantic. accent hover token in the light theme."
     },
     {
       "name": "Light On accent",
-      "value": "#0F0F0F",
+      "value": "#000000",
       "usage": "Semantic. on accent token in the light theme."
     },
     {
@@ -218,12 +186,12 @@
     },
     {
       "name": "Dark Accent hover",
-      "value": "#609DFF",
+      "value": "#5A99F8",
       "usage": "Semantic. accent hover token in the dark theme."
     },
     {
       "name": "Dark On accent",
-      "value": "#0F0F0F",
+      "value": "#000000",
       "usage": "Semantic. on accent token in the dark theme."
     },
     {
@@ -240,14 +208,14 @@
   "typefaces": [
     {
       "family": "Inter",
-      "source": "Existing next/font/google configuration in src/app/layout.tsx; retain the actual variable font. Official family and license source: https://github.com/google/fonts/tree/main/ofl/inter",
+      "source": "Existing shared configuration in src/app/layout.tsx; public/fonts/inter/Inter-variable.ttf and OFL.txt also exist.",
       "roles": [
-        "Page title: 44px desktop and 36px mobile, weight 550, line-height 1.05, tracking -0.025em, sentence case.",
-        "Group headings: 20–24px, weight 600, line-height 1.2, tracking -0.015em.",
-        "Account names and control labels: 14–16px, weight 500–600, natural tracking.",
-        "Body and explanations: 14–16px, weight 400, line-height 1.5; limit prose to roughly 55–65 characters per line.",
-        "Secondary metadata: 12–13px, weight 400–500, line-height 1.4; never use this size for essential action labels.",
-        "Inputs: 16px on mobile. Durations and timestamps use tabular numerals."
+        "Admin title",
+        "Headings",
+        "Body text",
+        "Labels",
+        "Controls",
+        "Account metadata"
       ],
       "weights": [
         400,
@@ -258,53 +226,47 @@
       ]
     }
   ],
-  "interfaceDirection": "Use a 4px spacing unit with 8, 12, 16, 24, 32, and 40px steps. Retain the 1400px maximum page width and existing responsive shell gutters; use 24–32px between coherent groups and 12–16px within forms. Keep operational content visible early. Draw on Fabrica’s unequal content-shaped panels, Karo’s strong relationship between selection and detail, and Creatiie FAQ’s clearly emphasized active state without importing their marketing content. Cards group a workflow or comparable choices, never ordinary prose. Use 24px desktop and 16–20px mobile card padding; 16–24px outer radii, 12px selection surfaces, and 8px controls. Preserve the existing shell’s lighter content plane against darker chrome in each theme. Use restrained borders and existing low elevation only where surfaces need separation; rows do not receive individual shadows. Preserve genuine panel edges and list separators without adding a decorative grid. Blue must appear on the primary action, focus indicators, and recurring selected-choice surfaces. Retain existing blue tints #e7f0fe in light and #14243d in dark, with contrast-safe text. Keep small filled-button labels dark on default blue; hover can strengthen an edge or inset treatment without lightening the fill into a contrast failure. Respect custom accent preferences and verify each foreground pairing. Controls have visible labels, 44px touch targets where practical, immediate focus indication, recognizable checked states, readable disabled explanations, and inline saving/error/success feedback. Use text plus icons for status. Keep lists neutral and scannable, allow names to wrap when needed, and stack related controls on narrow screens without horizontal page overflow. Do not impose alternating dark promotional bands simply because unrelated references contain them.",
+  "interfaceDirection": "Keep the restored shared Page wrapper: 1400px maximum width, responsive 24/32/40px horizontal gutters and 32px major spacing. Preserve shared PageTitle sizing at 36px and 44px, 20px card headings, and compact body and metadata sizes. Use existing Card surfaces, 24px outer corner radius, shared elevation, 24/28px card padding and 24px layout gaps. Retain smaller rounded field and selection boundaries, original list dividers and native role selects. Keep existing loading, disabled, focus, saving, success and error states. Preserve established theme and accent preferences. Any necessary accessibility correction must remain local, retain identity colors and avoid global token changes.",
   "imageDirection": {
-    "summary": "Identity and functional iconography carry the visual language; administrative content does not require decorative photography.",
+    "summary": "No new imagery is needed for this restoration.",
     "subjects": [
-      "Existing IL logo and wordmark.",
-      "Established Heroicons for search, access, status, and disclosure."
+      "Existing IL identity in the unchanged application shell",
+      "Existing Heroicons shield and functional control icons"
     ],
-    "treatment": "Preserve logo proportions and approved monochrome variants. Use 16–24px functional icons with consistent stroke and selection conventions. Do not introduce account portraits unless genuine account imagery already exists in the available data; missing portraits create no asset requirement.",
+    "treatment": "Retain existing assets and icon sizing. The supplied marketing photographs and compositions are outside the requested revert.",
     "avoid": [
-      "Generated faces presented as actual users.",
-      "Stock imagery used as account identity.",
-      "Decorative SVG diagrams or abstract artwork.",
-      "Screenshot backgrounds replacing accessible interface controls.",
-      "Copying reference testimonials, measurements, or brand assets."
+      "Generated account portraits",
+      "Stock photography",
+      "Decorative illustrations",
+      "Replacement logos",
+      "Custom ornamental SVGs"
     ]
   },
   "motionDirection": {
-    "summary": "Visible but brief motion explains entry, selection, and disclosure within the fixed interface geometry. Use native CSS or Web Animations and IntersectionObserver; honor the existing reduced-motion preference.",
+    "summary": "Preserve the original immediately visible admin layout and existing direct control feedback. Remove redesign-specific entrances and scroll reveals.",
     "principles": [
-      "Orient on initial route entry: animate the visible admin title and its description from translateY(8px) to zero while keeping opacity at 1; relate title to supporting context with 60–80ms staggering, 450–550ms duration, and smooth ease-out cubic-bezier(0.22,1,0.36,1). Run once, never delay controls, and use immediate final positions for reduced motion.",
-      "Introduce a later below-viewport workflow group on first approach: reveal its heading and related controls through opacity and translateY(10px), 450–600ms with gentle ease-out and at most 80ms staggering. Observe the individual group at threshold 0 with positive bottom rootMargin, then unobserve. Already visible or restored-scroll content stays visible; reduced motion shows final states immediately.",
-      "Distinguish a second later below-viewport group on first approach: reveal its contained surface through opacity only over 500–650ms with smooth ease-out, without moving its controls. Run once under the same early-entry and visibility safeguards; reduced motion bypasses the reveal.",
-      "Explain account or scope selection on click or keyboard activation: update selection immediately, then introduce the changed detail content with opacity and at most 4px horizontal movement over 160–220ms with decisive ease-out. Preserve focus and surrounding geometry; reduced motion updates instantly.",
-      "Confirm interaction on button press, navigation selection, and disclosure activation: transition background, border, and icon color over 120–180ms with quick ease-out; disclosure content may use a 160–220ms opacity entrance. Keep focus outlines immediate and information available without hover; reduced motion uses immediate states.",
-      "Protect continuity during rapid scrolling, resize, rerenders, and reduced-motion changes: keep completed reveals finished, cancel only owned animations, disconnect observers when appropriate, and restore all content immediately with zero-duration linear cleanup. CSS defaults to visible; prepare hidden states only below the viewport and cap total staggering at 240ms.",
-      "Verify the planned relationships during Build: record the title entrance over 450–550ms, both later reveal types over 450–650ms with ease-out, and direct feedback over 120–220ms. Also verify rapid down/up scrolling twice, restored middle scroll, resize, and reduced-motion toggling during playback; all visited groups must remain visible without replay."
+      "Preserve orientation on route load and scrolling; headings, cards and controls remain in their final positions and fully visible; 0ms with no easing or stagger; reduced motion has the same readable state.",
+      "Explain direct interaction on hover, focus and selection; use shared control color, border and focus feedback without moving surrounding content; retain existing short timings around 120–250ms and ease-out behavior; reduced motion uses immediate states.",
+      "Keep account changes understandable after selection or a completed request; update the associated details and status text immediately in place; 0ms with no easing; reduced motion behaves identically."
     ],
     "avoid": [
-      "transition: all.",
-      "Scale-from-zero entrances or the same fade-up on every group.",
-      "Opacity-zero defaults on visible content.",
-      "Replaying on exit, direction changes, resize, or query updates.",
-      "Large blur, filter, or clip-path animations.",
-      "Transforms on ancestors of sticky or fixed controls, or nested reveal transforms.",
-      "Scroll-jacking, perpetual motion, hidden-content backlogs, and animation-gated interaction.",
-      "Canceling unrelated document animations.",
-      "Claiming motion verification from still screenshots."
+      "New hero entrances",
+      "Scroll-triggered reveals",
+      "Hidden initial content",
+      "Scale-from-zero animations",
+      "Scroll-jacking",
+      "New transition: all declarations",
+      "Changes to unrelated application motion"
     ]
   },
   "voice": {
-    "summary": "Direct, calm, and specific. Use short sentence-case labels that name the action and target. Distinguish Everyone from Specific user. State permission restrictions beside the affected control. Confirm what changed and for whom; explain errors with a concrete next step when known. Keep existing product terms consistent, including timeouts, Proxy time, Bot usage, and account roles.",
+    "summary": "Preserve concise operational language, existing account labels, explicit action names and current timeout-rule explanations. Keep feedback specific to the affected account and errors safe and actionable.",
     "avoid": [
-      "Marketing slogans and decorative editorial labels.",
-      "Punitive or judgmental descriptions of users.",
-      "Vague success messages such as Done.",
-      "Technical backend details in ordinary workflow copy.",
-      "Promises, statistics, or capabilities unsupported by the application."
+      "Marketing language",
+      "Invented claims",
+      "Unnecessary terminology changes",
+      "Raw backend errors",
+      "Ambiguous administrative actions"
     ]
   }
 }

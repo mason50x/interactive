@@ -60,7 +60,8 @@ export default defineSchema({
     issuedBy: v.string(),
     issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
     updatedAt: v.number(),
-  }).index("byClerkId", ["clerkId"]),
+  }).index("byClerkId", ["clerkId"])
+    .index("byCeoClearedAndUpdatedAt", ["ceoCleared", "updatedAt"]),
   timeoutAudit: defineTable({
     clerkId: v.string(),
     actor: v.string(),

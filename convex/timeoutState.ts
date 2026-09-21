@@ -1,5 +1,20 @@
 import { ConvexError } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+
+const DAY_MS = 86_400_000;
+
+export function timeoutDayStart(now: number) {
+  return Math.floor(now / DAY_MS) * DAY_MS;
+}
+
+/** Clears, including existing records, protect only the UTC day they were made. */
+export function ceoClearedToday(row: Doc<"userTimeouts"> | null, now: number) {
+  return (
+    row?.ceoCleared === true &&
+    timeoutDayStart(row.updatedAt) === timeoutDayStart(now)
+  );
+}
 
 export async function timeoutRow(ctx: QueryCtx | MutationCtx, clerkId: string) {
   return ctx.db
