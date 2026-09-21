@@ -13,15 +13,16 @@ import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 
 type QuotaKind = "experience" | "bot";
 
-type SiteRole = "ceo" | "moderator" | "member";
+type SiteRole = "ceo" | "head_moderator" | "moderator" | "member";
 
 const ROLE_LABEL: Record<SiteRole, string> = {
   ceo: "CEO",
+  head_moderator: "Head Moderator",
   moderator: "Moderator",
   member: "Member",
 };
 
-const SITE_ROLES: SiteRole[] = ["ceo", "moderator", "member"];
+const SITE_ROLES: SiteRole[] = ["ceo", "head_moderator", "moderator", "member"];
 
 export function QuotaConsole() {
   const { userId } = useAuth();
@@ -91,7 +92,7 @@ export function QuotaConsole() {
   }
 
   async function changeRole(clerkId: string, current: SiteRole, next: string) {
-    if (next !== "ceo" && next !== "moderator" && next !== "member") return;
+    if (next !== "ceo" && next !== "head_moderator" && next !== "moderator" && next !== "member") return;
     if (next === current || savingRole !== null) return;
     setRoleError(null);
     setSavingRole(clerkId);
@@ -229,7 +230,7 @@ export function QuotaConsole() {
                   OS-level list always opens. Same footprint and tokens as
                   the shared trigger.
                 */}
-                <span className="relative inline-flex h-8 w-[8.5rem] shrink-0 items-center">
+                <span className="relative inline-flex h-8 w-[10rem] shrink-0 items-center">
                   <select
                     aria-label={`Role for ${displayName}`}
                     title={isSelf ? "You cannot change your own role." : undefined}

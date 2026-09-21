@@ -1,3 +1,4 @@
+import { activeTimeout } from "../timeoutState";
 import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
@@ -6,16 +7,16 @@ import { resolvePrivileges, resolveRole, resolveAdminClerkIds, resolveStaffRoles
 
 export async function adminId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity || !(await resolvePrivileges(ctx, identity.subject)).deleteChatMessages) return null;
+  if (!identity || await activeTimeout(ctx, identity.subject) || !(await resolvePrivileges(ctx, identity.subject)).deleteChatMessages) return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;
 }
 
-/** Any staff (ceo or moderator) with a synced profile. Gates `@everyone`. */
+/** Any staff with a synced profile and no timeout. Gates `@everyone`. */
 export async function staffId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity || (await resolveRole(ctx, identity.subject)) === "member") return null;
+  if (!identity || await activeTimeout(ctx, identity.subject) || (await resolveRole(ctx, identity.subject)) === "member") return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;
@@ -43,7 +44,7 @@ export const badges = query({
 /** Staff presentation is separate from the caller's mutation capabilities. */
 export const roles = query({
   args: {},
-  returns: v.array(v.object({ clerkId: v.string(), role: v.union(v.literal("ceo"), v.literal("moderator")) })),
+  returns: v.array(v.object({ clerkId: v.string(), role: v.union(v.literal("ceo"), v.literal("head_moderator"), v.literal("moderator")) })),
   handler: async ctx => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];

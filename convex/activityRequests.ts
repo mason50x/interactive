@@ -1,3 +1,4 @@
+import { requireNotTimedOut } from "./timeoutState";
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 import { components, internal } from "./_generated/api";
@@ -13,6 +14,7 @@ export const reserve = internalMutation({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new ConvexError("Sign in to request an activity.");
+    await requireNotTimedOut(ctx, identity.subject);
     const result = await limiter.limit(ctx, "activityRequests", { key: identity.subject });
     if (!result.ok) throw new ConvexError("You've used your two requests today. Try again after midnight UTC.");
     // Schedule in the same transaction as consumption. At most two jobs per day.

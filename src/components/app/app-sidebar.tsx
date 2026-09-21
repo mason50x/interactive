@@ -58,11 +58,14 @@ import { useWarmRoutes } from "@/lib/warm";
 export function AppSidebar() {
   const pathname = usePathname();
   const { preferences } = usePreferences();
-  const { hasUnread, mentioned, conversations, profile, staffRoles } = useChat();
-  const isCeo = staffRoles.some(
-    (entry) => entry.clerkId === profile?.clerkId && entry.role === "ceo",
+  const { hasUnread, mentioned, conversations, profile, staffRoles } =
+    useChat();
+  const hasAdminPanel = staffRoles.some(
+    (entry) =>
+      entry.clerkId === profile?.clerkId &&
+      (entry.role === "ceo" || entry.role === "head_moderator"),
   );
-  const destinations: NavItem[] = isCeo
+  const destinations: NavItem[] = hasAdminPanel
     ? [
         ...navItems,
         {

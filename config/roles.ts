@@ -14,10 +14,11 @@ export const ROLES = {
     experienceSecondsPerDay: 90 * 60,
   },
   moderator: { ...staffPrivileges },
+  head_moderator: { ...staffPrivileges },
   ceo: { ...staffPrivileges },
 } as const;
 
-export type StaffRole = "ceo" | "moderator";
+export type StaffRole = "ceo" | "head_moderator" | "moderator";
 
 /** One server-owned map of exact Clerk IDs to roles. Invalid config grants nothing.
  * STAFF_ROLES={"user_mason":"ceo","user_levin":"moderator"}
@@ -27,7 +28,8 @@ export function staffRoles(): { clerkId: string; role: StaffRole }[] {
     const value: unknown = JSON.parse(process.env.STAFF_ROLES ?? "{}");
     if (!value || typeof value !== "object" || Array.isArray(value)) return [];
     return Object.entries(value).flatMap(([clerkId, role]) =>
-      clerkId && (role === "ceo" || role === "moderator")
+      clerkId &&
+      (role === "ceo" || role === "head_moderator" || role === "moderator")
         ? [{ clerkId, role }]
         : [],
     );

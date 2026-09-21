@@ -51,6 +51,25 @@ export default defineSchema({
     .index("byUsernameKey", ["usernameKey"])
     .searchIndex("searchUsername", { searchField: "username" }),
 
+  userTimeouts: defineTable({
+    clerkId: v.string(),
+    reason: v.string(),
+    expiresAt: v.number(),
+    enabled: v.boolean(),
+    ceoCleared: v.optional(v.boolean()),
+    issuedBy: v.string(),
+    issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
+    updatedAt: v.number(),
+  }).index("byClerkId", ["clerkId"]),
+  timeoutAudit: defineTable({
+    clerkId: v.string(),
+    actor: v.string(),
+    action: v.union(v.literal("on"), v.literal("off")),
+    reason: v.string(),
+    expiresAt: v.number(),
+    at: v.number(),
+  }).index("byClerkId", ["clerkId"]),
+
   /**
    * CEO-editable role overrides, read alongside the server-owned `STAFF_ROLES`
    * env map (see `config/roles.ts`). The env map is deployment config and has
@@ -63,6 +82,7 @@ export default defineSchema({
     clerkId: v.string(),
     role: v.union(
       v.literal("ceo"),
+      v.literal("head_moderator"),
       v.literal("moderator"),
       v.literal("member"),
     ),

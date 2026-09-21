@@ -1,3 +1,4 @@
+import { requireNotTimedOut } from "../timeoutState";
 import { ConvexError } from "convex/values";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
@@ -10,6 +11,7 @@ import {
 export async function caller(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new ConvexError("Sign in to access your progress.");
+  await requireNotTimedOut(ctx, identity.subject);
   const user = await ctx.db
     .query("users")
     .withIndex("byClerkId", (q) => q.eq("clerkId", identity.subject))
