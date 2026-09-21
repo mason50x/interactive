@@ -30,6 +30,19 @@ function isBypassed(request: Request): boolean {
   return BYPASS_IPS.has(request.headers.get("CF-Connecting-IP") ?? "");
 }
 
+/**
+ * Development servers (wrangler dev, vinext dev) serve on loopback. The
+ * production bundle inlines NODE_ENV as "production" even under those
+ * servers, so the build-time flag alone cannot tell them apart from real
+ * production traffic. Public production traffic never arrives on loopback.
+ */
+function isLoopback(request: Request): boolean {
+  const hostname = new URL(request.url).hostname;
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]"
+  );
+}
+
 function accessClosedResponse(request: Request): Response {
   return new Response(
     request.method === "HEAD"
@@ -53,9 +66,12 @@ export default {
   async fetch(request: Request, env, ctx) {
     // Production-only gate: development servers stay up around the clock.
     // Blocks Friday 2:55 p.m. through Monday 7:35 a.m. Central, plus every
-    // night outside 7:35 a.m.–2:55 p.m. on weekdays.
+    // night outside 7:35 a.m.–2:55 p.m. on weekdays. Loopback requests are
+    // always development servers (wrangler dev / vinext dev), which also
+    // serve the production bundle with NODE_ENV inlined as "production".
     if (
       process.env.NODE_ENV === "production" &&
+      !isLoopback(request) &&
       !isBypassed(request) &&
       !isAccessOpen()
     ) {

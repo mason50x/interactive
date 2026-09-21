@@ -38,6 +38,22 @@ describe("Worker availability", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
+  it("serves loopback requests outside access hours", async () => {
+    // The production bundle inlines NODE_ENV as "production" even under
+    // wrangler dev, so the gate must exempt loopback (the e2e environment).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-20T12:00:00-05:00"));
+    fetchApp.mockResolvedValue(new Response("app"));
+    const response = await worker.fetch(
+      new Request("http://localhost:8787/home"),
+      env,
+      {} as ExecutionContext,
+    );
+    expect(fetchApp).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("app");
+  });
+
   it.each([
     "2026-09-14T07:35:00-05:00",
     "2026-09-14T10:00:00-05:00",
