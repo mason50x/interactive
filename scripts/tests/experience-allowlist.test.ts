@@ -17,7 +17,6 @@ it("offers each service and allows its front door through the actual relay", asy
   vi.stubGlobal("fetch", upstream);
   for (const id of [
     "youtube",
-    "x",
     "netflix",
     "tiktok",
     "spotify",
@@ -32,7 +31,7 @@ it("offers each service and allows its front door through the actual relay", asy
   expect(new Set(EXPERIENCE_APPS.map((app) => app.id)).size).toBe(
     EXPERIENCE_APPS.length,
   );
-  expect(upstream).toHaveBeenCalledTimes(7);
+  expect(upstream).toHaveBeenCalledTimes(6);
 });
 
 it.each([
@@ -136,13 +135,12 @@ it("logs denied destination hosts without signed paths or credentials", async ()
 
 const xHosts = ["x.com", "twitter.com", "twimg.com", "t.co"];
 
-it.each(xHosts)("allows X host %s and its subdomains, but rejects lookalikes", async (host) => {
+it.each(xHosts)("blocks disabled X host %s, its subdomains and lookalikes", async (host) => {
   const upstream = vi.fn(async () => new Response("ok"));
   vi.stubGlobal("fetch", upstream);
   for (const hostname of [host, `cdn.${host}`]) {
-    expect((await relay(`https://${hostname}/`)).headers.get("x-bare-status")).toBe("200");
+    expect((await relay(`https://${hostname}/`)).status).toBe(403);
   }
-  upstream.mockClear();
   for (const hostname of [`evil${host}`, `${host}.evil.example`]) {
     expect((await relay(`https://${hostname}/`)).status).toBe(403);
   }
@@ -161,7 +159,11 @@ it.each([
   "https://ton.twimg.com/responsive-web/example.js",
   "https://cdn.syndication.twimg.com/tweet-result?id=123",
   "https://t.co/example",
-])("relays X navigation, authentication, scripts and media: %s", async (url) => {
-  vi.stubGlobal("fetch", vi.fn(async () => new Response("ok")));
-  expect((await relay(url)).headers.get("x-bare-status")).toBe("200");
+])("blocks disabled X navigation, authentication, scripts and media: %s", async (url) => {
+  const upstream = vi.fn();
+  vi.stubGlobal("fetch", upstream);
+  const response = await relay(url);
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({ code: "HOST_NOT_ALLOWED" });
+  expect(upstream).not.toHaveBeenCalled();
 });

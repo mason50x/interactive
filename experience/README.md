@@ -170,9 +170,15 @@ reported skeleton failure, not authenticated login or every regional variant.
 
 ## X
 
-X is available at `/experience/x` with a locally bundled icon. The allowlist
-covers `x.com`, legacy `twitter.com`, `twimg.com` (scripts, fonts, images,
-video, and syndicated content), and `t.co`, including their subdomains.
+X is temporarily disabled. Its catalog entry and the `x.com`, `twitter.com`,
+`twimg.com`, and `t.co` allowlist entries have been removed, so
+`/experience/x` renders not found and the relay rejects these hosts and their
+subdomains. The bundled icon and compatibility fixes remain for re-enabling.
+To restore X, add those four hosts back to the shared allowlist, with
+`id: "x"`, `label: "X"`, and `start: "https://x.com/"` on the `x.com` entry.
+Deploy both the app and experience Worker for either change to take effect.
+
+The following verification notes describe X before it was disabled.
 The observed Apple sign-in SDK is allowed only under
 `appleid.cdn-apple.com/appleauth/`. Existing Google and Apple authentication
 entries are shared. External destinations behind `t.co` still require their
