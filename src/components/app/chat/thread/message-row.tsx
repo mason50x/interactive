@@ -197,13 +197,23 @@ export function MessageRow({
             <TooltipProvider delay={250}>
               <AdminTooltip>
                 <TooltipTrigger
-                  aria-label={staffRole === "ceo" ? "CEO" : "Moderator"}
+                  aria-label={
+                    staffRole === "ceo"
+                      ? "CEO"
+                      : staffRole === "head_moderator"
+                        ? "Head Moderator"
+                        : "Moderator"
+                  }
                   className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
                   <StaffBadge role={staffRole} />
                 </TooltipTrigger>
                 <TooltipContent>
-                  {staffRole === "ceo" ? "CEO" : "Moderator"}
+                  {staffRole === "ceo"
+                    ? "CEO"
+                    : staffRole === "head_moderator"
+                      ? "Head Moderator"
+                      : "Moderator"}
                 </TooltipContent>
               </AdminTooltip>
             </TooltipProvider>
@@ -348,10 +358,7 @@ export function MessageRow({
                 resolve={
                   plainMentions
                     ? () => undefined
-                    : resolverFor(
-                        message.mentions,
-                        message.mentionsEveryone,
-                      )
+                    : resolverFor(message.mentions, message.mentionsEveryone)
                 }
                 me={me}
                 mine={mine}
@@ -359,7 +366,6 @@ export function MessageRow({
             </span>
           </p>
         )}
-
       </div>
     </div>
   );

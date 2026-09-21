@@ -18,8 +18,6 @@ import type { MyAccount } from "@convex/chat/accounts";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { useConvexAuth } from "convex/react";
 
-
-
 export type Chat = {
   /** `null` while unknown *or* when no handle has been claimed. */
   profile: MyAccount | null;
@@ -46,7 +44,10 @@ export type Chat = {
    */
   images: boolean;
   isAdmin: boolean;
-  staffRoles: { clerkId: string; role: "ceo" | "moderator" }[];
+  staffRoles: {
+    clerkId: string;
+    role: "ceo" | "head_moderator" | "moderator";
+  }[];
   adminBadgesLoaded: boolean;
   /**
    * The conversation whose thread is open at its live end, or `null`. Set by
@@ -134,8 +135,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const hasUnread = list.some((row) => row.unread > 0);
   const mentioned = list.some((row) => row.mentioned);
 
-  const waiting =
-    (invitations ?? []).length;
+  const waiting = (invitations ?? []).length;
 
   const value: Chat = {
     profile: profile ?? null,
@@ -147,7 +147,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     waiting,
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,
-    staffRoles: isAuthenticated ? staffRoles ?? [] : [],
+    staffRoles: isAuthenticated ? (staffRoles ?? []) : [],
     adminBadgesLoaded: isAuthenticated && staffRoles !== undefined,
     reading,
     setReading,

@@ -1,3 +1,4 @@
+import { requireNotTimedOut } from "./timeoutState";
 import { ConvexError, v } from "convex/values";
 
 import { ROLES, roleFor, staffRoles, type StaffRole } from "../config/roles";
@@ -68,6 +69,7 @@ export async function requireCeo(ctx: ReadCtx): Promise<string> {
   if ((await resolveRole(ctx, identity.subject)) !== "ceo") {
     throw new ConvexError("CEO access required.");
   }
+  await requireNotTimedOut(ctx, identity.subject);
   return identity.subject;
 }
 

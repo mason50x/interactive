@@ -1,6 +1,7 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 
+import { timeoutRow } from "./timeoutState";
 import { roleFor } from "../config/roles";
 import { components } from "./_generated/api";
 import { mutation, query, type MutationCtx } from "./_generated/server";
@@ -23,6 +24,7 @@ export const access = query({
 
 const siteRole = v.union(
   v.literal("ceo"),
+  v.literal("head_moderator"),
   v.literal("moderator"),
   v.literal("member"),
 );
@@ -179,6 +181,12 @@ export const setRole = mutation({
         updatedAt: Date.now(),
         updatedBy: caller,
       });
+    }
+    // A CEO role change also clears any old restriction on the account.
+    const timeout = await timeoutRow(ctx, clerkId);
+    if (timeout?.enabled) {
+      await ctx.db.patch(timeout._id, { enabled: false, updatedAt: Date.now() });
+      await ctx.db.insert("timeoutAudit", { clerkId, actor: caller, action: "off", reason: timeout.reason, expiresAt: timeout.expiresAt, at: Date.now() });
     }
     return { clerkId, role };
   },

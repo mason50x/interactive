@@ -49,6 +49,8 @@ import type * as simulator_limits from "../simulator/limits.js";
 import type * as simulator_model from "../simulator/model.js";
 import type * as simulator_saves from "../simulator/saves.js";
 import type * as simulator_shared from "../simulator/shared.js";
+import type * as timeoutState from "../timeoutState.js";
+import type * as timeouts from "../timeouts.js";
 import type * as users from "../users.js";
 
 import type {
@@ -99,6 +101,8 @@ declare const fullApi: ApiFromModules<{
   "simulator/model": typeof simulator_model;
   "simulator/saves": typeof simulator_saves;
   "simulator/shared": typeof simulator_shared;
+  timeoutState: typeof timeoutState;
+  timeouts: typeof timeouts;
   users: typeof users;
 }>;
 

@@ -1,3 +1,4 @@
+import { TimeoutGate } from "@/components/app/timeout-gate";
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
@@ -60,8 +61,9 @@ export default async function DashboardLayout({
             are read on a page in the shell. Mounted here rather than inside
             `/chat` so the dot is right while you are looking at an
             activity, which is the only time it is worth having. */}
-      <ChatProvider>
-        {/* The catalogue, for the rail's search and
+      <TimeoutGate>
+        <ChatProvider>
+          {/* The catalogue, for the rail's search and
               the activities grid alike. This is the *only* way it reaches a
               browser — as data in this layout's RSC payload, behind the
               `auth.protect()` above — because `@/lib/activities` is
@@ -69,15 +71,16 @@ export default async function DashboardLayout({
               every entry to a static chunk with no session in front of it.
               Here rather than on each page so it is serialised once per full
               load and never on a navigation. See `ActivitiesProvider`. */}
-        <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
-          <div className="flex h-svh overflow-hidden bg-sidebar">
-            <AppSidebar />
-            <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
-              {children}
-            </main>
-          </div>
-        </ActivitiesProvider>
-      </ChatProvider>
+          <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
+            <div className="flex h-svh overflow-hidden bg-sidebar">
+              <AppSidebar />
+              <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
+                {children}
+              </main>
+            </div>
+          </ActivitiesProvider>
+        </ChatProvider>
+      </TimeoutGate>
     </AppProviders>
   );
 }

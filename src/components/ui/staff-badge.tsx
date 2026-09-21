@@ -6,7 +6,7 @@ export function StaffBadge({
   role,
   sidebar = false,
 }: {
-  role: "ceo" | "moderator";
+  role: "ceo" | "head_moderator" | "moderator";
   sidebar?: boolean;
 }) {
   return (
@@ -18,7 +18,11 @@ export function StaffBadge({
       )}
       {sidebar ? (
         <span className="text-[0.5625rem] leading-none font-bold">
-          {role === "ceo" ? "CEO" : "MOD"}
+          {role === "ceo"
+            ? "CEO"
+            : role === "head_moderator"
+              ? "HEAD MOD"
+              : "MOD"}
         </span>
       ) : null}
     </>

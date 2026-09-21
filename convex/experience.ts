@@ -1,3 +1,4 @@
+import { requireNotTimedOut } from "./timeoutState";
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 import { resolvePrivileges, resolveRole } from "./roles";
@@ -48,6 +49,7 @@ export const acquire = mutation({
   handler: async (ctx, { sessionId }) => {
     if (sessionId !== undefined && (!sessionId || sessionId.length > 100)) throw new ConvexError("Invalid session");
     const q = await quota(ctx);
+    await requireNotTimedOut(ctx, q.clerkId);
     if (q.lease && q.adjustment !== 0) {
       await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds - q.adjustment }, count: -q.adjustment, reserve: true });
       await ctx.db.patch(q.lease._id, { allowanceSeconds: q.status.allowanceSeconds });

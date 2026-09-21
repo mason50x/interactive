@@ -1,3 +1,6 @@
+import { fetchQuery } from "convex/nextjs";
+import { api } from "@convex/_generated/api";
+import { TimeoutMessage } from "@/components/app/timeout-message";
 import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
@@ -30,6 +33,11 @@ export default async function LearnPage({
   params,
 }: PageProps<"/learn/[slug]">) {
   await auth.protect();
+  const { getToken } = await auth();
+  const token = await getToken({ template: "convex" });
+  if (!token) throw new Error("Your session is not available.");
+  const timeout = await fetchQuery(api.timeouts.mine, {}, { token });
+  if (timeout) return <TimeoutMessage {...timeout} />;
   const { slug } = await params;
 
   const activity = findActivity(slug);

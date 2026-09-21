@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 
-import { QuotaConsole } from "@/components/app/admin/quota-console";
+import { AdminConsole } from "@/components/app/admin/admin-console";
 import { Page, PageDescription, PageTitle } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "Admin" };
@@ -15,10 +15,10 @@ export default async function AdminPage() {
       <div>
         <PageTitle icon={<ShieldCheckIcon />}>Admin</PageTitle>
         <PageDescription className="mt-2">
-          Restore service allowances globally or for an individual account.
+          Manage access and account controls.
         </PageDescription>
       </div>
-      <QuotaConsole />
+      <AdminConsole />
     </Page>
   );
 }

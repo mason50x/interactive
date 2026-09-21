@@ -1,3 +1,4 @@
+import { activeTimeout } from "../timeoutState";
 import { BOT_ID } from "./botConfig";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -7,10 +8,10 @@ import type { RecentSend } from "../moderation/rules";
 
 
 
-/** The caller's Clerk id, or `null` when signed out. */
+/** The caller's Clerk id, or `null` when signed out or timed out. */
 export async function callerId(ctx: QueryCtx): Promise<string | null> {
   const identity = await ctx.auth.getUserIdentity();
-  return identity?.subject ?? null;
+  return identity && !(await activeTimeout(ctx, identity.subject)) ? identity.subject : null;
 }
 
 /** A read-only view of the existing Clerk account mirror, never a second identity row. */
