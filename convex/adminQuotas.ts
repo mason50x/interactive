@@ -185,7 +185,7 @@ export const setRole = mutation({
     // A CEO role change also clears any old restriction on the account.
     const timeout = await timeoutRow(ctx, clerkId);
     if (timeout?.enabled) {
-      await ctx.db.patch(timeout._id, { enabled: false, updatedAt: Date.now() });
+      await ctx.db.patch(timeout._id, { enabled: false, ceoCleared: true, updatedAt: Date.now() });
       await ctx.db.insert("timeoutAudit", { clerkId, actor: caller, action: "off", reason: timeout.reason, expiresAt: timeout.expiresAt, at: Date.now() });
     }
     return { clerkId, role };

@@ -56,6 +56,7 @@ export default defineSchema({
     reason: v.string(),
     expiresAt: v.number(),
     enabled: v.boolean(),
+    ceoCleared: v.optional(v.boolean()),
     issuedBy: v.string(),
     issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
     updatedAt: v.number(),

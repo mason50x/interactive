@@ -44,12 +44,10 @@ const start = (clerkId: string) => ({
 
 test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay restricted", async () => {
   const t = await setup();
-  await t
-    .withIdentity({ subject: "ceo" })
-    .mutation(api.adminQuotas.setRole, {
-      clerkId: "member",
-      role: "head_moderator",
-    });
+  await t.withIdentity({ subject: "ceo" }).mutation(api.adminQuotas.setRole, {
+    clerkId: "member",
+    role: "head_moderator",
+  });
   const head = t.withIdentity({ subject: "member" });
   expect(await head.query(api.timeouts.access, {})).toBe("head_moderator");
   expect(await head.query(api.adminQuotas.access, {})).toBe(false);
@@ -221,4 +219,43 @@ test("role changes revoke management immediately and promotion clears old timeou
   await expect(head.mutation(api.timeouts.set, start("mod"))).rejects.toThrow(
     "access required",
   );
+});
+
+test("the shared list preserves CEO clears against Head Moderator reactivation", async () => {
+  const t = await setup();
+  const ceo = t.withIdentity({ subject: "ceo" });
+  const head = t.withIdentity({ subject: "head" });
+  await head.mutation(api.timeouts.set, start("member"));
+  const args = { paginationOpts: { cursor: null, numItems: 50 } };
+  expect(
+    (await ceo.query(api.timeouts.users, args)).page.find(
+      (user) => user.clerkId === "member",
+    )?.timeout,
+  ).not.toBeNull();
+  await ceo.mutation(api.timeouts.set, { clerkId: "member", enabled: false });
+  expect(
+    (await head.query(api.timeouts.users, args)).page.find(
+      (user) => user.clerkId === "member",
+    ),
+  ).toMatchObject({ timeout: null, ceoCleared: true, canManage: false });
+  await expect(
+    head.mutation(api.timeouts.set, start("member")),
+  ).rejects.toThrow("Only a CEO");
+  // Expiry jobs and an early removal retry cannot undo a CEO's clear.
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  await expect(
+    head.mutation(api.timeouts.set, start("member")),
+  ).rejects.toThrow("Only a CEO");
+  await expect(
+    head.mutation(api.timeouts.set, { clerkId: "member", enabled: false }),
+  ).rejects.toThrow("Only a CEO");
+  await ceo.mutation(api.timeouts.set, start("member"));
+  expect(
+    (await ceo.query(api.timeouts.users, args)).page.find(
+      (user) => user.clerkId === "member",
+    ),
+  ).toMatchObject({ ceoCleared: false, canManage: true });
+  await expect(
+    head.mutation(api.timeouts.set, { clerkId: "member", enabled: false }),
+  ).rejects.toThrow("Only a CEO");
 });

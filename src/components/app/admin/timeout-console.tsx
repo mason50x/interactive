@@ -61,8 +61,8 @@ export function TimeoutConsole() {
       <h2 className="text-xl font-semibold">User timeouts</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Temporarily pause access for users below your role. Timeouts expire
-        automatically and can be turned off early. Only CEOs can change
-        CEO-issued timeouts.
+        automatically and can be turned off early. This list is shared. Only CEOs
+        can change CEO-issued timeouts or restart a timeout cleared by a CEO.
       </p>
       <div className="mt-5 grid gap-6 md:grid-cols-2">
         <div>
@@ -77,7 +77,7 @@ export function TimeoutConsole() {
               <button
                 key={user.clerkId}
                 type="button"
-                disabled={!user.canManage || busy}
+                disabled={busy}
                 aria-pressed={selected === user.clerkId}
                 onClick={() => {
                   setSelected(user.clerkId);
@@ -92,7 +92,11 @@ export function TimeoutConsole() {
                   {user.username ? ` (@${user.username})` : ""}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {user.timeout ? "Timed out" : "No active timeout"}
+                  {user.ceoCleared
+                    ? "Cleared by CEO"
+                    : user.timeout
+                      ? "Timed out"
+                      : "No active timeout"}
                   {!user.canManage ? " · Restricted" : ""}
                 </span>
               </button>
@@ -133,7 +137,7 @@ export function TimeoutConsole() {
               onChange={(event) => setReason(event.target.value)}
               maxLength={1000}
               rows={3}
-              disabled={busy}
+              disabled={busy || !target?.canManage}
               className="mt-2 block w-full rounded-lg border border-border bg-background p-3 text-foreground"
               placeholder="Explain why access is being paused"
             />
@@ -147,7 +151,7 @@ export function TimeoutConsole() {
               max={43200}
               step={1}
               value={minutes}
-              disabled={busy}
+              disabled={busy || !target?.canManage}
               onChange={(event) => setMinutes(event.target.value)}
             />
           </label>

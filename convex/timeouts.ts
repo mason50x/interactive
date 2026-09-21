@@ -51,6 +51,7 @@ const directoryUser = v.object({
   label: v.string(),
   username: v.optional(v.string()),
   canManage: v.boolean(),
+  ceoCleared: v.boolean(),
   timeout: v.union(timeoutView, v.null()),
 });
 export const users = query({
@@ -66,15 +67,18 @@ export const users = query({
     const page = await Promise.all(
       result.page.map(async (user) => {
         const role = await resolveRole(ctx, user.clerkId);
-        const row = await activeTimeout(ctx, user.clerkId);
+        const row = await timeoutRow(ctx, user.clerkId);
+        const active = row?.enabled && row.expiresAt > Date.now();
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
           username: user.username,
+          ceoCleared: row?.ceoCleared === true,
           canManage:
             ranks[role] < ranks[caller.role] &&
-            (!row || caller.role === "ceo" || row.issuedByRole !== "ceo"),
-          timeout: row
+            (caller.role === "ceo" ||
+              (!row?.ceoCleared && !(active && row.issuedByRole === "ceo"))),
+          timeout: active
             ? { reason: row.reason, expiresAt: row.expiresAt }
             : null,
         };
@@ -109,16 +113,21 @@ export const set = mutation({
     const existing = await timeoutRow(ctx, args.clerkId);
     const now = Date.now();
     if (
-      existing?.enabled &&
-      existing.expiresAt > now &&
-      existing.issuedByRole === "ceo" &&
-      caller.role !== "ceo"
+      caller.role !== "ceo" &&
+      (existing?.ceoCleared ||
+        (existing?.enabled &&
+          existing.expiresAt > now &&
+          existing.issuedByRole === "ceo"))
     ) {
       throw new ConvexError("Only a CEO can change this timeout.");
     }
     if (!args.enabled) {
-      if (existing?.enabled) {
-        await ctx.db.patch(existing._id, { enabled: false, updatedAt: now });
+      if (existing && (existing.enabled || caller.role === "ceo")) {
+        await ctx.db.patch(existing._id, {
+          enabled: false,
+          ceoCleared: caller.role === "ceo",
+          updatedAt: now,
+        });
         await ctx.db.insert("timeoutAudit", {
           clerkId: args.clerkId,
           actor: caller.clerkId,
@@ -147,6 +156,7 @@ export const set = mutation({
       reason,
       expiresAt,
       enabled: true,
+      ceoCleared: false,
       issuedBy: caller.clerkId,
       issuedByRole: caller.role,
       updatedAt: now,
