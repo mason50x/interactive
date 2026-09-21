@@ -20,10 +20,8 @@ it("renders the bundled TikTok logo and resolves its catalog route", () => {
 });
 
 
-it("renders the bundled X logo and resolves its catalog route", () => {
-  expect(findExperienceApp("x")).toEqual({
-    id: "x", label: "X", host: "x.com", start: "https://x.com/",
-  });
+it("retains the bundled X logo while its catalog route is disabled", () => {
+  expect(findExperienceApp("x")).toBeNull();
   expect(experienceAppHref("x")).toBe("/experience/x");
   const html = renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "x" }));
   expect(html).toContain('src="/experience/x.png"');
