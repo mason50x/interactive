@@ -10,17 +10,37 @@ import { syncChatAccount } from "@/lib/account-actions";
  *
  * Renders nothing. It runs the sync once the session has reached Convex, and
  * again whenever Clerk reports the profile changed — a new name or avatar —
- * so the chat's view of who you are is never a page load behind. Mounted by
+ * and retries temporary failures without waiting for a visit to Chat. Mounted by
  * `AppProviders`, so it is on every page of the app and none of `/learn`.
  */
 export function StoreUser() {
   const { isAuthenticated } = useConvexAuth();
-  const { user } = useUser();
-  const sync = syncChatAccount;
+  const { isLoaded, user } = useUser();
+  const userId = user?.id;
+  const username = user?.username;
   const updatedAt = user?.updatedAt?.getTime();
   useEffect(() => {
-    if (!isAuthenticated) return;
-    void sync().catch((error) => console.error("Account sync failed", error));
-  }, [isAuthenticated, sync, updatedAt]);
+    if (!isAuthenticated || !isLoaded || !userId || !username) return;
+    let active = true;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    let retryDelay = 1000;
+
+    async function sync() {
+      try {
+        await syncChatAccount();
+      } catch (error) {
+        if (!active) return;
+        console.error("Account sync failed; retrying automatically", error);
+        retry = setTimeout(() => void sync(), retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30_000);
+      }
+    }
+
+    void sync();
+    return () => {
+      active = false;
+      clearTimeout(retry);
+    };
+  }, [isAuthenticated, isLoaded, userId, username, updatedAt]);
   return null;
 }

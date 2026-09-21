@@ -9,7 +9,7 @@ export default function SignUpPage() {
       routing="path"
       path="/auth/sign-up"
       signInUrl="/auth/sign-in"
-      fallbackRedirectUrl="/home"
+      fallbackRedirectUrl="/activities"
     />
   );
 }

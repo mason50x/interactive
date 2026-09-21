@@ -248,7 +248,7 @@ function reannounce(link: HTMLLinkElement, head: HTMLHeadElement): void {
  * effect's cleanup.
  *
  * A mask set once on mount lasts until the first click. Every route under
- * `/home` declares its own `metadata.title`, so a client-side navigation
+ * `/activities` declares its own `metadata.title`, so a client-side navigation
  * has React replace the `<title>` and re-render the icon links from the route's
  * payload — and the tab goes back to saying "Home — Dashboard" halfway through
  * a lesson, which is the exact moment the feature was for.

@@ -1,7 +1,9 @@
 export function TimeoutMessage({
+  rayId,
   reason,
   expiresAt,
 }: {
+  rayId: string;
   reason: string;
   expiresAt: number;
 }) {
@@ -24,6 +26,9 @@ export function TimeoutMessage({
           <time dateTime={new Date(expiresAt).toISOString()}>
             {new Date(expiresAt).toUTCString()}
           </time>
+        </p>
+        <p className="mt-6 text-sm text-neutral-600">
+          Ray ID: <code className="break-all select-all">{rayId}</code>
         </p>
       </div>
     </div>

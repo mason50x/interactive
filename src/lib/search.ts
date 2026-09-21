@@ -173,16 +173,13 @@ const pages: readonly Entry[] = navItems.map((item) => ({
   detail: item.href,
   icon: item.icon.solid,
   href: item.href,
-  keywords:
-    item.href === "/home"
-      ? ["overview", "dashboard", "start"]
-      : item.href.endsWith("/chat")
-        ? ["messages", "dms", "groups", "friends", "everyone"]
-        : item.href.endsWith("/experience")
-          ? ["browser", "websites", "apps", "streaming", "browse web"]
-          : item.href.endsWith("/learning-simulator")
-            ? ["emulator", "simulation", "rom", "import", "upload"]
-            : ["games", "catalogue", "catalog", "play", "browse"],
+  keywords: item.href.endsWith("/chat")
+    ? ["messages", "dms", "groups", "friends", "everyone"]
+    : item.href.endsWith("/experience")
+      ? ["browser", "websites", "apps", "streaming", "browse web"]
+      : item.href.endsWith("/learning-simulator")
+        ? ["emulator", "simulation", "rom", "import", "upload"]
+        : ["games", "catalogue", "catalog", "play", "browse"],
 }));
 
 const experiences: readonly Entry[] = EXPERIENCE_APPS.map((app) => ({

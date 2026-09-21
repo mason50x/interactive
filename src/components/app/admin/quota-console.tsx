@@ -1,28 +1,31 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { CheckCircleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-
+import {
+  CheckCircleIcon,
+  MagnifyingGlassIcon,
+  ArrowDownIcon,
+} from "@heroicons/react/24/outline";
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { useAdminReveals } from "./admin-motion";
+import s from "./admin.module.css";
 
 type QuotaKind = "experience" | "bot";
-
 type SiteRole = "ceo" | "head_moderator" | "moderator" | "member";
-
 const ROLE_LABEL: Record<SiteRole, string> = {
   ceo: "CEO",
   head_moderator: "Head Moderator",
   moderator: "Moderator",
   member: "Member",
 };
-
 const SITE_ROLES: SiteRole[] = ["ceo", "head_moderator", "moderator", "member"];
+const QUOTA_LABEL: Record<QuotaKind, string> = {
+  experience: "Proxy time",
+  bot: "Bot usage",
+};
 
 export function QuotaConsole() {
   const { userId } = useAuth();
@@ -35,223 +38,422 @@ export function QuotaConsole() {
   const [search, setSearch] = useState("");
   const [quotas, setQuotas] = useState<QuotaKind[]>(["experience", "bot"]);
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
+  const roleSaving = useRef(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingRole, setSavingRole] = useState<string | null>(null);
-  const [roleError, setRoleError] = useState<string | null>(null);
+  const [roleFeedback, setRoleFeedback] = useState<{
+    clerkId: string;
+    message: string;
+    error: boolean;
+  } | null>(null);
+  const [focusRequest, setFocusRequest] = useState(0);
+  const userSelect = useRef<HTMLSelectElement>(null);
+  const root = useAdminReveals(access === true);
+  const target = users?.find((user) => user.clerkId === selectedUser);
+  const targetLabel =
+    target?.name ?? target?.username ?? target?.email ?? target?.clerkId;
+  const allowanceLabel = quotas
+    .map((quota) => QUOTA_LABEL[quota])
+    .join(" and ");
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    const select = userSelect.current;
+    select?.focus({ preventScroll: true });
+    select?.scrollIntoView({
+      block: "center",
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+  }, [focusRequest]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return users ?? [];
-    return (users ?? []).filter((user) =>
-      [user.name, user.username, user.email, user.clerkId].some((value) =>
-        value?.toLowerCase().includes(term),
-      ),
+    return (users ?? []).filter(
+      (user) =>
+        !term ||
+        [user.name, user.username, user.email, user.clerkId].some((value) =>
+          value?.toLowerCase().includes(term),
+        ),
     );
   }, [search, users]);
 
-  function toggleQuota(quota: QuotaKind) {
+  function clearFeedback() {
     setNotice(null);
+    setError(null);
+  }
+  function toggleQuota(quota: QuotaKind) {
+    clearFeedback();
     setQuotas((current) =>
       current.includes(quota)
         ? current.filter((item) => item !== quota)
         : [...current, quota],
     );
   }
-
   async function submit() {
-    if (quotas.length === 0 || (scope === "user" && !selectedUser)) return;
-    const target = users?.find((user) => user.clerkId === selectedUser);
-    const targetLabel =
-      scope === "global"
-        ? "every user"
-        : target?.name ?? target?.username ?? target?.email ?? "this user";
+    if (
+      submitting.current ||
+      quotas.length === 0 ||
+      (scope === "user" && !target)
+    )
+      return;
     if (
       !window.confirm(
-        `Reset ${quotas.length === 2 ? "all quotas" : quotas[0]} for ${targetLabel}?`,
+        `Reset ${allowanceLabel} for ${scope === "global" ? "every user" : targetLabel}?`,
       )
     )
       return;
-
+    submitting.current = true;
     setBusy(true);
-    setNotice(null);
-    setError(null);
+    clearFeedback();
     try {
       const result = await reset({
         ...(scope === "user" ? { clerkId: selectedUser } : {}),
         quotas,
       });
       setNotice(
-        `Quotas reset for ${result.usersReset} ${result.usersReset === 1 ? "user" : "users"}.`,
+        `Allowances reset for ${result.usersReset} ${result.usersReset === 1 ? "account" : "accounts"}.`,
       );
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The reset failed.");
+    } catch {
+      setError("The reset failed. Try again.");
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
-
-  async function changeRole(clerkId: string, current: SiteRole, next: string) {
-    if (next !== "ceo" && next !== "head_moderator" && next !== "moderator" && next !== "member") return;
-    if (next === current || savingRole !== null) return;
-    setRoleError(null);
+  async function changeRole(
+    clerkId: string,
+    current: SiteRole,
+    next: string,
+    name: string,
+  ) {
+    if (
+      next !== "ceo" &&
+      next !== "head_moderator" &&
+      next !== "moderator" &&
+      next !== "member"
+    )
+      return;
+    if (next === current || roleSaving.current || clerkId === userId) return;
+    roleSaving.current = true;
+    setRoleFeedback(null);
     setSavingRole(clerkId);
     try {
       await setRole({ clerkId, role: next });
-    } catch (caught) {
-      setRoleError(
-        caught instanceof Error ? caught.message : "The role change failed.",
-      );
+      setRoleFeedback({
+        clerkId,
+        message: `Role updated for ${name}.`,
+        error: false,
+      });
+    } catch {
+      setRoleFeedback({
+        clerkId,
+        message: "The role could not be changed. Try again.",
+        error: true,
+      });
     } finally {
+      roleSaving.current = false;
       setSavingRole(null);
     }
   }
 
-  if (access === undefined) {
-    return <p className="text-sm text-muted-foreground">Checking access…</p>;
-  }
-
-  if (!access) {
-    return (
-      <Card className="p-6 sm:p-7">
-        <h2 className="text-xl font-semibold text-foreground">Access restricted</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          This page is available only to the CEO role.
-        </p>
-      </Card>
-    );
-  }
+  if (access !== true)
+    return access === undefined ? (
+      <p role="status" className={s.muted}>
+        Checking CEO access…
+      </p>
+    ) : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.72fr)]">
-      <Card className="p-6 sm:p-7">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-foreground">Reset allowances</h2>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Restore quota immediately. Active Experience sessions will start a fresh allowance.
+    <div ref={root} className={s.workspace}>
+      <section
+        id="user_directory"
+        aria-labelledby="directory-heading"
+        className={s.panel}
+      >
+        <header className={s.directoryHeader} data-admin-reveal="rise">
+          <h2 id="directory-heading" className={s.heading}>
+            User directory
+          </h2>
+          <p className={s.muted}>
+            Choose an account for a quota reset or change its role.
           </p>
+        </header>
+        <div data-admin-reveal="rise" data-delay="80">
+          <label className={`${s.field} ${s.search}`}>
+            Search users
+            <MagnifyingGlassIcon aria-hidden="true" />
+            <input
+              className={s.control}
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Name, handle, email, or account ID"
+            />
+          </label>
+          <div
+            className={s.directoryList}
+            role="region"
+            aria-label="User directory accounts"
+            tabIndex={0}
+          >
+            {users === undefined ? (
+              <p className={s.empty} role="status">
+                Loading users…
+              </p>
+            ) : filtered.length === 0 ? (
+              <p className={s.empty} role="status">
+                No users found.
+              </p>
+            ) : (
+              filtered.map((user) => {
+                const name =
+                  user.name ?? user.username ?? user.email ?? user.clerkId;
+                const self = user.clerkId === userId;
+                const selected =
+                  selectedUser === user.clerkId && scope === "user";
+                return (
+                  <div
+                    key={user.clerkId}
+                    className={s.directoryRow}
+                    data-selected={selected}
+                  >
+                    <div className={s.identity}>
+                      <span className={s.name}>{name}</span>
+                      <span className={s.meta}>
+                        {user.username
+                          ? `@${user.username}`
+                          : (user.email ?? user.clerkId)}
+                      </span>
+                      {selected && (
+                        <span className={s.status}>
+                          <CheckCircleIcon aria-hidden="true" />
+                          Selected for quota reset
+                        </span>
+                      )}
+                      {self && (
+                        <p className={s.meta}>
+                          You cannot change your own role.
+                        </p>
+                      )}
+                      {savingRole === user.clerkId && (
+                        <p role="status" className={s.feedback}>
+                          Saving role…
+                        </p>
+                      )}
+                      {roleFeedback?.clerkId === user.clerkId && (
+                        <p
+                          role={roleFeedback.error ? "alert" : "status"}
+                          className={`${s.feedback} ${roleFeedback.error ? s.error : ""}`}
+                        >
+                          {roleFeedback.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className={s.rowControls}>
+                      <label className={s.field}>
+                        Role
+                        <span className={s.selectWrap}>
+                          {/* Native selection avoids the existing runtime's portalled-select issue. */}
+                          <select
+                            className={s.control}
+                            aria-label={`Role for ${name}`}
+                            value={user.role}
+                            disabled={self || savingRole !== null}
+                            onChange={(event) =>
+                              void changeRole(
+                                user.clerkId,
+                                user.role,
+                                event.target.value,
+                                name,
+                              )
+                            }
+                          >
+                            {SITE_ROLES.map((role) => (
+                              <option key={role} value={role}>
+                                {ROLE_LABEL[role]}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronUpDownIcon aria-hidden="true" />
+                        </span>
+                      </label>
+                      <button
+                        className={s.button}
+                        type="button"
+                        disabled={busy}
+                        aria-pressed={selected}
+                        aria-label={`Reset allowances for ${name}`}
+                        onClick={() => {
+                          setSelectedUser(user.clerkId);
+                          setScope("user");
+                          clearFeedback();
+                          setFocusRequest((value) => value + 1);
+                        }}
+                      >
+                        Reset allowances <ArrowDownIcon aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
-
-        <fieldset className="space-y-3">
-          <legend className="mb-2 text-sm font-semibold text-foreground">Scope</legend>
-          {(["global", "user"] as const).map((value) => (
-            <label key={value} className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 has-checked:border-primary has-checked:bg-primary/[0.04]">
-              <input
-                type="radio"
-                name="scope"
-                value={value}
-                checked={scope === value}
-                onChange={() => { setScope(value); setNotice(null); }}
-                className="mt-1 accent-primary"
-              />
-              <span>
-                <span className="block font-medium text-foreground">{value === "global" ? "Everyone" : "Specific user"}</span>
-                <span className="text-sm text-muted-foreground">{value === "global" ? "Reset selected quotas across all accounts." : "Choose one account from the directory."}</span>
-              </span>
-            </label>
-          ))}
+      </section>
+      <section
+        id="quota_reset"
+        aria-labelledby="reset-heading"
+        className={s.quota}
+        aria-busy={busy}
+      >
+        <header>
+          <h2 id="reset-heading" className={s.heading}>
+            Reset allowances
+          </h2>
+          <p className={s.muted}>Restore selected allowances immediately.</p>
+        </header>
+        <fieldset disabled={busy}>
+          <legend className={s.legend}>Scope</legend>
+          <div className={s.scopeGrid}>
+            {(["global", "user"] as const).map((value) => (
+              <label key={value} className={s.choice}>
+                <input
+                  className={s.check}
+                  type="radio"
+                  name="quota-scope"
+                  value={value}
+                  checked={scope === value}
+                  onChange={() => {
+                    setScope(value);
+                    clearFeedback();
+                  }}
+                />
+                <span>
+                  <span className={s.name}>
+                    {value === "global" ? "Everyone" : "Specific user"}
+                  </span>
+                  <span className={s.muted}>
+                    {value === "global"
+                      ? "Reset selected allowances across all accounts."
+                      : "Reset selected allowances for one account."}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
         </fieldset>
-
         {scope === "user" && (
-          <label className="mt-5 block">
-            <span className="mb-2 block text-sm font-semibold text-foreground">User</span>
-            <select
-              value={selectedUser}
-              onChange={(event) => { setSelectedUser(event.target.value); setNotice(null); }}
-              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-            >
-              <option value="">Select a user…</option>
-              {(users ?? []).map((user) => (
-                <option key={user.clerkId} value={user.clerkId}>
-                  {user.name ?? user.username ?? user.email ?? user.clerkId}{user.username ? ` (@${user.username})` : ""}
-                </option>
-              ))}
-            </select>
+          <label className={s.field}>
+            User
+            <span className={s.selectWrap}>
+              <select
+                className={s.control}
+                ref={userSelect}
+                value={selectedUser}
+                disabled={busy}
+                onChange={(event) => {
+                  setSelectedUser(event.target.value);
+                  clearFeedback();
+                }}
+              >
+                <option value="">Select a user</option>
+                {(users ?? []).map((user) => (
+                  <option key={user.clerkId} value={user.clerkId}>
+                    {user.name ?? user.username ?? user.email ?? user.clerkId}
+                    {user.username ? ` (@${user.username})` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronUpDownIcon aria-hidden="true" />
+            </span>
           </label>
         )}
-
-        <fieldset className="mt-6 space-y-3">
-          <legend className="mb-2 text-sm font-semibold text-foreground">Quotas</legend>
-          {([
-            ["experience", "Proxy time", "Daily Experience browsing time"],
-            ["bot", "Bot usage", "Daily @bot messages"],
-          ] as const).map(([value, label, description]) => (
-            <label key={value} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-4 has-checked:border-primary has-checked:bg-primary/[0.04]">
-              <input type="checkbox" checked={quotas.includes(value)} onChange={() => toggleQuota(value)} className="size-4 accent-primary" />
-              <span><span className="block font-medium text-foreground">{label}</span><span className="text-sm text-muted-foreground">{description}</span></span>
-            </label>
-          ))}
-        </fieldset>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button size="lg" disabled={busy || quotas.length === 0 || (scope === "user" && !selectedUser)} onClick={submit}>
-            {busy ? "Resetting…" : "Reset quotas now"}
-          </Button>
-          {notice && <p role="status" className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400"><CheckCircleIcon className="size-4" />{notice}</p>}
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        </div>
-      </Card>
-
-      <Card className="overflow-hidden">
-        <div className="border-b border-border p-5">
-          <h2 className="font-semibold text-foreground">User directory</h2>
-          <InputGroup className="mt-3">
-            <InputAddon><MagnifyingGlassIcon /></InputAddon>
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, handle, or email" aria-label="Search users" />
-          </InputGroup>
-          {roleError && <p role="alert" className="mt-2 text-sm text-destructive">{roleError}</p>}
-        </div>
-        <div className="max-h-[32rem] overflow-y-auto">
-          {users === undefined ? (
-            <p className="p-5 text-sm text-muted-foreground">Loading users…</p>
-          ) : filtered.length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">No users found.</p>
-          ) : filtered.map((user) => {
-            const displayName = user.name ?? user.username ?? user.email ?? "Unnamed user";
-            const isSelf = userId !== null && user.clerkId === userId;
-            return (
+        <fieldset disabled={busy}>
+          <legend className={s.legend}>Allowances</legend>
+          <div className={s.allowances}>
+            {(
+              [
+                ["experience", "Proxy time", "Daily Experience browsing time"],
+                ["bot", "Bot usage", "Daily @bot messages"],
+              ] as const
+            ).map(([value, label, description], index) => (
               <div
-                key={user.clerkId}
-                className="flex w-full items-center justify-between gap-4 border-b border-border px-5 py-3 last:border-0 hover:bg-muted/60"
+                key={value}
+                className={s.allowance}
+                data-admin-reveal="opacity"
+                data-delay={index * 80}
               >
-                <button
-                  type="button"
-                  onClick={() => { setSelectedUser(user.clerkId); setScope("user"); setNotice(null); }}
-                  aria-pressed={selectedUser === user.clerkId && scope === "user"}
-                  className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                >
-                  <span className="block truncate text-sm font-medium text-foreground">{displayName}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{user.username ? `@${user.username}` : user.email ?? user.clerkId}</span>
-                </button>
-                {/*
-                  A native select, not the app's Base UI Select: its portalled
-                  popup never mounts in this runtime (verified in isolation,
-                  including raw primitives with no app code), while the
-                  OS-level list always opens. Same footprint and tokens as
-                  the shared trigger.
-                */}
-                <span className="relative inline-flex h-8 w-[10rem] shrink-0 items-center">
-                  <select
-                    aria-label={`Role for ${displayName}`}
-                    title={isSelf ? "You cannot change your own role." : undefined}
-                    value={user.role}
-                    disabled={isSelf || savingRole === user.clerkId}
-                    onChange={(event) => void changeRole(user.clerkId, user.role, event.target.value)}
-                    className="h-full w-full cursor-pointer appearance-none rounded-lg border border-border bg-background pr-7 pl-2.5 text-xs text-foreground outline-none transition-colors select-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {SITE_ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {ROLE_LABEL[role]}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronUpDownIcon className="pointer-events-none absolute right-2 size-4 shrink-0 text-faint" />
-                </span>
+                <div className={s.allowanceTop}>
+                  <h3 className={s.subheading}>{label}</h3>
+                  <p className={s.muted}>{description}</p>
+                  <label className={s.checkLabel}>
+                    <input
+                      type="checkbox"
+                      className={s.check}
+                      checked={quotas.includes(value)}
+                      onChange={() => toggleQuota(value)}
+                    />
+                    Include {label}
+                  </label>
+                </div>
+                <p className={s.muted}>
+                  {value === "experience"
+                    ? quotas.includes(value)
+                      ? "Active Experience sessions start a fresh allowance."
+                      : "Proxy time will remain unchanged."
+                    : quotas.includes(value)
+                      ? "Bot usage will reset for the selected accounts."
+                      : "Bot usage will remain unchanged."}
+                </p>
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </fieldset>
+        <div className={s.review}>
+          <div>
+            <h3 className={s.subheading}>Review reset</h3>
+            <p className={s.name}>
+              {scope === "global"
+                ? "Accounts: Everyone"
+                : `Account: ${targetLabel ?? "Select a user"}`}
+            </p>
+            <p className={s.muted}>
+              Allowances: {allowanceLabel || "None selected"}
+            </p>
+          </div>
+          <button
+            className={`${s.button} ${s.primary}`}
+            type="button"
+            disabled={
+              busy || quotas.length === 0 || (scope === "user" && !target)
+            }
+            onClick={() => void submit()}
+          >
+            {busy ? "Resetting…" : "Reset allowances"}
+          </button>
         </div>
-      </Card>
+        {quotas.length === 0 && (
+          <p className={s.feedback}>Choose at least one allowance.</p>
+        )}
+        {scope === "user" && !target && (
+          <p className={s.feedback}>Choose an account.</p>
+        )}
+        {notice && (
+          <p role="status" className={s.status}>
+            <CheckCircleIcon aria-hidden="true" />
+            {notice}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className={`${s.feedback} ${s.error}`}>
+            {error}
+          </p>
+        )}
+      </section>
     </div>
   );
 }

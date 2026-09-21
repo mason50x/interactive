@@ -5,7 +5,7 @@ import { LEARN_PATH_PREFIX } from "@/lib/learn";
 /**
  * Routes that require a session.
  *
- * `/home` is the app. `/learn` is where an activity is framed — it used to
+ * `/activities` is the default app page. `/learn` is where an activity is framed — it used to
  * be gated by a signed grant on a separate origin, because the session could
  * not reach that origin; now it is a normal page of this site and the session
  * reaches it like any other, so it is protected the same way. See
@@ -65,7 +65,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   const { userId } = await auth();
   if (userId) {
-    return NextResponse.redirect(new URL("/home", req.url));
+    return NextResponse.redirect(new URL("/activities", req.url));
   }
 });
 

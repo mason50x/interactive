@@ -1,0 +1,49 @@
+{
+  "originalRequest": "Really redesign that admin panel. It is absolutely hideous.",
+  "subject": "Interactive Learning’s existing authenticated admin panel at /admin.",
+  "pageType": "Administrative product interface.",
+  "scope": "Substantial visual and usability redesign of the admin page, including user timeouts, quota resets, user directory, role controls, and interaction states. Retain the surrounding application shell and existing functionality.",
+  "primaryGoal": "Make account administration clear, cohesive, and easy to scan, with obvious user selection, permissions, action scope, and feedback.",
+  "audience": "Interactive Learning CEOs and Head Moderators. Quota resets and role management are CEO-only.",
+  "offer": "An administration workspace for managing temporary access restrictions, restoring allowances, and assigning account roles.",
+  "primaryAction": "Find and select an account, then perform the permitted account-management action; clearly distinguish global quota resets from individual changes.",
+  "creativeControl": "Broad discretion to substantially improve hierarchy, grouping, spacing, density, typography treatment, and control presentation within the established brand and existing functional scope. Choose the final visual composition after reference selection.",
+  "requiredContent": [
+    "Admin context and access: Admin title, concise explanation of account controls, and access-checking and restricted-access states.",
+    "Timeout user search and selection: Search loaded users by name, handle, or account ID; load additional users; show selected account, active timeout status, CEO-cleared status, and management restrictions.",
+    "Selected user timeout controls: Account identity, active timeout expiry and reason, reason entry, duration from 1 to 43,200 minutes, and start, restart, or end timeout actions. Explain applicable role restrictions and automatic expiry.",
+    "CEO allowance reset controls: Choose everyone or a specific account, select daily Experience browsing time and/or daily bot-message allowances, review the target scope, confirm the reset, and receive success or error feedback.",
+    "CEO user directory and roles: Search accounts by name, handle, email, or account ID; select an account for an individual reset; manage CEO, Head Moderator, Moderator, and Member roles. Preserve the restriction against changing one’s own role.",
+    "Operational interaction states: Consistent loading, empty search, no selection, restricted, disabled, saving, success, and error states integrated into the relevant controls."
+  ],
+  "constraints": [
+    "Preserve existing authentication, role-based visibility, permission enforcement, data integrations, validation, and action semantics.",
+    "Preserve confirmation for quota resets and make global effects explicit.",
+    "Support desktop and mobile, existing light and dark themes, keyboard interaction, visible focus, accessible labels, and readable status feedback.",
+    "Keep the redesign scoped to the admin interface rather than changing the entire application or brand.",
+    "Retain reliable role selection behavior; the existing component documents a runtime issue with portalled custom selects.",
+    "Use supplied or subsequently selected reference images to guide each section’s desktop and mobile composition. Reference selection belongs to a later phase.",
+    "Do not add unsupported analytics, audit logs, fabricated account data, or decorative marketing sections."
+  ],
+  "brandInputs": [
+    "src/lib/brand.ts: Brand name is Interactive Learning; tagline is The visual learning platform. Brand ink is #0f0f0f and paper is #ffffff. The IL monogram remains monochrome.",
+    "src/app/globals.css: Existing blue primary #3c85f7, light background #f7f7f7, white cards, gray borders #e3e3e3, and dark background #0f0f0f with cards #171717. Rounded surfaces, subtle borders, and theme-aware semantic tokens.",
+    "src/app/layout.tsx: Inter is the brand typeface. Instrument Serif is also available for display typography.",
+    "public/brand/ and src/lib/brand.ts: Existing IL monogram and logo lockup assets are available; reuse the established identity.",
+    "src/app/(app)/layout.tsx and src/components/ui/page.tsx: Existing sidebar application shell with an independently scrolling, rounded content surface and responsive page gutters.",
+    "src/components/app/admin/admin-console.tsx, timeout-console.tsx, and quota-console.tsx: Current page stacks a timeout card above CEO controls, which place quota reset controls alongside a searchable directory. Styling uses bordered cards, rounded inputs, muted descriptions, and blue actions."
+  ],
+  "assumptions": [
+    "The referenced admin panel is the verified /admin route in this project.",
+    "The request authorizes a substantial presentation and usability overhaul while preserving existing capabilities and permission rules.",
+    "This is a focused operational interface, so its actual workflows determine the content scope; an eight-section landing-page structure would add filler.",
+    "Keep the existing brand, application shell, and theme preferences rather than introduce a new brand system.",
+    "Use restrained interaction feedback and respect reduced-motion preferences; entrance and scroll animation requirements for new websites do not apply to this existing admin redesign.",
+    "Use live application data in the finished interface; any later design-preview sample data must be clearly illustrative."
+  ],
+  "unresolved": [
+    "No design reference images were supplied. Desktop and mobile composition references remain to be selected in the subsequent design phase.",
+    "The current appearance was assessed from relevant source files, not a rendered authenticated session."
+  ],
+  "explicitAnswers": []
+}

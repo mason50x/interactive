@@ -14,7 +14,9 @@ import { cn } from "@/lib/utils";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
+  // Keep the first rendered face on a slow connection instead of swapping
+  // text after the reader has already started interacting with it.
+  display: "optional",
 });
 
 // Both styles: the marketing headlines set one word in the italic, and the
@@ -24,6 +26,7 @@ const displaySerif = Instrument_Serif({
   weight: "400",
   style: ["normal", "italic"],
   subsets: ["latin"],
+  display: "optional",
 });
 
 export const metadata: Metadata = {

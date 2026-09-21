@@ -1,0 +1,274 @@
+[
+  {
+    "delay": 0,
+    "duration": 520,
+    "finished": true,
+    "played": true,
+    "reveal": "rise",
+    "samples": [
+      {
+        "opacity": "0.0622897",
+        "state": "running",
+        "time": 7.22600000638049,
+        "transform": "matrix(1, 0, 0, 1, 0, 9.3771)"
+      },
+      {
+        "opacity": "0.130714",
+        "state": "running",
+        "time": 15.42600000638049,
+        "transform": "matrix(1, 0, 0, 1, 0, 8.69286)"
+      },
+      {
+        "opacity": "0.721419",
+        "state": "running",
+        "time": 116.6260000063805,
+        "transform": "matrix(1, 0, 0, 1, 0, 2.78581)"
+      },
+      {
+        "opacity": "0.721419",
+        "state": "running",
+        "time": 116.6260000063805,
+        "transform": "matrix(1, 0, 0, 1, 0, 2.78581)"
+      },
+      {
+        "opacity": "0.972729",
+        "state": "running",
+        "time": 281.9260000063805,
+        "transform": "matrix(1, 0, 0, 1, 0, 0.272707)"
+      },
+      {
+        "opacity": "0.976772",
+        "state": "running",
+        "time": 291.6260000063805,
+        "transform": "matrix(1, 0, 0, 1, 0, 0.232284)"
+      },
+      {
+        "opacity": "1",
+        "state": "idle",
+        "time": null,
+        "transform": "none"
+      },
+      {
+        "opacity": "1",
+        "state": "idle",
+        "time": null,
+        "transform": "none"
+      }
+    ],
+    "tag": "HEADER"
+  },
+  {
+    "delay": 80,
+    "duration": 520,
+    "reveal": "rise",
+    "samples": [
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 10)"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 10)"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 10)"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "matrix(1, 0, 0, 1, 0, 10)"
+      }
+    ],
+    "tag": "DIV"
+  },
+  {
+    "delay": 0,
+    "duration": 600,
+    "finished": true,
+    "played": true,
+    "reveal": "opacity",
+    "samples": [
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0.183072",
+        "state": "running",
+        "time": 25.296000009916497,
+        "transform": "none"
+      },
+      {
+        "opacity": "0.691988",
+        "state": "running",
+        "time": 125.29600000991792,
+        "transform": "none"
+      },
+      {
+        "opacity": "0.957049",
+        "state": "running",
+        "time": 291.99600000991666,
+        "transform": "none"
+      },
+      {
+        "opacity": "1",
+        "state": "idle",
+        "time": null,
+        "transform": "none"
+      }
+    ],
+    "tag": "DIV"
+  },
+  {
+    "delay": 80,
+    "duration": 600,
+    "finished": true,
+    "played": true,
+    "reveal": "opacity",
+    "samples": [
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "paused",
+        "time": 0,
+        "transform": "none"
+      },
+      {
+        "opacity": "0",
+        "state": "running",
+        "time": 25.296000009916497,
+        "transform": "none"
+      },
+      {
+        "opacity": "0.364083",
+        "state": "running",
+        "time": 133.59600000991634,
+        "transform": "none"
+      },
+      {
+        "opacity": "0.895006",
+        "state": "running",
+        "time": 300.2960000099151,
+        "transform": "none"
+      },
+      {
+        "opacity": "1",
+        "state": "idle",
+        "time": null,
+        "transform": "none"
+      }
+    ],
+    "tag": "DIV"
+  },
+  {
+    "delay": 0,
+    "duration": 500,
+    "finished": true,
+    "reveal": "title",
+    "samples": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "time": 15.556000003311782,
+        "transform": "matrix(1, 0, 0, 1, 0, 6.9051)"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "time": 124.9560000033118,
+        "transform": "matrix(1, 0, 0, 1, 0, 1.88218)"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "time": 290.2560000033118,
+        "transform": "matrix(1, 0, 0, 1, 0, 0.156085)"
+      },
+      {
+        "opacity": "1",
+        "state": "finished",
+        "time": 500,
+        "transform": "none"
+      }
+    ],
+    "tag": "H1"
+  },
+  {
+    "delay": 70,
+    "duration": 500,
+    "finished": true,
+    "reveal": "title",
+    "samples": [
+      {
+        "opacity": "1",
+        "state": "running",
+        "time": 15.556000003311782,
+        "transform": "matrix(1, 0, 0, 1, 0, 8)"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "time": 124.9560000033118,
+        "transform": "matrix(1, 0, 0, 1, 0, 4.52717)"
+      },
+      {
+        "opacity": "1",
+        "state": "running",
+        "time": 290.2560000033118,
+        "transform": "matrix(1, 0, 0, 1, 0, 0.490738)"
+      },
+      {
+        "opacity": "1",
+        "state": "finished",
+        "time": 570.0000000000001,
+        "transform": "none"
+      }
+    ],
+    "tag": "P"
+  }
+]

@@ -12,7 +12,11 @@ import { resolveRole } from "./roles";
 import { activeTimeout, requireNotTimedOut, timeoutRow } from "./timeoutState";
 
 const ranks = { member: 0, moderator: 1, head_moderator: 2, ceo: 3 } as const;
-const timeoutView = v.object({ reason: v.string(), expiresAt: v.number() });
+const timeoutView = v.object({
+  rayId: v.id("userTimeouts"),
+  reason: v.string(),
+  expiresAt: v.number(),
+});
 
 async function manager(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -42,7 +46,9 @@ export const mine = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new ConvexError("Sign in required.");
     const row = await activeTimeout(ctx, identity.subject);
-    return row ? { reason: row.reason, expiresAt: row.expiresAt } : null;
+    return row
+      ? { rayId: row._id, reason: row.reason, expiresAt: row.expiresAt }
+      : null;
   },
 });
 
@@ -79,7 +85,7 @@ export const users = query({
             (caller.role === "ceo" ||
               (!row?.ceoCleared && !(active && row.issuedByRole === "ceo"))),
           timeout: active
-            ? { reason: row.reason, expiresAt: row.expiresAt }
+            ? { rayId: row._id, reason: row.reason, expiresAt: row.expiresAt }
             : null,
         };
       }),

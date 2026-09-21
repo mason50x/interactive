@@ -1,0 +1,93 @@
+.pulse {
+  animation: access-pulse 2800ms ease-in-out infinite;
+}
+
+@keyframes access-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.96);
+  }
+}
+
+.reveal {
+  position: relative;
+  min-height: 100svh;
+  animation: access-reveal 1400ms cubic-bezier(0.65, 0, 0.15, 1) both;
+}
+
+@keyframes access-reveal {
+  from {
+    clip-path: circle(0 at 50vw 50svh);
+  }
+  to {
+    clip-path: circle(75vmax at 50vw 50svh);
+  }
+}
+
+.reveal[data-shape="triangle"] {
+  animation-name: access-triangle;
+}
+
+.reveal[data-shape="diamond"] {
+  animation-name: access-diamond;
+}
+
+.reveal[data-shape="square"] {
+  animation-name: access-square;
+}
+
+@keyframes access-triangle {
+  from {
+    clip-path: polygon(50vw 50svh, 50vw 50svh, 50vw 50svh);
+  }
+  to {
+    clip-path: polygon(
+      50vw calc(50svh - 150vmax),
+      calc(50vw + 150vmax) calc(50svh + 100vmax),
+      calc(50vw - 150vmax) calc(50svh + 100vmax)
+    );
+  }
+}
+
+@keyframes access-diamond {
+  from {
+    clip-path: polygon(50vw 50svh, 50vw 50svh, 50vw 50svh, 50vw 50svh);
+  }
+  to {
+    clip-path: polygon(
+      50vw calc(50svh - 110vmax),
+      calc(50vw + 110vmax) 50svh,
+      50vw calc(50svh + 110vmax),
+      calc(50vw - 110vmax) 50svh
+    );
+  }
+}
+
+@keyframes access-square {
+  from {
+    clip-path: polygon(50vw 50svh, 50vw 50svh, 50vw 50svh, 50vw 50svh);
+  }
+  to {
+    clip-path: polygon(
+      calc(50vw - 55vmax) calc(50svh - 55vmax),
+      calc(50vw + 55vmax) calc(50svh - 55vmax),
+      calc(50vw + 55vmax) calc(50svh + 55vmax),
+      calc(50vw - 55vmax) calc(50svh + 55vmax)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+
+  .reveal {
+    animation-duration: 1ms;
+  }
+}

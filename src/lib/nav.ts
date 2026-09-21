@@ -2,7 +2,6 @@ import {
   FilmIcon,
   CpuChipIcon,
   ChatBubbleLeftRightIcon,
-  HomeModernIcon,
   GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { FilmIcon as FilmIconSolid } from "@heroicons/react/24/solid";
@@ -12,7 +11,6 @@ import {
   ChatIconSolid,
   ChipIconSolid,
   ControllerIconSolid,
-  HomeIconSolid,
   GlobeIconSolid,
 } from "@/components/app/nav-icons";
 
@@ -47,11 +45,6 @@ export const CHAT_HREF = "/chat";
  * outlines are Heroicons' where it has the glyph.
  */
 export const navItems: NavItem[] = [
-  {
-    label: "Home",
-    href: "/home",
-    icon: { outline: HomeModernIcon, solid: HomeIconSolid },
-  },
   {
     label: "Activities",
     href: ACTIVITIES_HREF,

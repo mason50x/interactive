@@ -8,8 +8,7 @@ import type { useWarmRoutes } from "@/lib/warm";
 /**
  * The head of the rail: the mark and the name beside it.
  *
- * Also the only route back to `/home` itself: the overview has no row of
- * its own in the list.
+ * Returns to Activities, the default app page.
  *
  * One lockup at both widths, not two. The mark is sized in `em`, so easing
  * the font size is what carries it between the icon rail's larger cut and
@@ -24,7 +23,7 @@ import type { useWarmRoutes } from "@/lib/warm";
  * line, and the mark at 1.375rem is 17.6px wide. Change the mark's size or
  * the rail's width and this moves.
  *
- * `warm` is the rail's, handed down rather than made here, so the overview is
+ * `warm` is the rail's, handed down rather than made here, so the catalogue is
  * warmed by the same pass and the same memory as every row below it.
  */
 export function RailLockup({
@@ -36,9 +35,9 @@ export function RailLockup({
     <div className="flex h-16 items-center overflow-hidden pl-[2.0625rem] transition-[padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:pl-5">
       <div className="flex flex-col items-start gap-1.5">
         <Link
-          href="/home"
-          aria-label={`${brand.name} dashboard`}
-          {...warm("/home")}
+          href="/activities"
+          aria-label={`${brand.name} activities`}
+          {...warm("/activities")}
           className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
         >
           <Wordmark

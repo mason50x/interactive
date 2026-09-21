@@ -1,0 +1,26 @@
+{
+  "activeAnimations": 0,
+  "groups": [
+    {
+      "opacity": "1",
+      "played": "true",
+      "transform": "none"
+    },
+    {
+      "opacity": "1",
+      "played": "true",
+      "transform": "none"
+    },
+    {
+      "opacity": "1",
+      "played": "true",
+      "transform": "none"
+    },
+    {
+      "opacity": "1",
+      "played": "true",
+      "transform": "none"
+    }
+  ],
+  "noReplay": true
+}

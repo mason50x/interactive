@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
-      { source: "/dashboard", destination: "/home", permanent: true },
+      { source: "/dashboard", destination: "/activities", permanent: true },
       { source: "/dashboard/:path+", destination: "/:path+", permanent: true },
     ];
   },

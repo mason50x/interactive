@@ -1,0 +1,361 @@
+{
+  "version": 1,
+  "page": {
+    "title": "Admin",
+    "route": "/admin",
+    "description": "Find accounts and complete permitted account-management actions with clear scope, restrictions, and feedback."
+  },
+  "architecture": {
+    "contract": "This page helps Interactive Learning CEOs and Head Moderators complete a permitted account-management change for the intended account or explicitly selected global scope. The business outcome is controlled platform access. The primary conversion is a successful, clearly acknowledged administrative action.",
+    "mode": "operate_monitor",
+    "novelty": "low",
+    "grid": "Retain the existing application shell and 1400px maximum page width. Use a 12-column content grid with 16px gaps. Breakpoints depend on available content width after the sidebar: compact below 640px, medium 640–999px, expanded from 1000px. Sections span all columns; their internal proportions follow their assigned references. Source order is context, timeouts, CEO directory, CEO allowance reset.",
+    "signatureRule": "Use Fabrica’s dominant left panel, narrower middle panel, and two stacked right panels for the primary timeout workflow, approximately 50:23:27 of usable width. Keep selection, configuration, and action visually adjacent. Apply the approved accent treatment only to active selections and actions within that geometry.",
+    "rhythm": "A short unboxed introduction leads directly into the primary workspace, followed by the searchable CEO directory and an explicit reset operation. Use 32px between workflow sections and 16px within related groups. Four sections are sufficient for this existing operational page; marketing sections and a page footer would add filler. Reference whitespace is compressed only where recorded to keep controls reachable."
+  },
+  "navigation": [
+    {
+      "label": "Activities",
+      "target": "/activities"
+    },
+    {
+      "label": "Entertainment",
+      "target": "/entertainment"
+    },
+    {
+      "label": "Chat",
+      "target": "/chat"
+    },
+    {
+      "label": "Experience",
+      "target": "/experience"
+    },
+    {
+      "label": "Simulators",
+      "target": "/learning-simulator"
+    },
+    {
+      "label": "Admin",
+      "target": "/admin"
+    }
+  ],
+  "navigationDesign": {
+    "layoutCase": "reference-navigation",
+    "layout": "Preserve the verified AppSidebar rather than add another navigation system. Karo’s desktop reference has a left identity/navigation column around 19% of the image and content beginning at 22%; its mobile image omits that column without demonstrating an accessible replacement. The existing shell resolves this gap: a 240px labeled rail at viewport widths of at least 1024px and a 72px icon rail below that, beside the independently scrolling content surface.",
+    "behavior": [
+      "Keep existing logo, search, account menu, route destinations, and unread indicators.",
+      "Show Admin only under the existing role visibility rule and mark it as the current page.",
+      "Preserve accessible names for compact icon links and keyboard focus visibility.",
+      "Preserve existing navigation feedback without adding decorative navigation or promotional CTAs."
+    ],
+    "transformation": {
+      "compact": "Keep the existing 72px rail. Fit admin content to the remaining shell width; do not replace navigation with the reference’s unexplained omission.",
+      "medium": "Follow the existing viewport-based rail breakpoint independently of content-grid breakpoints.",
+      "expanded": "Keep the 240px labeled rail, existing shell margin, and account controls."
+    }
+  },
+  "sections": [
+    {
+      "id": "admin_context",
+      "layoutFamily": "about",
+      "layoutCases": [
+        "ollef-03-studio"
+      ],
+      "referenceDirectionId": "ollef-03-studio",
+      "purpose": "Identify the workspace and resolve access before exposing account controls.",
+      "userQuestion": "What can I manage here?",
+      "stage": "orient",
+      "dependencies": [],
+      "evidence": [
+        "src/app/(app)/admin/page.tsx provides the Admin title, account-control description, and authentication protection.",
+        "src/components/app/admin/admin-console.tsx checks access and limits the console to CEOs and Head Moderators."
+      ],
+      "copy": {
+        "heading": "Admin",
+        "body": [
+          "Manage access and account controls.",
+          "Checking access…",
+          "Admin access is restricted to CEOs and Head Moderators."
+        ],
+        "callsToAction": []
+      },
+      "layout": "Reference desktop: 1681×936, one left-aligned text column starting near x=3.2%, y=18.8%, width approximately 50%; two text blocks of five and four lines, a full-width lower rule near y=88%, no media or overlap. Reference mobile: 923×1704, text begins near x=7%, y=14%, spans 86%, and remains in one column with a lower rule near y=92%; no media. Adaptation: retain left alignment, an open right half on expanded screens, and the two-level text relationship. Actual heading is one line and support is one line expanded or up to three compact. Use the approved 44px/36px title scale. Reduce the reference’s prolonged empty lower area to a content-sized introduction of approximately 112–160px; omit its terminal rule because the following workflow panels already establish a boundary. These deviations serve the short operational content and existing shell. Render exactly one conditional access message below the supporting sentence while access resolves or is denied. Do not render protected controls before access succeeds. Media count remains zero.",
+      "motion": {
+        "purpose": "spatial_continuity",
+        "trigger": "load",
+        "behavior": "Introduce the title and supporting sentence with translateY from 8px to zero, keeping opacity at 1. Stagger support by 70ms. Run once on initial route entry, without delaying access checks or controls. Do not replay after query updates or restored-scroll navigation.",
+        "durationMs": 500,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "reducedMotion": "Display both elements immediately in their final positions."
+      },
+      "componentNeeds": [],
+      "assetNeeds": [],
+      "transformation": {
+        "compact": "Use the entire available content width, one-line title, naturally wrapping support, and access feedback directly afterward. Retain all access states.",
+        "medium": "Use approximately 70% width for the text block, allowing support to wrap without shrinking type.",
+        "expanded": "Use approximately half the content width and leave the right half open. Keep the introduction content-sized rather than viewport-height."
+      }
+    },
+    {
+      "id": "user_timeouts",
+      "layoutFamily": "feature",
+      "layoutCases": [
+        "fabrica-10-case-study"
+      ],
+      "referenceDirectionId": "fabrica-10-case-study",
+      "purpose": "Select an account and manage its temporary access restriction.",
+      "userQuestion": "Which account needs a timeout change, and what am I allowed to change?",
+      "stage": "act",
+      "dependencies": [
+        "admin_context"
+      ],
+      "evidence": [
+        "src/components/app/admin/timeout-console.tsx queries users in pages of 50 and filters loaded names, handles, and account IDs.",
+        "The same component exposes canManage, CEO-cleared status, timeout reason and expiry, and start, restart, and end mutations.",
+        "The existing form requires a nonempty reason, limits it to 1000 characters, and accepts integer durations from 1 to 43,200 minutes."
+      ],
+      "copy": {
+        "heading": "User timeouts",
+        "body": [
+          "Temporarily pause access for users below your role.",
+          "Search users",
+          "Name, handle, or account ID",
+          "No active timeout",
+          "Timed out",
+          "Cleared by CEO",
+          "Restricted",
+          "Select a user",
+          "Choose an account to review its timeout.",
+          "Reason",
+          "Explain why access is being paused",
+          "Duration in minutes",
+          "Enter a whole number from 1 to 43,200.",
+          "Active until {expiry}.",
+          "Reason: {reason}",
+          "Timeouts expire automatically and can be ended early.",
+          "Only CEOs can change CEO-issued timeouts or restart a timeout cleared by a CEO.",
+          "You cannot manage this account’s timeout.",
+          "Loading users…",
+          "No matching users loaded.",
+          "Saving…",
+          "Timeout started for {name}.",
+          "Timeout ended for {name}.",
+          "The timeout could not be changed. Try again."
+        ],
+        "callsToAction": [
+          {
+            "label": "Load more users",
+            "target": "action:load_timeout_users"
+          },
+          {
+            "label": "Start timeout",
+            "target": "action:start_timeout"
+          },
+          {
+            "label": "Restart timeout",
+            "target": "action:restart_timeout"
+          },
+          {
+            "label": "End timeout",
+            "target": "action:end_timeout"
+          }
+        ]
+      },
+      "layout": "Reference desktop: 1774×887. Main composition occupies x=2.6–97.4%, y=10.4–90%. Left panel is approximately 49.5% of the composition width, middle 23.2%, and right 26.4%, with narrow gaps near 0.5%. The right column contains two nearly equal stacked panels. Left heading/label starts near x=5.3%, y=16%; middle content is top-aligned; the left panel has one full-frame portrait and the middle one small attribution portrait. Rounded corners are about 1.5% of image width; panels do not overlap. Adaptation: preserve the four-panel silhouette and 50:23:27 relationship. The left panel contains the heading, search, loaded-user list, and load-more action; the middle contains selected identity, current expiry/reason, and reason textarea; the upper-right panel contains duration; the lower-right contains actions, permission explanation, and result feedback. Replace reference photography, testimonial, and charts with these native operational controls because no corresponding imagery or metrics exist in the brief. The left media frame becomes the live user-list region with its dominant footprint retained; final image count is zero. Reuse the existing controllers and native form controls, not a software screenshot. Use 16px gaps and approved panel radii; increase the middle column to at least 220px or switch to medium layout. Keep the dominant panel on the established contrasting panel surface, with readable fields, alongside neutral supporting surfaces. Its heading is one line, supporting sentence up to two, account names up to two. Initial expanded group height is approximately 480–600px, content-driven with a bounded list; do not force the reference’s photo aspect ratio onto the form. No mobile reference exists. Derived mobile composition has all four panels at 100% width in source order with 16px gaps, zero overlap, and content-driven heights. Selected identity must stay next to the form it controls.",
+      "motion": {
+        "purpose": "state_change",
+        "trigger": "state_change",
+        "behavior": "Update the selected row immediately with the approved accent fill and accessible selected state. Introduce changed identity and timeout details with opacity from 0.6 to 1 and translateX from 4px to zero. Animate only the changed detail content, not the surrounding form or list. Keep focus on the activated user button and announce the selected account.",
+        "durationMs": 180,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "reducedMotion": "Update selection, details, and accessible feedback immediately without movement."
+      },
+      "componentNeeds": [],
+      "assetNeeds": [],
+      "transformation": {
+        "compact": "Stack search/list, identity/reason, duration, and action panels. Bound the list near 240px with an accessible scroll region and visible scroll affordance. Keep a focusable link labeled Timeout controls after selection so keyboard users can reach the form without an automatic focus jump. Actions wrap or become full width in primary-first order.",
+        "medium": "Use two columns: user list around 44%, identity and form around 56%. Place duration and actions beneath the reason within the right column. Preserve DOM order, selected state, and feedback adjacency.",
+        "expanded": "Use the reference’s four-panel composition at approximately 50:23:27. Keep duration above actions in the right column, align outer top and bottom edges when content permits, and show the loaded list at approximately 360px maximum height."
+      }
+    },
+    {
+      "id": "user_directory",
+      "layoutFamily": "feature",
+      "layoutCases": [
+        "stodio-05-services"
+      ],
+      "referenceDirectionId": "stodio-05-services",
+      "purpose": "Let CEOs identify an account, edit its role, or select it for an allowance reset.",
+      "userQuestion": "Which account am I managing, and what role does it have?",
+      "stage": "act",
+      "dependencies": [
+        "admin_context"
+      ],
+      "evidence": [
+        "src/components/app/admin/admin-console.tsx mounts QuotaConsole only for the CEO role.",
+        "src/components/app/admin/quota-console.tsx searches names, usernames, emails, and account IDs.",
+        "Its directory provides CEO, Head Moderator, Moderator, and Member roles and prevents editing the current user’s own role.",
+        "Selecting a directory account sets the quota-reset scope to that specific user."
+      ],
+      "copy": {
+        "heading": "User directory",
+        "body": [
+          "Choose an account for a quota reset or change its role.",
+          "Search users",
+          "Name, handle, email, or account ID",
+          "Role",
+          "CEO",
+          "Head Moderator",
+          "Moderator",
+          "Member",
+          "You cannot change your own role.",
+          "Selected for quota reset",
+          "Loading users…",
+          "No users found.",
+          "Saving role…",
+          "Role updated for {name}.",
+          "The role could not be changed. Try again."
+        ],
+        "callsToAction": [
+          {
+            "label": "Reset allowances for {name}",
+            "target": "action:select_quota_user"
+          }
+        ]
+      },
+      "layout": "Reference desktop: 1436×1096. One rounded panel occupies approximately x=0.8–99.3%, y=1.2–98.6%. Internal left edge is x=3.8%. A two-line heading spans about 50% width at y=15–25%, with supporting copy around x=72–94%. A horizontal separator sits near y=32%. Four large service rows occupy roughly the left 53% below it, with substantial right-side negative space and separators between rows. One small inline portrait appears in the heading; no overlapping panels. Adaptation: retain a single containing panel, left heading/right explanation, one header separator, and a vertically repeated row structure. Replace the four fixed services with the actual variable-length account directory. Put identity in the left 53% and role selector plus account-selection action in the remaining row width. The formerly empty right area is required for these real controls. Omit the inline portrait and decorative numbering because accounts have no verified portrait requirement and numbering would imply a ranking. Final media count is zero. Scale heading to the approved group-heading size and account names to 16px, rather than repeat monumental service typography across a potentially long directory. Search occupies the row immediately under the header. List rows are approximately 64–80px high, with a desktop list viewport up to 512px and no fabricated total. Reference has no mobile counterpart: derive one-column rows with identity first and role/action beneath, 12px internal gaps, and 16px panel padding. Heading remains one line when space permits; explanation uses two to four lines. Section height is content-driven, approximately 600–720px expanded when enough records exist, with no forced empty minimum.",
+      "motion": {
+        "purpose": "spatial_continuity",
+        "trigger": "scroll_enter",
+        "behavior": "On first approach, reveal the header and the visible list group with opacity and translateY from 10px to zero. Stagger the two groups by 80ms. Observe each group independently within the application scroll container with threshold 0 and bottom rootMargin 120px. Unobserve immediately on entry. Groups already visible at initialization remain visible; never replay after filtering, role saves, resize, or rerenders.",
+        "durationMs": 520,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "reducedMotion": "Show the final layout immediately; disable reveals and preserve the same controls and feedback."
+      },
+      "componentNeeds": [],
+      "assetNeeds": [],
+      "transformation": {
+        "compact": "Place explanation below the heading. Stack identity, native role select, and reset-selection action inside each row. Preserve every field and selected marker; let names and handles wrap. Keep search outside the bounded list.",
+        "medium": "Keep heading and explanation side by side when readable. Use identity on the left and a vertically arranged role select and reset action on the right.",
+        "expanded": "Preserve the reference’s left-heavy header and separated row rhythm. Align identity, role select, and action consistently across rows without adding cards around individual users."
+      }
+    },
+    {
+      "id": "quota_reset",
+      "layoutFamily": "pricing",
+      "layoutCases": [
+        "xodexdesign-07-pricing"
+      ],
+      "referenceDirectionId": "xodexdesign-07-pricing",
+      "purpose": "Let CEOs restore explicitly selected allowances for an explicit account scope.",
+      "userQuestion": "Which allowances will be reset, and whose accounts will change?",
+      "stage": "act",
+      "dependencies": [
+        "admin_context",
+        "user_directory"
+      ],
+      "evidence": [
+        "src/components/app/admin/quota-console.tsx supports global and specific-user reset scope.",
+        "The existing reset supports experience and bot quotas, labeled Proxy time and Bot usage.",
+        "The existing implementation confirms before mutation and displays the returned usersReset count.",
+        "Existing explanatory copy states that active Experience sessions start a fresh allowance."
+      ],
+      "copy": {
+        "heading": "Reset allowances",
+        "body": [
+          "Restore selected allowances immediately.",
+          "Scope",
+          "Everyone",
+          "Reset selected allowances across all accounts.",
+          "Specific user",
+          "Reset selected allowances for one account.",
+          "User",
+          "Select a user",
+          "Allowances",
+          "Proxy time",
+          "Daily Experience browsing time",
+          "Active Experience sessions start a fresh allowance.",
+          "Bot usage",
+          "Daily @bot messages",
+          "Include Proxy time",
+          "Include Bot usage",
+          "Review reset",
+          "Accounts: Everyone",
+          "Account: {name}",
+          "Allowances: {selectedAllowances}",
+          "Choose at least one allowance.",
+          "Choose an account.",
+          "Resetting…",
+          "Allowances reset for {count} {accountLabel}.",
+          "The reset failed. Try again."
+        ],
+        "callsToAction": [
+          {
+            "label": "Reset allowances",
+            "target": "action:confirm_quota_reset"
+          }
+        ]
+      },
+      "layout": "Reference desktop: 1341×1173. A one-line heading occupies approximately x=5–77%, y=12–17%. Two equal panels begin at x=4.1% and x=50.9%, y=23%, each about 45% wide and 69% high, separated by 1.7% image width. Each panel contains an inset upper surface occupying roughly 43% of its height, then a lower details area. Left panel is light and right panel dark. There are no photographs or overlaps. Adaptation: retain the two equal allowance panels, their inset upper grouping, and restrained opposing surface treatment, using approved theme roles. Proxy time is the left panel and Bot usage the right. Each has a title, actual allowance description, and a native checkbox with its visible Include label. The lower region holds only truthful operational detail and selection state; omit prices and invented feature lists, and collapse unsupported empty space. Both allowance panels support independent selection, never pricing-style exclusivity. Insert the required scope radios and conditional native user select between the heading/support block and the two panels. Place one shared review summary and one reset action beneath both panels, replacing the reference’s separate purchase buttons because the backend performs one combined operation. Heading is one line expanded and up to two compact; panel titles are one line. Target panels have content-driven heights near 180–240px, not the reference’s 800px pricing height. This is a recorded content-driven deviation. Final media count is zero. No mobile reference exists: derive a single-column stack in source order with 16px gaps, preserving the two separate allowance panels, shared scope, summary, and action.",
+      "motion": {
+        "purpose": "explanation",
+        "trigger": "scroll_enter",
+        "behavior": "Reveal each below-viewport allowance panel through opacity only over 600ms, with 80ms between panels and no transform. Observe individual groups in the application scroll container at threshold 0 with bottom rootMargin 120px, then unobserve. Keep initially visible and restored-scroll content visible. Scope, checkbox, and confirmation feedback remains immediate and does not replay the entrance.",
+        "durationMs": 600,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "reducedMotion": "Show scope, panels, summary, and action immediately with no reveal or stagger."
+      },
+      "componentNeeds": [],
+      "assetNeeds": [],
+      "transformation": {
+        "compact": "Stack scope choices, conditional user selector, Proxy time, Bot usage, review summary, and the full-width reset action. Retain the same selections and confirmation behavior.",
+        "medium": "Keep the two allowance panels side by side when each has at least 260px available; otherwise stack. Scope and review remain full width.",
+        "expanded": "Use the reference’s equal two-panel comparison, approximately 49:49 with a 2% gap. Keep the shared review directly below both and align the primary action with the form’s left edge."
+      }
+    }
+  ],
+  "responsive": [
+    "Use available shell content width rather than viewport width for admin layout transformations. Preserve the existing sidebar’s independent 1024px breakpoint.",
+    "Maintain DOM order across breakpoints. Do not duplicate mounted forms, reset selected accounts on resize, or move feedback away from its action.",
+    "At narrow viewport widths, reduce page-specific gutters to 12–16px if necessary within the existing shell. Keep fields at least 16px text size and interactive targets approximately 44px.",
+    "Allow long account names, handles, errors, and timestamps to wrap. Use full accessible labels even when visual truncation is unavoidable.",
+    "Keep the application’s existing main scroll container. Bound long directories with keyboard-accessible scroll regions and visible scroll affordances; avoid horizontal page scrolling.",
+    "Head Moderators see context and timeouts only. Remove CEO sections from layout and focus order rather than show empty spaces or disabled imitations.",
+    "Documented deviations from reference photography, monumental typography, fixed content counts, and oversized whitespace are required by the real admin content and preserved application identity.",
+    "No new imagery, acquired components, dependencies, or separate marketing footer are required. Existing controls are restyled and reorganized during Build."
+  ],
+  "interactions": [
+    "Targets beginning action: identify button or form handlers, not navigation URLs. Keep mutations in the existing authenticated application flow.",
+    "Render one access state at a time. Preserve authentication protection and existing role queries; presentation changes must not weaken backend enforcement.",
+    "Timeout search filters only loaded accounts. Keep the honest No matching users loaded message and Load more users action while more pages are available. Load 50 at a time as the existing controller does.",
+    "Keep timeout selection independent from CEO quota selection. Selecting an account in one workflow must not silently retarget the other.",
+    "Selecting a timeout account exposes its identity, permission, current expiry, and reason. Keep Start timeout and Restart timeout mutually exclusive according to active state; End timeout requires an active manageable timeout.",
+    "Initialize timeout duration to the existing 60 minutes. Validate integer duration from 1 to 43,200 and a trimmed nonempty reason no longer than 1000 characters. Disable duplicate submissions while saving and keep field values after failure.",
+    "Show permission explanations inline for restricted accounts. Preserve the CEO-issued and CEO-cleared rules returned by existing data rather than infer permission from appearance.",
+    "CEO directory search filters the existing available records. Role changes use the native select and existing mutation, save immediately, and report success or error next to that account. Keep self-role editing disabled with visible explanation.",
+    "Reset allowances for {name} sets the existing quota user ID and scope to Specific user, then brings the quota form into view and focuses its User field. Preserve selected allowance kinds. Use immediate scrolling under reduced motion.",
+    "Preserve the existing initial quota state: Everyone scope and both allowance kinds selected. Display Accounts: Everyone prominently beside the final action; a directory selection changes this explicitly to the selected account.",
+    "Scope changes do not trigger a reset. Each allowance checkbox is independent. Disable submission until at least one allowance is selected and a user is selected when required.",
+    "Activating Reset allowances opens the existing confirmation with concrete text: Reset {selectedAllowances} for {targetLabel}? Use every user for global scope. Cancel performs no mutation; confirm submits once. Keep result counts from the mutation response, not a guessed directory total.",
+    "Present server errors as readable text without exposing implementation details. Success feedback names the affected account or returned count. Use appropriate status and alert announcements.",
+    "Apply approved accent selection surfaces to chosen user rows, scope choices, and allowance choices, with visible checked or selected semantics. Buttons and navigation receive 120–180ms property-specific feedback; focus indicators appear immediately.",
+    "Entrance CSS defaults to visible. Only prepare hidden states for below-viewport groups. Cap total stagger at 240ms, finish owned animations immediately if rapid scrolling reaches their content, and never replay on resize, filtering, direction changes, or rerenders.",
+    "On reduced-motion changes or cleanup, cancel only owned animations, disconnect reveal observers, and restore final visibility. Do not transform ancestors of fixed controls or nest reveal transforms."
+  ],
+  "acceptanceCriteria": [
+    "The /admin route contains the four planned areas for CEOs and only the two authorized areas for Head Moderators. All existing administrative capabilities remain available.",
+    "Every section uses its exact recorded referenceDirectionId and family. Expanded and compact screenshots demonstrate the composition maps and explicitly documented deviations; no unrelated sections are added to consume references.",
+    "The primary timeout workspace preserves Fabrica’s dominant-left, narrow-middle, stacked-right silhouette at expanded width, with native controls occupying the retained functional frame.",
+    "The directory preserves Stodio’s single-panel header and separated row structure. Allowance selection preserves Xodex’s equal paired panels and shared action semantics.",
+    "Both themes and existing account accents work. Use the supplied brand palette and Inter; verify actual font loading after document.fonts.ready with the loaded family and used weights.",
+    "Verify text contrast of at least 4.5:1 for ordinary text, 3:1 for qualifying large text, and appropriate control/focus contrast in all interactive states. Preserve the approved blue and accessible on-accent pairing.",
+    "At viewport widths of 375, 768, 1024, and 1440px, and at 200% zoom, there is no horizontal page overflow, clipped action, inaccessible role selector, or lost form content.",
+    "Keyboard users can search, select an account, reach timeout controls, change permitted roles, choose scope and allowances, confirm or cancel a reset, and understand result feedback.",
+    "Verify loading, access denied, no selection, no matching users, restricted account, active timeout, CEO-cleared timeout, saving, success, and failure states without fabricated production records.",
+    "Verify timeout validation, pagination, restart/end behavior, self-role restriction, independent workflow selections, and both global and individual reset scopes using appropriate test accounts or controlled fixtures.",
+    "Browser evidence must show the visible title entrance, both distinct later reveal types where those groups begin below the viewport, direct interaction feedback, and the reduced-motion state.",
+    "Rapidly scroll down and up twice, reload at a middle scroll position, resize, and toggle reduced motion during playback. Every visited group remains visible, with no replay, layout shift, or delayed invisible content.",
+    "No asset or component acquisition is required. No screenshots replace native UI, and no invented analytics, portraits, testimonials, or audit history appear.",
+    "Record any controlled fixture values used during verification separately from production page content. No implementation or browser verification is claimed by this blueprint."
+  ]
+}

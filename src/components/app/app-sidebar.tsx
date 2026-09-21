@@ -20,6 +20,7 @@ import { UserMenu } from "@/components/app/user-menu";
 import { navItems, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
+import { isPlayerRoute } from "@/lib/render-budget";
 
 /**
  * The signed-in app's chrome: a vertical rail, not a header.
@@ -83,17 +84,9 @@ export function AppSidebar() {
   const { pendingHref, report } = useNavPending();
   const { activeHref, litHref } = useActiveNav(pathname, pendingHref);
 
-  // An activity is running in a frame beside this rail, and an activity is the most
-  // expensive thing this app ever puts on a screen. The constellation is
-  // decoration; it stays, but dimmed and slowed and at half its frame rate
-  // while the machine has real work to do, and wakes back up the moment you
-  // leave the activity. Every other route has it at full strength.
-  //
-  // Read off the path rather than signalled from the page, because the page is
-  // a server component — see `src/app/(app)/activities/[slug]/page.tsx`.
-  // `/activities` itself is the browser, not an activity, so this wants
-  // the trailing segment and not just the prefix.
-  const viewing = /^\/home\/activities\/[^/]+/.test(pathname);
+  // Keep the artwork dim and slower behind games, video and embedded apps.
+  // Catalogue routes remain interactive; only a player consumes this budget.
+  const viewing = isPlayerRoute(pathname);
 
   const warm = useWarmRoutes(pathname);
 

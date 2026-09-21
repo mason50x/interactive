@@ -128,11 +128,13 @@ export function stepPoints(
 
     // Chasing the target instead of snapping to it is what makes the mesh
     // trail the cursor and settle behind it.
-    point.dx += (point.tx - point.dx) * CHASE;
-    point.dy += (point.ty - point.dy) * CHASE;
-
-    // A tenth of a pixel is under the smallest thing this can draw.
-    if (Math.abs(point.dx) > 0.1 || Math.abs(point.dy) > 0.1) moving = true;
+    const dx = point.tx - point.dx;
+    const dy = point.ty - point.dy;
+    // A stationary pointer can have a nonzero displacement without moving.
+    // Snap the last fraction so a still field can actually stop scheduling.
+    point.dx = Math.abs(dx) <= 0.1 ? point.tx : point.dx + dx * CHASE;
+    point.dy = Math.abs(dy) <= 0.1 ? point.ty : point.dy + dy * CHASE;
+    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) moving = true;
 
     point.px = point.x + point.dx + point.sx * flung;
     point.py = point.y + point.dy + point.sy * flung;

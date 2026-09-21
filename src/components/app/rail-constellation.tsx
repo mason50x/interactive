@@ -25,65 +25,20 @@ import {
   SCATTER_MS,
 } from "@/components/app/constellation/tuning";
 import { cn } from "@/lib/utils";
+import { hasLimitedRenderBudget } from "@/lib/render-budget";
 
 /**
- * A constellation on the rail, drawn live and wired to the cursor.
+ * Decorative canvas shared by the sidebar and auth screens. On smaller
+ * machines use fewer pixels and a 15fps ambient cadence, returning to 30fps
+ * during pointer movement. Animation remains on while the field is visible.
  *
- * Points drift on their own, and every pair closer than `LINK` is joined by a
- * line whose strength falls off with the gap between them — so the web makes
- * and breaks itself as they move, rather than being a fixed set of edges that
- * slides around. The pointer is one more node in that web: it links to
- * everything near it, and pushes those same points aside, so the mesh bulges
- * and re-knits around the cursor as it travels down the rail.
+ * Player routes dim and slow the field. Reduced motion still allows
+ * a short pointer response, then sleeps once the displacement settles. Size,
+ * theme and context restoration can always request a fresh drawing.
  *
- * Canvas, not SVG. The edge set is recomputed every frame — a few hundred
- * lines a second, most of them lasting under a second — and putting that
- * through React or the DOM would be a re-render per frame for something with
- * no semantics and no interactivity of its own.
- *
- * The push is applied as a *displacement* over drifting base positions, eased
- * back to zero when the pointer leaves, rather than as a force on velocity.
- * Force accumulates: a cursor swept up and down the rail a few times leaves
- * the field flung to the edges and never settles. This cannot.
- *
- * Nothing here dodges the rail's content, because the content dodges it: the
- * wordmark, the unlit nav rows and the account button all carry a small
- * `backdrop-blur`, which throws the web out of focus exactly where a label
- * needs to be read and nowhere else. That is what lets this run at a strength
- * you can actually see, edge to edge, instead of hiding in the middle band.
- *
- * It draws in the foreground colour, read off the canvas itself, so it
- * inverts with the theme: dark web on the light rail, light web on the dark
- * one.
- *
- * ---------------------------------------------------------------------------
- * What this costs, and why it is shaped the way it is
- *
- * The arithmetic was never the problem: the whole step — drift, the pointer
- * field, ~990 pair tests and ~150 line segments — measures at 0.2ms, which is
- * a rounding error against a 16ms frame. What costs is everything downstream
- * of it, and all of that scales with *pixels* and *frames*, not with points:
- *
- *   - The canvas is the full height of the viewport. At `devicePixelRatio` 2
- *     that was an 860,000-pixel surface being cleared and re-rastered 60 times
- *     a second, for a drawing that is a few hundred hairlines.
- *   - Seven `backdrop-filter` elements sit on top of it (see above). A
- *     backdrop filter has to re-read, blur and recomposite its backdrop on
- *     every frame that backdrop changes — and this backdrop changes on every
- *     frame by construction. Halving the frame rate halves that bill too.
- *   - A CSS `mask-image` and an `opacity` on a layer that is dirty every frame
- *     make the compositor resolve the subtree into an intermediate texture
- *     before any of those filters can sample it. Both are now done in the
- *     drawing instead, where they are two gradient bands and a multiplier, so
- *     the element is a plain layer again.
- *
- * Hence: a capped backing store, a 30fps cadence, and a loop that actually
- * stops when there is nothing left to move. None of it changes what you see.
- *
- * The dials are in `constellation/tuning.ts` and the arithmetic — seeding,
- * stepping, scattering, linking — in `constellation/simulation.ts`, neither
- * of which knows there is a canvas. What is left here is the canvas: the
- * loop, its gates, the drawing, and the wiring that keeps all three honest.
+ * Resolution is capped because raster work scales with backing-store pixels.
+ * Gradients and opacity are drawn into the canvas to avoid extra compositing
+ * layers beneath the sidebar's blur surfaces.
  */
 
 /**
@@ -153,11 +108,13 @@ export function RailConstellation({
     if (!context) return;
 
     const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const limited = hasLimitedRenderBudget(navigator);
 
     let width = 0;
     let height = 0;
     let points: Point[] = [];
     let pointer: { x: number; y: number } | null = null;
+    let pointerMovedAt = -Infinity;
     let frame = 0;
     let last = 0;
     // How far into the quiet setting the web has eased: 0 is the full web, 1
@@ -217,7 +174,7 @@ export function RailConstellation({
       const box = rail.getBoundingClientRect();
       if (!box.width || !box.height) return;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      const dpr = Math.min(window.devicePixelRatio || 1, limited ? 1 : MAX_DPR);
       width = box.width;
       height = box.height;
       element.width = Math.round(width * dpr);
@@ -253,7 +210,10 @@ export function RailConstellation({
 
       const wanted = Math.max(
         14,
-        Math.min(maxPoints, Math.round((width * height) / areaPerPoint)),
+        Math.min(
+          limited ? Math.min(maxPoints, 48) : maxPoints,
+          Math.round((width * height) / areaPerPoint),
+        ),
       );
 
       points = points.filter((point) => point.x < width && point.y < height);
@@ -264,18 +224,16 @@ export function RailConstellation({
     /**
      * Advance the field, and say whether anything is still moving.
      *
-     * The answer only ever matters under reduced motion, where the drift is
-     * switched off: with no pointer in the rail and every displacement eased
-     * back to zero, the next frame is identical to this one and the loop can
-     * be put down until the cursor comes back. Left running, that case redrew
-     * the same picture thirty times a second for the life of the session.
+     * Under reduced motion, stop once the dimming and pointer displacement
+     * have settled. Hardware hints only change quality and cadence.
      */
     const advance = () => {
-      const drifting = !still.matches;
+      const drifting = !still.matches && gone < 1;
       let moving = drifting;
 
       const wanted = quietRef.current ? 1 : 0;
-      calm += (wanted - calm) * CALM_CHASE;
+      if (still.matches) calm = wanted;
+      else calm += (wanted - calm) * CALM_CHASE;
       if (Math.abs(wanted - calm) < 0.005) calm = wanted;
       else moving = true;
 
@@ -302,7 +260,14 @@ export function RailConstellation({
       const speed = (1 - calm * (1 - QUIET_SPEED)) * (cadence() / FRAME_MS);
 
       if (
-        stepPoints(points, { width, height, drifting, speed, pointer, flung })
+        stepPoints(points, {
+          width,
+          height,
+          drifting,
+          speed,
+          pointer,
+          flung,
+        })
       ) {
         moving = true;
       }
@@ -404,14 +369,18 @@ export function RailConstellation({
       draw();
     };
 
-    // The frame gate in force: the quiet one only once the web has fully
-    // settled into it, so the easing in and out is drawn at full cadence.
+    // Pointer movement gets the normal cadence even on a small device. Slow
+    // ambient drift needs fewer frames; scale its step to keep the same speed.
     const cadence = () =>
       scatterStart && flung < 1
         ? SCATTER_FRAME_MS
-        : calm >= 1
-          ? QUIET_FRAME_MS
-          : FRAME_MS;
+        : limited
+          ? performance.now() - pointerMovedAt < 300
+            ? FRAME_MS
+            : QUIET_FRAME_MS
+          : calm >= 1
+            ? QUIET_FRAME_MS
+            : FRAME_MS;
 
     const step = (now: number) => {
       // rAF is tied to the display, so 30fps is a gate rather than a timer.
@@ -426,8 +395,8 @@ export function RailConstellation({
       const moving = advance();
       draw();
 
-      // Under reduced motion this is where it stops. `pointermove` starts it
-      // again, and nothing else can change the picture.
+      // Still fields stop here. Input, resizing and theme changes can wake
+      // them without maintaining an idle animation loop.
       frame = moving ? requestAnimationFrame(step) : 0;
     };
 
@@ -443,6 +412,7 @@ export function RailConstellation({
     };
 
     const onMove = (event: PointerEvent) => {
+      pointerMovedAt = performance.now();
       const box = rail.getBoundingClientRect();
       pointer = { x: event.clientX - box.left, y: event.clientY - box.top };
       start();
