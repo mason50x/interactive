@@ -14,6 +14,7 @@
   .notice { box-sizing: border-box; max-width: 32rem; margin: 0 auto; padding: 3rem 1.5rem; }
   .notice p { margin: 0 0 0.75rem; }
   code { font-size: 0.9em; }
+  .startup-error { white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; border: 1px solid #888; border-radius: 0.5rem; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -44,20 +45,24 @@
       return;
     }
 
+    let stage = "Connecting to the browser transport";
     try {
       // Existing workers may still have requests waiting for a live transport.
       // Give them a port before waiting for their replacement to activate;
       // otherwise those requests can prevent activation indefinitely.
       const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+      stage = "Loading the browser transport";
       await connection.setTransport("/transport.mjs", [location.origin + "/"]);
 
       // Wait for *this* registration to activate. `serviceWorker.ready` would
       // never resolve here: it waits for a worker whose scope covers this page,
       // and ours covers /service/ only.
+      stage = "Registering the service worker";
       const registration = await navigator.serviceWorker.register("/sw.js", {
         scope: experienceConfig.prefix,
         updateViaCache: "none",
       });
+      stage = "Activating the service worker";
       await new Promise((resolve, reject) => {
         const worker = registration.installing || registration.waiting || registration.active;
         if (!worker) return reject(new Error("The experience worker was not installed."));
@@ -77,6 +82,7 @@
         check();
       });
 
+      stage = "Opening the destination";
       const frame = document.createElement("iframe");
       frame.title = "Experience";
       frame.allow = "fullscreen; autoplay; encrypted-media";
@@ -84,7 +90,13 @@
       document.body.replaceChildren(frame);
     } catch (error) {
       console.error("Experience startup failed", error);
-      show("<p>The experience could not start.</p><p>Please reload and try again.</p>");
+      show("<p>The experience could not start.</p><p>Please share the error below so we can troubleshoot it.</p><pre class=\"startup-error\" role=\"alert\"></pre><button type=\"button\">Try again</button>");
+      // Browser errors can contain URLs or markup. Display them as text only.
+      const detail = error == null ? "Unknown error" :
+        typeof error === "object" && error.message ?
+          `${error.name || "Error"}: ${error.message}` : String(error);
+      document.querySelector(".startup-error").textContent = `Step: ${stage}\n${detail}`;
+      document.querySelector("button").addEventListener("click", () => location.reload());
     }
   })();
 </script>

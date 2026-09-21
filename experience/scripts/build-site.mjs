@@ -72,7 +72,7 @@ writeFileSync(bundlePath, bundle.replace(brokenUrlMatcher, fixedUrlMatcher) + "\
     return this.rewriteUrl(specifier, { ...meta, base });
   }
 };
-`);
+` + "\n" + readFileSync(join(root, "site", "cookies.js"), "utf8"));
 
 // Login responses can rotate CSRF cookies. The upstream engine injects the
 // pre-request snapshot into the next document and does not await cookie writes.
@@ -117,6 +117,15 @@ if (handler.split(staleCookieGetter).length !== 2) {
   throw new Error("Review the experience live cookie synchronization patch.");
 }
 handler = handler.replace(staleCookieGetter, liveCookieGetter);
+
+// document.cookie writes are synchronous from the site's perspective. Appending
+// a replacement leaves the old msToken/CSRF value first until IndexedDB catches
+// up, so a login request can sign itself with the obsolete token.
+const appendCookie = 'r.path||(r.path="/"),r.domain||(r.domain=e.meta.url.hostname),e.cookie.validateCookie(r,e.meta,!0)&&(u.length&&(u+="; "),u+=`${r.name}=${r.value}`)';
+if (handler.split(appendCookie).length !== 2) {
+  throw new Error("Review the experience synchronous cookie replacement patch.");
+}
+handler = handler.replace(appendCookie, 'u=e.cookie.updateCookieString(u,r,e.meta)');
 
 writeFileSync(handlerPath, handler + "\n" + readFileSync(join(root, "site", "popup.js"), "utf8") + String.raw`
 ;(() => {

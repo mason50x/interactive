@@ -281,3 +281,104 @@ test("document.cookie follows response updates without exposing HttpOnly cookies
   });
   await expect.poll(() => page.evaluate(() => document.cookie)).toBe("ct0=fresh");
 });
+
+test("TikTok cookie deletion and scope survive a login retry", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const uv = new Ultraviolet(experienceConfig);
+    uv.meta.url = new URL("https://www.tiktok.com/passport/web/login/");
+    const db = await uv.cookie.db();
+    await uv.cookie.setCookies([
+      "sessionid=expired; Domain=tiktok.com; Path=/; Secure; Max-Age=0",
+      "passport_csrf_token=fresh; Domain=tiktok.com; Path=/passport; Secure",
+      "host_token=local; Path=/; Secure",
+    ], db, uv.meta);
+    const cookies = await uv.cookie.getCookies(db);
+    const at = (url) => uv.cookie.serialize(cookies, { url: new URL(url) }, false);
+    return {
+      login: at("https://www.tiktok.com/passport/web/login/"),
+      feed: at("https://www.tiktok.com/api/recommend/item_list/"),
+      sibling: at("https://login-us.www.tiktok.com/passport/web/login/"),
+      lookalike: at("https://nottiktok.com/passport/web/login/"),
+      insecure: at("http://www.tiktok.com/passport/web/login/"),
+      socket: at("wss://www.tiktok.com/passport/web/login/"),
+      insecureSocket: at("ws://www.tiktok.com/passport/web/login/"),
+      pathLookalike: at("https://www.tiktok.com/passport-other"),
+    };
+  });
+  expect(result.login).toContain("passport_csrf_token=fresh");
+  expect(result.login).not.toContain("sessionid=");
+  expect(result.feed).toBe("host_token=local");
+  expect(result.sibling).toBe("passport_csrf_token=fresh");
+  expect(result.lookalike).toBe("");
+  expect(result.insecure).toBe("");
+  expect(result.socket).toBe(result.login);
+  expect(result.insecureSocket).toBe("");
+  expect(result.pathLookalike).toBe("host_token=local");
+});
+
+test("cookie writes finish before the engine reports completion", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const uv = new Ultraviolet(experienceConfig);
+    uv.meta.url = new URL("https://www.tiktok.com/");
+    let committed = false;
+    const db = { put: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      committed = true;
+    } };
+    await uv.cookie.setCookies("passport_csrf_token=new; Path=/", db, uv.meta);
+    return committed;
+  });
+  expect(result).toBe(true);
+});
+
+test("a script replacing or deleting a login token reads the new value immediately", async ({ page }) => {
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/client.js" });
+  await page.evaluate(async () => {
+    const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+    await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+    history.replaceState(null, "", experienceConfig.prefix + experienceConfig.encodeUrl("https://www.tiktok.com/"));
+    self.__uv$cookies = "msToken=old; preference=keep";
+    self.__uv$referrer = "";
+  });
+  await page.addScriptTag({ url: "/experience/handler.js" });
+  const result = await page.evaluate(() => {
+    document.cookie = "msToken=new; Domain=tiktok.com; Path=/; Secure";
+    const replaced = document.cookie;
+    document.cookie = "msToken=; Domain=tiktok.com; Path=/; Max-Age=0";
+    return { replaced, deleted: document.cookie };
+  });
+  expect(result.replaced).toBe("preference=keep; msToken=new");
+  expect(result.deleted).toBe("preference=keep");
+});
+
+test("cookie snapshots preserve distinct paths and clear previously stored expired sessions", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const uv = new Ultraviolet(experienceConfig);
+    uv.meta.url = new URL("https://www.tiktok.com/passport/web/login/");
+    const db = await uv.cookie.db();
+    // A returning visitor can already have a Max-Age=0 cookie saved by the old engine.
+    await db.put("cookies", {
+      id: ".tiktok.com@/@sessionid", name: "sessionid", value: "stale",
+      domain: ".tiktok.com", path: "/", maxAge: 0, set: new Date(),
+    });
+    await uv.cookie.setCookies([
+      "token=root; Domain=tiktok.com; Path=/",
+      "token=scoped; Domain=tiktok.com; Path=/passport",
+      "secret=hidden; Domain=tiktok.com; Path=/; HttpOnly",
+    ], db, uv.meta);
+    const stored = await uv.cookie.getCookies(db);
+    const current = uv.cookie.serialize(stored, uv.meta, true);
+    const injected = uv.createJsInject(current, "");
+    const updated = uv.cookie.updateCookieString(current, uv.cookie.setCookie("token=replaced; Domain=tiktok.com; Path=/")[0], uv.meta);
+    return { current, updated, injected, expiredStored: !!(await db.get("cookies", ".tiktok.com@/@sessionid")) };
+  });
+  expect(result.current).toBe("token=scoped; token=root");
+  expect(result.updated).toBe("token=scoped; token=replaced");
+  expect(result.injected).toContain("__uv$cookieRecords");
+  expect(result.injected).not.toContain("hidden");
+  expect(result.expiredStored).toBe(false);
+});
