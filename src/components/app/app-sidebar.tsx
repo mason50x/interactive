@@ -78,7 +78,11 @@ export function AppSidebar() {
   );
 
   const { pendingHref, report } = useNavPending();
-  const { activeHref, litHref } = useActiveNav(pathname, pendingHref);
+  const { activeHref, litHref } = useActiveNav(
+    pathname,
+    pendingHref,
+    destinations,
+  );
 
   // An activity is running in a frame beside this rail, and an activity is the most
   // expensive thing this app ever puts on a screen. The constellation is
