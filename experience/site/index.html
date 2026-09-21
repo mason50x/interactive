@@ -54,7 +54,7 @@
       stage = "Loading the browser transport";
       await connection.setTransport("/transport.mjs", [location.origin + "/"]);
 
-      // Wait for *this* registration to activate. `serviceWorker.ready` would
+      // Wait for a usable worker in *this* registration. `serviceWorker.ready` would
       // never resolve here: it waits for a worker whose scope covers this page,
       // and ours covers /service/ only.
       stage = "Registering the service worker";
@@ -64,7 +64,12 @@
       });
       stage = "Activating the service worker";
       await new Promise((resolve, reject) => {
-        const worker = registration.installing || registration.waiting || registration.active;
+        // A pending event in the previous worker can hold an update in waiting
+        // even after skipWaiting(). Keep using the activated worker in that
+        // case; requiring the update would fail every launch until it drains.
+        const worker = registration.active?.state === "activated"
+          ? registration.active
+          : registration.installing || registration.waiting || registration.active;
         if (!worker) return reject(new Error("The experience worker was not installed."));
         if (worker.state === "activated") return resolve();
         const timeout = setTimeout(() => {

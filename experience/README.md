@@ -45,8 +45,11 @@ The build applies a checked compatibility patch to the engine's CSS URL
 matcher: empty `url()` fallbacks must not consume enclosing parentheses.
 Without it, YouTube's stylesheet loses thousands of component rules. Review
 this patch when upgrading the engine; the build fails if its source changes.
-Service worker updates bypass the script cache and activate before framing
-the destination, so returning visitors receive the corrected engine.
+Service worker updates bypass the script cache. First visits wait for activation;
+returning visitors can use the already activated worker while an update waits for
+its previous requests to finish. Requiring that pending update before framing the
+destination caused the launcher to time out before reaching the relay. Updates
+still activate automatically when the browser can retire the previous worker.
 
 Deploying needs `wrangler login` once on the machine. There are no secrets and
 no environment variables; the allowlist is compiled in.
