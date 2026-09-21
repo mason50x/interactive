@@ -17,6 +17,7 @@ it("offers each service and allows its front door through the actual relay", asy
   vi.stubGlobal("fetch", upstream);
   for (const id of [
     "youtube",
+    "x",
     "netflix",
     "tiktok",
     "spotify",
@@ -31,7 +32,7 @@ it("offers each service and allows its front door through the actual relay", asy
   expect(new Set(EXPERIENCE_APPS.map((app) => app.id)).size).toBe(
     EXPERIENCE_APPS.length,
   );
-  expect(upstream).toHaveBeenCalledTimes(6);
+  expect(upstream).toHaveBeenCalledTimes(7);
 });
 
 it.each([
@@ -44,6 +45,7 @@ it.each([
   "https://challenges.cloudflare.com/turnstile/v0/api.js",
   "https://geminiweb-pa.clients6.google.com/",
   "https://idmsa.apple.com/appleauth/auth/authorize/signin",
+  "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js",
   "https://is1-ssl.mzstatic.com/image/example",
 ])("relays service authentication/assets: %s", async (url) => {
   const upstream = vi.fn(async () => new Response("ok"));
@@ -75,6 +77,8 @@ it.each([
   "https://evilspotify.com/",
   "https://www.google.com/search?q=test",
   "https://www.apple.com/shop/",
+  "https://appleid.cdn-apple.com/unrelated/",
+  "https://appleid.cdn-apple.com.evil.example/appleauth/",
   "https://127.0.0.1/",
 ])("rejects unrelated destinations before fetching: %s", async (url) => {
   const upstream = vi.fn();
@@ -128,4 +132,36 @@ it("logs denied destination hosts without signed paths or credentials", async ()
   vi.stubGlobal("fetch", vi.fn());
   await relay("https://user:password@unlisted.example/private-token?signature=secret");
   expect(log).toHaveBeenCalledExactlyOnceWith("experience_destination_denied", { host: "unlisted.example" });
+});
+
+const xHosts = ["x.com", "twitter.com", "twimg.com", "t.co"];
+
+it.each(xHosts)("allows X host %s and its subdomains, but rejects lookalikes", async (host) => {
+  const upstream = vi.fn(async () => new Response("ok"));
+  vi.stubGlobal("fetch", upstream);
+  for (const hostname of [host, `cdn.${host}`]) {
+    expect((await relay(`https://${hostname}/`)).headers.get("x-bare-status")).toBe("200");
+  }
+  upstream.mockClear();
+  for (const hostname of [`evil${host}`, `${host}.evil.example`]) {
+    expect((await relay(`https://${hostname}/`)).status).toBe(403);
+  }
+  expect(upstream).not.toHaveBeenCalled();
+});
+
+it.each([
+  "https://x.com/i/flow/login",
+  "https://x.com/i/jf/onboarding/web?mode=login",
+  "https://api.x.com/1.1/onboarding/task.json",
+  "https://api.twitter.com/1.1/guest/activate.json",
+  "https://abs.twimg.com/x-web/x-web/entry-client-logged-out-CMgGjOLA.js",
+  "https://abs.twimg.com/fonts/subset/Chirp-Regular.c88864db.latin.woff2",
+  "https://pbs.twimg.com/media/example.jpg",
+  "https://video.twimg.com/ext_tw_video/example/vid/avc1/video.mp4",
+  "https://ton.twimg.com/responsive-web/example.js",
+  "https://cdn.syndication.twimg.com/tweet-result?id=123",
+  "https://t.co/example",
+])("relays X navigation, authentication, scripts and media: %s", async (url) => {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("ok")));
+  expect((await relay(url)).headers.get("x-bare-status")).toBe("200");
 });

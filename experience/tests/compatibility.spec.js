@@ -221,3 +221,63 @@ test("the installed window.open hook preserves target and popup features", async
   expect(new URL(calls[1][0]).pathname).toMatch(/^\/service\//);
   expect(calls[1][1]).toBe("_self");
 });
+
+test("a login response injects its rotated cookie into the next document", async ({ page }) => {
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/sw.js" });
+  const result = await page.evaluate(async () => {
+    self.clients = { matchAll: async () => [] };
+    const uv = new Ultraviolet(experienceConfig);
+    uv.meta.origin = location.origin;
+    uv.meta.base = uv.meta.url = new URL("https://x.com/home");
+    const db = await uv.cookie.db();
+    uv.cookie.setCookies("ct0=before-login; Domain=x.com; Path=/; Secure", db, uv.meta);
+    await uv.cookie.getCookies(db);
+    const engine = new UVServiceWorker();
+    engine.bareClient = { fetch: async () => {
+      const response = new Response("<!doctype html><html><head></head><body>Home</body></html>", {
+        headers: { "content-type": "text/html" },
+      });
+      response.finalURL = "https://x.com/home";
+      response.rawHeaders = { "content-type": "text/html", "set-cookie": [
+        "ct0=after-login; Domain=x.com; Path=/; Secure",
+        "auth_token=private-fixture; Domain=x.com; Path=/; Secure; HttpOnly",
+      ] };
+      return response;
+    } };
+    const request = new Request(uv.rewriteUrl("https://x.com/home"));
+    Object.defineProperty(request, "destination", { value: "iframe" });
+    const response = await engine.fetch({ request });
+    return { status: response.status, html: await response.text() };
+  });
+  expect(result.status, result.html).toBe(200);
+  expect(result.html).toContain("ct0=after-login");
+  expect(result.html).not.toContain("ct0=before-login");
+  expect(result.html).not.toContain("private-fixture");
+});
+
+test("document.cookie follows response updates without exposing HttpOnly cookies", async ({ page }) => {
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/client.js" });
+  await page.evaluate(async () => {
+    const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+    await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+    history.replaceState(null, "", experienceConfig.prefix + experienceConfig.encodeUrl("https://x.com/home"));
+    self.__uv$cookies = "ct0=old";
+    self.__uv$referrer = "";
+    self.cookieUpdates = navigator.serviceWorker;
+  });
+  await page.addScriptTag({ url: "/experience/handler.js" });
+  expect(await page.evaluate(() => document.cookie)).toBe("ct0=old");
+  await page.evaluate(async () => {
+    const db = await __uv.cookie.db();
+    __uv.cookie.setCookies([
+      "ct0=fresh; Domain=x.com; Path=/; Secure",
+      "auth_token=hidden; Domain=x.com; Path=/; HttpOnly; Secure",
+      "other=unrelated; Domain=twitter.com; Path=/",
+    ], db, __uv.meta);
+    await __uv.cookie.getCookies(db);
+    cookieUpdates.dispatchEvent(new MessageEvent("message", { data: { msg: "updateCookies", url: "https://x.com/i/api/example" } }));
+  });
+  await expect.poll(() => page.evaluate(() => document.cookie)).toBe("ct0=fresh");
+});

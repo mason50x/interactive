@@ -18,6 +18,8 @@ export default defineConfig(({ command }) => ({
       "@clerk/nextjs",
       "@clerk/react",
       "@clerk/shared",
+      // Clerk telemetry imports this alias; prebundling it duplicates React.
+      "next/compat/router",
       "vinext",
       "@base-ui/react",
     ],

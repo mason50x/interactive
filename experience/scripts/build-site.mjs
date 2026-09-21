@@ -74,6 +74,18 @@ writeFileSync(bundlePath, bundle.replace(brokenUrlMatcher, fixedUrlMatcher) + "\
 };
 `);
 
+// Login responses can rotate CSRF cookies. The upstream engine injects the
+// pre-request snapshot into the next document and does not await cookie writes.
+// Drain those writes before injecting the document's JavaScript cookie view.
+const serviceWorkerPath = join(dist, "experience", "sw.js");
+let serviceWorker = readFileSync(serviceWorkerPath, "utf8");
+const staleCookies = 'Promise.resolve(t.cookie.setCookies(r.headers["set-cookie"],w,t.meta)).then(()=>{';
+const freshCookies = '(await t.cookie.setCookies(r.headers["set-cookie"],w,t.meta),f=await t.cookie.getCookies(w),Promise.resolve()).then(()=>{';
+if (serviceWorker.split(staleCookies).length !== 2) {
+  throw new Error("Review the experience response cookie synchronization patch.");
+}
+writeFileSync(serviceWorkerPath, serviceWorker.replace(staleCookies, freshCookies));
+
 // Modern sites pass postMessage(message, { targetOrigin, transfer }). The
 // engine only understands the older three-argument form and drops ports.
 const clientPath = join(dist, "experience", "client.js");
@@ -97,6 +109,15 @@ if (handler.split(originalOpen).length !== 2) {
   throw new Error("Review the experience popup transport initialization patch.");
 }
 handler = handler.replace(originalOpen, popupOpen);
+// Keep document.cookie current when fetch responses change the cookie jar.
+// The service worker already emits this message, but upstream never listens.
+const staleCookieGetter = 'a.document.on("getCookie",t=>{t.data.value=u})';
+const liveCookieGetter = 'navigator.serviceWorker&&navigator.serviceWorker.addEventListener("message",async t=>{if(t.data?.msg!=="updateCookies")return;const r=await e.cookie.db();u=e.cookie.serialize(await e.cookie.getCookies(r),e.meta,!0)}),'+staleCookieGetter;
+if (handler.split(staleCookieGetter).length !== 2) {
+  throw new Error("Review the experience live cookie synchronization patch.");
+}
+handler = handler.replace(staleCookieGetter, liveCookieGetter);
+
 writeFileSync(handlerPath, handler + "\n" + readFileSync(join(root, "site", "popup.js"), "utf8") + String.raw`
 ;(() => {
   if (typeof document === "undefined") return;

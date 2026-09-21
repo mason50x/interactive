@@ -18,3 +18,15 @@ it("renders the bundled TikTok logo and resolves its catalog route", () => {
   expect(png.readUInt32BE(16)).toBe(32);
   expect(png.readUInt32BE(20)).toBe(32);
 });
+
+
+it("renders the bundled X logo and resolves its catalog route", () => {
+  expect(findExperienceApp("x")).toEqual({
+    id: "x", label: "X", host: "x.com", start: "https://x.com/",
+  });
+  expect(experienceAppHref("x")).toBe("/experience/x");
+  const html = renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "x" }));
+  expect(html).toContain('src="/experience/x.png"');
+  const png = readFileSync(new URL("../../public/experience/x.png", import.meta.url));
+  expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+});

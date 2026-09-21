@@ -167,3 +167,33 @@ with a ChromeOS user agent at 1365×900: EU app scripts and the feed returned
 verification-code inputs. No relay destination denials were observed after the
 complete fix. This verifies the
 reported skeleton failure, not authenticated login or every regional variant.
+
+## X
+
+X is available at `/experience/x` with a locally bundled icon. The allowlist
+covers `x.com`, legacy `twitter.com`, `twimg.com` (scripts, fonts, images,
+video, and syndicated content), and `t.co`, including their subdomains.
+The observed Apple sign-in SDK is allowed only under
+`appleid.cdn-apple.com/appleauth/`. Existing Google and Apple authentication
+entries are shared. External destinations behind `t.co` still require their
+own allowlist entry; a short link does not grant access to arbitrary websites.
+
+Live local Chrome testing on 2026-09-21 verified user-completed login,
+a populated home timeline, Explore, search results, and playing video
+(readyState 4). The initial login exposed X API error 353: a rotated CSRF
+cookie disagreed with the page's stale cookie snapshot. The engine build now
+reads committed response cookies before injecting the next document and
+refreshes the JavaScript cookie view on service-worker cookie updates.
+Regression tests cover both cases and keep HttpOnly cookies out of that view.
+
+This is local relay verification, not production deployment verification.
+The actual app shell was also verified with Clerk development keys: the X
+tile opens the nested sandboxed frame, preserves the X session, loads the
+timeline, and plays video. Local setup uses `EXPERIENCE_ORIGIN=http://localhost:8788`
+in `.env.local` and a relay running on port 8788. Production Clerk keys reject
+localhost. Clerk telemetry also requires excluding `next/compat/router` from
+Vite dependency prebundling to avoid a duplicate React hook instance.
+Alternate OAuth, account challenges,
+posting, messages, Spaces, and paid features have not been verified.
+Deploy both the app and Experience Worker to release the catalog, dependencies,
+and cookie compatibility fixes together.

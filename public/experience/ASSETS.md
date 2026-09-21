@@ -10,4 +10,8 @@ owners and identify the linked services; their inclusion does not imply endorsem
 | `gemini.svg` | https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg (linked by Gemini) |
 | `apple-music.png` | https://music.apple.com/assets/favicon/favicon-180.png (linked by Apple Music) |
 
+`x.png` was downloaded on 2026-09-21 from
+https://abs.twimg.com/responsive-web/client-web/icon-ios.77d25eba.png,
+linked by the X homepage.
+
 The files are unmodified.

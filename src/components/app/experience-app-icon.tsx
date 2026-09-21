@@ -3,6 +3,7 @@ import Image from "next/image";
 import { SolidIcon } from "@/components/ui/icon";
 
 const SERVICE_ICONS: Record<string, string> = {
+  x: "/experience/x.png",
   tiktok: "/experience/tiktok.png",
   spotify: "/experience/spotify.ico",
   gemini: "/experience/gemini.svg",
