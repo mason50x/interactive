@@ -81,8 +81,8 @@ async function run({
         return {
           botQuotaName: () => "botTags",
           BOT_ID: "bot",
-          BOT_HANDLE: "bot",
-          BOT_NAME: "Bot",
+          BOT_HANDLE: "wizard",
+          BOT_NAME: "Wizard",
           botRateLimiter: {
             async limit() {
               calls.push("refund");

@@ -35,7 +35,7 @@ export const EVERYONE = "everyone";
  * Case-insensitive because people type names with capitals; handles are
  * stored lowercase and matched that way.
  */
-const MENTION_PATTERN = /(^|[^a-z0-9_@-])@([a-z0-9_-]{2,64})(?![a-z0-9_-])/gi;
+const MENTION_PATTERN = /(^|[^a-z0-9_@-])@((?:[a-z0-9_-]|\\_){2,64})(?![a-z0-9_-]|\\_)/gi;
 
 export type MentionToken = {
   /** Lowercased, without the `@`. */
@@ -51,7 +51,7 @@ export function findMentionTokens(text: string): MentionToken[] {
   for (const match of text.matchAll(MENTION_PATTERN)) {
     const start = (match.index ?? 0) + match[1].length;
     found.push({
-      handle: match[2].toLowerCase(),
+      handle: match[2].replace(/\\_/g, "_").toLowerCase(),
       start,
       end: start + 1 + match[2].length,
     });

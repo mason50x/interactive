@@ -175,6 +175,9 @@ export const MAX_INITIALS = 2;
  */
 export const DELETE_WINDOW_MS = 30 * 1000;
 
+/** Matches the server's editing window. The mutation checks it again. */
+export const EDIT_WINDOW_MS = 15 * 60 * 1000;
+
 /**
  * How often an open conversation says it is still open.
  *

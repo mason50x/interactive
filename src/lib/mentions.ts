@@ -1,4 +1,4 @@
-import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
+import { BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
 /**
  * The client's half of mentions: finding `@words` in text, and nothing that
  * decides whether they are anybody.
@@ -20,7 +20,7 @@ import { BOT_HANDLE, BOT_ID, BOT_MENTION_HANDLES } from "../../config/bot";
 export const EVERYONE = "everyone";
 
 /** `@` then three to twenty handle characters, standing on its own. */
-const MENTION_PATTERN = /(^|[^a-z0-9_@-])@([a-z0-9_-]{2,64})(?![a-z0-9_-])/gi;
+const MENTION_PATTERN = /(^|[^a-z0-9_@-])@((?:[a-z0-9_-]|\\_){2,64})(?![a-z0-9_-]|\\_)/gi;
 
 /**
  * The same shape, cut off at the caret: `@`, then whatever has been typed of
@@ -40,7 +40,7 @@ export function findMentionTokens(text: string): MentionToken[] {
   for (const match of text.matchAll(MENTION_PATTERN)) {
     const start = (match.index ?? 0) + match[1].length;
     found.push({
-      handle: match[2].toLowerCase(),
+      handle: match[2].replace(/\\_/g, "_").toLowerCase(),
       start,
       end: start + 1 + match[2].length,
     });
@@ -98,7 +98,9 @@ export function segmentMentions(
   const segments: Segment[] = [];
   let last = 0;
   for (const token of findMentionTokens(body)) {
-    const bot = BOT_MENTION_HANDLES.has(token.handle) && resolve(BOT_HANDLE) === BOT_ID;
+    const bot =
+      BOT_MENTION_HANDLES.has(token.handle) &&
+      [...BOT_MENTION_HANDLES].some((handle) => resolve(handle) === BOT_ID);
     const who = bot ? BOT_ID : resolve(token.handle);
     if (who === undefined) continue;
     if (token.start > last) {

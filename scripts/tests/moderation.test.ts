@@ -32,3 +32,29 @@ test("names use the corrected boundaries while retaining profanity checks", () =
   expect(screenStatic("Queer cinema", 40).ok).toBe(true);
   expect(screenStatic("asshole", 40).ok).toBe(false);
 });
+
+test.each([
+  ["s&#101;nd nudes", "sexual"],
+  ["s&#x65;nd nudes", "sexual"],
+  ["&scedil;end nudes", "sexual"],
+  ["me&commat;example&period;com", "contact"],
+  ["call me at 555&#45;123&#45;4567", "contact"],
+  ["Hello&#x202E;", "reordering"],
+])("screens decoded Markdown entities: %s", (body, refusal) => {
+  expect(screen(body, context)).toEqual({ allow: false, refusal });
+});
+
+test.each([
+  "**Hello** and *friends* &amp; `code`",
+  "- First item\n- Second item",
+  "An entity spelled literally: &amp;commat;",
+  "An escaped entity: \\&commat;",
+])("preserves accepted raw Markdown in storage: %s", body => {
+  expect(screen(body, context)).toMatchObject({ allow: true, body });
+});
+
+test("encoded and plain visible text share duplicate detection", () => {
+  const original = screen("Hello there", context);
+  if (!original.allow) throw new Error("Test text should be accepted");
+  expect(screen("H&#101;llo there", { ...context, recent: [{ at: context.now, conversationId: context.conversationId, hash: original.hash, flagged: false }] })).toEqual({ allow: false, refusal: "duplicate" });
+});

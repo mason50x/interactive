@@ -260,12 +260,15 @@ export default defineSchema({
     joinedAt: v.number(),
     /** Everything after this is unread. Written only by its own owner. */
     lastReadAt: v.number(),
+    /** A private preference; system conversations keep their fixed positions. */
+    favorite: v.optional(v.boolean()),
     invitedBy: v.optional(v.string()),
     /** Direct messages only: the Clerk id of the other person. */
     dmPeer: v.optional(v.string()),
   })
     .index("byConversation", ["conversationId", "status"])
     .index("byUser", ["clerkId", "status"])
+    .index("byUserFavorite", ["clerkId", "status", "favorite"])
     .index("byConversationUser", ["conversationId", "clerkId"]),
 
   /**
@@ -377,6 +380,15 @@ export default defineSchema({
     /** The author's display name at the time, if they had one. Same rule. */
     authorName: v.optional(v.string()),
     body: v.string(),
+    editedAt: v.optional(v.number()),
+    /** Stable across network retries, scoped to the authenticated author. */
+    clientNonce: v.optional(v.string()),
+    /** Immutable original request fingerprint; edits do not change retries. */
+    clientRequestHash: v.optional(v.string()),
+    poll: v.optional(v.object({
+      options: v.array(v.string()),
+      votes: v.array(v.object({ clerkId: v.string(), option: v.number() })),
+    })),
     /**
      * The message this one answers, when it is a reply.
      *
@@ -452,6 +464,8 @@ export default defineSchema({
   })
     .index("byConversation", ["conversationId"])
     .index("byAuthor", ["authorClerkId"])
+    .index("byAuthorNonce", ["authorClerkId", "clientNonce"])
+    .index("byConversationStatus", ["conversationId", "status"])
     /**
      * What the rail's search reads.
      *
@@ -466,7 +480,7 @@ export default defineSchema({
      */
     .searchIndex("searchBody", {
       searchField: "body",
-      filterFields: ["status"],
+      filterFields: ["status", "conversationId", "authorClerkId"],
     }),
 
   /**

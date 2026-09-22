@@ -1,0 +1,25 @@
+{
+  "mode": "built-in image_gen",
+  "options": [
+    {
+      "id": "01-classic",
+      "prompt": "Use case: stylized-concept. Create one polished square avatar icon for a friendly chat assistant named Wizard in a modern learning app. Center the subject with generous padding so a circular crop preserves the hat and face. Bold simple silhouette, clean shapes readable at 32px, approachable and whimsical. No text, lettering, numbers, watermark, border, or mockup. Single icon only. A charming elderly wizard head with a flowing ivory beard, rounded nose, warm expression, and tall floppy midnight-blue pointed hat with one gold star. Rich blue background, polished softly shaded storybook illustration, strong icon silhouette."
+    },
+    {
+      "id": "02-smiley",
+      "prompt": "Use case: stylized-concept. Create one polished square avatar icon for a friendly chat assistant named Wizard in a modern learning app. Center the subject with generous padding so a circular crop preserves the hat and face. Bold simple silhouette, clean shapes readable at 32px, approachable and whimsical. No text, lettering, numbers, watermark, border, or mockup. Single icon only. A playful bright yellow smiling round face wearing a purple pointed wizard hat. Minimal cheerful mascot, black oval eyes and curved smile, bold clean graphic illustration, warm pale yellow background. Keep the hat and face both clearly visible."
+    },
+    {
+      "id": "03-mystic",
+      "prompt": "Use case: stylized-concept. Create one polished square avatar icon for a friendly chat assistant named Wizard in a modern learning app. Center the subject with generous padding so a circular crop preserves the hat and face. Bold simple silhouette, clean shapes readable at 32px, approachable and whimsical. No text, lettering, numbers, watermark, border, or mockup. Single icon only. A mysterious but friendly hooded wizard: violet pointed hat merging into a deep indigo cloak, two warm glowing amber eyes, no visible human face or beard. Smooth premium clay-like 3D rendering with soft light, lavender background, compact rounded silhouette."
+    },
+    {
+      "id": "04-pixel",
+      "prompt": "Use case: stylized-concept. Create one polished square avatar icon for a friendly chat assistant named Wizard in a modern learning app. Center the subject with generous padding so a circular crop preserves the hat and face. Bold simple silhouette, clean shapes readable at 32px, approachable and whimsical. No text, lettering, numbers, watermark, border, or mockup. Single icon only. A charming retro pixel art wizard bust: blue pointed hat, white beard, friendly little face, subtle gold hat detail, crisp deliberate chunky pixel grid, dark midnight navy background. Few colors, strong silhouette, polished pixel game portrait."
+    },
+    {
+      "id": "05-celestial",
+      "prompt": "Use case: stylized-concept. Create one polished square avatar icon for a friendly chat assistant named Wizard in a modern learning app. Center the subject with generous padding so a circular crop preserves the hat and face. Bold simple silhouette, clean shapes readable at 32px, approachable and whimsical. No text, lettering, numbers, watermark, border, or mockup. Single icon only. An elegant whimsical wizard portrait drawn as a bold cream-and-deep-green woodcut style illustration, pointed sage-green hat with a crescent moon, ivory beard forming a soft curved shape and kind little eyes. Mint background, flat colors with very restrained grain, simple graphic emblem."
+    }
+  ]
+}

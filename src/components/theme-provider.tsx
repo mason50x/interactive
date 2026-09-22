@@ -23,7 +23,7 @@ export function ThemeProvider() {
     const update = () => {
       const preference = usesAppTheme(pathname)
         ? readStoredPreference()
-        : "system";
+        : "dark";
       applyTheme(
         isEntertainmentPlayer(pathname) ? "dark" : resolveTheme(preference),
       );

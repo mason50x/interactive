@@ -38,12 +38,12 @@ test("everyone receives a private pinned bot DM, without duplicates or a bot pro
   expect(list.find((conversation) => conversation.peerClerkId === "bot")).toMatchObject({
     kind: "dm",
     peerClerkId: "bot",
-    peerName: "Bot",
-    peerAvatarUrl: "/chat/bot-avatar.webp",
+    peerName: "Wizard",
+    peerAvatarUrl: "/chat/wizard-avatar.webp",
   });
   expect(
     await alice.query(api.chat.conversations.get, { conversationId: dm }),
-  ).toMatchObject({ peerName: "Bot" });
+  ).toMatchObject({ peerName: "Wizard" });
   expect(
     await t
       .withIdentity({ subject: "bob" })
@@ -151,7 +151,7 @@ test("empty bot DMs get one delayed personalized welcome without generation", as
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({
       authorClerkId: "bot",
-      body: expect.stringContaining("Hey, alice. I'm Bot."),
+      body: expect.stringContaining("Hey, alice. I'm Wizard."),
     });
     expect(await t.run((ctx) => ctx.db.query("typing").take(10))).toHaveLength(
       0,
@@ -365,20 +365,20 @@ test("historical bot messages and reply previews use current branding without ch
     conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER, paginationOpts: { numItems: 20, cursor: null },
   });
   expect(result.page.find(message => message.authorClerkId === "bot"))
-    .toMatchObject({ authorName: "Bot", authorHandle: "bot", body: "An existing answer." });
+    .toMatchObject({ authorName: "Wizard", authorHandle: "wizard", body: "An existing answer." });
   expect(result.page.find(message => message.replyTo)?.replyTo)
-    .toMatchObject({ authorName: "Bot", authorHandle: "bot", preview: "An existing answer." });
+    .toMatchObject({ authorName: "Wizard", authorHandle: "wizard", preview: "An existing answer." });
 });
 
 
-test.each(["@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot"])("%s resolves to one bot request", async (tag) => {
+test.each(["@wizard", "@Wizard", "@WIZARD", "@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot @wizard"])("%s resolves to one bot request", async (tag) => {
   const { t, alice, global } = await setup();
   const result = await alice.mutation(api.chat.messages.send, {
     conversationId: global, body: `${tag} What is 10 plus three?`,
   });
   expect(result).toMatchObject({ ok: true });
   const messages = await t.run(ctx => ctx.db.query("messages").take(10));
-  expect(messages[0].mentions).toEqual([{ clerkId: "bot", handle: "bot" }]);
+  expect(messages[0].mentions).toEqual([{ clerkId: "bot", handle: "wizard" }]);
   const jobs = await t.run(ctx => ctx.db.system.query("_scheduled_functions").take(20));
   expect(jobs.filter(job => job.name.includes("bot:ask"))).toHaveLength(1);
 });

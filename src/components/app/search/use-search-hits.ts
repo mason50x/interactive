@@ -140,7 +140,7 @@ export function useSearchHits(
         title: message.body,
         detail: `${message.authorHandle} in ${conversationName(message)}`,
         icon: messageIcon,
-        href: `${CHAT_HREF}/${message.conversationId}`,
+        href: `${CHAT_HREF}/${message.conversationId}?message=${message._id}`,
       })),
     [found],
   );

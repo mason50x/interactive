@@ -3,7 +3,17 @@
 import { useAuth } from "@clerk/nextjs";
 import { PhotoIcon } from "@heroicons/react/24/outline";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { type MentionPerson } from "@/components/app/chat/mentions";
@@ -25,6 +35,9 @@ import { useDropFiles } from "@/components/app/chat/thread/use-drop-files";
 import { Typing, useTypists } from "@/components/app/chat/typing";
 import { useChat } from "@/components/app/chat/chat-provider";
 import type { Refusal } from "@/lib/chat";
+import { CHAT_HREF } from "@/lib/nav";
+import { useOutbox } from "@/components/app/chat/thread/use-outbox";
+import type { ChatPollDraft } from "@/lib/chat-drafts";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type {
@@ -35,65 +48,35 @@ import type {
 
 export type { ComposerHandle };
 
-/**
- * One conversation.
- *
- * ## Which way the list runs
- *
- * `messages.list` returns newest first, because that is the end pagination has
- * to start at, and the column renders a reversed copy so the oldest sits at the
- * top. A `flex-col-reverse` column would anchor to its own bottom for free, but
- * it also pins a half-empty conversation to the bottom of the pane — three
- * messages floating above the composer with the whole history's worth of blank
- * above them. A normal column starts them at the top, where a conversation
- * starts, and the scroll is done by hand below.
- *
- * ## Sticking to the bottom
- *
- * `pinned` is whether the reader is at the live end. Everything that arrives
- * while they are scrolls into view; nothing does while they are reading further
- * up, so an arriving message never moves what somebody is looking at. Loading
- * earlier messages does not trip it either — that changes the far end of the
- * array, not `newest`.
- *
- * ## The message you just sent
- *
- * Drawn from local state, at the bottom, until the mutation resolves — at
- * half weight, because it may still be refused. Convex does not resolve a
- * mutation's promise until the client's own subscriptions already reflect its
- * writes, so clearing the local copy at that moment is an exact handover
- * rather than a race: the real row is on screen before the placeholder leaves.
- *
- * It appears where it lands. It used to be flown from the composer to its
- * place in the thread over three hundred milliseconds, and the flight was the
- * one moment the app moved something you made — but a message sent quickly
- * after another arrived mid-flight, and a confirmation that landed before the
- * flight did cut it off, so what most sends actually showed was a stutter.
- * Instant is what every other chat does and what a keystroke deserves.
- *
- * Convex ships `insertAtTop` for this, which splices the row into the paginated
- * query's own store, and it would work here: `messages.list` joins nothing, so
- * the client can build exactly the row it is about to receive. It is not used
- * because it has to be handed a callback built during render, and that callback
- * needs a timestamp and an id — both impure, both correctly objected to by
- * React's lint rules. A held row is fewer moving parts and one less thing that
- * silently does nothing when the first page has not loaded.
- *
- * The pieces are in `thread/`: the header, the rows, the composer and its
- * hooks, the day pager for the room, and what is shown from outside a group.
- * This file is the conversation itself — the query, the scroll, and the send.
- */
+const subscribeVisibility = (notify: () => void) => {
+  document.addEventListener("visibilitychange", notify);
+  window.addEventListener("focus", notify);
+  window.addEventListener("blur", notify);
+  return () => {
+    document.removeEventListener("visibilitychange", notify);
+    window.removeEventListener("focus", notify);
+    window.removeEventListener("blur", notify);
+  };
+};
+const isVisible = () =>
+  document.visibilityState === "visible" && document.hasFocus();
+
+/** The live timeline, exact message context, and this account's durable outbox. */
 export function Thread({
   conversationId,
 }: {
   conversationId: Id<"conversations">;
 }) {
+  const { userId } = useAuth();
   // Next may preserve a client component while only its dynamic route param
   // changes. The key makes a conversation's day page part of that
   // conversation, so opening another one always starts live rather than on the
   // archive page the previous room was left on.
   return (
-    <ConversationThread key={conversationId} conversationId={conversationId} />
+    <ConversationThread
+      key={`${userId ?? "loading"}:${conversationId}`}
+      conversationId={conversationId}
+    />
   );
 }
 
@@ -103,7 +86,42 @@ function ConversationThread({
   conversationId: Id<"conversations">;
 }) {
   const { userId } = useAuth();
-  const { profile, isAdmin, behind, setReading, images: pictures } = useChat();
+  const router = useRouter();
+  const params = useSearchParams();
+  const explicitTarget = params.get("message");
+  const visible = useSyncExternalStore(
+    subscribeVisibility,
+    isVisible,
+    () => true,
+  );
+  const [atLatest, setAtLatest] = useState(true);
+  const [resumeUnread, setResumeUnread] = useState(true);
+  const [initialRead, setInitialRead] = useState<
+    FunctionReturnType<typeof api.chat.conversations.readPosition> | undefined
+  >(undefined);
+  const readPosition = useQuery(
+    api.chat.conversations.readPosition,
+    initialRead === undefined ? { conversationId } : "skip",
+  );
+  if (initialRead === undefined && readPosition !== undefined)
+    setInitialRead(readPosition);
+  const target =
+    explicitTarget ??
+    (resumeUnread ? (initialRead?.firstUnreadId ?? null) : null);
+  const context = useQuery(
+    api.chat.messages.context,
+    target ? { messageId: target } : "skip",
+  );
+  const contextMatches = context?.conversationId === conversationId;
+  const outbox = useOutbox(userId, conversationId);
+  const {
+    profile,
+    isAdmin,
+    behind,
+    setReading,
+    isReadSuppressed,
+    images: pictures,
+  } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
 
   /**
@@ -121,16 +139,61 @@ function ConversationThread({
     { initialNumItems: 40 },
   );
 
-  const markRead = useMutation(api.chat.conversations.markRead);
+  const markRead = useMutation(
+    api.chat.conversations.markRead,
+  ).withOptimisticUpdate((store, { conversationId: id }) => {
+    const rows = store.getQuery(api.chat.conversations.list, {});
+    if (!rows) return;
+    store.setQuery(
+      api.chat.conversations.list,
+      {},
+      rows.map((row) =>
+        row._id === id
+          ? {
+              ...row,
+              unread: 0,
+              mentioned: false,
+              firstUnreadMessageId: undefined,
+              lastReadAt: Math.max(
+                row.lastReadAt,
+                row.latestMessage?._creationTime ?? 0,
+              ),
+            }
+          : row,
+      ),
+    );
+  });
+  const acknowledgedLatest = useRef<Id<"messages"> | null>(null);
   const welcomeBot = useMutation(api.chat.bot.welcome);
-  const send = useMutation(api.chat.messages.send);
+  const edit = useMutation(api.chat.messages.edit);
   const newest = results[0]?._id;
 
   /** Who else is writing in here. See `typing.tsx`. */
   const typists = useTypists(conversationId);
 
-  /** The message on screen that the server has not confirmed yet. */
-  const [pending, setPending] = useState<ChatMessage | null>(null);
+  const [editing, setEditing] = useState<ChatMessage | null>(null);
+  const pendingMessages: ChatMessage[] = outbox.entries.map((entry) => ({
+    _id: entry.nonce as Id<"messages">,
+    _creationTime: entry.createdAt,
+    authorClerkId: userId ?? "",
+    authorHandle: profile?.handle ?? "",
+    authorName: profile?.displayName,
+    authorAvatarUrl: profile?.avatarUrl,
+    body: entry.body,
+    replyTo: entry.replyTo ? replyFromMessage(entry.replyTo) : undefined,
+    mentions: entry.mentions,
+    mentionsEveryone: entry.everyone,
+    status: "visible",
+    reactions: [],
+    images: entry.images,
+    poll: entry.poll
+      ? {
+          options: entry.poll.options.map((text) => ({ text, votes: 0 })),
+          myVote: null,
+          totalVotes: 0,
+        }
+      : undefined,
+  }));
 
   /** The message named above the composer and attached to the next send. */
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
@@ -139,6 +202,7 @@ function ConversationThread({
 
   /** Whether the reader is at the live end. See the note above. */
   const pinned = useRef(true);
+  const focusedMessage = useRef<string | null>(null);
 
   /**
    * The composer, reached for by the drop handlers below.
@@ -159,13 +223,15 @@ function ConversationThread({
     onFiles: (files) => composer.current?.addFiles(files),
   });
 
-  /**
-   * Returns the refusal, or `null` when it went.
-   *
-   * `previews` are the composer's own object URLs for the pictures, and they
-   * are what the placeholder message is drawn with — the real URLs do not
-   * exist until the row does. The composer revokes them once this resolves.
-   */
+  function returnLatest() {
+    setResumeUnread(false);
+    setDaysAgo(0);
+    setAtLatest(true);
+    pinned.current = true;
+    if (explicitTarget)
+      router.replace(`${CHAT_HREF}/${conversationId}`, { scroll: false });
+  }
+
   async function submit(
     text: string,
     attachmentIds: Id<"attachments">[],
@@ -173,55 +239,30 @@ function ConversationThread({
     replyTo: ChatMessage | null,
     mentions: ChatMention[],
     everyone: boolean,
+    poll?: ChatPollDraft,
   ): Promise<Refusal | null> {
-    if (profile === null || userId === null || userId === undefined)
-      return null;
-
-    setPending({
-      _id: crypto.randomUUID() as Id<"messages">,
-      _creationTime: Date.now(),
-      authorClerkId: userId,
-      authorHandle: profile.handle,
-      authorName: profile.displayName,
-      authorAvatarUrl: profile.avatarUrl,
+    if (!profile || !userId) throw new Error("Your account is still loading.");
+    outbox.enqueue({
       body: text,
-      replyTo: replyTo === null ? undefined : replyFromMessage(replyTo),
-      // What the composer resolved from the people it offered. The server
-      // resolves the body again for itself; this is only so the placeholder
-      // draws the same chips the real row is about to.
-      mentions,
-      mentionsEveryone: everyone,
-      status: "visible",
-      reactions: [],
+      attachmentIds,
       images: previews,
+      replyTo,
+      mentions,
+      everyone,
+      poll,
     });
-
-    const result = await send({
-      conversationId,
-      body: text,
-      attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
-      replyToId: replyTo?._id,
-    });
-    setPending(null);
-    if (result.ok) {
-      setReplyingTo((current) =>
-        current?._id === replyTo?._id ? null : current,
-      );
-      return null;
-    }
-    if (result.refusal === "reply-unavailable") {
-      setReplyingTo((current) =>
-        current?._id === replyTo?._id ? null : current,
-      );
-    }
-    return result.refusal;
+    setReplyingTo(null);
+    returnLatest();
+    return null;
   }
 
   function jumpToMessage(messageId: Id<"messages">) {
-    document.getElementById(`message-${messageId}`)?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
+    setResumeUnread(false);
+    pinned.current = false;
+    router.replace(
+      `${CHAT_HREF}/${conversationId}?message=${encodeURIComponent(messageId)}`,
+      { scroll: false },
+    );
   }
 
   /**
@@ -236,11 +277,28 @@ function ConversationThread({
    * and clearing unconditionally would wipe the claim it had just made.
    */
   useEffect(() => {
-    if (daysAgo > 0) return;
+    if (
+      daysAgo > 0 ||
+      target ||
+      initialRead === undefined ||
+      !visible ||
+      !atLatest ||
+      isReadSuppressed(conversationId)
+    )
+      return;
     setReading(conversationId);
     return () =>
       setReading((current) => (current === conversationId ? null : current));
-  }, [conversationId, daysAgo, setReading]);
+  }, [
+    conversationId,
+    daysAgo,
+    setReading,
+    target,
+    initialRead,
+    visible,
+    atLatest,
+    isReadSuppressed,
+  ]);
 
   /**
    * Whether there is a reading position to move — `behind`, from the provider.
@@ -268,30 +326,66 @@ function ConversationThread({
   }, [conversationId, emptyBotDm, welcomeBot]);
 
   useEffect(() => {
-    if (!behind || daysAgo > 0) return;
-    void markRead({ conversationId });
-  }, [conversationId, daysAgo, newest, behind, markRead]);
+    if (
+      daysAgo > 0 ||
+      target ||
+      initialRead === undefined ||
+      !visible ||
+      !atLatest
+    ) {
+      acknowledgedLatest.current = null;
+      return;
+    }
+    if (!newest || isReadSuppressed(conversationId)) return;
+    // A manually moved cursor (including one from another tab) is not a new
+    // message. A focused reader acknowledges each visible latest message once,
+    // then waits for new content or the reader to return to the live end.
+    if (!behind) {
+      acknowledgedLatest.current = newest;
+      return;
+    }
+    if (acknowledgedLatest.current === newest) return;
+    acknowledgedLatest.current = newest;
+    void markRead({ conversationId }).catch(() => {
+      if (acknowledgedLatest.current === newest)
+        acknowledgedLatest.current = null;
+    });
+  }, [
+    conversationId,
+    daysAgo,
+    newest,
+    behind,
+    markRead,
+    isReadSuppressed,
+    target,
+    initialRead,
+    visible,
+    atLatest,
+  ]);
 
-  // Opening a conversation always lands at its live end, whatever the last one
-  // was left at.
-  useEffect(() => {
-    pinned.current = true;
-  }, [conversationId]);
+  useLayoutEffect(() => {
+    if (target) {
+      pinned.current = false;
+      if (!contextMatches || focusedMessage.current === target) return;
+      const message = document.getElementById(`message-${target}`);
+      if (message) {
+        message.scrollIntoView({ block: "center" });
+        focusedMessage.current = target;
+      }
+    } else {
+      if (focusedMessage.current !== null) pinned.current = true;
+      focusedMessage.current = null;
+      if (scroller.current && pinned.current) {
+        scroller.current.scrollTop = scroller.current.scrollHeight;
+      }
+    }
+  }, [target, contextMatches, conversationId, daysAgo, context]);
 
-  // A different day is a different page. Land at that day's most recent
-  // message, which is the point from which the reader paged backwards.
-  useEffect(() => {
-    pinned.current = true;
-  }, [daysAgo]);
-
-  // Before the paint rather than after it. A thread opens at its live end, and
-  // an effect that runs after the browser has drawn shows one frame of the top
-  // of the conversation before it jumps.
   useLayoutEffect(() => {
     const element = scroller.current;
-    if (element === null || !pinned.current) return;
-    element.scrollTop = element.scrollHeight;
-  }, [conversationId, daysAgo, newest, pending, results.length]);
+    if (element && !target && pinned.current)
+      element.scrollTop = element.scrollHeight;
+  }, [conversationId, daysAgo, newest, outbox.entries, results.length, target]);
 
   /**
    * The thread, watched for changing size after the effect above has run.
@@ -337,7 +431,15 @@ function ConversationThread({
    * Oldest first, for reading. A copy, because `results` is Convex's own array
    * and reversing it in place would reorder the store the query reads from.
    */
-  const ordered = [...results].reverse();
+  const ordered = target
+    ? contextMatches
+      ? (context?.messages ?? [])
+      : []
+    : [...results].reverse();
+  const firstVisible = ordered.find((message) => message.status === "visible");
+  const lastVisible = ordered.findLast(
+    (message) => message.status === "visible",
+  );
 
   /**
    * Whoever has spoken in what is loaded, newest first, for the composer to
@@ -388,8 +490,10 @@ function ConversationThread({
     if (element === null) return;
     // A little slack, so a reader a line or two off the end still counts as at
     // it — and so sub-pixel scroll heights never leave the thread unpinned.
-    pinned.current =
+    const atEnd =
       element.scrollHeight - element.scrollTop - element.clientHeight < 64;
+    pinned.current = !target && atEnd;
+    setAtLatest(atEnd);
   }
 
   // Not a member — which is sometimes a door rather than a wall. See `Outside`.
@@ -434,7 +538,7 @@ function ConversationThread({
         onScroll={onScroll}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
       >
-        {daily ? (
+        {daily && !target ? (
           <DayPager
             maxDays={detail?.kind === "announcements" ? Infinity : undefined}
             label={
@@ -442,17 +546,46 @@ function ConversationThread({
             }
             now={now}
             daysAgo={daysAgo}
-            onChange={setDaysAgo}
+            onChange={(day) => {
+              setResumeUnread(false);
+              setDaysAgo(day);
+            }}
           />
         ) : null}
 
-        {status === "LoadingFirstPage" ? (
+        {target ? (
+          <div className="sticky top-0 z-10 mb-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-background/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
+            <span>
+              {!explicitTarget && resumeUnread
+                ? "First unread message"
+                : "Message context"}
+            </span>
+            <Button variant="ghost" size="sm" onClick={returnLatest}>
+              Return to latest
+            </Button>
+          </div>
+        ) : null}
+        {outbox.storageWarning ? (
+          <p role="status" className="mb-2 text-xs text-destructive">
+            Browser storage is unavailable. Keep this tab open until your
+            messages send.
+          </p>
+        ) : null}
+        {target && context !== undefined && !contextMatches ? (
+          <p
+            role="status"
+            className="py-8 text-center text-sm text-muted-foreground"
+          >
+            This message is no longer available in this conversation.
+          </p>
+        ) : null}
+        {(target ? context === undefined : status === "LoadingFirstPage") ? (
           <div className="flex justify-center py-6">
             <Spinner />
           </div>
         ) : null}
 
-        {status === "CanLoadMore" ? (
+        {!target && status === "CanLoadMore" ? (
           <div className="flex justify-center py-3">
             <Button variant="ghost" size="sm" onClick={() => loadMore(40)}>
               Earlier messages
@@ -460,51 +593,179 @@ function ConversationThread({
           </div>
         ) : null}
 
-        {status === "Exhausted" &&
+        {!target &&
+        status === "Exhausted" &&
         results.length === 0 &&
         !isBotDm &&
         typists.length === 0 ? (
           <Quiet archived={!live} />
         ) : null}
 
+        {target &&
+        contextMatches &&
+        ordered.length > 20 &&
+        firstVisible &&
+        firstVisible._id !== target ? (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => jumpToMessage(firstVisible._id)}
+            >
+              Earlier messages
+            </Button>
+          </div>
+        ) : null}
         {ordered.map((message, index) => (
-          <MessageRow
-            key={message._id}
-            message={message}
-            previous={ordered[index - 1]}
-            next={ordered[index + 1]}
-            mine={message.authorClerkId === userId}
-            me={userId}
-            canAct={profile !== null && !readOnly}
-            plainMentions={plainMentions}
-            onReply={() => {
-              setReplyingTo(message);
-              composer.current?.focus();
-            }}
-            onJumpToMessage={jumpToMessage}
-          />
-        ))}
-
-        {/* Last in document order, so it sits under the newest confirmed
-            message. Held at reduced opacity so it reads as not yet sent —
-            it may still be refused. */}
-        {!live || pending === null ? null : (
-          <div className="opacity-50">
+          <Fragment key={message._id}>
+            {message._id === initialRead?.firstUnreadId ? (
+              <div className="my-3 flex items-center gap-3 text-xs font-medium text-primary">
+                <span className="h-px flex-1 bg-primary/20" />
+                New messages
+                <span className="h-px flex-1 bg-primary/20" />
+              </div>
+            ) : null}
             <MessageRow
-              message={pending}
-              previous={ordered[ordered.length - 1]}
-              mine
+              message={message}
+              previous={
+                message._id === initialRead?.firstUnreadId
+                  ? undefined
+                  : ordered[index - 1]
+              }
+              next={
+                ordered[index + 1]?._id === initialRead?.firstUnreadId
+                  ? undefined
+                  : (ordered[index + 1] ??
+                    (!target && live && outbox.entries[0]?.status !== "failed"
+                      ? pendingMessages[0]
+                      : undefined))
+              }
+              mine={message.authorClerkId === userId}
               me={userId}
-              canAct={false}
+              canAct={profile !== null && !readOnly}
               plainMentions={plainMentions}
-              onReply={() => {}}
+              highlighted={message._id === target}
+              onEdit={
+                message.poll
+                  ? undefined
+                  : () => {
+                      setEditing(message);
+                      composer.current?.focus();
+                    }
+              }
+              onReply={() => {
+                setEditing(null);
+                setReplyingTo(message);
+                composer.current?.focus();
+              }}
               onJumpToMessage={jumpToMessage}
             />
+          </Fragment>
+        ))}
+        {target &&
+        contextMatches &&
+        ordered.length > 20 &&
+        lastVisible &&
+        lastVisible._id !== target ? (
+          <div className="flex justify-center py-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => jumpToMessage(lastVisible._id)}
+            >
+              Later messages
+            </Button>
           </div>
-        )}
+        ) : null}
+
+        {!live || target
+          ? null
+          : outbox.entries.map((entry, index) => (
+              <div
+                key={entry.nonce}
+                className={entry.status === "failed" ? "" : "opacity-60"}
+              >
+                <MessageRow
+                  message={pendingMessages[index]}
+                  previous={
+                    index === 0 && entry.status !== "failed"
+                      ? ordered[ordered.length - 1]
+                      : undefined
+                  }
+                  mine
+                  me={userId}
+                  canAct={false}
+                  plainMentions={plainMentions}
+                  onReply={() => {}}
+                  onJumpToMessage={jumpToMessage}
+                />
+                <div
+                  className="mt-1 ml-auto max-w-sm pr-14 text-right text-xs text-muted-foreground"
+                  role="status"
+                >
+                  {entry.images.length === 0 &&
+                  entry.attachmentIds.length > 0 ? (
+                    <p>{entry.attachmentIds.length} pictures attached</p>
+                  ) : null}
+                  {entry.status === "failed" ? (
+                    <>
+                      <p className="text-destructive">
+                        {entry.error ?? "Message not sent."}
+                      </p>
+                      <div className="mt-1 flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => outbox.retry(entry.nonce)}
+                        >
+                          Retry
+                        </Button>
+                        {!entry.uncertain &&
+                        entry.attachmentIds.every((id) =>
+                          entry.images.some(
+                            (image) => image.attachmentId === id,
+                          ),
+                        ) ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (
+                                composer.current?.restoreDraft(
+                                  entry.body,
+                                  entry.replyTo,
+                                  entry.poll,
+                                  entry.images,
+                                )
+                              )
+                                outbox.discard(entry.nonce, true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => outbox.discard(entry.nonce)}
+                        >
+                          Discard
+                        </Button>
+                      </div>
+                    </>
+                  ) : entry.status === "sending" ? (
+                    "Sending…"
+                  ) : outbox.online ? (
+                    "Waiting to send…"
+                  ) : (
+                    "Offline · saved, waiting for connection"
+                  )}
+                </div>
+              </div>
+            ))}
 
         {/* Under everything, where their message is about to be. */}
-        {live ? <Typing typists={typists} /> : null}
+        {live && !target ? <Typing typists={typists} /> : null}
       </div>
 
       {/* Under the thread, in the flow. It floated over the messages on a
@@ -523,6 +784,19 @@ function ConversationThread({
             pictures={pictures}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
+            onRestoreReply={setReplyingTo}
+            editing={editing}
+            onCancelEdit={() => setEditing(null)}
+            onEdit={async (messageId, body) => {
+              const result = await edit({ messageId, body });
+              if (result.ok) {
+                setEditing(null);
+                return null;
+              }
+              if (result.refusal === "read-only")
+                throw new Error("This message can no longer be edited.");
+              return result.refusal;
+            }}
             conversationId={conversationId}
             kind={detail === undefined ? null : detail.kind}
             peer={peer}

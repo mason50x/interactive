@@ -1,4 +1,5 @@
 import { MAX_BODY, type Surface } from "./limits";
+import { decodeString } from "micromark-util-decode-string";
 import { scan, type Match } from "./lexicon";
 import { maskMentions } from "./mentions";
 import { buildForms, prepare } from "./normalize";
@@ -121,7 +122,14 @@ export function screen(raw: string, context: SendContext): Verdict {
   const prepared = prepare(raw, MAX_BODY[context.surface]);
   if (!prepared.ok) return refuse(prepared.reason);
 
-  const { clean, forms } = prepared;
+  const { clean } = prepared;
+  // Markdown decodes character references before displaying text. Screen that
+  // same single decoded layer, while retaining the original Markdown for the
+  // stored message. The raw shape limit above bounds all decoding work.
+  const decoded = decodeString(clean);
+  const displayed = decoded === clean ? prepared : prepare(decoded, MAX_BODY[context.surface]);
+  if (!displayed.ok) return refuse(displayed.reason);
+  const { clean: screeningText, forms } = displayed;
 
   // A reserved system mention is syntax, not something the sender said. In
   // particular, normalisation folds `@` to leetspeak `a`, so `@bot` becomes
@@ -130,9 +138,9 @@ export function screen(raw: string, context: SendContext): Verdict {
   // lexicon so they cannot be used to split an unsafe word across a boundary.
   const lexiconText =
     context.lexiconExemptMentions === undefined
-      ? clean
-      : maskMentions(clean, context.lexiconExemptMentions);
-  const lexiconForms = lexiconText === clean ? forms : buildForms(lexiconText);
+      ? screeningText
+      : maskMentions(screeningText, context.lexiconExemptMentions);
+  const lexiconForms = lexiconText === screeningText ? forms : buildForms(lexiconText);
   const matches = scan(lexiconForms);
 
   const severe = worst(matches);
@@ -144,7 +152,7 @@ export function screen(raw: string, context: SendContext): Verdict {
   // `@alice` is contact details everywhere except when alice is in the room.
   // The lexicon above read the whole thing, on purpose.
   const masked =
-    context.mentions === undefined ? clean : maskMentions(clean, context.mentions);
+    context.mentions === undefined ? screeningText : maskMentions(screeningText, context.mentions);
   const patterns = findPatterns(masked);
   if (patterns.length > 0) {
     return refuse(refusalForPattern(patterns[0].category));

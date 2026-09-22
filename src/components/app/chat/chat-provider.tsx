@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation } from "convex/react";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   use,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -17,6 +19,12 @@ import type { ConversationSummary } from "@convex/chat/conversations";
 import type { MyAccount } from "@convex/chat/accounts";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { useConvexAuth } from "convex/react";
+import { CHAT_HREF } from "@/lib/nav";
+import { setTabUnread } from "@/lib/tab-mask";
+import {
+  useBrowserNotifications,
+  type ChatNotifications,
+} from "@/components/app/chat/use-browser-notifications";
 
 export type Chat = {
   /** `null` while unknown *or* when no handle has been claimed. */
@@ -24,6 +32,8 @@ export type Chat = {
   /** True until the first answer arrives, which is not the same as no profile. */
   loading: boolean;
   conversations: ConversationSummary[];
+  /** The current server result, including pending optimistic cursor updates. */
+  serverConversations: ConversationSummary[];
   /** Unread messages in direct messages and groups. The room is not counted. */
   unread: number;
   /** Anything at all, the room's dot included. */
@@ -51,22 +61,26 @@ export type Chat = {
   adminBadgesLoaded: boolean;
   /**
    * The conversation whose thread is open at its live end, or `null`. Set by
-   * `Thread`, and never counted as unread by anything above.
+   * `Thread` and used to decide when its reading position can advance.
    */
   reading: Id<"conversations"> | null;
   setReading: Dispatch<SetStateAction<Id<"conversations"> | null>>;
+  suspendReading: (conversationId: Id<"conversations">) => void;
+  clearReadSuppression: (conversationId: Id<"conversations">) => void;
+  isReadSuppressed: (conversationId: Id<"conversations">) => boolean;
   /**
    * Whether the server still has something unread in `reading` — or has not
-   * answered about it yet, which the thread treats the same way. This is the
-   * one place the mask above is lifted: `markRead` is written from it.
+   * answered about it yet, which the thread treats the same way.
    */
   behind: boolean;
+  notifications: ChatNotifications;
 };
 
 const EMPTY: Chat = {
   profile: null,
   loading: true,
   conversations: [],
+  serverConversations: [],
   unread: 0,
   hasUnread: false,
   mentioned: false,
@@ -77,7 +91,17 @@ const EMPTY: Chat = {
   adminBadgesLoaded: false,
   reading: null,
   setReading: () => {},
+  suspendReading: () => {},
+  clearReadSuppression: () => {},
+  isReadSuppressed: () => false,
   behind: false,
+  notifications: {
+    enabled: false,
+    permission: "unsupported",
+    pending: false,
+    error: null,
+    toggle: async () => {},
+  },
 };
 
 const ChatContext = createContext<Chat>(EMPTY);
@@ -87,6 +111,7 @@ export function useChat() {
 }
 
 export function ChatProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const { isAuthenticated } = useConvexAuth();
   const profile = useAuthedQuery(api.chat.accounts.mine, {});
   const conversations = useAuthedQuery(api.chat.conversations.list, {});
@@ -109,21 +134,79 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     void joinGlobal({});
   }, [isAuthenticated, profile, joinGlobal]);
 
-  const [reading, setReading] = useState<Id<"conversations"> | null>(null);
+  const [registeredReading, setRegisteredReading] =
+    useState<Id<"conversations"> | null>(null);
+  const suppressedReading = useRef<Id<"conversations"> | null>(null);
+  const wasReadingBeforeSuppression = useRef(false);
+  const setReading = useCallback<
+    Dispatch<SetStateAction<Id<"conversations"> | null>>
+  >((next) => {
+    setRegisteredReading((current) => {
+      const value = typeof next === "function" ? next(current) : next;
+      return value !== null && value === suppressedReading.current
+        ? null
+        : value;
+    });
+  }, []);
+  const suspendReading = useCallback(
+    (conversationId: Id<"conversations">) => {
+      // The ref also guards an already-scheduled thread effect before React has
+      // committed this state update or the navigation away from the thread.
+      suppressedReading.current = conversationId;
+      wasReadingBeforeSuppression.current =
+        registeredReading === conversationId;
+      setRegisteredReading((current) =>
+        current === conversationId ? null : current,
+      );
+    },
+    [registeredReading],
+  );
+  const clearReadSuppression = useCallback(
+    (conversationId: Id<"conversations">) => {
+      if (suppressedReading.current !== conversationId) return;
+      suppressedReading.current = null;
+      if (wasReadingBeforeSuppression.current) {
+        setRegisteredReading((current) =>
+          current === null ? conversationId : current,
+        );
+      }
+      wasReadingBeforeSuppression.current = false;
+    },
+    [],
+  );
+  const isReadSuppressed = useCallback(
+    (conversationId: Id<"conversations">) =>
+      suppressedReading.current === conversationId,
+    [],
+  );
+  useEffect(() => {
+    if (
+      suppressedReading.current !== null &&
+      pathname !== `${CHAT_HREF}/${suppressedReading.current}`
+    ) {
+      suppressedReading.current = null;
+      wasReadingBeforeSuppression.current = false;
+    }
+  }, [pathname]);
+  const reading =
+    registeredReading !== null &&
+    pathname === `${CHAT_HREF}/${registeredReading}`
+      ? registeredReading
+      : null;
 
-  // What the server said, and then the same list with the conversation being
-  // read shown as read. See the note on `reading` above. The thread's own
-  // question — is there anything to mark — is answered from the unmasked row.
+  // The cursor is authoritative, including optimistic writes. Merely having a
+  // thread mounted cannot hide a manual unread action made in another tab.
   const served = conversations ?? [];
+  const notifications = useBrowserNotifications({
+    accountId: isAuthenticated ? profile?.clerkId : undefined,
+    conversations: served,
+    loaded: conversations !== undefined,
+    reading,
+  });
   const open =
     reading === null ? undefined : served.find((row) => row._id === reading);
   const behind = reading !== null && (open === undefined || open.unread > 0);
-  const list =
-    open === undefined || open.unread === 0
-      ? served
-      : served.map((row) =>
-          row === open ? { ...row, unread: 0, mentioned: false } : row,
-        );
+  const list = served;
 
   // The room contributes a dot and never a number — see `unreadExact` in
   // `convex/chat/conversations.ts` for why counting it would be the one query
@@ -135,12 +218,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const hasUnread = list.some((row) => row.unread > 0);
   const mentioned = list.some((row) => row.mentioned);
 
+  useEffect(() => {
+    setTabUnread(isAuthenticated && hasUnread);
+    return () => setTabUnread(false);
+  }, [isAuthenticated, hasUnread]);
+
   const waiting = (invitations ?? []).length;
 
   const value: Chat = {
     profile: profile ?? null,
     loading: profile === undefined,
     conversations: list,
+    serverConversations: served,
     unread,
     hasUnread,
     mentioned,
@@ -151,7 +240,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     adminBadgesLoaded: isAuthenticated && staffRoles !== undefined,
     reading,
     setReading,
+    suspendReading,
+    clearReadSuppression,
+    isReadSuppressed,
     behind,
+    notifications,
   };
 
   return <ChatContext value={value}>{children}</ChatContext>;

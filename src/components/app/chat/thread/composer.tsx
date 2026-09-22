@@ -5,17 +5,19 @@ import {
   ArrowUpIcon,
   ArrowUpTrayIcon,
   ArrowUturnLeftIcon,
+  CheckIcon,
+  PencilSquareIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { MicrophoneIcon } from "@heroicons/react/24/solid";
+import { ChartBarIcon, MicrophoneIcon } from "@heroicons/react/24/solid";
 import { useQuery } from "convex/react";
 import {
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
   useState,
-  type KeyboardEvent,
   type Ref,
 } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,22 +27,25 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "@/components/ui/menu";
-import {
-  MentionPicker,
-  MentionText,
-  optionId,
-  type MentionPerson,
-} from "@/components/app/chat/mentions";
+import type { MentionPerson } from "@/components/app/chat/mentions";
 import { AttachmentTray } from "@/components/app/chat/thread/attachment-tray";
 import { BotQuota } from "@/components/app/chat/thread/bot-quota";
+import {
+  RichMessageInput,
+  type RichMessageInputHandle,
+} from "@/components/app/chat/thread/rich-message-input";
+import {
+  PollComposer,
+  pollDraftError,
+} from "@/components/app/chat/thread/poll-composer";
 import { replyFromMessage } from "@/components/app/chat/thread/reply-preview";
 import { useAttachments } from "@/components/app/chat/thread/use-attachments";
-import { useAutogrow } from "@/components/app/chat/thread/use-autogrow";
-import { useMentionInput } from "@/components/app/chat/thread/use-mention-input";
 import { useTypingBeat } from "@/components/app/chat/typing";
 import { Waveform } from "@/components/app/chat/waveform";
 import { personName, refusalMessage, type Refusal } from "@/lib/chat";
-import { MAX_IMAGES_PER_MESSAGE, rememberPreview } from "@/lib/images";
+import { useChatDraft, type ChatPollDraft } from "@/lib/chat-drafts";
+import { trimChatMarkdownForSend } from "@/lib/chat-editor-format";
+import { MAX_IMAGES_PER_MESSAGE } from "@/lib/images";
 import { EVERYONE, findMentionTokens } from "@/lib/mentions";
 import { useDictation } from "@/lib/use-dictation";
 import { cn } from "@/lib/utils";
@@ -52,18 +57,8 @@ import type {
   ChatMessage,
 } from "@convex/chat/messages";
 
-/**
- * The box at the bottom of a conversation.
- *
- * A textarea with four things around it: the pictures waiting to go with the
- * words (`useAttachments`), the twin that gives the box its height
- * (`useAutogrow`), the `@` picker (`useMentionInput`), and dictation. The
- * composer owns the words and the send; each of those owns its own state and
- * hands back what the render needs. What the thread may ask of it is
- * `ComposerHandle`, and the thread is the only caller.
- */
-
-/** The textarea's own cap, which the server enforces again. */
+/** Rich editing, saved drafts, attachments, polls and dictation for one conversation. */
+/** The Markdown payload cap, enforced by the server as well as the rich editor. */
 const MAX_BODY = 2000;
 
 /**
@@ -79,11 +74,14 @@ function joinSpoken(prev: string, next: string) {
 export type ComposerHandle = {
   addFiles: (files: File[]) => void;
   focus: () => void;
+  /** Returns false when a draft already exists, so recovering a send never replaces it. */
+  restoreDraft: (
+    text: string,
+    reply?: ChatMessage | null,
+    poll?: ChatPollDraft,
+    images?: ChatImage[],
+  ) => boolean;
 };
-
-/** The picker's id, for the field to point `aria-controls` at. One thread
- *  is on screen at a time, so one id is enough. */
-const PICKER_ID = "mention-picker";
 
 export function Composer({
   ref,
@@ -97,6 +95,10 @@ export function Composer({
   authors,
   me,
   canMentionEveryone = false,
+  editing = null,
+  onCancelEdit,
+  onEdit,
+  onRestoreReply,
 }: {
   ref: Ref<ComposerHandle>;
   onSubmit: (
@@ -106,11 +108,11 @@ export function Composer({
     replyTo: ChatMessage | null,
     mentions: ChatMention[],
     everyone: boolean,
+    poll?: ChatPollDraft,
   ) => Promise<Refusal | null>;
   /**
-   * Whether pictures are on for this deployment. Off, there is no plus, no
-   * paste and no drop — `addFiles` is the one door and it is shut — and the
-   * box is the box it was before pictures existed.
+   * Whether pictures are on for this deployment. Polls remain available
+   * through the plus menu when uploads are disabled.
    */
   pictures: boolean;
   replyingTo: ChatMessage | null;
@@ -123,9 +125,44 @@ export function Composer({
   me: string | null | undefined;
   /** Staff in the Everyone room. The one place `@everyone` is offered. */
   canMentionEveryone?: boolean;
+  editing?: ChatMessage | null;
+  onCancelEdit?: () => void;
+  onEdit?: (messageId: Id<"messages">, body: string) => Promise<Refusal | null>;
+  onRestoreReply?: (reply: ChatMessage) => void;
 }) {
-  const [body, setBody] = useState("");
+  const { draft, updateDraft } = useChatDraft(me, conversationId);
+  const [editState, setEditState] = useState<{
+    id: string;
+    body: string;
+  } | null>(null);
+  if (editing !== null && editing._id !== editState?.id) {
+    setEditState({ id: editing._id, body: editing.body });
+  } else if (editing === null && editState !== null) {
+    setEditState(null);
+  }
+  const body =
+    editing === null ? draft.body : (editState?.body ?? editing.body);
+  function setBody(value: string | ((previous: string) => string)) {
+    if (editing !== null) {
+      setEditState((previous) => ({
+        id: editing._id,
+        body:
+          typeof value === "function"
+            ? value(previous?.body ?? editing.body)
+            : value,
+      }));
+    } else {
+      updateDraft((previous) => ({
+        ...previous,
+        body: typeof value === "function" ? value(previous.body) : value,
+      }));
+    }
+  }
+  const reply = editing === null ? (replyingTo ?? draft.reply) : null;
+  const poll = editing === null ? draft.poll : null;
   const [notice, setNotice] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [sending, setSending] = useState(false);
 
   // Tells everybody else there are words in here.
   useTypingBeat(conversationId, body, true);
@@ -149,69 +186,134 @@ export function Composer({
       ? body
       : joinSpoken(body, dictation.interim).slice(0, MAX_BODY);
 
-  const { fieldRef, mirror, backdrop, height, syncBackdrop } =
-    useAutogrow(shown);
+  const inputRef = useRef<RichMessageInputHandle>(null);
+  const knownPeople = useRef<ReadonlyMap<string, MentionPerson>>(new Map());
+  const rememberPeople = useCallback(
+    (people: ReadonlyMap<string, MentionPerson>) => {
+      knownPeople.current = people;
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (replyingTo !== null) fieldRef.current?.focus();
-  }, [replyingTo, fieldRef]);
+    if (replyingTo !== null || editing !== null) inputRef.current?.focus();
+  }, [replyingTo, editing]);
 
-  /**
-   * The whole text, as the field now holds it, into `body`.
-   *
-   * Editing while a dictation guess is showing: keep the guess out of `body`
-   * while it is still at the end. If the edit went through it, keep what was
-   * typed and let the next final land after it.
-   */
-  function commit(next: string) {
-    const tail =
-      dictation.interim === "" ? "" : joinSpoken(" ", dictation.interim);
-    setBody(
-      tail !== "" && next.endsWith(tail) ? next.slice(0, -tail.length) : next,
-    );
-    setNotice(null);
+  useEffect(() => {
+    if (replyingTo !== null && draft.reply?._id !== replyingTo._id) {
+      updateDraft((previous) => ({ ...previous, reply: replyingTo }));
+    }
+  }, [replyingTo, draft.reply?._id, updateDraft]);
+
+  const tray = useAttachments({
+    pictures: pictures && editing === null && poll === null,
+    onNotice: setNotice,
+  });
+  const fileInput = useRef<HTMLInputElement>(null);
+  const previousAttachmentCount = useRef(0);
+  useEffect(() => {
+    const count = tray.attached.length;
+    if (count > 0 || previousAttachmentCount.current > 0) {
+      updateDraft((previous) => ({ ...previous, hadAttachments: count > 0 }));
+    }
+    previousAttachmentCount.current = count;
+  }, [tray.attached.length, updateDraft]);
+
+  function cancelReply() {
+    updateDraft((previous) => ({ ...previous, reply: null }));
+    onCancelReply();
   }
 
-  const picker = useMentionInput({
-    shown,
-    fieldRef,
-    commit,
-    maxLength: MAX_BODY,
-    conversationId,
-    kind,
-    peer,
-    authors,
-    me,
-    canMentionEveryone,
-  });
-
-  // Keep the newest words in view once the box has hit its height.
-  useEffect(() => {
-    const el = fieldRef.current;
-    if (el !== null && dictation.interim !== "") el.scrollTop = el.scrollHeight;
-  }, [shown, dictation.interim, fieldRef]);
-
-  const tray = useAttachments({ pictures, onNotice: setNotice });
-  const fileInput = useRef<HTMLInputElement>(null);
+  function restoreDraft(
+    text: string,
+    restoredReply: ChatMessage | null = null,
+    restoredPoll?: ChatPollDraft,
+    restoredImages: ChatImage[] = [],
+  ) {
+    if (
+      draft.body !== "" ||
+      draft.poll !== null ||
+      draft.reply !== null ||
+      replyingTo !== null ||
+      tray.attached.length > 0 ||
+      editing !== null
+    ) {
+      setNotice(
+        "Send or clear your current draft before restoring this message.",
+      );
+      return false;
+    }
+    if (restoredImages.length > 0 && !pictures) {
+      setNotice("Pictures are not available in this conversation.");
+      return false;
+    }
+    if (restoredImages.length > 0)
+      tray.restore(
+        restoredImages.map((image) => ({
+          key: crypto.randomUUID(),
+          preview: image.url,
+          width: image.width,
+          height: image.height,
+          state: "ready",
+          attachmentId: image.attachmentId,
+        })),
+      );
+    updateDraft((previous) => ({
+      ...previous,
+      body: text,
+      reply: restoredReply,
+      poll: restoredPoll ?? null,
+    }));
+    if (restoredReply !== null) onRestoreReply?.(restoredReply);
+    inputRef.current?.focus();
+    return true;
+  }
 
   useImperativeHandle(ref, () => ({
     addFiles: tray.addFiles,
-    focus: () => fieldRef.current?.focus(),
+    focus: () => inputRef.current?.focus(),
+    restoreDraft,
   }));
 
   const canSend =
-    !tray.waiting && (shown.trim() !== "" || tray.ready.length > 0);
+    !sending &&
+    !savingEdit &&
+    !tray.waiting &&
+    (trimChatMarkdownForSend(shown) !== "" ||
+      (editing === null && tray.ready.length > 0)) &&
+    (editing === null || trimChatMarkdownForSend(shown) !== editing.body) &&
+    (poll === null ||
+      (trimChatMarkdownForSend(shown) !== "" && pollDraftError(poll) === null));
 
   async function submit() {
     if (!canSend) return;
-    const text = shown.trim();
+    const text = trimChatMarkdownForSend(shown);
+    if (editing !== null) {
+      if (onEdit === undefined) return;
+      dictation.abort();
+      setSavingEdit(true);
+      setNotice(null);
+      try {
+        const refusal = await onEdit(editing._id, text);
+        if (refusal === null) onCancelEdit?.();
+        else setNotice(refusalMessage(refusal));
+      } catch (error) {
+        setNotice(
+          error instanceof Error &&
+            error.message === "This message can no longer be edited."
+            ? error.message
+            : "Your edit could not be saved. Your changes are still here; try again.",
+        );
+      } finally {
+        setSavingEdit(false);
+      }
+      return;
+    }
     const sending = tray.ready;
 
-    // Nothing further may arrive into a box that has just been emptied.
+    // Keep the captured draft until the thread has safely queued it.
     dictation.abort();
-    setBody("");
-    picker.setCaret(0);
-    tray.clear();
+    setSending(true);
     setNotice(null);
 
     // Who the text names, from the people the picker offered, for the
@@ -226,9 +328,10 @@ export function Composer({
           if (kind === "global" && canMentionEveryone) everyone = true;
           continue;
         }
-        const person = picker.people.known.get(token.handle);
+        const person = knownPeople.current.get(token.handle);
         if (person === undefined) continue;
-        if (mentions.some((entry) => entry.clerkId === person.clerkId)) continue;
+        if (mentions.some((entry) => entry.clerkId === person.clerkId))
+          continue;
         mentions.push({ clerkId: person.clerkId, handle: person.handle });
       }
     }
@@ -241,52 +344,58 @@ export function Composer({
         : [{ ...entry, attachmentId: entry.attachmentId }],
     );
 
-    const refusal = await onSubmit(
-      text,
-      proven.map((entry) => entry.attachmentId),
-      proven.map((entry) => ({
-        attachmentId: entry.attachmentId,
-        url: entry.preview,
-        width: entry.width,
-        height: entry.height,
-      })),
-      replyingTo,
-      mentions,
-      everyone,
-    );
+    let refusal: Refusal | null;
+    try {
+      refusal = await onSubmit(
+        text,
+        proven.map((entry) => entry.attachmentId),
+        proven.map((entry) => ({
+          attachmentId: entry.attachmentId,
+          url: entry.preview,
+          width: entry.width,
+          height: entry.height,
+        })),
+        reply,
+        mentions,
+        everyone,
+        poll === null
+          ? undefined
+          : { options: poll.options.map((option) => option.trim()) },
+      );
+    } catch {
+      setNotice(
+        "That message could not be queued. Your draft is still here; try again.",
+      );
+      setSending(false);
+      return;
+    }
+    setSending(false);
 
     if (refusal === null) {
-      // The real rows are on screen by now — see `submit` in `Thread` for why
-      // that is a guarantee and not a race. The previews are not revoked:
-      // they are what the real rows will be drawn with, see `rememberPreview`.
-      for (const entry of proven) {
-        rememberPreview(entry.attachmentId, entry.preview);
-      }
+      updateDraft((previous) => {
+        // A draft edited in another tab while this queue write completed
+        // belongs to that writer and must not be erased with this send.
+        if (
+          previous.body !== body ||
+          JSON.stringify(previous.poll) !== JSON.stringify(poll)
+        )
+          return previous;
+        return { body: "", reply: null, poll: null, hadAttachments: false };
+      });
+      tray.clear();
+      onCancelReply();
+      // The outbox owns previews until confirmation, retry or explicit discard.
       return;
     }
 
     setNotice(refusalMessage(refusal));
-    // Handed back rather than dropped. Somebody who wrote three sentences and
-    // hit a rule on one word should not have to write them again.
-    setBody(text);
-
     if (refusal === "image" || refusal === "too-many-images") {
       // The rows are gone — swept, or discarded from another tab. The
       // pictures have to be added again, so the previews go.
       for (const entry of sending) URL.revokeObjectURL(entry.preview);
-    } else {
-      // Refused for the words. The pictures are still `ready` on the server
-      // and come back into the tray with the text.
-      tray.restore(sending);
+      tray.clear();
     }
-    fieldRef.current?.focus();
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (picker.onKeyDown(event)) return;
-    if (event.key !== "Enter" || event.shiftKey) return;
-    event.preventDefault();
-    void submit();
+    inputRef.current?.focus();
   }
 
   function toggleDictation() {
@@ -315,6 +424,29 @@ export function Composer({
           </p>
         </div>
       )}
+      {draft.hadAttachments &&
+      tray.attached.length === 0 &&
+      editing === null ? (
+        <div
+          role="status"
+          className="mb-2 flex items-center justify-center gap-2 text-xs text-muted-foreground"
+        >
+          Your text draft is saved. Add its pictures again before sending.
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            aria-label="Dismiss picture reminder"
+            onClick={() =>
+              updateDraft((previous) => ({
+                ...previous,
+                hadAttachments: false,
+              }))
+            }
+          >
+            <XMarkIcon />
+          </Button>
+        </div>
+      ) : null}
 
       {/* One radius whatever is in it. At a single line the box is fifty
           pixels tall, so a 25px corner *is* the pill; with a tray above or a
@@ -322,25 +454,45 @@ export function Composer({
           between `rounded-full` and this, and animating a radius from nine
           thousand pixels to twenty-five is a shape doing something strange
           on the way. */}
-      <div className="composer flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] has-[textarea:focus]:border-primary has-[textarea:focus]:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
-        {replyingTo === null ? null : (
+      <div className="composer flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
+        {editing !== null ? (
+          <div className="mx-3 mt-3 flex items-center gap-2 rounded-2xl bg-primary/[0.06] px-3 py-2 text-sm text-primary">
+            <PencilSquareIcon className="size-4" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Editing message</p>
+              <p className="text-xs text-muted-foreground">
+                Your unsent draft will be here when you finish.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancelEdit}
+              disabled={savingEdit}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : null}
+        {reply === null ? null : (
           <div className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] px-3 py-2.5">
             <ArrowUturnLeftIcon className="mt-0.5 size-4 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[0.75rem] font-semibold text-primary">
                 Replying to{" "}
                 {personName({
-                  handle: replyingTo.authorHandle,
-                  displayName: replyingTo.authorName,
+                  handle: reply.authorHandle,
+                  displayName: reply.authorName,
                 })}
               </p>
               <p className="line-clamp-2 text-[0.8125rem] break-words text-muted-foreground">
-                {replyFromMessage(replyingTo).preview}
+                {replyFromMessage(reply).preview}
               </p>
             </div>
             <button
               type="button"
-              onClick={onCancelReply}
+              onClick={cancelReply}
+              disabled={sending}
               aria-label="Cancel reply"
               className="flex size-6 shrink-0 items-center justify-center rounded-full text-faint outline-none hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
             >
@@ -349,27 +501,52 @@ export function Composer({
           </div>
         )}
 
-        <AttachmentTray
-          attached={tray.attached}
-          ghost={tray.ghost}
-          onRemove={tray.remove}
-          onSettled={tray.settle}
-        />
+        {poll !== null ? (
+          <PollComposer
+            value={poll}
+            onChange={(value) =>
+              updateDraft((previous) => ({ ...previous, poll: value }))
+            }
+            onCancel={() =>
+              updateDraft((previous) => ({ ...previous, poll: null }))
+            }
+            disabled={sending}
+          />
+        ) : null}
+
+        {editing === null ? (
+          <AttachmentTray
+            attached={tray.attached}
+            ghost={tray.ghost}
+            onRemove={tray.remove}
+            onSettled={tray.settle}
+          />
+        ) : null}
 
         <div
           className={cn(
             "flex items-end gap-2 py-1.5 pr-1.5",
-            pictures ? "pl-1.5" : "pl-4",
+            editing === null ? "pl-1.5" : "pl-4",
           )}
         >
           {/* The plus on the left, where every chat puts it. It opens a
               small menu: how many `@bot` tags are left today, then the
               picker. Pasting and dropping reach the same `addFiles`. */}
-          {pictures ? (
+          {editing === null ? (
             <>
               <PlusMenu
                 quota={quota}
+                pictures={pictures && poll === null}
                 full={tray.attached.length >= MAX_IMAGES_PER_MESSAGE}
+                disabled={sending}
+                canPoll={poll === null && tray.attached.length === 0}
+                onPoll={() => {
+                  updateDraft((previous) => ({
+                    ...previous,
+                    poll: { options: ["", ""] },
+                  }));
+                  inputRef.current?.focus();
+                }}
                 onUpload={() => fileInput.current?.click()}
               />
               <input
@@ -383,104 +560,46 @@ export function Composer({
             </>
           ) : null}
 
-          {/* The box and its twin. The twin is absolute, so it costs the row
-              no height of its own, and it is given the same width by
-              `inset-x-0` — which is what makes its wrapping the box's
-              wrapping. See `useAutogrow`. */}
-          <div className="relative min-w-0 flex-1">
-            <div
-              ref={mirror}
-              aria-hidden
-              className="pointer-events-none invisible absolute inset-x-0 top-0 py-1.5 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap"
-            >
-              {/* The placeholder when empty, so an empty box is one line
-                  tall; a zero-width space at the end, so a trailing newline
-                  counts as the line it is about to be. */}
-              {shown === "" ? "Say something" : shown}
-              {"​"}
-            </div>
-
-            {/* The words, in colour, under the field. The textarea above
-                lays out the same text transparent and keeps everything a
-                textarea does — the caret, selection, undo, the platform's
-                own editing — and this is the only layer with ink in it, so
-                a mention can be a chip inside the box without the box
-                becoming something that is not a textarea. The two agree on
-                every glyph because they share a font, a width and a padding,
-                and because the chip changes no glyph's width — see
-                `.mention-chip` in `globals.css`. It scrolls with the field. */}
-            <div
-              ref={backdrop}
-              aria-hidden
-              className="pointer-events-none absolute inset-0 overflow-hidden py-1.5 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap text-foreground"
-            >
-              <MentionText
-                body={body}
-                resolve={picker.resolveTyped}
-                me={me}
-                plain
-              />
-              {/* The dictation guess, after the words, and quieter: it is
-                  not text yet. */}
-              {dictation.interim === "" ? null : (
-                <span className="text-muted-foreground">
-                  {shown.slice(body.length)}
-                </span>
-              )}
-              {"​"}
-            </div>
-
-            {picker.picking ? (
-              <MentionPicker
-                id={PICKER_ID}
-                candidates={picker.candidates}
-                active={picker.highlighted}
-                loading={picker.people.loading}
-                query={picker.mention?.query ?? ""}
-                onActiveChange={picker.setActive}
-                onPick={picker.pick}
-              />
-            ) : null}
-
-            <textarea
-              ref={fieldRef}
-              value={shown}
-              style={{ height }}
-              onChange={(event) => {
-                commit(event.target.value);
-                picker.setCaret(event.target.selectionStart);
-                picker.setActive(0);
-              }}
-              onSelect={(event) =>
-                picker.setCaret(event.currentTarget.selectionStart)
-              }
-              onScroll={syncBackdrop}
-              onKeyDown={onKeyDown}
-              onPaste={tray.onPaste}
-              rows={1}
-              maxLength={MAX_BODY}
-              aria-label="Message"
-              aria-autocomplete="list"
-              aria-controls={picker.picking ? PICKER_ID : undefined}
-              aria-activedescendant={
-                picker.picking && picker.candidates.length > 0
-                  ? optionId(PICKER_ID, picker.highlighted)
-                  : undefined
-              }
-              placeholder={
-                live
-                  ? "Listening…"
-                  : tray.attached.length > 0
+          <RichMessageInput
+            ref={inputRef}
+            key={editing?._id ?? "draft"}
+            value={body}
+            onChange={(next) => {
+              setBody(next);
+              setNotice(null);
+            }}
+            onSubmit={() => void submit()}
+            onEscape={
+              editing !== null && !savingEdit ? onCancelEdit : undefined
+            }
+            onFiles={tray.addFiles}
+            onLimit={setNotice}
+            disabled={savingEdit || sending || !me}
+            placeholder={
+              live
+                ? "Listening…"
+                : poll !== null
+                  ? "Ask a question"
+                  : tray.attached.length > 0 && editing === null
                     ? "Add a caption, or just send"
                     : "Say something"
-              }
-              // Transparent ink and a visible caret: the words are drawn by
-              // the layer behind. No scrollbar, so the field and that layer
-              // wrap at the same width — the box is eight lines at most and
-              // still scrolls under the wheel and the arrows.
-              className="relative block w-full resize-none [scrollbar-width:none] overflow-y-auto bg-transparent py-1.5 text-[0.9375rem] leading-relaxed text-transparent caret-foreground transition-[height] duration-150 ease-out outline-none placeholder:text-faint disabled:cursor-not-allowed motion-reduce:transition-none dark:placeholder:text-muted-foreground [&::-webkit-scrollbar]:hidden"
-            />
-          </div>
+            }
+            label={
+              editing !== null
+                ? "Edit message"
+                : poll !== null
+                  ? "Poll question"
+                  : "Message"
+            }
+            interim={dictation.interim}
+            conversationId={conversationId}
+            kind={kind}
+            peer={peer}
+            authors={authors}
+            me={me}
+            canMentionEveryone={canMentionEveryone}
+            onKnownPeople={rememberPeople}
+          />
           {/* Absent where the browser has no recogniser (Firefox) and on the
               server, so it appears after hydration without a mismatch. The
               waveform mounts only once the recogniser has actually started,
@@ -493,6 +612,7 @@ export function Composer({
               onClick={toggleDictation}
               aria-pressed={live}
               aria-label={live ? "Stop dictation" : "Start dictation"}
+              disabled={savingEdit || sending}
               className={cn(
                 live
                   ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -516,11 +636,21 @@ export function Composer({
             onClick={() => void submit()}
             disabled={!canSend}
           >
-            <ArrowUpIcon
-              strokeWidth={2.5}
-              className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
-            />
-            Send
+            {editing !== null ? (
+              <CheckIcon className="size-4" />
+            ) : (
+              <ArrowUpIcon
+                strokeWidth={2.5}
+                className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
+              />
+            )}
+            {savingEdit
+              ? "Saving…"
+              : editing !== null
+                ? "Save"
+                : sending
+                  ? "Sending…"
+                  : "Send"}
           </Button>
         </div>
       </div>
@@ -541,18 +671,27 @@ export function Composer({
  */
 function PlusMenu({
   quota,
+  pictures,
   full,
   onUpload,
+  canPoll,
+  onPoll,
+  disabled,
 }: {
   quota: Parameters<typeof BotQuota>[0]["quota"];
+  pictures: boolean;
   /** The tray already holds as many as one message may carry. */
   full: boolean;
   onUpload: () => void;
+  canPoll: boolean;
+  onPoll: () => void;
+  disabled: boolean;
 }) {
   return (
     <Menu>
       <MenuTrigger
         aria-label="More"
+        disabled={disabled}
         className="group flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-faint transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:bg-muted data-popup-open:text-foreground dark:text-muted-foreground dark:hover:bg-muted/50 dark:data-popup-open:bg-muted/50"
       >
         {/* A plus that turns into a cross while the menu is open:
@@ -571,15 +710,29 @@ function PlusMenu({
           className="z-50 outline-none"
         >
           <MenuPrimitive.Popup className="composer-skin popup-slide flex w-[16.5rem] flex-col rounded-[20px] border border-border bg-surface p-1.5 text-foreground shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] outline-none">
-            <BotQuota quota={quota} />
-            <MenuSeparator className="mx-1" />
+            {pictures ? (
+              <>
+                <BotQuota quota={quota} />
+                <MenuSeparator className="mx-1" />
+              </>
+            ) : null}
+            {pictures ? (
+              <MenuItem
+                onClick={onUpload}
+                disabled={full}
+                className="data-disabled:pointer-events-none data-disabled:opacity-50"
+              >
+                <ArrowUpTrayIcon className="size-[1.125rem]" />
+                Upload a picture
+              </MenuItem>
+            ) : null}
             <MenuItem
-              onClick={onUpload}
-              disabled={full}
+              onClick={onPoll}
+              disabled={!canPoll}
               className="data-disabled:pointer-events-none data-disabled:opacity-50"
             >
-              <ArrowUpTrayIcon className="size-[1.125rem]" />
-              Upload a picture
+              <ChartBarIcon className="size-[1.125rem]" />
+              Create a poll
             </MenuItem>
           </MenuPrimitive.Popup>
         </MenuPrimitive.Positioner>

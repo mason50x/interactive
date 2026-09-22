@@ -45,6 +45,16 @@ export type ConversationSummary = {
   title?: string;
   lastMessageAt?: number;
   unread: number;
+  favorite: boolean;
+  lastReadAt: number;
+  firstUnreadMessageId?: Id<"messages">;
+  latestMessage?: {
+    _id: Id<"messages">;
+    _creationTime: number;
+    authorClerkId: string;
+    authorHandle: string;
+    body: string;
+  };
   /**
    * Whether `unread` is a count or a signal.
    *
@@ -79,14 +89,14 @@ async function unreadFor(
   conversationId: Id<"conversations">,
   since: number,
   exact: boolean,
-): Promise<number> {
+): Promise<Doc<"messages">[]> {
   const rows = await ctx.db
     .query("messages")
-    .withIndex("byConversation", (q) =>
-      q.eq("conversationId", conversationId).gt("_creationTime", since),
+    .withIndex("byConversationStatus", (q) =>
+      q.eq("conversationId", conversationId).eq("status", "visible").gt("_creationTime", since),
     )
     .take(exact ? UNREAD_CAP : 1);
-  return rows.length;
+  return rows;
 }
 
 
@@ -143,6 +153,14 @@ export const list = query({
       )
       .take(MAX_CONVERSATIONS);
 
+    // A favorite remains reachable even when it was created past the normal
+    // inbox cap. Keep both indexed scans bounded and merge by membership id.
+    const favorites = await ctx.db.query("conversationMembers")
+      .withIndex("byUserFavorite", q => q.eq("clerkId", profile.clerkId).eq("status", "active").eq("favorite", true))
+      .take(MAX_CONVERSATIONS);
+    const seenMembers = new Set(members.map(member => member._id));
+    for (const member of favorites) if (!seenMembers.has(member._id)) members.push(member);
+
     // Always include the pinned bot even when the regular inbox hits its cap.
     const botDm = await ctx.db.query("conversations")
       .withIndex("byDmKey", q => q.eq("dmKey", dmKeyFor(profile.clerkId, BOT_ID)))
@@ -160,40 +178,27 @@ export const list = query({
 
       const exact = member.kind !== "global";
 
-      // Nothing has been said since it was last read, so there is nothing to
-      // count and no reason to go and look. `lastMessageAt` is written by the
-      // same mutation that inserts the message, so for a direct message or a
-      // group the two numbers together are a complete answer, and this is the
-      // state nearly every row in the list is in nearly all of the time — the
-      // list is re-read on every message anybody sends into any of these
-      // conversations, and without this each of those re-reads walked the
-      // message index of all fifty.
-      //
-      // The global room has no `lastMessageAt` on purpose, so it always looks.
-      // That is one document: it wants a dot, not a number.
-      //
-      // Strictly earlier, not "no later than", and the difference is real.
-      // `lastMessageAt` is the `Date.now()` of the mutation that inserted the
-      // message, but the message's own `_creationTime` is that instant plus a
-      // fraction of a millisecond — so a row whose two numbers are equal is the
-      // one case where a message exists that this comparison cannot see. Equal
-      // means look. The sender's own row clears the bar by more than that: a
-      // send writes their `lastReadAt` from the message's `_creationTime`, not
-      // from `now`, so their own words are never the something to count — see
-      // `send` in `convex/chat/messages.ts`.
-      const read =
-        conversation.lastMessageAt !== undefined &&
-        conversation.lastMessageAt < member.lastReadAt;
+      // The message timestamp is authoritative. lastMessageAt is the send
+      // mutation's integer clock, while _creationTime may be fractional; a
+      // manual unread cursor can sit between those two values.
+      const latest = await ctx.db.query("messages")
+        .withIndex("byConversationStatus", q => q.eq("conversationId", member.conversationId).eq("status", "visible"))
+        .order("desc").first();
+      const read = latest === null || latest._creationTime <= member.lastReadAt;
 
-      const unread = read
-        ? 0
+      const unreadRows = read
+        ? []
         : await unreadFor(ctx, member.conversationId, member.lastReadAt, exact);
+      const unread = unreadRows.length;
 
       // Only worth asking where there is something unread to be named in.
       // The room always is, by construction — and the read for it is one
       // row, invalidated by nothing but somebody naming the caller there.
       const mentioned =
         unread === 0 ? false : await mentionedIn(ctx, member);
+
+
+      const firstUnread = unreadRows[0];
 
       let peerHandle: string | undefined;
       let peerName: string | undefined;
@@ -211,6 +216,14 @@ export const list = query({
         title: conversation.title,
         lastMessageAt: conversation.lastMessageAt,
         unread,
+        favorite: member.favorite ?? false,
+        lastReadAt: member.lastReadAt,
+        firstUnreadMessageId: firstUnread?._id,
+        latestMessage: latest === null ? undefined : {
+          _id: latest._id, _creationTime: latest._creationTime,
+          authorClerkId: latest.authorClerkId, authorHandle: latest.authorHandle,
+          body: latest.body.slice(0, 160) || (latest.images?.length ? "Photo" : "Message"),
+        },
         unreadExact: exact,
         mentioned,
         peerClerkId: member.dmPeer,
@@ -234,6 +247,7 @@ export const list = query({
       if (second.kind === "announcements") return 1;
       if (first.peerClerkId === BOT_ID) return -1;
       if (second.peerClerkId === BOT_ID) return 1;
+      if (first.favorite !== second.favorite) return first.favorite ? -1 : 1;
       return (second.lastMessageAt ?? 0) - (first.lastMessageAt ?? 0);
     });
   },
@@ -530,14 +544,71 @@ export const preview = query({
  */
 export const markRead = mutation({
   args: { conversationId: v.id("conversations") },
+  returns: v.null(),
   handler: async (ctx, { conversationId }) => {
     const profile = await callerAccount(ctx);
-    if (profile === null) return;
+    if (profile === null) return null;
     const member = await membership(ctx, conversationId, profile.clerkId);
     // Active members only, the same bar `get` and `list` set: an invitation
     // or a removal is not a seat in the room, and a row in either state has
     // no reading position to move.
-    if (member === null || member.status !== "active") return;
-    await ctx.db.patch(member._id, { lastReadAt: Date.now() });
+    if (member === null || member.status !== "active") return null;
+    const latest = await ctx.db.query("messages")
+      .withIndex("byConversationStatus", q => q.eq("conversationId", conversationId).eq("status", "visible"))
+      .order("desc").first();
+    // Creation times can include a fractional millisecond after the mutation's
+    // fixed clock. Cover the newest visible message, not just Date.now().
+    await ctx.db.patch(member._id, { lastReadAt: Math.max(member.lastReadAt, Date.now(), latest?._creationTime ?? 0) });
+    return null;
+  },
+});
+
+/** Favorites are private and do not change anybody else's conversation order. */
+export const setFavorite = mutation({
+  args: { conversationId: v.id("conversations"), favorite: v.boolean() },
+  returns: v.boolean(),
+  handler: async (ctx, { conversationId, favorite }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return false;
+    const member = await membership(ctx, conversationId, profile.clerkId);
+    if (member?.status !== "active") return false;
+    await ctx.db.patch(member._id, { favorite });
+    return true;
+  },
+});
+
+/** Put the latest visible message back behind the caller's reading position. */
+export const markUnread = mutation({
+  args: { conversationId: v.id("conversations") },
+  returns: v.boolean(),
+  handler: async (ctx, { conversationId }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return false;
+    const member = await membership(ctx, conversationId, profile.clerkId);
+    if (member?.status !== "active") return false;
+    const latest = await ctx.db.query("messages")
+      .withIndex("byConversationStatus", q => q.eq("conversationId", conversationId).eq("status", "visible"))
+      .order("desc").first();
+    if (latest === null) return false;
+    await ctx.db.patch(member._id, { lastReadAt: Math.min(member.lastReadAt, latest._creationTime - 0.001) });
+    return true;
+  },
+});
+
+/** Read once when entering a thread, before advancing its reading position. */
+export const readPosition = query({
+  args: { conversationId: v.id("conversations") },
+  returns: v.union(v.null(), v.object({
+    lastReadAt: v.number(), firstUnreadId: v.union(v.id("messages"), v.null()), firstUnreadAt: v.union(v.number(), v.null()),
+  })),
+  handler: async (ctx, { conversationId }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return null;
+    const member = await membership(ctx, conversationId, profile.clerkId);
+    if (member?.status !== "active") return null;
+    const first = await ctx.db.query("messages")
+      .withIndex("byConversationStatus", q => q.eq("conversationId", conversationId).eq("status", "visible").gt("_creationTime", member.lastReadAt))
+      .first();
+    return { lastReadAt: member.lastReadAt, firstUnreadId: first?._id ?? null, firstUnreadAt: first?._creationTime ?? null };
   },
 });

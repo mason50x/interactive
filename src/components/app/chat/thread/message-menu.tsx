@@ -25,7 +25,7 @@ import type { ChatMessage } from "@convex/chat/messages";
 
 /** The small round well both triggers sit in. */
 const TRIGGER =
-  "flex size-5 items-center justify-center rounded-md text-faint hover:bg-foreground/[0.06] hover:text-foreground";
+  "flex size-6 items-center justify-center rounded-md text-faint hover:bg-foreground/[0.06] hover:text-foreground";
 
 export function ReactionPicker({
   messageId,
@@ -63,6 +63,8 @@ export function MessageMenu({
   mine,
   gone,
   deletable,
+  editable = false,
+  onEdit,
   isAdmin,
   open,
   onOpenChange,
@@ -75,6 +77,8 @@ export function MessageMenu({
   gone: boolean;
   /** Still inside the window in which your own message may be unsent. */
   deletable: boolean;
+  editable?: boolean;
+  onEdit?: () => void;
   isAdmin: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -96,6 +100,7 @@ export function MessageMenu({
         padding="xs"
         className="flex w-44 flex-col gap-0.5"
       >
+        {editable ? <MenuItem onClick={onEdit}>Edit message</MenuItem> : null}
         {mine || gone ? null : (
           <MenuItem onClick={onReply} className="gap-2">
             <ArrowUturnLeftIcon className="size-4 text-faint" />
@@ -135,7 +140,6 @@ export function MessageMenu({
             </MenuItem>
           ) : null
         ) : null}
-
       </MenuContent>
     </Menu>
   );

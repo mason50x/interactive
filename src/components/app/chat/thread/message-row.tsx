@@ -11,7 +11,9 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { MentionText, resolverFor } from "@/components/app/chat/mentions";
+import { MessageText } from "@/components/app/chat/thread/message-text";
+import { MessagePoll } from "@/components/app/chat/thread/message-poll";
+import { messagesConnect } from "@/lib/chat-grouping";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
 import {
@@ -22,35 +24,29 @@ import { Pictures } from "@/components/app/chat/thread/pictures";
 import { ReactionPill } from "@/components/app/chat/thread/reaction-pill";
 import { ReplyPreview } from "@/components/app/chat/thread/reply-preview";
 import { useChat } from "@/components/app/chat/chat-provider";
-import { DELETE_WINDOW_MS, isBot, personName } from "@/lib/chat";
+import {
+  DELETE_WINDOW_MS,
+  EDIT_WINDOW_MS,
+  isBot,
+  personName,
+} from "@/lib/chat";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ChatMessage } from "@convex/chat/messages";
 
-/**
- * One message in the thread.
- *
- * Yours on the right and everybody else's on the left, with the face and the
- * name only on theirs — the side is the whole of who said it. Messages close
- * together from the same person are one block: the face and name are drawn
- * once at the beginning, and the rows after it sit tight. Everything that can
- * be done to a message hangs off the bar above it, which is always laid out
- * and only sometimes visible, so nothing moves under the pointer that
- * summoned it.
- */
-
-/** Messages this close together from the same person are one block. */
-const GROUP_WINDOW_MS = 5 * 60_000;
-
+/** Consecutive text messages share their near-side corners and a 2px gap. */
 export function MessageRow({
   message,
   previous,
+  next,
   mine,
   me,
   canAct,
   plainMentions = false,
   onReply,
+  onEdit,
+  highlighted = false,
   onJumpToMessage,
 }: {
   message: ChatMessage;
@@ -63,6 +59,8 @@ export function MessageRow({
   /** A DM: `@words` are plain text, drawn with no chips and no highlight. */
   plainMentions?: boolean;
   onReply: () => void;
+  onEdit?: () => void;
+  highlighted?: boolean;
   onJumpToMessage: (messageId: Id<"messages">) => void;
 }) {
   const react = useMutation(api.chat.messages.react);
@@ -82,10 +80,13 @@ export function MessageRow({
   const [choosing, setChoosing] = useState(false);
   const menuOpen = reacting || choosing;
 
-  const grouped =
-    previous !== undefined &&
-    previous.authorClerkId === message.authorClerkId &&
-    message._creationTime - previous._creationTime < GROUP_WINDOW_MS;
+  const grouped = messagesConnect(previous, message);
+  const joinsNext = messagesConnect(message, next);
+  const corners = cn(
+    "rounded-3xl",
+    grouped && (mine ? "rounded-tr-md" : "rounded-tl-md"),
+    joinsNext && (mine ? "rounded-br-md" : "rounded-bl-md"),
+  );
   const gone = message.status !== "visible";
   const bot = isBot(message.authorClerkId);
 
@@ -107,9 +108,20 @@ export function MessageRow({
     return () => clearTimeout(timer);
   }, [deletable, message._creationTime]);
 
-  // Replying to yourself adds no conversational context. Once the delete
-  // window closes, an own message therefore has nothing left in its menu.
-  const choosable = isAdmin || !mine || deletable;
+  const [withinEditWindow, setWithinEditWindow] = useState(
+    () => Date.now() - message._creationTime < EDIT_WINDOW_MS,
+  );
+  useEffect(() => {
+    if (!withinEditWindow) return;
+    const timer = setTimeout(
+      () => setWithinEditWindow(false),
+      Math.max(0, message._creationTime + EDIT_WINDOW_MS - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [withinEditWindow, message._creationTime]);
+  const editable =
+    mine && !gone && !message.poll && withinEditWindow && onEdit !== undefined;
+  const choosable = isAdmin || !mine || deletable || editable;
 
   const time = new Date(message._creationTime).toLocaleTimeString(undefined, {
     hour: "numeric",
@@ -138,18 +150,17 @@ export function MessageRow({
     <div
       id={`message-${message._id}`}
       data-message-id={message._id}
+      data-highlighted={highlighted || undefined}
+      className={cn(
+        "group/message flex items-start gap-2",
+        mine && "flex-row-reverse",
+        grouped ? "mt-0.5" : "mt-4",
+      )}
       onContextMenu={(event) => {
         if (!canAct || !choosable || (gone && !isAdmin)) return;
         event.preventDefault();
         setChoosing(true);
       }}
-      className={cn(
-        "group/message flex gap-2.5",
-        // Yours on the right, everybody else's on the left — the side is the
-        // whole of who said it, which is why yours carries no name or face.
-        mine && "flex-row-reverse",
-        grouped ? "mt-0.5" : "mt-3",
-      )}
     >
       {mine ? null : grouped ? (
         <span className="w-8 shrink-0" />
@@ -180,132 +191,58 @@ export function MessageRow({
 
       <div
         className={cn(
-          "flex max-w-[min(32rem,78%)] min-w-0 flex-col",
-          mine && "items-end",
+          "flex max-w-[min(32rem,calc(100%-6rem))] min-w-0 flex-col",
+          mine && "max-w-[min(32rem,calc(100%-3.5rem))] items-end",
+          highlighted &&
+            !message.body &&
+            "rounded-3xl ring-2 ring-primary ring-offset-2 ring-offset-background",
         )}
       >
-        {/* The message header stays above the content. It always keeps its
-            height because appearing on hover must not move the bubble that
-            summoned it, and because Base UI needs a stable menu anchor. */}
-        <div
-          className={cn(
-            "mb-1 flex h-5 items-center gap-2 px-1",
-            mine && "flex-row-reverse",
-          )}
-        >
-          {!mine && !grouped && staffRole ? (
-            <TooltipProvider delay={250}>
-              <AdminTooltip>
-                <TooltipTrigger
-                  aria-label={
-                    staffRole === "ceo"
+        {!mine && !grouped ? (
+          <div className="mb-1 flex h-5 max-w-full items-center gap-2 px-1">
+            {!mine && !grouped && staffRole ? (
+              <TooltipProvider delay={250}>
+                <AdminTooltip>
+                  <TooltipTrigger
+                    aria-label={
+                      staffRole === "ceo"
+                        ? "CEO"
+                        : staffRole === "head_moderator"
+                          ? "Head Moderator"
+                          : staffRole === "builder"
+                            ? "Builder"
+                            : "Moderator"
+                    }
+                    className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                  >
+                    <StaffBadge role={staffRole} />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {staffRole === "ceo"
                       ? "CEO"
                       : staffRole === "head_moderator"
                         ? "Head Moderator"
                         : staffRole === "builder"
                           ? "Builder"
-                          : "Moderator"
-                  }
-                  className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                >
-                  <StaffBadge role={staffRole} />
-                </TooltipTrigger>
-                <TooltipContent>
-                  {staffRole === "ceo"
-                    ? "CEO"
-                    : staffRole === "head_moderator"
-                      ? "Head Moderator"
-                      : staffRole === "builder"
-                        ? "Builder"
-                        : "Moderator"}
-                </TooltipContent>
-              </AdminTooltip>
-            </TooltipProvider>
-          ) : null}
+                          : "Moderator"}
+                  </TooltipContent>
+                </AdminTooltip>
+              </TooltipProvider>
+            ) : null}
 
-          {mine || grouped ? null : bot ? (
-            <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
-              {personName(author)}
-            </span>
-          ) : (
-            <PersonCard
-              person={author}
-              className="cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
-            >
-              {personName(author)}
-            </PersonCard>
-          )}
-
-          <span
-            className={cn(
-              "text-[0.6875rem] text-faint transition-opacity duration-150",
-              menuOpen
-                ? "opacity-100"
-                : "opacity-0 group-focus-within/message:opacity-100 group-hover/message:opacity-100 pointer-coarse:opacity-100",
+            {mine || grouped ? null : bot ? (
+              <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
+                {personName(author)}
+              </span>
+            ) : (
+              <PersonCard
+                person={author}
+                className="cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+              >
+                {personName(author)}
+              </PersonCard>
             )}
-          >
-            {time}
-          </span>
-
-          {adminError ? (
-            <span role="alert" className="text-xs text-destructive">
-              {adminError}
-            </span>
-          ) : null}
-          {(gone && !isAdmin) || !canAct ? null : (
-            <div
-              className={cn(
-                "flex items-center gap-0.5 transition-opacity duration-150",
-                menuOpen
-                  ? "opacity-100"
-                  : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
-                !menuOpen && "pointer-events-none",
-              )}
-            >
-              <ReactionPicker
-                messageId={message._id}
-                open={reacting}
-                onOpenChange={setReacting}
-              />
-
-              {choosable ? (
-                <MessageMenu
-                  message={message}
-                  mine={mine}
-                  gone={gone}
-                  deletable={deletable}
-                  isAdmin={isAdmin}
-                  open={choosing}
-                  onOpenChange={setChoosing}
-                  onReply={onReply}
-                  onAdminError={setAdminError}
-                />
-              ) : null}
-            </div>
-          )}
-        </div>
-
-        {message.reactions.length > 0 ? (
-          <Tooltip.Provider delay={250} closeDelay={100}>
-            <div
-              className={cn("mb-1 flex flex-wrap gap-1", mine && "justify-end")}
-            >
-              {message.reactions.map((reaction) => (
-                <ReactionPill
-                  key={reaction.emoji}
-                  messageId={message._id}
-                  reaction={reaction}
-                  canAct={canAct}
-                  onReact={() =>
-                    void react({
-                      messageId: message._id,
-                      emoji: reaction.emoji,
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </Tooltip.Provider>
+          </div>
         ) : null}
 
         {gone || message.replyTo === undefined ? null : (
@@ -330,10 +267,13 @@ export function MessageRow({
           <Pictures images={message.images} />
         )}
 
-        {gone || message.body === "" ? null : (
-          <p
+        {gone || (message.body === "" && !message.poll) ? null : (
+          <div
             className={cn(
-              "relative rounded-3xl px-3.5 py-2 text-[0.9375rem] leading-relaxed break-words whitespace-pre-wrap",
+              "relative max-w-full px-3.5 py-2 text-[0.9375rem] leading-relaxed break-words",
+              corners,
+              highlighted &&
+                "ring-2 ring-primary ring-offset-2 ring-offset-background",
               message.images.length > 0 && "mt-1",
               mine
                 ? "font-semibold text-primary-foreground"
@@ -347,7 +287,7 @@ export function MessageRow({
             <span
               aria-hidden
               className={cn(
-                "absolute inset-0 rounded-3xl border",
+                "absolute inset-0 rounded-[inherit] border",
                 mine
                   ? "bubble-mine bg-primary"
                   : "bubble-theirs bg-surface-muted",
@@ -356,19 +296,108 @@ export function MessageRow({
                 named && "bubble-named",
               )}
             />
-            <span className="relative">
-              <MentionText
-                body={message.body}
-                resolve={
-                  plainMentions
-                    ? () => undefined
-                    : resolverFor(message.mentions, message.mentionsEveryone)
-                }
+            <div className="relative">
+              <MessageText
+                message={message}
                 me={me}
                 mine={mine}
+                plainMentions={plainMentions}
               />
-            </span>
+              {message.poll ? (
+                <MessagePoll
+                  messageId={message._id}
+                  poll={message.poll}
+                  canAct={canAct}
+                  mine={mine}
+                />
+              ) : null}
+              {message.editedAt ? (
+                <span
+                  title={`Edited ${new Date(message.editedAt).toLocaleString()}`}
+                  className="mt-0.5 block text-[0.625rem] font-normal opacity-60"
+                >
+                  edited
+                </span>
+              ) : null}
+            </div>
+          </div>
+        )}
+        {message.reactions.length > 0 ? (
+          <Tooltip.Provider delay={250} closeDelay={100}>
+            <div
+              className={cn("mt-1 flex flex-wrap gap-1", mine && "justify-end")}
+            >
+              {message.reactions.map((reaction) => (
+                <ReactionPill
+                  key={reaction.emoji}
+                  messageId={message._id}
+                  reaction={reaction}
+                  canAct={canAct}
+                  onReact={() =>
+                    void react({
+                      messageId: message._id,
+                      emoji: reaction.emoji,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </Tooltip.Provider>
+        ) : null}
+
+        {adminError ? (
+          <p role="alert" className="mt-1 text-xs text-destructive">
+            {adminError}
           </p>
+        ) : null}
+      </div>
+      <div
+        className="flex w-12 shrink-0 flex-col items-center gap-0.5 self-center"
+        aria-label={`Sent at ${time}`}
+      >
+        <span
+          className={cn(
+            "text-[0.625rem] whitespace-nowrap text-faint transition-opacity duration-150",
+            menuOpen
+              ? "opacity-100"
+              : "opacity-0 group-focus-within/message:opacity-100 group-hover/message:opacity-100 pointer-coarse:opacity-100",
+          )}
+        >
+          {time}
+        </span>
+
+        {(gone && !isAdmin) || !canAct ? null : (
+          <div
+            className={cn(
+              "flex items-center gap-0.5 transition-opacity duration-150",
+              menuOpen
+                ? "opacity-100"
+                : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
+              !menuOpen && "pointer-events-none",
+            )}
+          >
+            <ReactionPicker
+              messageId={message._id}
+              open={reacting}
+              onOpenChange={setReacting}
+            />
+
+            {choosable ? (
+              <MessageMenu
+                message={message}
+                mine={mine}
+                gone={gone}
+                deletable={deletable}
+                editable={editable}
+                onEdit={onEdit}
+                isAdmin={isAdmin}
+                open={choosing}
+                onOpenChange={setChoosing}
+                onReply={onReply}
+                onAdminError={setAdminError}
+              />
+            ) : null}
+          </div>
         )}
       </div>
     </div>

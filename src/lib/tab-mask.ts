@@ -132,6 +132,52 @@ const TITLE_STASH_ATTRIBUTE = "data-tab-mask-title";
 /** A `rel` no browser has an opinion about. */
 const PARKED_REL = "x-tab-mask";
 
+const UNREAD_EVENT = "50x:tab-unread";
+let hasUnread = false;
+
+/** Shared with chat; the tab-mask watcher remains the only favicon writer. */
+export function setTabUnread(unread: boolean): void {
+  if (hasUnread === unread) return;
+  hasUnread = unread;
+  window.dispatchEvent(new Event(UNREAD_EVENT));
+}
+
+const unreadIcons = new Map<string, Promise<string | undefined>>();
+
+/** All source icons are local. Cache one small PNG per selected tab icon. */
+function unreadIconFor(source: string): Promise<string | undefined> {
+  const cached = unreadIcons.get(source);
+  if (cached) return cached;
+
+  const icon = new Promise<string | undefined>((resolve) => {
+    const image = new Image();
+    image.onerror = () => resolve(undefined);
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 32;
+        const context = canvas.getContext("2d");
+        if (!context) return resolve(undefined);
+        context.drawImage(image, 0, 0, 32, 32);
+        context.beginPath();
+        context.arc(25, 7, 6, 0, Math.PI * 2);
+        context.fillStyle = "#ef4444";
+        context.fill();
+        context.lineWidth = 2;
+        context.strokeStyle = "#ffffff";
+        context.stroke();
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        // A failed badge must leave the selected favicon usable.
+        resolve(undefined);
+      }
+    };
+    image.src = source;
+  });
+  unreadIcons.set(source, icon);
+  return icon;
+}
+
 /** Every icon link but ours. `apple-touch-icon` is in here because a masked
  *  tab saved to a home screen should be masked there too. */
 const REAL_ICON_SELECTOR = `link[rel~="icon"]:not([${MASK_LINK_ATTRIBUTE}]),link[rel="apple-touch-icon"]:not([${MASK_LINK_ATTRIBUTE}])`;
@@ -142,7 +188,7 @@ const REAL_ICON_SELECTOR = `link[rel~="icon"]:not([${MASK_LINK_ATTRIBUTE}]),link
  * `reannounce`, behind a check that this pass changed something — which is
  * what keeps `watchTabMask` from observing its own work and looping forever.
  */
-function applyTabMask(mask: TabMaskAssets | null): void {
+function applyTabMask(mask: TabMaskAssets | null, unreadIcon?: string): void {
   const root = document.documentElement;
   const head = document.head;
 
@@ -152,7 +198,16 @@ function applyTabMask(mask: TabMaskAssets | null): void {
       root.removeAttribute(TITLE_STASH_ATTRIBUTE);
       document.title = parked;
     }
+  } else if (document.title !== mask.title) {
+    // Preserve route titles while switching masks or streaming metadata.
+    if (document.title && !isMaskTitle(document.title)) {
+      root.setAttribute(TITLE_STASH_ATTRIBUTE, document.title);
+    }
+    document.title = mask.title;
+  }
 
+  const icon = unreadIcon ?? mask?.icon;
+  if (!icon) {
     // Ours goes first, the real ones come back second — see `reannounce`.
     // A browser rebuilds its idea of the page's icons only when a link that
     // *is* an icon is processed, so each `rel` restored below is one such
@@ -169,22 +224,19 @@ function applyTabMask(mask: TabMaskAssets | null): void {
     return;
   }
 
-  if (document.title !== mask.title) {
-    // Only a title React wrote is worth parking, and only once it exists.
-    // Switching from one mask straight to another would otherwise record
-    // "Untitled document - Google Docs" as the page's real name, and turning
-    // the mask off later would restore it; parking the empty string — which is
-    // what `document.title` reads as while streamed metadata is still in
-    // flight — would turn the mask off into a blank tab. Both self-correct on
-    // the next pass, because the real title arriving is itself a mutation.
-    if (document.title && !isMaskTitle(document.title)) {
-      root.setAttribute(TITLE_STASH_ATTRIBUTE, document.title);
+  // Unread is a tab indicator; keep the home-screen icon intact without a mask.
+  if (!mask) {
+    for (const link of head.querySelectorAll(
+      `link[${REL_STASH_ATTRIBUTE}="apple-touch-icon"]`,
+    )) {
+      link.setAttribute("rel", "apple-touch-icon");
+      link.removeAttribute(REL_STASH_ATTRIBUTE);
     }
-    document.title = mask.title;
   }
 
   let parkedAny = false;
   for (const link of head.querySelectorAll(REAL_ICON_SELECTOR)) {
+    if (!mask && link.getAttribute("rel") === "apple-touch-icon") continue;
     link.setAttribute(REL_STASH_ATTRIBUTE, link.getAttribute("rel") || "icon");
     link.setAttribute("rel", PARKED_REL);
     parkedAny = true;
@@ -200,12 +252,12 @@ function applyTabMask(mask: TabMaskAssets | null): void {
     link.setAttribute("type", "image/png");
     // `href` before the append, so the browser processes the link once, with
     // an icon to fetch, rather than once empty and once more when it lands.
-    link.setAttribute("href", mask.icon);
+    link.setAttribute("href", icon);
     head.appendChild(link);
     return;
   }
-  if (link.getAttribute("href") !== mask.icon) {
-    link.setAttribute("href", mask.icon);
+  if (link.getAttribute("href") !== icon) {
+    link.setAttribute("href", icon);
   } else if (parkedAny) {
     reannounce(link, head);
   }
@@ -263,7 +315,19 @@ function reannounce(link: HTMLLinkElement, head: HTMLHeadElement): void {
  * coming back from wherever the browser put it while it was hidden.
  */
 export function watchTabMask(mask: TabMaskAssets | null): () => void {
-  const reapply = () => applyTabMask(mask);
+  let disposed = false;
+  let requested = false;
+  let unreadIcon: string | undefined;
+  const reapply = () => {
+    applyTabMask(mask, hasUnread ? unreadIcon : undefined);
+    if (!hasUnread || requested) return;
+    requested = true;
+    void unreadIconFor(mask?.icon ?? "/icon.svg").then((icon) => {
+      if (disposed) return;
+      unreadIcon = icon;
+      applyTabMask(mask, hasUnread ? unreadIcon : undefined);
+    });
+  };
 
   reapply();
 
@@ -276,12 +340,16 @@ export function watchTabMask(mask: TabMaskAssets | null): () => void {
   });
 
   window.addEventListener("pageshow", reapply);
+  window.addEventListener(UNREAD_EVENT, reapply);
   document.addEventListener("visibilitychange", reapply);
 
   return () => {
+    disposed = true;
     observer.disconnect();
     window.removeEventListener("pageshow", reapply);
+    window.removeEventListener(UNREAD_EVENT, reapply);
     document.removeEventListener("visibilitychange", reapply);
+    applyTabMask(mask);
   };
 }
 

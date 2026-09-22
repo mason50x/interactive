@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { CHAT_HREF } from "@/lib/nav";
@@ -37,6 +37,8 @@ const WIDE = "(min-width: 48rem)";
 export function EmptyPane() {
   const { conversations } = useChat();
   const router = useRouter();
+  const params = useSearchParams();
+  const stayInInbox = params.get("inbox") === "1";
 
   const room = conversations.find(
     (conversation) => conversation.kind === "global",
@@ -44,11 +46,14 @@ export function EmptyPane() {
   const roomId = room?._id;
 
   useEffect(() => {
+    // A manual unread action deliberately leaves a thread. Reopening the
+    // default room here would undo that intent and cause a second navigation.
+    if (stayInInbox) return;
     if (!roomId) return;
     if (!window.matchMedia(WIDE).matches) return;
 
     router.replace(`${CHAT_HREF}/${roomId}`);
-  }, [roomId, router]);
+  }, [roomId, router, stayInInbox]);
 
   return (
     <div className="flex size-full items-center justify-center p-6">

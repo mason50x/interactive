@@ -9,6 +9,7 @@ import {
 
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "@clerk/nextjs";
+import { BOT_HANDLE, BOT_NAME } from "@/lib/chat";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,7 +27,7 @@ const ROLE_LABEL: Record<SiteRole, string> = {
 const SITE_ROLES: SiteRole[] = ["ceo", "head_moderator", "moderator", "builder", "member"];
 const QUOTA_LABEL: Record<QuotaKind, string> = {
   experience: "Proxy time",
-  bot: "Bot usage",
+  bot: `${BOT_NAME} usage`,
 };
 
 export function QuotaConsole() {
@@ -244,7 +245,7 @@ export function QuotaConsole() {
           {(
             [
               ["experience", "Proxy time", "Daily Experience browsing time"],
-              ["bot", "Bot usage", "Daily @bot messages"],
+              ["bot", `${BOT_NAME} usage`, `Daily @${BOT_HANDLE} messages`],
             ] as const
           ).map(([value, label, description]) => (
             <label

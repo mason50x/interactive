@@ -1,8 +1,8 @@
 import { brand } from "@/lib/brand";
-import { readStorage, removeStorage, writeStorage } from "@/lib/storage";
+import { readStorage, writeStorage } from "@/lib/storage";
 
 /**
- * What the user picked. `system` is the default and is not a colour — it is a
+ * What the user picked. Dark is the default. `system` is not a colour — it is a
  * moving target that follows the OS, which is why it is kept separate from
  * the *resolved* theme below. Only the resolved value ever reaches the
  * document; `system` lives in storage and in the menu's checkmark.
@@ -45,18 +45,14 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
   return preference === "system" ? systemTheme() : preference;
 }
 
-/** Anything storage cannot give — blocked, missing, malformed — is `system`. */
+/** Anything storage cannot give — blocked, missing, malformed — is `dark`. */
 export function readStoredPreference(): ThemePreference {
   const stored = readStorage(THEME_STORAGE_KEY);
-  return isThemePreference(stored) ? stored : "system";
+  return isThemePreference(stored) ? stored : "dark";
 }
 
 function storePreference(preference: ThemePreference): void {
-  // `system` is the absence of a choice, so it is stored as the absence of a
-  // key. That way a user who goes back to it is not pinned to whatever the OS
-  // happened to be on the day they chose.
-  if (preference === "system") removeStorage(THEME_STORAGE_KEY);
-  else writeStorage(THEME_STORAGE_KEY, preference);
+  writeStorage(THEME_STORAGE_KEY, preference);
 }
 
 /**
@@ -64,7 +60,7 @@ function storePreference(preference: ThemePreference): void {
  * `useSyncExternalStore` instead of mirroring it in state.
  *
  * The browser really is the source of truth here — `localStorage` holds the
- * choice and the OS holds the fallback — and both can change without React's
+ * choice and the OS resolves an explicit `system` preference — and both can change without React's
  * knowledge: another tab writing the key, or the machine flipping to dark at
  * sunset. Subscribing to them is what keeps every tab in step.
  *
@@ -74,7 +70,7 @@ function storePreference(preference: ThemePreference): void {
 export type ThemeSnapshot = `${ThemePreference}:${ResolvedTheme}`;
 
 /** What the server sends. Corrected on the client's first read. */
-export const SERVER_THEME_SNAPSHOT: ThemeSnapshot = "system:light";
+export const SERVER_THEME_SNAPSHOT: ThemeSnapshot = "dark:dark";
 
 const listeners = new Set<() => void>();
 
@@ -153,9 +149,9 @@ export function applyTheme(theme: ResolvedTheme): void {
  * drift — the values are interpolated from the constants above rather than
  * written out twice.
  */
-export const themeScript = `(function(){try{var p="system";if((${usesAppTheme.toString()})(location.pathname)){try{p=localStorage.getItem(${JSON.stringify(
+export const themeScript = `(function(){try{var p="dark";if((${usesAppTheme.toString()})(location.pathname)){try{p=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
-)});}catch(_){}}var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
+)});}catch(_){}}if(p!=="system"&&p!=="light"&&p!=="dark")p="dark";var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
   DARK_QUERY,
 )}).matches?"dark":"light");if((${isEntertainmentPlayer.toString()})(location.pathname))t="dark";var e=document.documentElement;e.setAttribute(${JSON.stringify(
   THEME_ATTRIBUTE,

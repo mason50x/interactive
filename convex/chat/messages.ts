@@ -17,7 +17,7 @@ import {
 } from "../moderation/limits";
 import { EVERYONE, findMentionTokens } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
-import { screen, type SendContext } from "../moderation/verdict";
+import { screen, screenStatic, type SendContext } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { BOT_HANDLE, BOT_ID, BOT_NAME, botRateLimiter } from "./botConfig";
 import {
@@ -73,6 +73,8 @@ export type ChatMessage = {
   authorAvatarEmoji?: string;
   authorAvatarInitials?: string;
   body: string;
+  editedAt?: number;
+  poll?: ChatPoll;
   replyTo?: ChatReply;
   /**
    * Who the body names, as the server resolved them — see `mentions` in
@@ -111,6 +113,40 @@ export type ChatReaction = {
   count: number;
   mine: boolean;
 };
+
+/** Only aggregate counts and the reader's own choice leave the server. */
+export type ChatPoll = {
+  options: { text: string; votes: number }[];
+  myVote: number | null;
+  totalVotes: number;
+};
+
+export const EDIT_WINDOW_MS = 15 * 60_000;
+const MAX_POLL_VOTERS = 1000;
+const sendResultValidator = v.union(
+  v.object({ ok: v.literal(true) }),
+  v.object({ ok: v.literal(false), refusal: v.string() }),
+);
+const chatMessageValidator = v.object({
+  _id: v.id("messages"), _creationTime: v.number(), authorClerkId: v.string(),
+  authorHandle: v.string(), authorName: v.optional(v.string()),
+  authorAvatarUrl: v.optional(v.string()), authorAvatarHue: v.optional(v.number()),
+  authorAvatarEmoji: v.optional(v.string()), authorAvatarInitials: v.optional(v.string()),
+  body: v.string(), editedAt: v.optional(v.number()),
+  poll: v.optional(v.object({
+    options: v.array(v.object({ text: v.string(), votes: v.number() })),
+    myVote: v.union(v.number(), v.null()), totalVotes: v.number(),
+  })),
+  replyTo: v.optional(v.object({
+    messageId: v.id("messages"), unavailable: v.boolean(),
+    authorClerkId: v.optional(v.string()), authorHandle: v.optional(v.string()),
+    authorName: v.optional(v.string()), preview: v.optional(v.string()),
+  })),
+  mentions: v.array(v.object({ clerkId: v.string(), handle: v.string() })),
+  mentionsEveryone: v.boolean(), status: v.union(v.literal("visible"), v.literal("hidden")),
+  reactions: v.array(v.object({ emoji: v.string(), count: v.number(), mine: v.boolean() })),
+  images: v.array(v.object({ attachmentId: v.id("attachments"), url: v.string(), width: v.number(), height: v.number() })),
+});
 
 /** A person named inside a reaction tooltip. */
 export type ReactionPerson = {
@@ -157,13 +193,18 @@ export const send = mutation({
     body: v.string(),
     attachmentIds: v.optional(v.array(v.id("attachments"))),
     replyToId: v.optional(v.id("messages")),
+    poll: v.optional(v.object({ options: v.array(v.string()) })),
+    clientNonce: v.optional(v.string()),
+    expectedAuthorClerkId: v.optional(v.string()),
   },
+  returns: sendResultValidator,
   handler: async (
     ctx,
-    { conversationId, body, attachmentIds, replyToId },
+    { conversationId, body, attachmentIds, replyToId, poll, clientNonce, expectedAuthorClerkId },
   ): Promise<SendResult> => {
     const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, refusal: "not-a-member" };
+    if (expectedAuthorClerkId !== undefined && expectedAuthorClerkId !== profile.clerkId) return { ok: false, refusal: "not-a-member" };
 
 
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -173,6 +214,37 @@ export const send = mutation({
 
     if (member.kind === "announcements" && (await adminId(ctx)) === null) {
       return { ok: false, refusal: "read-only" };
+    }
+
+    // A retry may arrive after the original transaction committed. Check before
+    // attachment ownership and rate limits, since the first send consumed both.
+    let clientRequestHash: string | undefined;
+    if (clientNonce !== undefined) {
+      if (clientNonce.length < 1 || clientNonce.length > 128) return { ok: false, refusal: "too-long" };
+      const payload = JSON.stringify([conversationId, body, attachmentIds ?? [], replyToId ?? null, poll?.options ?? null]);
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload));
+      clientRequestHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+      const existing = await ctx.db.query("messages")
+        .withIndex("byAuthorNonce", q => q.eq("authorClerkId", profile.clerkId).eq("clientNonce", clientNonce))
+        .unique();
+      if (existing !== null) return existing.conversationId === conversationId && existing.clientRequestHash === clientRequestHash
+        ? { ok: true } : { ok: false, refusal: "duplicate" };
+    }
+
+    let pollOptions: string[] | undefined;
+    if (poll !== undefined) {
+      if (poll.options.length < 2) return { ok: false, refusal: "empty" };
+      if (poll.options.length > 6) return { ok: false, refusal: "too-long" };
+      // The question is screened by the normal send pipeline below. Every
+      // choice receives the same static moderation as a public group title.
+      pollOptions = [];
+      for (const option of poll.options) {
+        const screened = screenStatic(option, 80);
+        if (!screened.ok) return { ok: false, refusal: screened.refusal };
+        if (pollOptions.some(text => text.toLowerCase() === screened.text.toLowerCase())) return { ok: false, refusal: "duplicate" };
+        pollOptions.push(screened.text);
+      }
+      if (body.trim() === "") return { ok: false, refusal: "empty" };
     }
 
     // A reply is a relationship the server proves, not a client-authored
@@ -263,6 +335,9 @@ export const send = mutation({
       authorHandle: profile.handle,
       authorName: profile.displayName,
       body: verdict.body,
+      clientNonce,
+      clientRequestHash,
+      poll: pollOptions === undefined ? undefined : { options: pollOptions, votes: [] },
       replyToId,
       mentions: named.people.length === 0 ? undefined : named.people,
       mentionsEveryone: named.everyone ? true : undefined,
@@ -544,6 +619,7 @@ async function replyOf(
   ctx: QueryCtx,
   message: Doc<"messages">,
   originals: Map<Id<"messages">, Doc<"messages"> | null>,
+  accounts: Map<string, ChatAccount | null>,
 ): Promise<ChatReply | undefined> {
   if (message.replyToId === undefined) return undefined;
 
@@ -570,12 +646,12 @@ async function replyOf(
           ? `${pictures} photos`
           : "Message";
 
-  const author = await accountFor(ctx, target.authorClerkId);
+  const author = await accountForMessage(ctx, target.authorClerkId, accounts);
   return {
     messageId: target._id,
     unavailable: false,
     authorClerkId: target.authorClerkId,
-    authorHandle: author?.handle ?? target.authorHandle,
+    authorHandle: target.authorClerkId === BOT_ID ? BOT_HANDLE : author?.handle ?? target.authorHandle,
     authorName: target.authorClerkId === BOT_ID ? BOT_NAME : author ? author.displayName : target.authorName,
     preview,
   };
@@ -627,20 +703,34 @@ export const list = query({
       .order("desc")
       .paginate(paginationOpts);
 
+    const page = await presentMessages(ctx, result.page, profile);
+    return { ...result, page };
+  },
+});
+
+async function accountForMessage(ctx: QueryCtx, clerkId: string, accounts: Map<string, ChatAccount | null>): Promise<ChatAccount | null> {
+  if (!accounts.has(clerkId)) accounts.set(clerkId, await accountFor(ctx, clerkId));
+  return accounts.get(clerkId) ?? null;
+}
+
+async function presentMessages(ctx: QueryCtx, rows: Doc<"messages">[], profile: ChatAccount): Promise<ChatMessage[]> {
+    const clerkId = profile.clerkId;
+    // A repeated quoted author and a row author share the same profile read.
+    const accounts = new Map<string, ChatAccount | null>([[clerkId, profile]]);
     const page: ChatMessage[] = [];
     // replyOf still applies every visibility check before exposing a preview.
     const originals = new Map<Id<"messages">, Doc<"messages"> | null>(
-      result.page.map((message) => [message._id, message]),
+      rows.map((message) => [message._id, message]),
     );
     const appearances = new Map<
       string,
       Awaited<ReturnType<typeof avatarAppearance>> & { handle?: string; displayName?: string }
     >();
-    for (const message of result.page) {
+    for (const message of rows) {
       const gone = message.status !== "visible";
       let avatar = appearances.get(message.authorClerkId);
       if (avatar === undefined) {
-        const author = await accountFor(ctx, message.authorClerkId);
+        const author = await accountForMessage(ctx, message.authorClerkId, accounts);
         avatar = author === null ? {} : { ...(await avatarAppearance(ctx, author)), handle: author.handle, displayName: author.displayName };
         appearances.set(message.authorClerkId, avatar);
       }
@@ -648,25 +738,35 @@ export const list = query({
         _id: message._id,
         _creationTime: message._creationTime,
         authorClerkId: message.authorClerkId,
-        authorHandle: avatar.handle ?? message.authorHandle,
+        authorHandle: message.authorClerkId === BOT_ID ? BOT_HANDLE : avatar.handle ?? message.authorHandle,
         authorName: message.authorClerkId === BOT_ID ? BOT_NAME : avatar.handle === undefined ? message.authorName : avatar.displayName,
         authorAvatarUrl: avatar.avatarUrl,
         authorAvatarHue: avatar.avatarHue,
         authorAvatarEmoji: avatar.avatarEmoji,
         authorAvatarInitials: avatar.avatarInitials,
         body: gone ? "" : message.body,
-        replyTo: gone ? undefined : await replyOf(ctx, message, originals),
+        editedAt: gone ? undefined : message.editedAt,
+        poll: gone ? undefined : pollOf(message, clerkId),
+        replyTo: gone ? undefined : await replyOf(ctx, message, originals, accounts),
         mentions: gone ? [] : (message.mentions ?? []),
         mentionsEveryone: gone ? false : (message.mentionsEveryone ?? false),
         status: message.status,
-        reactions: gone ? [] : readReactions(message, profile.clerkId),
+        reactions: gone ? [] : readReactions(message, clerkId),
         images: gone ? [] : await imagesOf(ctx, message),
       });
     }
 
-    return { ...result, page };
-  },
-});
+    return page;
+}
+
+function pollOf(message: Doc<"messages">, clerkId: string): ChatPoll | undefined {
+  if (message.poll === undefined) return undefined;
+  return {
+    options: message.poll.options.map((text, option) => ({ text, votes: message.poll!.votes.filter(vote => vote.option === option).length })),
+    myVote: message.poll.votes.find(vote => vote.clerkId === clerkId)?.option ?? null,
+    totalVotes: message.poll.votes.length,
+  };
+}
 
 /**
  * A message's pictures as something a browser can draw.
@@ -749,6 +849,94 @@ export const react = mutation({
         entry.emoji === emoji ? { emoji, by } : entry,
       ),
     });
+  },
+});
+
+/** A vote is a single choice; selecting the current choice removes it. */
+export const vote = mutation({
+  args: { messageId: v.id("messages"), option: v.number() },
+  returns: v.object({ ok: v.boolean() }),
+  handler: async (ctx, { messageId, option }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return { ok: false };
+    const message = await ctx.db.get(messageId);
+    if (message === null || message.status !== "visible" || message.poll === undefined) return { ok: false };
+    const member = await membership(ctx, message.conversationId, profile.clerkId);
+    if (member?.status !== "active") return { ok: false };
+    if (member.kind === "announcements" && (await adminId(ctx)) === null) return { ok: false };
+    if (!Number.isInteger(option) || option < 0 || option >= message.poll.options.length) return { ok: false };
+    const previous = message.poll.votes.find(vote => vote.clerkId === profile.clerkId);
+    if (previous === undefined && message.poll.votes.length >= MAX_POLL_VOTERS) return { ok: false };
+    const votes = message.poll.votes.filter(vote => vote.clerkId !== profile.clerkId);
+    if (previous?.option !== option) votes.push({ clerkId: profile.clerkId, option });
+    await ctx.db.patch(messageId, { poll: { ...message.poll, votes } });
+    return { ok: true };
+  },
+});
+
+/** Edits preserve identity, attachments and replies, and rerun moderation. */
+export const edit = mutation({
+  args: { messageId: v.id("messages"), body: v.string() },
+  returns: sendResultValidator,
+  handler: async (ctx, { messageId, body }): Promise<SendResult> => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return { ok: false, refusal: "not-a-member" };
+    const message = await ctx.db.get(messageId);
+    if (message === null || message.authorClerkId !== profile.clerkId || message.status !== "visible") return { ok: false, refusal: "read-only" };
+    const member = await membership(ctx, message.conversationId, profile.clerkId);
+    if (member?.status !== "active") return { ok: false, refusal: "not-a-member" };
+    const now = Date.now();
+    // Poll wording stays fixed so earlier votes cannot acquire a new meaning.
+    if (message.poll !== undefined || now - message._creationTime > EDIT_WINDOW_MS || (member.kind === "announcements" && await adminId(ctx) === null)) return { ok: false, refusal: "read-only" };
+    if (body === message.body) return { ok: true };
+    const named = await resolveMentions(ctx, profile, member, body);
+    if (!named.ok) return { ok: false, refusal: named.refusal };
+    const sender = await senderRow(ctx, profile.clerkId);
+    const state = senderState(sender);
+    const verdict = screen(body, {
+      surface: member.kind === "announcements" ? "global" : member.kind,
+      conversationId: message.conversationId, now, createdAt: profile.createdAt,
+      messagesSent: state.messagesSent, recent: state.recent,
+      attachmentKey: message.images?.length ? message.images.map(image => image.attachmentId).join(",") : undefined,
+      mentions: named.tokens, lexiconExemptMentions: named.bot ? BOT_MENTION_HANDLES : undefined,
+    });
+    if (!verdict.allow) return { ok: false, refusal: verdict.refusal };
+    await ctx.db.patch(messageId, {
+      body: verdict.body, editedAt: now,
+      mentions: named.people.length === 0 ? undefined : named.people,
+      mentionsEveryone: named.everyone ? true : undefined,
+    });
+    const oldMentions = await ctx.db.query("mentions").withIndex("byMessage", q => q.eq("messageId", messageId)).take(MAX_MENTIONS + 1);
+    for (const mention of oldMentions) await ctx.db.delete(mention._id);
+    for (const person of named.people) {
+      if (person.clerkId === profile.clerkId || person.clerkId === BOT_ID) continue;
+      await ctx.db.insert("mentions", { conversationId: message.conversationId, messageId, target: person.clerkId, authorClerkId: profile.clerkId });
+    }
+    if (named.everyone) await ctx.db.insert("mentions", { conversationId: message.conversationId, messageId, target: EVERYONE, authorClerkId: profile.clerkId });
+    const recent = pushRecent(state.recent, { at: now, conversationId: message.conversationId, hash: verdict.hash, flagged: false });
+    // Edits count against rate limits without increasing the account's trust tier.
+    if (sender === null) await ctx.db.insert("chatSenders", { clerkId: profile.clerkId, messagesSent: state.messagesSent, recent });
+    else await ctx.db.patch(sender._id, { recent });
+    return { ok: true };
+  },
+});
+
+/** A bounded historical window makes deep links work beyond loaded pages. */
+export const context = query({
+  args: { messageId: v.string() },
+  returns: v.union(v.null(), v.object({ conversationId: v.id("conversations"), messages: v.array(chatMessageValidator) })),
+  handler: async (ctx, { messageId }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return null;
+    const id = ctx.db.normalizeId("messages", messageId);
+    if (id === null) return null;
+    const target = await ctx.db.get(id);
+    if (target === null || target.status !== "visible") return null;
+    const member = await membership(ctx, target.conversationId, profile.clerkId);
+    if (member?.status !== "active") return null;
+    const before = await ctx.db.query("messages").withIndex("byConversation", q => q.eq("conversationId", target.conversationId).lt("_creationTime", target._creationTime)).order("desc").take(20);
+    const after = await ctx.db.query("messages").withIndex("byConversation", q => q.eq("conversationId", target.conversationId).gt("_creationTime", target._creationTime)).take(20);
+    return { conversationId: target.conversationId, messages: await presentMessages(ctx, [...before.reverse(), target, ...after], profile) };
   },
 });
 
@@ -869,57 +1057,90 @@ export type MessageHit = {
   title?: string;
   peerHandle?: string;
   authorHandle: string;
+  authorClerkId: string;
+  hasImages: boolean;
   body: string;
 };
 
 
 export const search = query({
-  args: { text: v.string() },
-  handler: async (ctx, { text }): Promise<MessageHit[]> => {
-    const needle = text.trim();
-    // A search index refuses an empty term, and there is nothing to look for
-    // anyway — this is the state the palette is in before the first keystroke.
-    if (needle === "") return [];
-
+  args: {
+    text: v.string(), conversationId: v.optional(v.id("conversations")),
+    authorClerkId: v.optional(v.string()), sender: v.optional(v.string()),
+    after: v.optional(v.number()), before: v.optional(v.number()), hasImages: v.optional(v.boolean()),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(v.object({
+    _id: v.id("messages"), _creationTime: v.number(), conversationId: v.id("conversations"),
+    kind: v.union(v.literal("global"), v.literal("announcements"), v.literal("dm"), v.literal("group")),
+    title: v.optional(v.string()), peerHandle: v.optional(v.string()),
+    authorHandle: v.string(), authorClerkId: v.string(), hasImages: v.boolean(), body: v.string(),
+  })),
+  handler: async (ctx, { text, conversationId, authorClerkId, sender, after, before, hasImages, limit }): Promise<MessageHit[]> => {
+    const needle = text.trim().slice(0, 500);
+    const filtered = conversationId !== undefined || authorClerkId !== undefined || Boolean(sender?.trim()) || after !== undefined || before !== undefined || hasImages !== undefined;
+    const resultLimit = limit === undefined || !Number.isFinite(limit)
+      ? (filtered ? 30 : SEARCH_RESULTS)
+      : Math.max(1, Math.min(30, Math.floor(limit)));
+    if (needle === "" && !filtered) return [];
+    if ((after !== undefined && !Number.isFinite(after)) || (before !== undefined && !Number.isFinite(before)) || (after !== undefined && before !== undefined && after >= before)) return [];
     const profile = await callerAccount(ctx);
     if (profile === null) return [];
+    if (conversationId !== undefined && (await membership(ctx, conversationId, profile.clerkId))?.status !== "active") return [];
+    let author = authorClerkId;
+    if (sender?.trim()) {
+      const handle = sender.trim().replace(/^@/, "").toLowerCase();
+      const person = handle === BOT_HANDLE.toLowerCase() ? { clerkId: BOT_ID } : await accountByHandle(ctx, handle);
+      if (person === null || (author !== undefined && author !== person.clerkId)) return [];
+      author = person.clerkId;
+    }
 
+    let rows: Doc<"messages">[];
+    if (needle !== "") {
+      rows = await ctx.db.query("messages").withSearchIndex("searchBody", q => {
+        let search = q.search("body", needle).eq("status", "visible");
+        if (conversationId !== undefined) search = search.eq("conversationId", conversationId);
+        if (author !== undefined) search = search.eq("authorClerkId", author);
+        return search;
+      }).take(filtered || resultLimit > SEARCH_RESULTS ? 500 : SEARCH_SCAN);
+    } else {
+      // A filter-only search reads bounded ranges of the caller's own rooms.
+      // Dates belong in the index bounds, before the scan cap is applied.
+      const rooms = conversationId === undefined
+        ? (await ctx.db.query("conversationMembers").withIndex("byUser", q => q.eq("clerkId", profile.clerkId).eq("status", "active")).take(50)).map(member => member.conversationId)
+        : [conversationId];
+      const pages = await Promise.all(rooms.map(room => ctx.db.query("messages").withIndex("byConversationStatus", q => {
+        const range = q.eq("conversationId", room).eq("status", "visible");
+        if (after !== undefined && before !== undefined) return range.gte("_creationTime", after).lt("_creationTime", before);
+        if (after !== undefined) return range.gte("_creationTime", after);
+        if (before !== undefined) return range.lt("_creationTime", before);
+        return range;
+      }).order("desc").take(SEARCH_SCAN)));
+      rows = pages.flat().sort((a, b) => b._creationTime - a._creationTime);
+    }
 
-    const rows = await ctx.db
-      .query("messages")
-      .withSearchIndex("searchBody", (q) =>
-        q.search("body", needle).eq("status", "visible"),
-      )
-      .take(SEARCH_SCAN);
-
-    // Conversation id to how it should be named, or `null` for "not the
-    // caller's". Both answers are worth caching: the misses are what a search
-    // matching a busy room the caller is not in costs.
     type Named = Pick<MessageHit, "kind" | "title" | "peerHandle">;
     const known = new Map<string, Named | null>();
-
     const hits: MessageHit[] = [];
-
     for (const message of rows) {
-      if (hits.length >= SEARCH_RESULTS) break;
-
+      if (hits.length >= resultLimit) break;
+      if (author !== undefined && message.authorClerkId !== author) continue;
+      if (after !== undefined && message._creationTime < after) continue;
+      if (before !== undefined && message._creationTime >= before) continue;
+      const pictures = (message.images?.length ?? 0) > 0;
+      if (hasImages !== undefined && pictures !== hasImages) continue;
       let named = known.get(message.conversationId);
       if (named === undefined) {
         named = await nameFor(ctx, message.conversationId, profile.clerkId);
         known.set(message.conversationId, named);
       }
       if (named === null) continue;
-
       hits.push({
-        _id: message._id,
-        _creationTime: message._creationTime,
-        conversationId: message.conversationId,
+        _id: message._id, _creationTime: message._creationTime, conversationId: message.conversationId,
         authorHandle: (await accountFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
-        body: message.body,
-        ...named,
+        authorClerkId: message.authorClerkId, hasImages: pictures, body: message.body, ...named,
       });
     }
-
     return hits;
   },
 });

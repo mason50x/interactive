@@ -1,15 +1,16 @@
 "use client";
 
-import { AtSymbolIcon } from "@heroicons/react/24/outline";
+import { AtSymbolIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { StarIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SearchField } from "@/components/app/chat/chat-search";
 import { ChatTools, type Panel } from "@/components/app/chat/chat-tools";
-import {
-  GroupColumn,
-  GroupRowActions,
-} from "@/components/app/chat/group-panel";
+import { GroupColumn } from "@/components/app/chat/group-panel";
+import { ConversationActions } from "@/components/app/chat/conversation-actions";
+import { MessageSearchPanel } from "@/components/app/chat/message-search-panel";
+import { NotificationControl } from "@/components/app/chat/notification-control";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { GlideList } from "@/components/app/chat/glide-list";
 import { Monogram } from "@/components/app/chat/monogram";
@@ -22,8 +23,10 @@ import {
 } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { useWarmRoutes } from "@/lib/warm";
 import type { Id } from "@convex/_generated/dataModel";
 import { CountBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 /**
  * Everywhere you can talk, with the room at the top.
@@ -63,6 +66,7 @@ import { CountBadge } from "@/components/ui/badge";
 export function ConversationList() {
   const { conversations } = useChat();
   const pathname = usePathname();
+  const warm = useWarmRoutes(pathname);
   const params = useSearchParams();
   const requestedPanel = params.get("panel");
   const [panel, setPanel] = useState<Panel | null>(
@@ -74,6 +78,9 @@ export function ConversationList() {
     if (requestedPanel === "group") setPanel("group");
   }
   const [groupPanel, setGroupPanel] = useState<GroupPanelRequest | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filter, setFilter] = useState<"all" | "unread" | "favorites">("all");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [term, setTerm] = useState("");
   const field = useRef<HTMLInputElement>(null);
@@ -86,6 +93,7 @@ export function ConversationList() {
       onGroupPanelRequest((request) => {
         setGroupPanel(request);
         setPanel(null);
+        setSearchOpen(false);
       }),
     [],
   );
@@ -93,15 +101,17 @@ export function ConversationList() {
   const needle = term.trim().toLowerCase();
 
   const shown = useMemo(() => {
-    if (needle === "") return conversations;
     return conversations.filter((conversation) => {
+      if (filter === "unread" && conversation.unread === 0) return false;
+      if (filter === "favorites" && !conversation.favorite) return false;
+      if (needle === "") return true;
       const name = conversationName(conversation).toLowerCase();
       return (
         name.includes(needle) ||
         (conversation.peerHandle?.includes(needle) ?? false)
       );
     });
-  }, [conversations, needle]);
+  }, [conversations, needle, filter]);
 
   // Whoever already has a thread here, so the People section under the list
   // does not offer to start a conversation that is two rows up.
@@ -119,6 +129,9 @@ export function ConversationList() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
+      {searchOpen ? (
+        <MessageSearchPanel onBack={() => setSearchOpen(false)} />
+      ) : null}
       {/* Mounted only while it is being looked at — it subscribes to the group
           it is about — and it is the whole column while it is. What it replaces
           is hidden rather than unmounted for the reason the list is hidden
@@ -135,7 +148,7 @@ export function ConversationList() {
       <div
         className={cn(
           "flex min-h-0 flex-1 flex-col",
-          groupPanel !== null && "hidden",
+          (groupPanel !== null || searchOpen) && "hidden",
         )}
       >
         <ChatTools open={panel} onOpenChange={setPanel} />
@@ -151,10 +164,50 @@ export function ConversationList() {
         >
           <div className="shrink-0 px-3 pb-2">
             <SearchField term={term} onTermChange={setTerm} fieldRef={field} />
+            <div className="mt-2 flex items-center justify-between gap-1">
+              <div
+                className="flex items-center gap-0.5"
+                role="group"
+                aria-label="Filter conversations"
+              >
+                {(["all", "unread", "favorites"] as const).map((value) => (
+                  <Button
+                    key={value}
+                    size="xs"
+                    variant={filter === value ? "secondary" : "ghost"}
+                    aria-pressed={filter === value}
+                    onClick={() => setFilter(value)}
+                  >
+                    {value === "all"
+                      ? "All"
+                      : value === "unread"
+                        ? "Unread"
+                        : "Favorites"}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Search messages"
+                title="Search messages"
+                onClick={() => setSearchOpen(true)}
+              >
+                <MagnifyingGlassIcon />
+              </Button>
+            </div>
+            {actionError ? (
+              <p
+                role="alert"
+                className="mt-2 text-xs leading-relaxed text-destructive"
+              >
+                {actionError}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-3">
-            {needle === "" ? <Waiting /> : null}
+            {needle === "" && filter === "all" ? <Waiting /> : null}
 
             {/* One highlight glides between the rows rather than each row
                 lighting up on its own — see `GlideList`. */}
@@ -164,8 +217,6 @@ export function ConversationList() {
                 const active = pathname === href;
                 const name = conversationName(conversation);
                 const unread = conversation.unread > 0;
-                const group = conversation.kind === "group";
-                const canInvite = group && conversation.role !== "member";
 
                 return (
                   // The row is a link with buttons *beside* it rather than
@@ -180,16 +231,16 @@ export function ConversationList() {
                   >
                     <Link
                       href={href}
+                      {...warm(href)}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-2 py-2 transition-colors",
+                        "flex items-center gap-3 rounded-lg px-2 py-2 pr-11 transition-colors",
                         active && "bg-foreground/[0.06]",
                         // Room kept for the controls beside it, so the unread
                         // count has somewhere to sit that is not underneath
                         // them. Held rather than revealed on hover: this
                         // column is a page of its own on a phone, where there
                         // is no hover to reveal with.
-                        group && (canInvite ? "pr-[4.5rem]" : "pr-11"),
                       )}
                     >
                       <Monogram
@@ -225,6 +276,12 @@ export function ConversationList() {
                             unread ? "font-semibold" : "font-medium",
                           )}
                         >
+                          {conversation.favorite ? (
+                            <StarIcon
+                              className="mr-1 inline size-3 text-amber-500"
+                              aria-label="Favorite"
+                            />
+                          ) : null}
                           {name}
                         </span>
                         {/* Somebody in here said your name and you have not
@@ -281,14 +338,11 @@ export function ConversationList() {
                       ) : null}
                     </Link>
 
-                    {group ? (
-                      <div className="absolute inset-y-0 right-2 flex items-center gap-0.5">
-                        <GroupRowActions
-                          conversationId={conversation._id}
-                          canInvite={canInvite}
-                        />
-                      </div>
-                    ) : null}
+                    <ConversationActions
+                      conversation={conversation}
+                      active={active}
+                      onError={setActionError}
+                    />
                   </li>
                 );
               })}
@@ -298,10 +352,22 @@ export function ConversationList() {
                   Nothing yet. The room should be here in a moment.
                 </li>
               ) : null}
+              {conversations.length > 0 && shown.length === 0 ? (
+                <li className="px-2 py-6 text-sm leading-relaxed text-muted-foreground">
+                  {needle
+                    ? "No conversations match that search."
+                    : filter === "unread"
+                      ? "You’re all caught up."
+                      : "Add a favorite from a conversation’s options menu."}
+                </li>
+              ) : null}
             </GlideList>
 
-            <AccountDirectory term={term} exclude={known} />
+            {filter === "all" ? (
+              <AccountDirectory term={term} exclude={known} />
+            ) : null}
           </div>
+          <NotificationControl />
         </div>
       </div>
     </div>
