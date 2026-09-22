@@ -11,9 +11,9 @@ import {
 import { resolveRole } from "./roles";
 import {
   activeTimeout,
-  ceoClearedToday,
+  CEO_CLEAR_MS,
+  isCeoClearActive,
   requireNotTimedOut,
-  timeoutDayStart,
   timeoutRow,
 } from "./timeoutState";
 
@@ -94,7 +94,7 @@ export const users = query({
         const role = await resolveRole(ctx, user.clerkId);
         const row = await timeoutRow(ctx, user.clerkId);
         const active = row?.enabled && row.expiresAt > now;
-        const ceoCleared = ceoClearedToday(row, now);
+        const ceoCleared = isCeoClearActive(row, now);
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
@@ -148,7 +148,7 @@ export const set = mutation({
     const now = Date.now();
     if (
       caller.role !== "ceo" &&
-      (ceoClearedToday(existing, now) ||
+      (isCeoClearActive(existing, now) ||
         (existing?.enabled &&
           existing.expiresAt > now &&
           existing.issuedByRole === "ceo"))
@@ -162,6 +162,13 @@ export const set = mutation({
           ceoCleared: caller.role === "ceo",
           updatedAt: now,
         });
+        if (caller.role === "ceo") {
+          await ctx.scheduler.runAt(
+            now + CEO_CLEAR_MS,
+            internal.timeouts.expireCeoClear,
+            { id: existing._id, clearedAt: now },
+          );
+        }
         await ctx.db.insert("timeoutAudit", {
           clerkId: args.clerkId,
           actor: caller.clerkId,
@@ -230,7 +237,24 @@ export const expire = internalMutation({
   },
 });
 
-/** Wake directory subscriptions at midnight; authorization also checks server time. */
+/** Wake directory subscriptions at expiry without undoing a newer clear. */
+export const expireCeoClear = internalMutation({
+  args: { id: v.id("userTimeouts"), clearedAt: v.number() },
+  returns: v.null(),
+  handler: async (ctx, { id, clearedAt }) => {
+    const row = await ctx.db.get(id);
+    if (
+      row?.ceoCleared &&
+      row.updatedAt === clearedAt &&
+      clearedAt + CEO_CLEAR_MS <= Date.now()
+    ) {
+      await ctx.db.patch(id, { ceoCleared: false });
+    }
+    return null;
+  },
+});
+
+/** Catch up legacy or delayed clears; authorization also checks server time. */
 export const expireCeoClears = internalMutation({
   args: {},
   returns: v.null(),
@@ -238,7 +262,7 @@ export const expireCeoClears = internalMutation({
     const rows = await ctx.db
       .query("userTimeouts")
       .withIndex("byCeoClearedAndUpdatedAt", (q) =>
-        q.eq("ceoCleared", true).lt("updatedAt", timeoutDayStart(Date.now())),
+        q.eq("ceoCleared", true).lte("updatedAt", Date.now() - CEO_CLEAR_MS),
       )
       .take(100);
     for (const row of rows) {

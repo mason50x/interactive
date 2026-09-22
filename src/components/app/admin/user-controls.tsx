@@ -261,7 +261,7 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
           {user.timeout
             ? `Access paused until ${new Date(user.timeout.expiresAt).toLocaleString()}.`
             : user.ceoCleared
-              ? "Cleared by a CEO until midnight UTC."
+              ? "Cleared by a CEO. Protection lasts 2 hours from the clear."
               : "No active timeout."}
         </p>
         {user.timeout && (
@@ -317,7 +317,7 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
       ) : (
         <p className="text-xs leading-relaxed text-muted-foreground">
           {user.ceoCleared
-            ? "Only a CEO can start another timeout today."
+            ? "Only a CEO can start another timeout during the 2-hour protection period."
             : "You can only manage timeouts for users below your role. CEO-issued timeouts can only be changed by a CEO."}
         </p>
       )}

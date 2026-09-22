@@ -7,7 +7,7 @@
     "domains": "node scripts/domains.mjs",
     "dev:convex": "convex dev",
     "build": "vinext build",
-    "start": "wrangler dev --config dist/server/wrangler.json",
+    "start": "wrangler dev --config dist/server/wrangler.json --local-upstream localhost",
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
