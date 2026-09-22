@@ -1,9 +1,9 @@
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 
-import { timeoutRow } from "./timeoutState";
+import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
 import { roleFor } from "../config/roles";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
@@ -186,8 +186,25 @@ export const setRole = mutation({
     // A CEO role change also clears any old restriction on the account.
     const timeout = await timeoutRow(ctx, clerkId);
     if (timeout?.enabled) {
-      await ctx.db.patch(timeout._id, { enabled: false, ceoCleared: true, updatedAt: Date.now() });
-      await ctx.db.insert("timeoutAudit", { clerkId, actor: caller, action: "off", reason: timeout.reason, expiresAt: timeout.expiresAt, at: Date.now() });
+      const now = Date.now();
+      await ctx.db.patch(timeout._id, {
+        enabled: false,
+        ceoCleared: true,
+        updatedAt: now,
+      });
+      await ctx.scheduler.runAt(
+        now + CEO_CLEAR_MS,
+        internal.timeouts.expireCeoClear,
+        { id: timeout._id, clearedAt: now },
+      );
+      await ctx.db.insert("timeoutAudit", {
+        clerkId,
+        actor: caller,
+        action: "off",
+        reason: timeout.reason,
+        expiresAt: timeout.expiresAt,
+        at: now,
+      });
     }
     return { clerkId, role };
   },

@@ -8,6 +8,7 @@ import { resolvePrivileges } from "../../convex/roles";
 import { botQuotaName } from "../../convex/chat/botConfig";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
+const TWO_HOURS_MS = 7_200_000;
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(Date.UTC(2026, 8, 21, 12));
@@ -73,7 +74,10 @@ test("the paginated directory combines profiles, roles, and timeouts with CEO-on
     canChangeRole: true,
     canManage: true,
     ceoCleared: false,
-    timeout: { reason: "Repeated disruption", expiresAt: Date.now() + 3_600_000 },
+    timeout: {
+      reason: "Repeated disruption",
+      expiresAt: Date.now() + 3_600_000,
+    },
   });
   const ceoRow = await t.run((ctx) =>
     ctx.db
@@ -174,7 +178,9 @@ test("directory controls preserve CEO-issued restrictions and deny timed-out man
     ),
   ).toMatchObject({ canManage: true, canChangeRole: true });
   await ceo.mutation(api.timeouts.set, start("head"));
-  await expect(head.query(api.timeouts.users, args)).rejects.toThrow("timed out");
+  await expect(head.query(api.timeouts.users, args)).rejects.toThrow(
+    "timed out",
+  );
 });
 
 test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay restricted", async () => {
@@ -203,6 +209,35 @@ test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay 
   ).rejects.toThrow("CEO access required");
   await expect(head.query(api.adminQuotas.users, {})).rejects.toThrow(
     "CEO access required",
+  );
+});
+
+test("Head Moderators cannot promote or demote other users", async () => {
+  const t = await setup();
+  const head = t.withIdentity({ subject: "head" });
+  for (const args of [
+    { clerkId: "member", role: "moderator" },
+    { clerkId: "mod", role: "member" },
+  ] as const) {
+    await expect(head.mutation(api.adminQuotas.setRole, args)).rejects.toThrow(
+      "CEO access required",
+    );
+  }
+  const users = (
+    await head.query(api.timeouts.users, {
+      paginationOpts: { cursor: null, numItems: 50 },
+    })
+  ).page;
+  expect(users.find((user) => user.clerkId === "member")).toMatchObject({
+    role: "member",
+    canChangeRole: false,
+  });
+  expect(users.find((user) => user.clerkId === "mod")).toMatchObject({
+    role: "moderator",
+    canChangeRole: false,
+  });
+  expect(await t.run((ctx) => ctx.db.query("staffRoles").collect())).toEqual(
+    [],
   );
 });
 
@@ -376,8 +411,9 @@ test("the shared list preserves CEO clears against Head Moderator reactivation",
   await expect(
     head.mutation(api.timeouts.set, start("member")),
   ).rejects.toThrow("Only a CEO");
-  // Expiry jobs and an early removal retry cannot undo a CEO's clear.
-  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  // The original timeout's expiry and an early removal retry cannot undo a clear.
+  await vi.advanceTimersByTimeAsync(3_600_000);
+  await t.finishInProgressScheduledFunctions();
   await expect(
     head.mutation(api.timeouts.set, start("member")),
   ).rejects.toThrow("Only a CEO");
@@ -396,12 +432,13 @@ test("the shared list preserves CEO clears against Head Moderator reactivation",
 });
 
 test.each(["timeout removal", "role change"])(
-  "CEO clearance from %s ends at midnight UTC, even before cleanup runs",
+  "CEO clearance from %s lasts two hours across midnight, even before cleanup runs",
   async (source) => {
     const t = await setup();
     const ceo = t.withIdentity({ subject: "ceo" });
     const head = t.withIdentity({ subject: "head" });
-    vi.setSystemTime(Date.UTC(2026, 8, 21, 23, 59));
+    const clearedAt = Date.UTC(2026, 8, 21, 23, 59);
+    vi.setSystemTime(clearedAt);
     await head.mutation(api.timeouts.set, start("member"));
     if (source === "role change") {
       await ceo.mutation(api.adminQuotas.setRole, {
@@ -421,20 +458,23 @@ test.each(["timeout removal", "role change"])(
         })
       ).page.find((entry) => entry.clerkId === "member");
 
-    vi.setSystemTime(Date.UTC(2026, 8, 21, 23, 59, 59, 999));
+    vi.setSystemTime(Date.UTC(2026, 8, 22));
+    expect(await user()).toMatchObject({ ceoCleared: true, canManage: false });
+
+    vi.setSystemTime(clearedAt + TWO_HOURS_MS - 1);
     expect(await user()).toMatchObject({ ceoCleared: true, canManage: false });
     await expect(
       head.mutation(api.timeouts.set, start("member")),
     ).rejects.toThrow("Only a CEO");
 
-    vi.setSystemTime(Date.UTC(2026, 8, 22));
+    vi.setSystemTime(clearedAt + TWO_HOURS_MS);
     expect(await user()).toMatchObject({
       timeout: null,
       ceoCleared: false,
       canManage: true,
     });
     await head.mutation(api.timeouts.set, start("member"));
-    // A delayed cleanup must preserve the new day's timeout.
+    // A delayed cleanup must preserve a timeout started after protection ends.
     await t.mutation(internal.timeouts.expireCeoClears, {});
     expect(await user()).toMatchObject({
       ceoCleared: false,
@@ -443,10 +483,101 @@ test.each(["timeout removal", "role change"])(
   },
 );
 
-test("daily cleanup expires legacy clears in batches and preserves today's clearance and audit", async () => {
+test.each(["timeout removal", "role change"])(
+  "CEO clearance from %s schedules a directory refresh at the two-hour boundary",
+  async (source) => {
+    const t = await setup();
+    const ceo = t.withIdentity({ subject: "ceo" });
+    const head = t.withIdentity({ subject: "head" });
+    const clearedAt = Date.now();
+    await head.mutation(api.timeouts.set, start("member"));
+    if (source === "role change") {
+      await ceo.mutation(api.adminQuotas.setRole, {
+        clerkId: "member",
+        role: "moderator",
+      });
+    } else {
+      await ceo.mutation(api.timeouts.set, {
+        clerkId: "member",
+        enabled: false,
+      });
+    }
+    const row = () => t.run((ctx) => ctx.db.query("userTimeouts").first());
+    const audit = await t.run((ctx) => ctx.db.query("timeoutAudit").collect());
+
+    await vi.advanceTimersByTimeAsync(TWO_HOURS_MS - 1);
+    await t.finishInProgressScheduledFunctions();
+    expect(await row()).toMatchObject({
+      enabled: false,
+      ceoCleared: true,
+      updatedAt: clearedAt,
+    });
+
+    await vi.advanceTimersByTimeAsync(1);
+    await t.finishInProgressScheduledFunctions();
+    expect(await row()).toMatchObject({
+      enabled: false,
+      ceoCleared: false,
+      updatedAt: clearedAt,
+    });
+    expect(
+      await t.run((ctx) => ctx.db.query("timeoutAudit").collect()),
+    ).toEqual(audit);
+    await head.mutation(api.timeouts.set, start("member"));
+  },
+);
+
+test("stale clear-expiry jobs preserve refreshed clearances and new CEO timeouts", async () => {
+  const t = await setup();
+  const ceo = t.withIdentity({ subject: "ceo" });
+  const head = t.withIdentity({ subject: "head" });
+  const clearedAt = Date.now();
+  await head.mutation(api.timeouts.set, start("member"));
+  await ceo.mutation(api.timeouts.set, { clerkId: "member", enabled: false });
+  const row = await t.run((ctx) => ctx.db.query("userTimeouts").first());
+  const originalJob = { id: row!._id, clearedAt };
+  // An early invocation cannot shorten the protection window.
+  await t.mutation(internal.timeouts.expireCeoClear, originalJob);
+  expect(await t.run((ctx) => ctx.db.get(row!._id))).toMatchObject({
+    ceoCleared: true,
+  });
+
+  await vi.advanceTimersByTimeAsync(3_600_000);
+  await t.finishInProgressScheduledFunctions();
+  await ceo.mutation(api.timeouts.set, { clerkId: "member", enabled: false });
+  const refreshedAt = Date.now();
+  await vi.advanceTimersByTimeAsync(3_600_000);
+  await t.finishInProgressScheduledFunctions();
+  expect(await t.run((ctx) => ctx.db.get(row!._id))).toMatchObject({
+    enabled: false,
+    ceoCleared: true,
+    updatedAt: refreshedAt,
+  });
+  await expect(
+    head.mutation(api.timeouts.set, start("member")),
+  ).rejects.toThrow("Only a CEO");
+
+  // A CEO can replace the clear with a new timeout before its scheduled expiry.
+  await ceo.mutation(api.timeouts.set, {
+    ...start("member"),
+    durationMinutes: 180,
+  });
+  await vi.advanceTimersByTimeAsync(3_600_000);
+  await t.finishInProgressScheduledFunctions();
+  expect(await t.run((ctx) => ctx.db.get(row!._id))).toMatchObject({
+    enabled: true,
+    ceoCleared: false,
+    issuedByRole: "ceo",
+  });
+  await expect(
+    head.mutation(api.timeouts.set, { clerkId: "member", enabled: false }),
+  ).rejects.toThrow("Only a CEO");
+});
+
+test("cleanup expires legacy clears in batches at exactly two hours and preserves newer clears and audit", async () => {
   const t = await setup();
   const now = Date.now();
-  const todayId = await t.run(async (ctx) => {
+  const recentId = await t.run(async (ctx) => {
     const data = {
       reason: "Already resolved",
       expiresAt: now + 60_000,
@@ -459,13 +590,13 @@ test("daily cleanup expires legacy clears in batches and preserves today's clear
       await ctx.db.insert("userTimeouts", {
         ...data,
         clerkId: `old-${i}`,
-        updatedAt: Date.UTC(2026, 8, 20, 23, 59),
+        updatedAt: now - TWO_HOURS_MS,
       });
     }
     return ctx.db.insert("userTimeouts", {
       ...data,
       clerkId: "member",
-      updatedAt: now,
+      updatedAt: now - TWO_HOURS_MS + 1,
     });
   });
   await t.mutation(internal.timeouts.expireCeoClears, {});
@@ -474,10 +605,12 @@ test("daily cleanup expires legacy clears in batches and preserves today's clear
     const rows = await ctx.db.query("userTimeouts").collect();
     expect(rows).toHaveLength(102);
     expect(rows.filter((row) => row.ceoCleared).map((row) => row._id)).toEqual([
-      todayId,
+      recentId,
     ]);
     expect(rows.every((row) => !row.enabled)).toBe(true);
-    expect((await ctx.db.get(todayId))?.updatedAt).toBe(now);
+    expect((await ctx.db.get(recentId))?.updatedAt).toBe(
+      now - TWO_HOURS_MS + 1,
+    );
     expect(await ctx.db.query("timeoutAudit").collect()).toEqual([]);
   });
 });

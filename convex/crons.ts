@@ -15,9 +15,10 @@ import { internal } from "./_generated/api";
  */
 const crons = cronJobs();
 
-crons.daily(
-  "expire daily CEO timeout clears",
-  { hourUTC: 0, minuteUTC: 0 },
+// New clears schedule their own expiry; sweep legacy records as a fallback.
+crons.interval(
+  "expire stale CEO timeout clears",
+  { hours: 1 },
   internal.timeouts.expireCeoClears,
   {},
 );
