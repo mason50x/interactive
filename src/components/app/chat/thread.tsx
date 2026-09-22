@@ -61,7 +61,7 @@ const subscribeVisibility = (notify: () => void) => {
 const isVisible = () =>
   document.visibilityState === "visible" && document.hasFocus();
 
-/** The live timeline, exact message context, and this account's durable outbox. */
+/** One timeline per day, with message anchors and this account's durable outbox. */
 export function Thread({
   conversationId,
 }: {
@@ -105,24 +105,17 @@ function ConversationThread({
   );
   if (initialRead === undefined && readPosition !== undefined)
     setInitialRead(readPosition);
-  const target =
-    explicitTarget ??
-    (resumeUnread ? (initialRead?.firstUnreadId ?? null) : null);
-  const context = useQuery(
-    api.chat.messages.context,
-    target ? { messageId: target } : "skip",
-  );
-  const contextMatches = context?.conversationId === conversationId;
   const outbox = useOutbox(userId, conversationId);
   const {
     profile,
     isAdmin,
     behind,
     setReading,
-    isReadSuppressed,
+    clearReadSuppression,
     images: pictures,
   } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
+  const daily = detail?.kind === "global" || detail?.kind === "announcements";
 
   /**
    * Everyone is a sequence of local calendar days rather than one endless
@@ -130,25 +123,69 @@ function ConversationThread({
    * retained history. The day clock advances an open tab across midnight.
    */
   const now = useDayClock();
-  const [daysAgo, setDaysAgo] = useState(0);
-  const day = dayBounds(now, daysAgo);
+  const [selectedDaysAgo, setDaysAgo] = useState(0);
 
+  const requestedTarget =
+    explicitTarget ??
+    (resumeUnread &&
+    initialRead?.firstUnreadAt != null &&
+    (!daily || initialRead.firstUnreadAt >= dayBounds(now, 0).start)
+      ? initialRead.firstUnreadId
+      : null);
+  const location = useQuery(
+    api.chat.messages.location,
+    requestedTarget ? { messageId: requestedTarget, conversationId } : "skip",
+  );
+  const target = location === null ? null : requestedTarget;
+
+  const calendarDay = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  };
+  const daysAgo =
+    explicitTarget && location && daily
+      ? Math.max(
+          0,
+          Math.round(
+            (calendarDay(now) - calendarDay(location.createdAt)) / 86_400_000,
+          ),
+        )
+      : selectedDaysAgo;
+  const day = dayBounds(now, daysAgo);
   const { results, status, loadMore } = usePaginatedQuery(
     api.chat.messages.list,
     { conversationId, dayStart: day.start, dayEnd: day.end },
     { initialNumItems: 40 },
   );
 
+  useEffect(() => {
+    if (!target || results.some((message) => message._id === target)) return;
+    const at = location?.createdAt ?? initialRead?.firstUnreadAt;
+    if (at == null || (daily && (at < day.start || at >= day.end))) return;
+    if (status === "CanLoadMore") loadMore(40);
+  }, [
+    target,
+    results,
+    location,
+    initialRead,
+    daily,
+    day.start,
+    day.end,
+    status,
+    loadMore,
+  ]);
+
   const markRead = useMutation(
     api.chat.conversations.markRead,
-  ).withOptimisticUpdate((store, { conversationId: id }) => {
+  ).withOptimisticUpdate((store, { conversationId: id, throughMessageId }) => {
     const rows = store.getQuery(api.chat.conversations.list, {});
     if (!rows) return;
     store.setQuery(
       api.chat.conversations.list,
       {},
       rows.map((row) =>
-        row._id === id
+        row._id === id &&
+        (!throughMessageId || row.latestMessage?._id === throughMessageId)
           ? {
               ...row,
               unread: 0,
@@ -163,10 +200,10 @@ function ConversationThread({
       ),
     );
   });
-  const acknowledgedLatest = useRef<Id<"messages"> | null>(null);
+  const [readRetry, setReadRetry] = useState(0);
   const welcomeBot = useMutation(api.chat.bot.welcome);
   const edit = useMutation(api.chat.messages.edit);
-  const newest = results[0]?._id;
+  const newest = results.find((message) => message.status === "visible")?._id;
 
   /** Who else is writing in here. See `typing.tsx`. */
   const typists = useTypists(conversationId);
@@ -215,7 +252,6 @@ function ConversationThread({
    */
   const composer = useRef<ComposerHandle>(null);
 
-  const daily = detail?.kind === "global" || detail?.kind === "announcements";
   const readOnly = detail?.kind === "announcements" && !isAdmin;
   const archived = daily && daysAgo > 0;
   const { dragging, handlers: dropHandlers } = useDropFiles({
@@ -265,25 +301,14 @@ function ConversationThread({
     );
   }
 
-  /**
-   * This is the conversation being read, for as long as it is open at its
-   * live end — an archive day of the room is not reading the room. The
-   * provider stops counting it as unread from here on, so neither its row nor
-   * the rail's dot lights for the beat between a message arriving and
-   * `markRead` below catching up with it. See `reading` in `chat-provider.tsx`.
-   *
-   * The cleanup only lets go of its own claim: two threads are never mounted
-   * at once, but the next one's effect may run before this one's cleanup,
-   * and clearing unconditionally would wipe the claim it had just made.
-   */
+  /** Track focused reading for notifications; the server cursor drives badges. */
   useEffect(() => {
     if (
       daysAgo > 0 ||
-      target ||
       initialRead === undefined ||
+      (target !== null && focusedMessage.current !== target) ||
       !visible ||
-      !atLatest ||
-      isReadSuppressed(conversationId)
+      !atLatest
     )
       return;
     setReading(conversationId);
@@ -297,27 +322,10 @@ function ConversationThread({
     initialRead,
     visible,
     atLatest,
-    isReadSuppressed,
+    clearReadSuppression,
   ]);
 
-  /**
-   * Whether there is a reading position to move — `behind`, from the provider.
-   *
-   * The list already knows — it is the same subscription the unread badge is
-   * drawn from, and Convex hands both it and the page of messages below over at
-   * one consistent instant, so a message that has arrived here has arrived
-   * there. Without this the effect fired on every message including the ones
-   * this account sent, and `markRead` writes the membership row: a write that
-   * recomputes the conversation list of whoever made it, to set a number that
-   * was already zero.
-   *
-   * It is read off the provider rather than off `conversations` because the
-   * provider hands out this conversation as already read — see above — and
-   * the unmasked answer is the one that says whether the server agrees. A
-   * conversation the list has not answered about — the first paint of a
-   * thread opened by its URL, or one past the fifty the list draws — counts as
-   * behind, which is what this did unconditionally before.
-   */
+  /** Only write when the server still has unread messages. */
   const isBotDm = detail?.kind === "dm" && detail.peerClerkId === "bot";
   const emptyBotDm = isBotDm && status === "Exhausted" && results.length === 0;
 
@@ -328,35 +336,43 @@ function ConversationThread({
   useEffect(() => {
     if (
       daysAgo > 0 ||
-      target ||
       initialRead === undefined ||
+      (target !== null && focusedMessage.current !== target) ||
       !visible ||
       !atLatest
     ) {
-      acknowledgedLatest.current = null;
       return;
     }
-    if (!newest || isReadSuppressed(conversationId)) return;
-    // A manually moved cursor (including one from another tab) is not a new
-    // message. A focused reader acknowledges each visible latest message once,
-    // then waits for new content or the reader to return to the live end.
-    if (!behind) {
-      acknowledgedLatest.current = newest;
-      return;
-    }
-    if (acknowledgedLatest.current === newest) return;
-    acknowledgedLatest.current = newest;
-    void markRead({ conversationId }).catch(() => {
-      if (acknowledgedLatest.current === newest)
-        acknowledgedLatest.current = null;
-    });
+    if (!newest || !behind) return;
+    // Let layout and navigation settle, and acknowledge only the message
+    // actually displayed. A later arrival must remain unread on the server.
+    const timer = setTimeout(
+      () => {
+        const box = scroller.current;
+        if (
+          !isVisible() ||
+          !box ||
+          box.scrollHeight - box.scrollTop - box.clientHeight >= 64
+        )
+          return;
+        clearReadSuppression(conversationId);
+        void markRead({ conversationId, throughMessageId: newest }).catch(
+          () => {
+            setReadRetry((attempt) => attempt + 1);
+          },
+        );
+      },
+      readRetry ? 1500 : 300,
+    );
+    return () => clearTimeout(timer);
   }, [
     conversationId,
     daysAgo,
     newest,
+    readRetry,
     behind,
     markRead,
-    isReadSuppressed,
+    clearReadSuppression,
     target,
     initialRead,
     visible,
@@ -365,12 +381,17 @@ function ConversationThread({
 
   useLayoutEffect(() => {
     if (target) {
+      if (focusedMessage.current === target) return;
       pinned.current = false;
-      if (!contextMatches || focusedMessage.current === target) return;
       const message = document.getElementById(`message-${target}`);
       if (message) {
         message.scrollIntoView({ block: "center" });
         focusedMessage.current = target;
+        const box = scroller.current;
+        const atEnd =
+          !!box && box.scrollHeight - box.scrollTop - box.clientHeight < 64;
+        pinned.current = atEnd;
+        setAtLatest(atEnd);
       }
     } else {
       if (focusedMessage.current !== null) pinned.current = true;
@@ -379,11 +400,15 @@ function ConversationThread({
         scroller.current.scrollTop = scroller.current.scrollHeight;
       }
     }
-  }, [target, contextMatches, conversationId, daysAgo, context]);
+  }, [target, conversationId, daysAgo, results]);
 
   useLayoutEffect(() => {
     const element = scroller.current;
-    if (element && !target && pinned.current)
+    if (
+      element &&
+      pinned.current &&
+      (!target || focusedMessage.current === target)
+    )
       element.scrollTop = element.scrollHeight;
   }, [conversationId, daysAgo, newest, outbox.entries, results.length, target]);
 
@@ -431,15 +456,14 @@ function ConversationThread({
    * Oldest first, for reading. A copy, because `results` is Convex's own array
    * and reversing it in place would reorder the store the query reads from.
    */
-  const ordered = target
-    ? contextMatches
-      ? (context?.messages ?? [])
-      : []
-    : [...results].reverse();
-  const firstVisible = ordered.find((message) => message.status === "visible");
-  const lastVisible = ordered.findLast(
-    (message) => message.status === "visible",
-  );
+  const ordered = [...results].reverse();
+  const firstUnreadId = initialRead
+    ? ordered.find(
+        (message) =>
+          message.status === "visible" &&
+          message._creationTime > initialRead.lastReadAt,
+      )?._id
+    : undefined;
 
   /**
    * Whoever has spoken in what is loaded, newest first, for the composer to
@@ -492,7 +516,7 @@ function ConversationThread({
     // it — and so sub-pixel scroll heights never leave the thread unpinned.
     const atEnd =
       element.scrollHeight - element.scrollTop - element.clientHeight < 64;
-    pinned.current = !target && atEnd;
+    pinned.current = atEnd;
     setAtLatest(atEnd);
   }
 
@@ -538,7 +562,7 @@ function ConversationThread({
         onScroll={onScroll}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
       >
-        {daily && !target ? (
+        {daily ? (
           <DayPager
             maxDays={detail?.kind === "announcements" ? Infinity : undefined}
             label={
@@ -549,29 +573,23 @@ function ConversationThread({
             onChange={(day) => {
               setResumeUnread(false);
               setDaysAgo(day);
+              pinned.current = true;
+              setAtLatest(true);
+              if (explicitTarget)
+                router.replace(`${CHAT_HREF}/${conversationId}`, {
+                  scroll: false,
+                });
             }}
           />
         ) : null}
 
-        {target ? (
-          <div className="sticky top-0 z-10 mb-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-background/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
-            <span>
-              {!explicitTarget && resumeUnread
-                ? "First unread message"
-                : "Message context"}
-            </span>
-            <Button variant="ghost" size="sm" onClick={returnLatest}>
-              Return to latest
-            </Button>
-          </div>
-        ) : null}
         {outbox.storageWarning ? (
           <p role="status" className="mb-2 text-xs text-destructive">
             Browser storage is unavailable. Keep this tab open until your
             messages send.
           </p>
         ) : null}
-        {target && context !== undefined && !contextMatches ? (
+        {requestedTarget && location === null ? (
           <p
             role="status"
             className="py-8 text-center text-sm text-muted-foreground"
@@ -579,13 +597,13 @@ function ConversationThread({
             This message is no longer available in this conversation.
           </p>
         ) : null}
-        {(target ? context === undefined : status === "LoadingFirstPage") ? (
+        {status === "LoadingFirstPage" ? (
           <div className="flex justify-center py-6">
             <Spinner />
           </div>
         ) : null}
 
-        {!target && status === "CanLoadMore" ? (
+        {status === "CanLoadMore" ? (
           <div className="flex justify-center py-3">
             <Button variant="ghost" size="sm" onClick={() => loadMore(40)}>
               Earlier messages
@@ -593,50 +611,32 @@ function ConversationThread({
           </div>
         ) : null}
 
-        {!target &&
-        status === "Exhausted" &&
+        {status === "Exhausted" &&
         results.length === 0 &&
         !isBotDm &&
         typists.length === 0 ? (
           <Quiet archived={!live} />
         ) : null}
 
-        {target &&
-        contextMatches &&
-        ordered.length > 20 &&
-        firstVisible &&
-        firstVisible._id !== target ? (
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => jumpToMessage(firstVisible._id)}
-            >
-              Earlier messages
-            </Button>
-          </div>
-        ) : null}
         {ordered.map((message, index) => (
           <Fragment key={message._id}>
-            {message._id === initialRead?.firstUnreadId ? (
-              <div className="my-3 flex items-center gap-3 text-xs font-medium text-primary">
-                <span className="h-px flex-1 bg-primary/20" />
+            {message._id === firstUnreadId ? (
+              <div className="my-3 flex items-center gap-3 text-xs font-medium text-blue-500">
+                <span className="h-px flex-1 bg-blue-500" />
                 New messages
-                <span className="h-px flex-1 bg-primary/20" />
+                <span className="h-px flex-1 bg-blue-500" />
               </div>
             ) : null}
             <MessageRow
               message={message}
               previous={
-                message._id === initialRead?.firstUnreadId
-                  ? undefined
-                  : ordered[index - 1]
+                message._id === firstUnreadId ? undefined : ordered[index - 1]
               }
               next={
-                ordered[index + 1]?._id === initialRead?.firstUnreadId
+                ordered[index + 1]?._id === firstUnreadId
                   ? undefined
                   : (ordered[index + 1] ??
-                    (!target && live && outbox.entries[0]?.status !== "failed"
+                    (live && outbox.entries[0]?.status !== "failed"
                       ? pendingMessages[0]
                       : undefined))
               }
@@ -662,23 +662,7 @@ function ConversationThread({
             />
           </Fragment>
         ))}
-        {target &&
-        contextMatches &&
-        ordered.length > 20 &&
-        lastVisible &&
-        lastVisible._id !== target ? (
-          <div className="flex justify-center py-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => jumpToMessage(lastVisible._id)}
-            >
-              Later messages
-            </Button>
-          </div>
-        ) : null}
-
-        {!live || target
+        {!live
           ? null
           : outbox.entries.map((entry, index) => (
               <div
@@ -765,7 +749,7 @@ function ConversationThread({
             ))}
 
         {/* Under everything, where their message is about to be. */}
-        {live && !target ? <Typing typists={typists} /> : null}
+        {live ? <Typing typists={typists} /> : null}
       </div>
 
       {/* Under the thread, in the flow. It floated over the messages on a

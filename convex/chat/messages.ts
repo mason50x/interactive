@@ -921,7 +921,23 @@ export const edit = mutation({
   },
 });
 
-/** A bounded historical window makes deep links work beyond loaded pages. */
+/** Locate a message in the normal day timeline without creating a second feed. */
+export const location = query({
+  args: { messageId: v.string(), conversationId: v.id("conversations") },
+  returns: v.union(v.null(), v.object({ createdAt: v.number() })),
+  handler: async (ctx, { messageId, conversationId }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return null;
+    const member = await membership(ctx, conversationId, profile.clerkId);
+    if (member?.status !== "active") return null;
+    const id = ctx.db.normalizeId("messages", messageId);
+    const message = id === null ? null : await ctx.db.get(id);
+    if (message?.conversationId !== conversationId || message.status !== "visible") return null;
+    return { createdAt: message._creationTime };
+  },
+});
+
+/** Legacy context query retained for older clients. New clients use location and list. */
 export const context = query({
   args: { messageId: v.string() },
   returns: v.union(v.null(), v.object({ conversationId: v.id("conversations"), messages: v.array(chatMessageValidator) })),

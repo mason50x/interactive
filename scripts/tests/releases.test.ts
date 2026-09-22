@@ -33,13 +33,14 @@ test("skipping consecutive minor updates preserves the read state", () => {
 });
 
 test("an important release starts a fresh state that subsequent minor updates inherit", () => {
-  expect(currentRelease.version).toBe("1.1.1");
-  expect(currentRelease.importance).toBe("minor");
+  expect(currentRelease.version).toBe("1.2");
+  expect(currentRelease.importance).toBe("important");
+  expect(releaseSeenVersion(releases)).toBe("1.2");
+  expect(releaseSeenVersion([release("1.2.1", "minor"), ...releases])).toBe("1.2");
   const history = releases.slice(1);
-  expect(history[0].version).toBe("1.1");
-  expect(history[0].importance).toBe("important");
+  expect(history[0].version).toBe("1.1.1");
+  expect(history[0].importance).toBe("minor");
   expect(releaseSeenVersion(history)).toBe("1.1");
-  expect(releaseSeenVersion(releases)).toBe("1.1");
 });
 
 test("releases are important by default", () => {

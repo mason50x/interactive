@@ -49,7 +49,12 @@ copyFileSync(join(root, "site", "experience.config.js"), join(dist, "experience"
 // worker responses and dynamically inserted styles use the same matcher.
 // Fail loudly on upstream changes rather than silently shipping a stale fix.
 const bundlePath = join(dist, "experience", "bundle.js");
-const bundle = readFileSync(bundlePath, "utf8");
+let bundle = readFileSync(bundlePath, "utf8");
+// Class field names are property keys, not browser-global references. Xbox's
+// dependency container declares `parent;`, which must remain valid syntax.
+const fieldGuard = '||a.type==="MethodDefinition"||a.type==="ClassDeclaration"';
+if (bundle.split(fieldGuard).length !== 2) throw new Error("Review the experience class-field compatibility patch.");
+bundle = bundle.replace(fieldGuard, '||(a.type==="PropertyDefinition"||a.type==="AccessorProperty")&&a.key===r&&!a.computed'+fieldGuard);
 const brokenUrlMatcher = String.raw`/url\(['"]?(.+?)['"]?\)/gm`;
 const fixedUrlMatcher = String.raw`/url\(['"]?([^)]+?)['"]?\)/gm`;
 if (bundle.split(brokenUrlMatcher).length !== 2) {
@@ -117,6 +122,13 @@ if (handler.split(staleCookieGetter).length !== 2) {
   throw new Error("Review the experience live cookie synchronization patch.");
 }
 handler = handler.replace(staleCookieGetter, liveCookieGetter);
+
+// A cookie write's asynchronous refresh must wait for the write to commit.
+// Otherwise it overwrites the synchronous token replacement with an old snapshot.
+const staleWrite = 'e.cookie.db().then(l=>{e.cookie.setCookies(t.data.value,l,e.meta),e.cookie.getCookies(l).then(s=>{u=e.cookie.serialize(s,e.meta,!0)})})';
+const committedWrite = 'e.cookie.db().then(async l=>{await e.cookie.setCookies(t.data.value,l,e.meta);u=e.cookie.serialize(await e.cookie.getCookies(l),e.meta,!0)})';
+if (handler.split(staleWrite).length !== 2) throw new Error("Review the experience cookie write/read ordering patch.");
+handler = handler.replace(staleWrite, committedWrite);
 
 // document.cookie writes are synchronous from the site's perspective. Appending
 // a replacement leaves the old msToken/CSRF value first until IndexedDB catches

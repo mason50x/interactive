@@ -410,7 +410,7 @@ export const finish = internalMutation({
     if (!(await canAnswer(ctx, conversation, prompt.authorClerkId))) return false;
 
     // Generated replies bypass user-content moderation.
-    const body = args.body;
+    const body = plainReply(args.body) || SAFE_FALLBACK;
 
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -434,6 +434,24 @@ export const finish = internalMutation({
       .unique();
     if (row?.token === args.messageId) await ctx.db.delete(row._id);
     return true;
+  },
+});
+
+/** Keep failure evidence with its prompt for the lifetime of the conversation. */
+export const recordFailure = internalMutation({
+  args: {
+    messageId: v.id("messages"),
+    model: v.string(),
+    reason: v.string(),
+    durationMs: v.number(),
+    timedOut: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { messageId, ...failure }) => {
+    if (await ctx.db.get(messageId)) {
+      await ctx.db.patch(messageId, { botFailure: { ...failure, reason: failure.reason.slice(0, 2000), at: Date.now() } });
+    }
+    return null;
   },
 });
 
@@ -577,7 +595,7 @@ export const ask = internalAction({
         room,
         args.askerHandle,
       );
-      const result = await bot.generateText(
+      const generate = () => bot.generateText(
         ctx,
         { userId: args.askerClerkId },
         {
@@ -589,6 +607,15 @@ export const ask = internalAction({
           abortSignal: controller.signal,
         },
       );
+      let result = await generate();
+      // Empty successful responses are not retried by the SDK. Give them one
+      // fresh attempt within the same overall deadline before falling back.
+      if (!plainReply(result.text) && !controller.signal.aborted) {
+        console.warn("@bot empty response; retrying", {
+          messageId: args.messageId, model, finishReason: result.finishReason,
+        });
+        result = await generate();
+      }
       console.info("@bot generation completed", {
         messageId: args.messageId,
         model,
@@ -598,14 +625,15 @@ export const ask = internalAction({
         textLength: result.text.length,
         usage: result.usage,
       });
-      if (!result.text.trim()) {
+      const body = plainReply(result.text);
+      if (!body) {
         throw new Error(`Empty model response (${result.finishReason})`);
       }
 
       await ctx.runMutation(internal.chat.bot.finish, {
         conversationId: args.conversationId,
         messageId: args.messageId,
-        body: plainReply(result.text),
+        body,
       });
     } catch (error) {
       console.error("@bot generation failed", {
@@ -615,6 +643,17 @@ export const ask = internalAction({
         timedOut: controller.signal.aborted,
         error: error instanceof Error ? error.message : String(error),
       });
+      try {
+        await ctx.runMutation(internal.chat.bot.recordFailure, {
+          messageId: args.messageId,
+          model,
+          durationMs: Date.now() - startedAt,
+          timedOut: controller.signal.aborted,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+      } catch (diagnosticError) {
+        console.warn("@bot failure recording failed", String(diagnosticError));
+      }
       // A refund outage must never prevent the user from receiving a reply.
       await ctx.runMutation(internal.chat.bot.finish, {
         conversationId: args.conversationId,

@@ -16,10 +16,15 @@ async function setup() {
         username: name,
         usernameKey: name,
         clerkCreatedAt: 0,
-
       }),
     );
-    await t.run(ctx => ctx.db.insert("chatSenders", { clerkId: name, messagesSent: 100, recent: [] }));
+    await t.run((ctx) =>
+      ctx.db.insert("chatSenders", {
+        clerkId: name,
+        messagesSent: 100,
+        recent: [],
+      }),
+    );
     await t
       .withIdentity({ subject: name })
       .mutation(api.chat.accounts.joinGlobal, {});
@@ -79,4 +84,124 @@ test("sending does not leave the sender's own message unread", async () => {
   } finally {
     vi.useRealTimers();
   }
+});
+
+test("automatic reading covers only the displayed message, including after a manual reminder", async () => {
+  const { t, alice, bob, global } = await setup();
+  await bob.mutation(api.chat.messages.send, {
+    conversationId: global,
+    body: "First message",
+  });
+  const first = await t.run((ctx) =>
+    ctx.db
+      .query("messages")
+      .withIndex("byConversation", (q) => q.eq("conversationId", global))
+      .order("desc")
+      .first(),
+  );
+  await bob.mutation(api.chat.messages.send, {
+    conversationId: global,
+    body: "Second message",
+  });
+  await alice.mutation(api.chat.conversations.markRead, {
+    conversationId: global,
+    throughMessageId: first!._id,
+  });
+  expect(
+    (await alice.query(api.chat.conversations.list, {}))[0].unread,
+  ).toBeGreaterThan(0);
+  const latest = await t.run((ctx) =>
+    ctx.db
+      .query("messages")
+      .withIndex("byConversation", (q) => q.eq("conversationId", global))
+      .order("desc")
+      .first(),
+  );
+  await alice.mutation(api.chat.conversations.markRead, {
+    conversationId: global,
+    throughMessageId: latest!._id,
+  });
+  expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
+    0,
+  );
+  await alice.mutation(api.chat.conversations.markUnread, {
+    conversationId: global,
+  });
+  await alice.mutation(api.chat.conversations.markRead, {
+    conversationId: global,
+    throughMessageId: latest!._id,
+  });
+  expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
+    0,
+  );
+});
+
+test("automatic reading rejects a cursor from another conversation", async () => {
+  const { t, alice, bob, global, dm } = await setup();
+  await bob.mutation(api.chat.messages.send, {
+    conversationId: global,
+    body: "Still unread",
+  });
+  const unrelated = await t.run((ctx) =>
+    ctx.db.insert("messages", {
+      conversationId: dm,
+      authorClerkId: "bot",
+      authorHandle: "wizard",
+      body: "Hello",
+      status: "visible",
+      flags: [],
+    }),
+  );
+  await alice.mutation(api.chat.conversations.markRead, {
+    conversationId: global,
+    throughMessageId: unrelated,
+  });
+  expect(
+    (await alice.query(api.chat.conversations.list, {}))[0].unread,
+  ).toBeGreaterThan(0);
+});
+
+test("message links locate only visible messages in an accessible conversation", async () => {
+  const { t, alice, bob, global, dm } = await setup();
+  const id = await t.run((ctx) =>
+    ctx.db.insert("messages", {
+      conversationId: dm,
+      authorClerkId: "alice",
+      authorHandle: "alice",
+      body: "Private",
+      status: "visible",
+      flags: [],
+    }),
+  );
+  expect(
+    await alice.query(api.chat.messages.location, {
+      conversationId: dm,
+      messageId: id,
+    }),
+  ).toEqual({ createdAt: expect.any(Number) });
+  expect(
+    await bob.query(api.chat.messages.location, {
+      conversationId: dm,
+      messageId: id,
+    }),
+  ).toBeNull();
+  expect(
+    await alice.query(api.chat.messages.location, {
+      conversationId: global,
+      messageId: id,
+    }),
+  ).toBeNull();
+  expect(
+    await alice.query(api.chat.messages.location, {
+      conversationId: dm,
+      messageId: "invalid",
+    }),
+  ).toBeNull();
+  await t.run((ctx) => ctx.db.patch(id, { status: "hidden" }));
+  expect(
+    await alice.query(api.chat.messages.location, {
+      conversationId: dm,
+      messageId: id,
+    }),
+  ).toBeNull();
 });

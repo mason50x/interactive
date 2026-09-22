@@ -284,8 +284,14 @@ export function ExperienceChrome({
                       : service.src
                   }
                   title={`${service.label} — tab ${tab.id + 1}`}
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                  allow="fullscreen; autoplay; encrypted-media"
+                  sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${
+                    service.id === "xbox" ? " allow-pointer-lock" : ""
+                  }`}
+                  allow={`fullscreen; autoplay; encrypted-media${
+                    service.id === "xbox"
+                      ? "; gamepad; microphone; screen-wake-lock"
+                      : ""
+                  }`}
                   referrerPolicy="no-referrer"
                   className="h-full w-full border-0 bg-white"
                 />

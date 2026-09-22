@@ -16,6 +16,7 @@ it("offers each service and allows its front door through the actual relay", asy
   const upstream = vi.fn(async () => new Response("ok"));
   vi.stubGlobal("fetch", upstream);
   for (const id of [
+    "xbox",
     "youtube",
     "netflix",
     "tiktok",
@@ -31,7 +32,7 @@ it("offers each service and allows its front door through the actual relay", asy
   expect(new Set(EXPERIENCE_APPS.map((app) => app.id)).size).toBe(
     EXPERIENCE_APPS.length,
   );
-  expect(upstream).toHaveBeenCalledTimes(6);
+  expect(upstream).toHaveBeenCalledTimes(7);
 });
 
 it.each([
@@ -166,4 +167,60 @@ it.each([
   expect(response.status).toBe(403);
   expect(await response.json()).toMatchObject({ code: "HOST_NOT_ALLOWED" });
   expect(upstream).not.toHaveBeenCalled();
+});
+
+it.each([
+  "https://assets.play.xbox.com/playxbox/static/js/client.js",
+  "https://login.live.com/oauth20_authorize.srf",
+  "https://account.live.com/consent/Manage",
+  "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
+  "https://logincdn.msauth.net/shared/1.0/content/js/login.js",
+  "https://logincdn.msftauth.net/shared/1.0/content/js/login.js",
+  "https://fpt.live.com/",
+  "https://df.cfp.microsoft.com/Clear.HTML",
+  "https://user.auth.xboxlive.com/user/authenticate",
+  "https://xsts.auth.xboxlive.com/xsts/authorize",
+  "https://sisu.xboxlive.com/authorize",
+  "https://gamingconsent.xboxlive.com/",
+  "https://gssv-play-prod.xboxlive.com/v2/login/user",
+  "https://eastus.gssv-play-prod.xboxlive.com/v5/sessions/cloud/play",
+  "https://emerald.xboxservices.com/",
+  "https://catalog.gamepass.com/sigls/v2",
+  "https://displaycatalog.mp.microsoft.com/v7.0/products",
+  "https://store-images.s-microsoft.com/image/apps/example",
+  "https://wcpstatic.microsoft.com/mscc/lib/v2/wcp-consent.js",
+  "https://res.public.onecdn.static.microsoft/creativeservice/game.png",
+  "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js",
+])("relays Xbox catalog, authentication, consent, and streaming service dependencies: %s", async url => {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("ok")));
+  expect((await relay(url)).headers.get("x-bare-status")).toBe("200");
+});
+
+it.each([
+  "https://xbox.com.evil.example/", "https://evilxboxlive.com/",
+  "https://unrelated.azureedge.net/", "https://www.microsoft.com/en-us/",
+  "https://cdnjs.cloudflare.com/ajax/libs/unrelated/script.js",
+])("Xbox allowances do not open lookalikes or unrelated services: %s", async url => {
+  const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+  expect((await relay(url)).status).toBe(403);
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it("records upstream authentication failures without URLs, cookies, or credentials", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("denied", { status: 403 })));
+  const response = await relay("https://accounts.spotify.com/login?token=private-token");
+  expect(response.headers.get("x-bare-status")).toBe("403");
+  expect(warn).toHaveBeenCalledExactlyOnceWith("experience_upstream_response", {
+    host: "accounts.spotify.com", method: "GET", status: 403, durationMs: expect.any(Number),
+  });
+});
+
+it("network failure diagnostics omit sensitive upstream URLs", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("failed https://login.live.com/?token=private-token"); }));
+  expect((await relay("https://login.live.com/?token=private-token")).status).toBe(500);
+  expect(error).toHaveBeenCalledExactlyOnceWith("experience_upstream_failed", {
+    host: "login.live.com", method: "GET", durationMs: expect.any(Number), timedOut: false, error: "Error",
+  });
 });

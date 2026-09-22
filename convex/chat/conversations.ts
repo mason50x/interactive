@@ -543,9 +543,9 @@ export const preview = query({
  * reading the same busy room at the same moment touch no document in common.
  */
 export const markRead = mutation({
-  args: { conversationId: v.id("conversations") },
+  args: { conversationId: v.id("conversations"), throughMessageId: v.optional(v.id("messages")) },
   returns: v.null(),
-  handler: async (ctx, { conversationId }) => {
+  handler: async (ctx, { conversationId, throughMessageId }) => {
     const profile = await callerAccount(ctx);
     if (profile === null) return null;
     const member = await membership(ctx, conversationId, profile.clerkId);
@@ -553,12 +553,13 @@ export const markRead = mutation({
     // or a removal is not a seat in the room, and a row in either state has
     // no reading position to move.
     if (member === null || member.status !== "active") return null;
-    const latest = await ctx.db.query("messages")
+    const latest = throughMessageId ? await ctx.db.get(throughMessageId) : await ctx.db.query("messages")
       .withIndex("byConversationStatus", q => q.eq("conversationId", conversationId).eq("status", "visible"))
       .order("desc").first();
+    if (throughMessageId && (latest?.conversationId !== conversationId || latest.status !== "visible")) return null;
     // Creation times can include a fractional millisecond after the mutation's
     // fixed clock. Cover the newest visible message, not just Date.now().
-    await ctx.db.patch(member._id, { lastReadAt: Math.max(member.lastReadAt, Date.now(), latest?._creationTime ?? 0) });
+    await ctx.db.patch(member._id, { lastReadAt: Math.max(member.lastReadAt, throughMessageId ? 0 : Date.now(), latest?._creationTime ?? 0) });
     return null;
   },
 });

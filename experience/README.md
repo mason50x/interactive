@@ -215,3 +215,68 @@ Alternate OAuth, account challenges,
 posting, messages, Spaces, and paid features have not been verified.
 Deploy both the app and Experience Worker to release the catalog, dependencies,
 and cookie compatibility fixes together.
+
+## Xbox Cloud Gaming and proxy compatibility (2026-09-22)
+
+Xbox Cloud Gaming is available at `/experience/xbox`, starting at
+`https://www.xbox.com/play`. Its unmodified official 180×180 icon is bundled in
+`public/experience/xbox.png`; the source is recorded in `public/experience/ASSETS.md`.
+
+The dependency inventory comes from Xbox's current landing page, its shipped
+JavaScript, and a browser trace through Microsoft sign-in. The shared allowlist
+includes these hosts and their subdomains:
+
+- Application, assets, Xbox authentication, profiles, and regional streaming APIs:
+  `xbox.com`, `xboxlive.com`, `xboxservices.com`, `catalog.gamepass.com`.
+  This covers `sisu`, `user.auth`, `xsts.auth`, `gamingconsent`, `gssv-play-prod`,
+  and regional `*.gssv-play-prod.xboxlive.com` endpoints.
+- Microsoft authentication and verification: `login.live.com`, `account.live.com`,
+  `login.microsoftonline.com`, `logincdn.msauth.net`, `logincdn.msftauth.net`,
+  `fpt.live.com`, `df.cfp.microsoft.com`.
+- Account, family, and consent: `account.microsoft.com`, `family.microsoft.com`,
+  `consentservice.microsoft.com`, `consent.config.office.com`, `wcpstatic.microsoft.com`.
+- Catalog and artwork: `displaycatalog.mp.microsoft.com`, `ratingsedge.rnr.microsoft.com`,
+  `store-images.s-microsoft.com`, `res.public.onecdn.static.microsoft`.
+- Shared navigation: `uhf.microsoft.com` and its observed asset host
+  `uhf-exp-fd-gbcrdgggfbggh0g3.b02.azurefd.net`.
+- Narrow shared dependencies: `cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/`,
+  `www.microsoft.com/store/buy/cartcount`, and
+  `www.microsoft.com/store/XboxComMsCom3PAdsOptOutCookieSync.html`.
+
+The app frame grants Xbox pointer lock, gamepad, microphone, and screen wake lock;
+the inner launcher delegates the corresponding permissions. Microphone access
+still requires browser permission. The Bare relay carries HTTP and WebSockets;
+Xbox's WebRTC media connection is browser-native and is **not** tunneled through
+this relay. Actual gameplay therefore requires account, entitlement, controller,
+and network verification. The inventory is not a promise that every future
+region or authentication challenge uses the same domains.
+
+Two shared engine corrections accompany this addition:
+
+- Preserve noncomputed class-field names (`parent`, `top`, `location`, `eval`).
+  Xbox's dependency container otherwise becomes invalid JavaScript and repeatedly
+  fails to load chunk 2092. Computed keys and field values still get rewritten.
+- Await a script-written cookie's commit before refreshing `document.cookie`.
+  The previous asynchronous refresh could replace a freshly rotated login token
+  with an older IndexedDB snapshot.
+
+The relay now records `experience_upstream_response` for upstream HTTP errors and
+`experience_upstream_failed` for network failures/timeouts. Fields contain only
+host, method, status/error category, and elapsed time; no paths, queries, cookies,
+or authentication tokens. This distinguishes upstream 403/429 responses from
+allowlist failures even though the Bare envelope normally returns HTTP 200.
+
+Local ChromeOS-UA testing at 1365×900 and 390×844 reached Xbox's catalog
+and Microsoft email sign-in inside both sandboxed frame layers,
+with no uncaught Xbox JavaScript errors after the rewriter fix. Local test-browser
+permission was granted for localhost network access. The same testing reached
+Spotify's email/Google/Apple login screen, and YouTube's Google sign-in screen.
+The YouTube test video returned `playabilityStatus: OK` and video `readyState: 4`.
+TikTok's direct feed played, but the proxied feed still returned upstream 403s and
+its monitoring SDK reported `a.init is not a function`. That failure remains
+unresolved; broadening unrelated domains is not an established fix. No completed
+account logins, Spotify licensed playback, or Xbox gameplay were verified.
+
+Deploy **both** the app and Experience Worker to release the tile, permissions,
+allowances, and engine changes together. This work was verified locally, not
+released to production.

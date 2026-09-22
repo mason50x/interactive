@@ -25,6 +25,55 @@ export type Release = {
 
 export const releases: readonly Release[] = [
   {
+    version: "1.2",
+    importance: "important",
+    date: "2026-09-22",
+    title: "More ways to connect and create.",
+    body: `A major update to Chat, new shared simulators, more to explore in Experience, and better tools for keeping everything running. Here’s what’s changed since v1.1.1.
+
+- Chat now keeps each day’s conversation together. New messages arrive in the same thread, without a separate context view or a “return to latest” banner.
+- A blue line marks where new messages begin, making it easier to pick up where you left off.
+- Conversations mark themselves read as you catch up. The optional read and unread buttons no longer leave you stuck marking everything manually.
+- Opening an older message takes you to its place in the conversation, including the correct day.
+- Format messages with bold, italics, lists, and code using the new message editor.
+- Edit your sent messages to fix a typo or clarify what you meant.
+- Create polls, see the results, and change your vote.
+- Unsent text drafts are saved for each conversation, including replies and poll drafts.
+- Sending messages has clearer progress and recovery options when something goes wrong.
+- Search past messages and open a result directly in its conversation.
+- Favorite conversations and filter your inbox to show favorites or unread chats.
+- Turn on optional browser notifications for new messages.
+- Messages from the same person are grouped more neatly, with clearer message controls.
+- Mentions in direct messages stay as ordinary text. In Everyone, only staff can use @everyone.
+
+- Meet Wizard: the assistant has a new name, personality, and avatar. Mention @wizard to chat; @bot and @verity still work.
+- Wizard no longer posts the automatic morning greeting in Everyone.
+- Empty Wizard replies now get another attempt, with a readable message if the request still fails.
+- Improved failure tracking makes recurring Wizard problems easier to investigate.
+
+- A shared HTML simulator library is now available to everyone who is signed in.
+- Open published simulators without importing a file yourself.
+- Builders and CEOs can publish simulators, update their names and descriptions, and manage the shared collection.
+- Publish a personal simulator without sharing your personal progress. Each player keeps their own progress on their device.
+- Added BlackJack to the activity collection.
+- Improved support for Entertainment videos whose Google Drive links need an additional access key.
+
+- Added Xbox Cloud Gaming to Experience with its official logo and support for its catalog and Microsoft sign-in pages. Playing games still depends on your account, browser, and network.
+- Improved how Experience handles sign-in cookies and popups across supported services.
+- Fixed a startup problem that could stop Experience opening while an update was waiting.
+- Fixed a compatibility issue that prevented the Xbox catalog from loading.
+- Improved troubleshooting for service failures. Some TikTok playback and other service sign-in restrictions remain unresolved.
+
+- Added the Builder role, with publishing access and higher daily allowances.
+- Added the Head Moderator role and clearer staff permissions.
+- Staff now have a refreshed admin workspace with a searchable account directory and controls that fit smaller screens.
+- CEOs can manage account roles and reset daily allowances for an individual or everyone.
+- Authorized staff can set temporary account timeouts, with a clear reason and end time shown to the affected person.
+- Access hours are now enforced Monday–Friday, 7:35 a.m.–2:55 p.m. Central, with a clear message outside those hours.
+- Saved appearance preferences apply more consistently across the site.
+- Reduced unnecessary background animation work and made smaller loading, navigation, and reliability improvements throughout the app.`,
+  },
+  {
     version: "1.1.1",
     importance: "minor",
     date: "2026-09-17",

@@ -434,3 +434,25 @@ test("bot replies bypass text moderation while preserving prompt visibility chec
   await t.run(ctx => ctx.db.delete(messageId));
   expect(await t.mutation(internal.chat.bot.finish, { conversationId: dm, messageId, body })).toBe(false);
 });
+
+test("blank bot output gets a visible fallback and diagnostics stay internal", async () => {
+  const { t, alice, dm } = await setup();
+  const promptId = await t.run(ctx => ctx.db.insert("messages", {
+    conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
+    body: "Hello", status: "visible", flags: [],
+  }));
+  await t.mutation(internal.chat.bot.recordFailure, {
+    messageId: promptId, model: "test-model", reason: "provider unavailable",
+    durationMs: 123, timedOut: false,
+  });
+  expect((await t.run(ctx => ctx.db.get(promptId)))?.botFailure).toMatchObject({ reason: "provider unavailable", durationMs: 123 });
+  await t.mutation(internal.chat.bot.finish, {
+    conversationId: dm, messageId: promptId, body: " **__`#`** ",
+  });
+  const page = await alice.query(api.chat.messages.list, {
+    conversationId: dm, dayStart: 0, dayEnd: Date.now() + 10000,
+    paginationOpts: { cursor: null, numItems: 10 },
+  });
+  expect(page.page[0].body).toContain("couldn't get an answer through");
+  expect(page.page.find(message => message._id === promptId)).not.toHaveProperty("botFailure");
+});

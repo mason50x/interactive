@@ -170,6 +170,7 @@ async function relayHttp(request, env) {
   const body = hasBody ? request.body : undefined;
 
   let upstream;
+  const startedAt = Date.now();
   // Fail open on a hanging upstream: dashboard audit (2026-09-21) showed
   // wall-time P999 at 28-32s driven by third-party embeds (TikTok et al)
   // that never answer. The deadline covers time-to-first-byte only; once
@@ -187,7 +188,13 @@ async function relayHttp(request, env) {
     });
   } catch (error) {
     // Visible in `npm run tail`; the client only sees the Bare error.
-    console.error("upstream fetch failed", request.method, target.url.href, String(error?.message ?? error));
+    console.error("experience_upstream_failed", {
+      host: target.url.hostname,
+      method: request.method,
+      durationMs: Date.now() - startedAt,
+      timedOut: upstreamController.signal.aborted,
+      error: error?.name ?? "Error",
+    });
     return bareError(
       500,
       "CONNECTION_REFUSED",
@@ -196,6 +203,15 @@ async function relayHttp(request, env) {
     );
   } finally {
     clearTimeout(upstreamTimer);
+  }
+
+  if (upstream.status >= 400) {
+    // Bare returns HTTP 200 around upstream failures, so ordinary Worker
+    // status metrics cannot distinguish an authentication rejection or 429.
+    console.warn("experience_upstream_response", {
+      host: target.url.hostname, method: request.method,
+      status: upstream.status, durationMs: Date.now() - startedAt,
+    });
   }
 
   const responseHeaders = {};

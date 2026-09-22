@@ -382,3 +382,48 @@ test("cookie snapshots preserve distinct paths and clear previously stored expir
   expect(result.injected).not.toContain("hidden");
   expect(result.expiredStored).toBe(false);
 });
+
+test("class fields named like browser globals remain valid while their values are rewritten", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(() => {
+    const uv = new Ultraviolet(experienceConfig);
+    uv.meta.origin = location.origin;
+    uv.meta.base = uv.meta.url = new URL("https://assets.play.xbox.com/app.js");
+    const rewritten = uv.rewriteJS('class Container { parent; top = 3; location = 4; eval = 5; static parent = 6; value = 3; } return new Container().value;');
+    const value = new Function(rewritten)();
+    const computed = uv.rewriteJS('class Container { [parent] = top; }');
+    return { value, rewritten, computed };
+  });
+  expect(result.value).toBe(3);
+  expect(result.rewritten).toContain("parent;");
+  expect(result.computed).toContain("__uv.$get(parent)");
+  expect(result.computed).toContain("__uv.$get(top)");
+});
+
+test("the asynchronous cookie refresh cannot restore a token before its write commits", async ({ page }) => {
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/client.js" });
+  await page.evaluate(async () => {
+    const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+    await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+    history.replaceState(null, "", experienceConfig.prefix + experienceConfig.encodeUrl("https://accounts.spotify.com/"));
+    self.__uv$cookies = "csrf=old";
+    self.__uv$referrer = "";
+  });
+  await page.addScriptTag({ url: "/experience/handler.js" });
+  const result = await page.evaluate(async () => {
+    let stored = [{ name: "csrf", value: "old", domain: ".accounts.spotify.com", path: "/" }];
+    __uv.cookie.db = async () => ({});
+    __uv.cookie.setCookies = async () => {
+      await new Promise(resolve => setTimeout(resolve, 80));
+      stored = [{ ...stored[0], value: "fresh" }];
+    };
+    __uv.cookie.getCookies = async () => stored;
+    document.cookie = "csrf=fresh; Path=/";
+    await new Promise(resolve => setTimeout(resolve, 30));
+    const during = document.cookie;
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return { during, after: document.cookie };
+  });
+  expect(result).toEqual({ during: "csrf=fresh", after: "csrf=fresh" });
+});

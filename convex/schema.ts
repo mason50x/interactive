@@ -380,6 +380,14 @@ export default defineSchema({
     /** The author's display name at the time, if they had one. Same rule. */
     authorName: v.optional(v.string()),
     body: v.string(),
+    /** Internal diagnostics for a failed bot request; never included in chat DTOs. */
+    botFailure: v.optional(v.object({
+      model: v.string(),
+      reason: v.string(),
+      durationMs: v.number(),
+      timedOut: v.boolean(),
+      at: v.number(),
+    })),
     editedAt: v.optional(v.number()),
     /** Stable across network retries, scoped to the authenticated author. */
     clientNonce: v.optional(v.string()),

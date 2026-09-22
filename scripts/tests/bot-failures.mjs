@@ -15,6 +15,9 @@ const source = ts.transpileModule(
 
 async function run({
   empty = false,
+  formattingOnly = false,
+  emptyOnce = false,
+  diagnosticError = false,
   providerError = false,
   refundError = false,
   timeout = false,
@@ -22,6 +25,7 @@ async function run({
   exhausted = false,
 } = {}) {
   const calls = [];
+  let generations = 0;
   const validator = new Proxy(() => validator, { get: () => validator });
   const bot = new Proxy({}, { get: (_, name) => name });
   const exports = {};
@@ -44,6 +48,7 @@ async function run({
         return {
           Agent: class {
             async generateText(_ctx, _scope, options) {
+              generations++;
               assert.equal(options.maxOutputTokens, 4096);
               if (timeout)
                 await new Promise((_, reject) =>
@@ -55,7 +60,14 @@ async function run({
                 );
               if (providerError) throw new Error("provider unavailable");
               return {
-                text: empty ? "" : "Four. A fine number!",
+                text:
+                  emptyOnce && generations === 1
+                    ? ""
+                    : formattingOnly
+                      ? " **__`#`** "
+                      : empty
+                        ? ""
+                        : "Four. A fine number!",
                 finishReason: empty ? "length" : "stop",
                 usage: {},
               };
@@ -100,6 +112,8 @@ async function run({
       {
         async runMutation(name, args) {
           calls.push({ name, body: args.body });
+          if (name === "recordFailure" && diagnosticError)
+            throw new Error("diagnostics unavailable");
           return true;
         },
         async runQuery() {
@@ -122,13 +136,21 @@ async function run({
     );
     assert.equal(calls.filter((c) => c.name === "finish").length, 1);
     assert.equal(calls.at(-1).name, "stopTyping");
-    if (empty || providerError || timeout || contextError) {
-      assert.match(calls.find((c) => c.name === "finish").body, /couldn't get an answer through/);
+    if (empty || formattingOnly || emptyOnce) assert.equal(generations, 2);
+    if (empty || formattingOnly || providerError || timeout || contextError) {
+      assert.match(
+        calls.find((c) => c.name === "finish").body,
+        /couldn't get an answer through/,
+      );
+      assert.ok(calls.some((c) => c.name === "recordFailure"));
       assert.ok(
         calls.indexOf("refund") > calls.findIndex((c) => c.name === "finish"),
       );
     } else if (exhausted) {
-      assert.match(calls.find((c) => c.name === "finish").body, /message me again/);
+      assert.match(
+        calls.find((c) => c.name === "finish").body,
+        /message me again/,
+      );
       assert.ok(!calls.includes("refund"));
     } else {
       assert.equal(
@@ -144,6 +166,9 @@ async function run({
 for (const scenario of [
   {},
   { empty: true },
+  { formattingOnly: true },
+  { emptyOnce: true },
+  { providerError: true, diagnosticError: true },
   { providerError: true },
   { providerError: true, refundError: true },
   { timeout: true },
@@ -152,5 +177,5 @@ for (const scenario of [
 ])
   await run(scenario);
 console.log(
-  "Passed 7 bot success/failure/timeout/refund/quota scenarios without idle delay.",
+  "Passed 10 bot success/failure/timeout/refund/quota scenarios without idle delay.",
 );
