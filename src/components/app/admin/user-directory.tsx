@@ -26,7 +26,7 @@ export const ROLE_LABEL: Record<SiteRole, string> = {
   member: "Member",
 };
 export const SELECT_CLASS =
-  "h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50";
+  "h-9 min-w-0 max-w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50";
 
 function AccessStatus({ user }: { user: DirectoryUser }) {
   return (
@@ -86,7 +86,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
   return (
     <section aria-labelledby="directory-title" className="min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2.5">
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
           <h2 id="directory-title" className="text-lg font-semibold">
             User directory
           </h2>
@@ -100,11 +100,12 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
         {role === "ceo" && (
           <Button
             variant="ghost"
+            className="max-w-full text-left whitespace-normal"
             aria-expanded={showBulkReset}
             aria-controls="bulk-allowances"
             onClick={() => setShowBulkReset(!showBulkReset)}
           >
-            Reset everyone’s allowances
+            Reset all allowances
             <ChevronDownIcon
               className={cn(
                 "size-4 transition-transform",
@@ -180,7 +181,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
               >
                 Joined
               </th>
-              <th scope="col" className="w-20 px-3 py-3">
+              <th scope="col" className="w-10 px-1 py-3 sm:w-20 sm:px-3">
                 <span className="sr-only">Details</span>
               </th>
             </tr>
@@ -235,7 +236,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         year: "numeric",
                       })}
                     </td>
-                    <td className="px-3 py-3.5">
+                    <td className="px-1 py-3.5 sm:px-3">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -246,7 +247,16 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                           setSelected(expanded ? null : user.clerkId)
                         }
                       >
-                        {expanded ? "Close" : "View"}
+                        <span className="hidden sm:inline">
+                          {expanded ? "Close" : "View"}
+                        </span>
+                        <ChevronDownIcon
+                          aria-hidden="true"
+                          className={cn(
+                            "size-4 sm:hidden",
+                            !expanded && "-rotate-90",
+                          )}
+                        />
                       </Button>
                     </td>
                   </tr>

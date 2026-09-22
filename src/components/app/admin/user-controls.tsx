@@ -341,7 +341,7 @@ export function UserControls({
         aria-label={`Account details for ${user.label}`}
         className="min-w-0 space-y-4"
       >
-        <h3 className="font-medium">Account details</h3>
+        <h3 className="font-medium break-words">{user.label}</h3>
         <dl className="space-y-3 text-xs">
           {user.email && (
             <div>

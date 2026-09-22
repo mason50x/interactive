@@ -78,10 +78,24 @@ export function ExperienceChrome({
         // A transient failure retries; the relay still rejects expired grants.
       }
     }
+    function requestAccess(event: MessageEvent) {
+      if (event.data?.type !== "experience-access-request") return;
+      for (const frame of frames.current.values()) {
+        if (
+          frame.contentWindow === event.source &&
+          new URL(frame.src).origin === event.origin
+        ) {
+          void refresh();
+          break;
+        }
+      }
+    }
+    window.addEventListener("message", requestAccess);
     const interval = setInterval(refresh, 60_000);
     return () => {
       stopped = true;
       clearInterval(interval);
+      window.removeEventListener("message", requestAccess);
     };
   }, [accessToken]);
 
@@ -266,19 +280,9 @@ export function ExperienceChrome({
                   }}
                   src={
                     accessToken
-                      ? `${service.src}#${new URLSearchParams({ access: accessToken, appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
+                      ? `${service.src}#${new URLSearchParams({ access: "1", appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
                       : service.src
                   }
-                  onLoad={(event) => {
-                    const frame = event.currentTarget;
-                    frame.contentWindow?.postMessage(
-                      {
-                        type: "experience-access",
-                        token: latestAccess.current,
-                      },
-                      new URL(frame.src).origin,
-                    );
-                  }}
                   title={`${service.label} — tab ${tab.id + 1}`}
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                   allow="fullscreen; autoplay; encrypted-media"

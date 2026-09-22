@@ -52,16 +52,34 @@
       // otherwise those requests can prevent activation indefinitely.
       const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
       stage = "Loading the browser transport";
-      let accessToken = new URLSearchParams(location.hash.slice(1)).get("access");
-      const appOrigin = new URLSearchParams(location.hash.slice(1)).get("appOrigin");
+      const launchOptions = new URLSearchParams(location.hash.slice(1));
+      let accessToken = launchOptions.get("grant");
+      const appOrigin = launchOptions.get("appOrigin");
+      let transportReady = false;
+      let receiveAccess;
+      const accessReady = new Promise(resolve => { receiveAccess = resolve; });
       const configureTransport = () => connection.setTransport("/transport.mjs", [location.origin + "/", accessToken]);
       window.addEventListener("message", event => {
         if (event.source !== window.parent || event.origin !== appOrigin || event.data?.type !== "experience-access") return;
         if (event.data.token !== null && typeof event.data.token !== "string") return;
         accessToken = event.data.token;
-        configureTransport().catch(() => {});
+        window.__experienceAccessToken = accessToken;
+        receiveAccess();
+        if (transportReady) configureTransport().catch(() => {});
       });
+      // Request a fresh grant before fetching a restricted destination, even
+      // when this tab was opened long after the app page first rendered.
+      if (launchOptions.get("access") === "1" && appOrigin && window.parent !== window) {
+        window.parent.postMessage({ type: "experience-access-request" }, appOrigin);
+        let deadline;
+        await Promise.race([accessReady, new Promise(resolve => { deadline = setTimeout(resolve, 5000); })]);
+        clearTimeout(deadline);
+      }
+      // Popup launches carry only this short-lived X grant in a fragment.
+      // The popup helper reads it from its same-origin launcher parent.
+      window.__experienceAccessToken = accessToken;
       await configureTransport();
+      transportReady = true;
 
       // Wait for a usable worker in *this* registration. `serviceWorker.ready` would
       // never resolve here: it waits for a worker whose scope covers this page,

@@ -12,6 +12,17 @@ self.__experiencePopupUrl = function (rewritten, target) {
     if (!["http:", "https:"].includes(url.protocol)) return rewritten;
     const launcher = new URL("/", __uv.meta.origin);
     launcher.searchParams.set("u", url.href);
+    // A popup has its own transport. Carry the scoped, expiring grant from
+    // its same-origin launcher, including when native noopener is requested.
+    // Never use a Clerk session or put a grant in query parameters.
+    try {
+      const grant = self.parent.__experienceAccessToken;
+      if (typeof grant === "string" && grant) {
+        launcher.hash = new URLSearchParams({ grant }).toString();
+      }
+    } catch {
+      // Standalone pages have no authenticated launcher; the relay denies X.
+    }
     return launcher.href;
   } catch {
     return rewritten;
