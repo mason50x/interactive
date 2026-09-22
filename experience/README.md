@@ -173,15 +173,24 @@ reported skeleton failure, not authenticated login or every regional variant.
 
 ## X
 
-X is temporarily disabled. Its catalog entry and the `x.com`, `twitter.com`,
-`twimg.com`, and `t.co` allowlist entries have been removed, so
-`/experience/x` renders not found and the relay rejects these hosts and their
-subdomains. The bundled icon and compatibility fixes remain for re-enabling.
-To restore X, add those four hosts back to the shared allowlist, with
-`id: "x"`, `label: "X"`, and `start: "https://x.com/"` on the `x.com` entry.
-Deploy both the app and experience Worker for either change to take effect.
+X is a private preview for Mason's exact Clerk account, recorded in
+`config/experience-access.json`. It is absent from other users' service lists
+and routes. `x.com`, `twitter.com`, `twimg.com`, and `t.co` are marked as
+restricted in the shared allowlist; both HTTP and WebSocket relay requests
+require a short-lived, signed X grant. Changing a username or staff role does
+not grant access, and the relay never receives a Clerk session token.
 
-The following verification notes describe X before it was disabled.
+Set the same random `EXPERIENCE_ACCESS_SECRET` (at least 32 characters) on both
+the app Worker and this Worker before deploying. Local development uses the
+app's `.env.local` and this package's `.dev.vars`. Missing or mismatched secrets
+deny X. Deploy both Workers for this change. See `docs/environment.md`.
+
+Embedded tabs request a fresh grant before starting and renew it while open.
+Popups carry the current grant, which expires after at most ten minutes; reopen
+an expired popup from Experience. Grants do not appear in query parameters or
+upstream request headers.
+
+The following verification notes describe X's existing compatibility work.
 The observed Apple sign-in SDK is allowed only under
 `appleid.cdn-apple.com/appleauth/`. Existing Google and Apple authentication
 entries are shared. External destinations behind `t.co` still require their

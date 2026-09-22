@@ -135,7 +135,7 @@ it("logs denied destination hosts without signed paths or credentials", async ()
 
 const xHosts = ["x.com", "twitter.com", "twimg.com", "t.co"];
 
-it.each(xHosts)("blocks disabled X host %s, its subdomains and lookalikes", async (host) => {
+it.each(xHosts)("blocks X host %s, its subdomains and lookalikes without a grant", async (host) => {
   const upstream = vi.fn(async () => new Response("ok"));
   vi.stubGlobal("fetch", upstream);
   for (const hostname of [host, `cdn.${host}`]) {
@@ -159,7 +159,7 @@ it.each([
   "https://ton.twimg.com/responsive-web/example.js",
   "https://cdn.syndication.twimg.com/tweet-result?id=123",
   "https://t.co/example",
-])("blocks disabled X navigation, authentication, scripts and media: %s", async (url) => {
+])("blocks X navigation, authentication, scripts and media without a grant: %s", async (url) => {
   const upstream = vi.fn();
   vi.stubGlobal("fetch", upstream);
   const response = await relay(url);

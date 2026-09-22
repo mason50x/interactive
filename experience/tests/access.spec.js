@@ -40,9 +40,6 @@ test("embedded launches wait for the current grant and reject messages from othe
 test("the real Bare transport sends the scoped grant on HTTP and WebSocket handshakes", async ({ page }) => {
   await page.goto("/");
   const result = await page.evaluate(async () => {
-    const { default: Transport } = await import("/transport.mjs");
-    const transport = new Transport(location.origin + "/", "scoped-grant");
-    const headers = transport.createBareHeaders(new URL("https://x.com/"), {});
     // The real relay receives this first WebSocket message before any upstream
     // connection, and denies the intentionally invalid test grant.
     let connected;
@@ -53,6 +50,9 @@ test("the real Bare transport sends the scoped grant on HTTP and WebSocket hands
       nativeSend.call(this, value);
     };
     try {
+      const { default: Transport } = await import("/transport.mjs");
+      const transport = new Transport(location.origin + "/", "scoped-grant");
+      const headers = transport.createBareHeaders(new URL("https://x.com/"), {});
       const closed = new Promise(resolve => {
         transport.connect(new URL("wss://x.com/socket"), [], {}, () => {}, () => {}, resolve, resolve);
       });

@@ -39,6 +39,8 @@ put the same value in the app's `.env.local` and `experience/.dev.vars`.
 Keep it out of public variables and version control. A missing or mismatched
 secret denies X. The app issues ten-minute, X-only signed grants and renews
 them while Experience is open; no Clerk session token reaches the relay.
+Popups carry the current X-only grant for up to ten minutes. Reopen an X popup
+from Experience if its grant expires; the main embedded session renews automatically.
 Deploy both the app and Experience Worker when changing this access policy.
 
 Public variables are embedded at build time; changing them requires rebuilding.

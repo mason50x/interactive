@@ -74,11 +74,12 @@ export function AllowanceReset({ user }: { user?: DirectoryUser }) {
         <h3 className="font-medium">
           {user ? "Daily allowances" : "Reset allowances for everyone"}
         </h3>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          {user
-            ? "Restore this user’s daily allowance immediately."
-            : "This applies to every account. Active Experience sessions receive a fresh allowance."}
-        </p>
+        {!user && (
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            This applies to every account. Active Experience sessions receive a
+            fresh allowance.
+          </p>
+        )}
       </div>
       <fieldset disabled={busy} className="flex flex-wrap gap-x-5 gap-y-2">
         <legend className="sr-only">Allowances to reset</legend>
@@ -293,9 +294,6 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
               disabled={busy}
               onChange={(event) => setMinutes(event.target.value)}
             />
-            <span className="mt-1 block font-normal text-muted-foreground">
-              1 minute to 30 days. Ends automatically.
-            </span>
           </label>
           <div className="flex flex-wrap gap-2">
             <Button disabled={busy || !valid} onClick={() => void save(true)}>

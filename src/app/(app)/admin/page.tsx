@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 
 import { AdminConsole } from "@/components/app/admin/admin-console";
-import { Page, PageDescription, PageTitle } from "@/components/ui/page";
+import { Page, PageTitle } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -12,12 +12,7 @@ export default async function AdminPage() {
 
   return (
     <Page>
-      <div>
-        <PageTitle icon={<ShieldCheckIcon />}>Admin</PageTitle>
-        <PageDescription className="mt-2">
-          One directory for people, roles, and access.
-        </PageDescription>
-      </div>
+      <PageTitle icon={<ShieldCheckIcon />}>Admin</PageTitle>
       <AdminConsole />
     </Page>
   );

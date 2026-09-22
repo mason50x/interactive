@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
 import { useConvexAuth, usePaginatedQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -28,6 +28,30 @@ export const ROLE_LABEL: Record<SiteRole, string> = {
 export const SELECT_CLASS =
   "h-9 min-w-0 max-w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50";
 
+// A span over hidden cells creates phantom columns in a fixed-layout table.
+// Keep expanded rows aligned with the sm, md, and xl columns above them.
+const COLUMN_BREAKPOINTS = [
+  "(min-width: 40rem)",
+  "(min-width: 48rem)",
+  "(min-width: 80rem)",
+];
+function subscribeColumns(onChange: () => void) {
+  const queries = COLUMN_BREAKPOINTS.map((query) => window.matchMedia(query));
+  queries.forEach((query) => query.addEventListener("change", onChange));
+  return () =>
+    queries.forEach((query) => query.removeEventListener("change", onChange));
+}
+function visibleColumns() {
+  return (
+    2 +
+    COLUMN_BREAKPOINTS.filter((query) => window.matchMedia(query).matches)
+      .length
+  );
+}
+function serverColumns() {
+  return 5;
+}
+
 function AccessStatus({ user }: { user: DirectoryUser }) {
   return (
     <span
@@ -49,6 +73,11 @@ function AccessStatus({ user }: { user: DirectoryUser }) {
 }
 
 export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
+  const columnCount = useSyncExternalStore(
+    subscribeColumns,
+    visibleColumns,
+    serverColumns,
+  );
   const { isAuthenticated } = useConvexAuth();
   const { results, status, loadMore } = usePaginatedQuery(
     api.timeouts.users,
@@ -84,44 +113,9 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
     hasFilter && (status === "CanLoadMore" || status === "LoadingMore");
 
   return (
-    <section aria-labelledby="directory-title" className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <h2 id="directory-title" className="text-lg font-semibold">
-            User directory
-          </h2>
-          {status !== "LoadingFirstPage" && (
-            <span className="text-sm text-muted-foreground">
-              {results.length}
-              {status !== "Exhausted" ? "+" : ""} users
-            </span>
-          )}
-        </div>
-        {role === "ceo" && (
-          <Button
-            variant="ghost"
-            className="max-w-full text-left whitespace-normal"
-            aria-expanded={showBulkReset}
-            aria-controls="bulk-allowances"
-            onClick={() => setShowBulkReset(!showBulkReset)}
-          >
-            Reset all allowances
-            <ChevronDownIcon
-              className={cn(
-                "size-4 transition-transform",
-                showBulkReset && "rotate-180",
-              )}
-            />
-          </Button>
-        )}
-      </div>
-      {role === "ceo" && showBulkReset && (
-        <div id="bulk-allowances" className="mt-4 border-y border-border py-5">
-          <AllowanceReset />
-        </div>
-      )}
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <InputGroup className="sm:max-w-md">
+    <section aria-label="Users" className="min-w-0">
+      <div className="flex flex-wrap items-center gap-3">
+        <InputGroup className="min-w-0 flex-1 basis-56 sm:max-w-md">
           <InputAddon>
             <MagnifyingGlassIcon />
           </InputAddon>
@@ -150,7 +144,29 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
             </option>
           ))}
         </select>
+        {role === "ceo" && (
+          <Button
+            variant="ghost"
+            className="max-w-full text-left whitespace-normal sm:ml-auto"
+            aria-expanded={showBulkReset}
+            aria-controls="bulk-allowances"
+            onClick={() => setShowBulkReset(!showBulkReset)}
+          >
+            Reset all allowances
+            <ChevronDownIcon
+              className={cn(
+                "size-4 transition-transform",
+                showBulkReset && "rotate-180",
+              )}
+            />
+          </Button>
+        )}
       </div>
+      {role === "ceo" && showBulkReset && (
+        <div id="bulk-allowances" className="mt-4 border-y border-border py-5">
+          <AllowanceReset />
+        </div>
+      )}
 
       <div className="mt-5 overflow-hidden rounded-xl border border-border">
         <table className="w-full table-fixed text-left text-sm">
@@ -262,7 +278,10 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                   </tr>
                   {expanded && (
                     <tr className="border-b border-border last:border-0">
-                      <td colSpan={5} className="bg-muted/20 p-4 sm:p-5">
+                      <td
+                        colSpan={columnCount}
+                        className="bg-muted/20 p-4 sm:p-5"
+                      >
                         <div id={`user-${user.clerkId}`}>
                           <UserControls user={user} isCeo={role === "ceo"} />
                         </div>
@@ -275,7 +294,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={columnCount}
                   className="px-5 py-14 text-center text-muted-foreground"
                   role="status"
                 >
@@ -292,20 +311,21 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
           </tbody>
         </table>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-        <p role="status">
-          {searching
-            ? "Searching more users…"
-            : status === "LoadingMore"
-              ? "Loading users…"
-              : `${filtered.length} ${filtered.length === 1 ? "user" : "users"} shown`}
+      {(searching || status === "LoadingMore") && (
+        <p role="status" className="mt-3 text-xs text-muted-foreground">
+          {searching ? "Searching more users…" : "Loading users…"}
         </p>
-        {status === "CanLoadMore" && !hasFilter && (
-          <Button variant="outline" size="sm" onClick={() => loadMore(50)}>
-            Load more users
-          </Button>
-        )}
-      </div>
+      )}
+      {status === "CanLoadMore" && !hasFilter && (
+        <Button
+          className="mt-3"
+          variant="outline"
+          size="sm"
+          onClick={() => loadMore(50)}
+        >
+          Load more users
+        </Button>
+      )}
     </section>
   );
 }

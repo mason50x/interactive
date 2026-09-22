@@ -18,13 +18,6 @@ const THEME_ATTRIBUTE = "data-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
-/** Only authenticated app routes use the saved appearance preference. */
-export function usesAppTheme(pathname: string): boolean {
-  return /^\/(home|activities|entertainment|chat|experience|learning-simulator|learn)(?:\/|$)/.test(
-    pathname,
-  );
-}
-
 /** A temporary viewing theme; it never changes the saved appearance choice. */
 export function isEntertainmentPlayer(pathname: string): boolean {
   return /^\/entertainment\/[^/]+\/?$/.test(pathname);
@@ -149,9 +142,9 @@ export function applyTheme(theme: ResolvedTheme): void {
  * drift — the values are interpolated from the constants above rather than
  * written out twice.
  */
-export const themeScript = `(function(){try{var p="dark";if((${usesAppTheme.toString()})(location.pathname)){try{p=localStorage.getItem(${JSON.stringify(
+export const themeScript = `(function(){try{var p="dark";try{p=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
-)});}catch(_){}}if(p!=="system"&&p!=="light"&&p!=="dark")p="dark";var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
+)});}catch(_){}if(p!=="system"&&p!=="light"&&p!=="dark")p="dark";var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
   DARK_QUERY,
 )}).matches?"dark":"light");if((${isEntertainmentPlayer.toString()})(location.pathname))t="dark";var e=document.documentElement;e.setAttribute(${JSON.stringify(
   THEME_ATTRIBUTE,
