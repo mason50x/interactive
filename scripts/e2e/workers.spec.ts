@@ -50,6 +50,7 @@ test("anonymous requests cannot read protected HTML or RSC, including dotted slu
 }) => {
   for (const path of [
     "/home",
+    "/learning-simulator/published/missing",
     "/chat/room.js",
     "/activities/missing.png",
     "/learn/crossy",

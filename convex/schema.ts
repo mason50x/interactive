@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { publishedFields } from "./simulator/publishedModel";
 import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
 
@@ -21,6 +22,9 @@ export default defineSchema({
     allowanceSeconds: v.optional(v.number()),
     sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
+  publishedHtmlSimulators: defineTable(publishedFields)
+    .index("by_publishKey", ["publishKey"])
+    .index("by_storageId", ["storageId"]),
   htmlSimulatorEntries: defineTable(htmlFields)
     .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"]),
   simulatorEntries: defineTable(entryFields)

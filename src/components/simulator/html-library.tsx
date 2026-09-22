@@ -13,6 +13,7 @@ import {
   openHtml,
   removeHtml,
   renameHtml,
+  readHtmlProgram,
   type HtmlEntry,
   type HtmlProgram,
 } from "@/lib/simulator/html-store";
@@ -27,6 +28,10 @@ import {
 } from "./library-entries";
 import { LibraryShell } from "./library-shell";
 import { PixelCode } from "./pixel-code";
+import { Button } from "@/components/ui/button";
+import { PublishedHtmlLibrary } from "./published-html-library";
+import type { PublishedDraft } from "./published-html-editor";
+import { validatePublishedHtml } from "@config/published-html";
 
 const ROOT = "/learning-simulator/html";
 
@@ -46,6 +51,8 @@ export default function HtmlLibrary() {
   const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const cloud = useAuthedQuery(api.simulator.html.list, {});
+  const canPublish = useAuthedQuery(api.simulator.published.access, {}) === true;
+  const [draft, setDraft] = useState<PublishedDraft | null>(null);
   const remove = useMutation(api.simulator.html.remove);
   const rename = useMutation(api.simulator.html.rename);
   const [local, setLocal] = useState<HtmlEntry[]>([]);
@@ -171,6 +178,20 @@ export default function HtmlLibrary() {
                 href={`${ROOT}/${row.contentHash}`}
                 action={row.available ? "Resume" : "Open"}
                 disabled={busy}
+                actions={canPublish && row.available ? (
+                  <Button variant="ghost" disabled={busy || !!draft} onClick={async () => {
+                    if (!userId) return;
+                    setBusy(true); setError("");
+                    try {
+                      const program = await readHtmlProgram(userId, row.contentHash);
+                      if (!program) throw new Error("Open the original HTML on this device before publishing.");
+                      const source = new TextDecoder().decode(program.bytes);
+                      validatePublishedHtml(source);
+                      setDraft({ label: row.label, description: "", source });
+                    } catch (e) { setError(e instanceof Error ? e.message : "Could not read this HTML."); }
+                    finally { setBusy(false); }
+                  }}>Publish</Button>
+                ) : null}
                 deleteMessage="Delete this HTML, its device progress, and its account library entry? Copies on other devices remain."
                 onRename={async (label) => {
                   if (!userId) return;
@@ -206,6 +227,7 @@ export default function HtmlLibrary() {
           </EntryList>
         )}
       </ProgressSection>
+      <PublishedHtmlLibrary canManage={canPublish} draft={draft} setDraft={setDraft} />
     </LibraryShell>
   );
 }

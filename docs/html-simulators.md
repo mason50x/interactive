@@ -6,7 +6,17 @@ The dashboard opens in HTML mode first, with an HTML/GB selector and a remembere
 
 Choose/drop a UTF-8 `.html`/`.htm` file or expand Paste code. Use a self-contained document with embedded JavaScript, CSS, and data-URL assets. The original bytes are hashed and cached in account- and environment-scoped IndexedDB. Identical bytes reuse the entry and progress; edited bytes create a separate entry. The 20-entry device library permits up to 8 MiB per document. Browser storage can be cleared/evicted; persistent storage is requested opportunistically.
 
-The separate `htmlSimulatorEntries` Convex table stores only owner, hash, label, and created/opened timestamps (20 entries/account). There is no HTML upload or HTML progress endpoint. Metadata registration runs once per player mount; a failure doesn't prevent local execution or trigger writes on every save. Cloud-only entries ask for the original HTML on this device. Progress stays on the device. Clearing an entry removes local source and saves plus account metadata; copies on other browsers remain. Reopening a retained copy on another device explicitly registers it again.
+The separate `htmlSimulatorEntries` Convex table stores only owner, hash, label, and created/opened timestamps (20 entries/account). Personal imports have no HTML upload or cloud progress endpoint. Metadata registration runs once per player mount; a failure doesn't prevent local execution or trigger writes on every save. Cloud-only entries ask for the original HTML on this device. Progress stays on the device. Clearing an entry removes local source and saves plus account metadata; copies on other browsers remain. Reopening a retained copy on another device explicitly registers it again.
+
+## Published HTML library
+
+Below personal progress, a shared grid uses the same cards and layout as games. All signed-in users can open these templates without supplying a file. Only Builders and CEOs can publish, edit code/name/description, or remove any published entry. Head moderators and moderators are read-only. This permission does not grant Admin-panel access.
+
+Use **Publish** beside a personal file or **Publish HTML** in the shared section. Publishing copies the source, never personal progress, to Convex file storage. Personal HTML remains local and continues to work as before. The `publishedHtmlSimulators` table holds metadata, a storage ID, a source hash, and a revision; lists never download source. The editor accepts a self-contained UTF-8 HTML file or code up to **2 MiB**, names up to 60 characters, and descriptions up to 280 characters. The shared catalogue is capped at 200 entries; publishing is rate-limited. These limits are enforced on the backend.
+
+Players load `/learning-simulator/published/[id]`, verify the downloaded size and SHA-256, and use the existing sandbox and save bridge. Progress is isolated by account, template, and source hash on the device. Code edits start fresh progress; metadata-only edits retain it. Published play does not consume a slot in the personal library or register personal cloud metadata. Removing a personal file does not unpublish its shared copy. Removing a shared entry removes its stored file; shared templates survive deletion of their creator's account because the Builder/CEO team manages them collectively.
+
+Edits and removals require the current revision, so stale editors cannot overwrite newer work. Retried publication requests do not create duplicate entries. Permissions and timeouts are checked again when the file is committed. Replaced files and failed uploads are deleted. Deploy the new Convex schema/functions before deploying the frontend; no migration is needed.
 
 ## Save API
 
