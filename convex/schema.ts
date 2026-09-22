@@ -85,6 +85,7 @@ export default defineSchema({
       v.literal("ceo"),
       v.literal("head_moderator"),
       v.literal("moderator"),
+      v.literal("builder"),
       v.literal("member"),
     ),
     updatedAt: v.number(),

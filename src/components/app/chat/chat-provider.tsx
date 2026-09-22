@@ -46,7 +46,7 @@ export type Chat = {
   isAdmin: boolean;
   staffRoles: {
     clerkId: string;
-    role: "ceo" | "head_moderator" | "moderator";
+    role: "ceo" | "head_moderator" | "moderator" | "builder";
   }[];
   adminBadgesLoaded: boolean;
   /**

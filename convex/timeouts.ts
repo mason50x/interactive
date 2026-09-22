@@ -17,7 +17,7 @@ import {
   timeoutRow,
 } from "./timeoutState";
 
-const ranks = { member: 0, moderator: 1, head_moderator: 2, ceo: 3 } as const;
+const ranks = { member: 0, builder: 1, moderator: 1, head_moderator: 2, ceo: 3 } as const;
 const timeoutView = v.object({
   rayId: v.id("userTimeouts"),
   reason: v.string(),
