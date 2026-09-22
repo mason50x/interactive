@@ -14,12 +14,20 @@
   "workers_dev": false,
   "preview_urls": false,
   "keep_vars": true,
+  // Smart Placement: subrequests fan out to Clerk, Convex, and the
+  // experience worker, so let Cloudflare place the worker near its backends
+  // instead of near the visitor. Zero-cost latency win.
+  "placement": { "mode": "smart" },
   "vars": {
     "EXPERIENCE_ORIGIN": "https://experience.interactivelearning-content-net.work",
   },
   "observability": {
     "redact_query_string": true,
     "enabled": true,
+    // Dashboard audit (2026-09-21): logs and traces were persisted at 100%
+    // sampling. ~50k invocations/week does not need full-fidelity sampling;
+    // 10% keeps debugging signal while cutting log volume and overhead.
+    "head_sampling_rate": 0.1,
     "traces": {
       "enabled": true,
     },

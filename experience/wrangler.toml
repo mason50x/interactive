@@ -29,3 +29,11 @@ run_worker_first = ["/v3", "/v3/*"]
 
 [observability]
 enabled = true
+# Dashboard audit (2026-09-21): 100% sampling at ~50k invocations/week burns
+# log allowance for no benefit. 10% keeps the debugging signal.
+head_sampling_rate = 0.1
+
+# Smart Placement: /v3/ fans out to TikTok/Twitter/Spotify embed CDNs, so
+# place the worker near its backends instead of near the visitor.
+[placement]
+mode = "smart"
