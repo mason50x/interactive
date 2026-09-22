@@ -82,7 +82,11 @@ export function AppSidebar() {
   );
 
   const { pendingHref, report } = useNavPending();
-  const { activeHref, litHref } = useActiveNav(pathname, pendingHref);
+  const { activeHref, litHref } = useActiveNav(
+    pathname,
+    pendingHref,
+    destinations,
+  );
 
   // Keep the artwork dim and slower behind games, video and embedded apps.
   // Catalogue routes remain interactive; only a player consumes this budget.

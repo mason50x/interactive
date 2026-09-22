@@ -2,13 +2,15 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExperienceChrome } from "@/components/app/experience-chrome";
-import { EXPERIENCE_APPS, experienceSrc, findExperienceApp } from "@/lib/experience";
+import { experienceAppsFor, experienceSrc, findExperienceApp } from "@/lib/experience";
+import { experienceAccessFor } from "@/lib/experience-access";
 
 type Props = { params: Promise<{ app: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { userId } = await auth();
   const { app } = await params;
-  return { title: findExperienceApp(app)?.label ?? "Experience" };
+  return { title: findExperienceApp(app, userId)?.label ?? "Experience" };
 }
 
 /**
@@ -16,18 +18,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * the frame under it fill the dashboard's main column edge to edge.
  */
 export default async function ExperienceAppPage({ params }: Props) {
-  await auth.protect();
+  const { userId } = await auth.protect();
 
   const { app: id } = await params;
-  const app = findExperienceApp(id);
+  const app = findExperienceApp(id, userId);
   if (!app) notFound();
+  const accessToken = await experienceAccessFor(userId);
 
   return (
     <ExperienceChrome
       initialAppId={app.id}
-      services={EXPERIENCE_APPS.map((service) => ({
+      accessToken={accessToken}
+      services={experienceAppsFor(userId).map((service) => ({
         ...service,
-        src: experienceSrc(service.start),
+        src: service.id === "x" && !accessToken ? null : experienceSrc(service.start),
       }))}
     />
   );

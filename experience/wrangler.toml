@@ -14,6 +14,8 @@ main = "src/worker.js"
 compatibility_date = "2026-09-01"
 workers_dev = false
 preview_urls = false
+# EXPERIENCE_ACCESS_SECRET is a runtime secret shared with the app Worker.
+# Without it, X remains inaccessible; see docs/environment.md.
 
 # Custom hostname on the content zone. `custom_domain` makes wrangler create the
 # DNS record and certificate. Public workers.dev and preview URLs stay disabled.

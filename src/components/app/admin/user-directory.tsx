@@ -1,0 +1,301 @@
+"use client";
+
+import { Fragment, useEffect, useState } from "react";
+import { useConvexAuth, usePaginatedQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import {
+  ChevronDownIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
+
+import { api } from "@convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { AllowanceReset, UserControls } from "./user-controls";
+
+export type DirectoryUser = FunctionReturnType<
+  typeof api.timeouts.users
+>["page"][number];
+export type SiteRole = DirectoryUser["role"];
+export const ROLE_LABEL: Record<SiteRole, string> = {
+  ceo: "CEO",
+  head_moderator: "Head Moderator",
+  moderator: "Moderator",
+  builder: "Builder",
+  member: "Member",
+};
+export const SELECT_CLASS =
+  "h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50";
+
+function AccessStatus({ user }: { user: DirectoryUser }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 text-xs",
+        user.timeout ? "text-destructive" : "text-muted-foreground",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-1.5 rounded-full",
+          user.timeout ? "bg-destructive" : "bg-success",
+        )}
+      />
+      {user.timeout ? "Timed out" : user.ceoCleared ? "CEO cleared" : "Active"}
+    </span>
+  );
+}
+
+export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
+  const { isAuthenticated } = useConvexAuth();
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.timeouts.users,
+    isAuthenticated ? {} : "skip",
+    { initialNumItems: 50 },
+  );
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showBulkReset, setShowBulkReset] = useState(false);
+  const term = search.trim().toLowerCase();
+  const hasFilter = Boolean(term) || filter !== "all";
+
+  // Keep searching beyond the first page so filters cannot silently miss a user.
+  useEffect(() => {
+    if (hasFilter && status === "CanLoadMore") loadMore(50);
+  }, [hasFilter, status, loadMore]);
+
+  const filtered = results.filter((user) => {
+    const matchesSearch = [
+      user.label,
+      user.username,
+      user.email,
+      user.clerkId,
+    ].some((value) => value?.toLowerCase().includes(term));
+    return (
+      matchesSearch &&
+      (filter === "all" ||
+        (filter === "timed_out" ? Boolean(user.timeout) : user.role === filter))
+    );
+  });
+  const searching =
+    hasFilter && (status === "CanLoadMore" || status === "LoadingMore");
+
+  return (
+    <section aria-labelledby="directory-title" className="min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-baseline gap-2.5">
+          <h2 id="directory-title" className="text-lg font-semibold">
+            User directory
+          </h2>
+          {status !== "LoadingFirstPage" && (
+            <span className="text-sm text-muted-foreground">
+              {results.length}
+              {status !== "Exhausted" ? "+" : ""} users
+            </span>
+          )}
+        </div>
+        {role === "ceo" && (
+          <Button
+            variant="ghost"
+            aria-expanded={showBulkReset}
+            aria-controls="bulk-allowances"
+            onClick={() => setShowBulkReset(!showBulkReset)}
+          >
+            Reset everyone’s allowances
+            <ChevronDownIcon
+              className={cn(
+                "size-4 transition-transform",
+                showBulkReset && "rotate-180",
+              )}
+            />
+          </Button>
+        )}
+      </div>
+      {role === "ceo" && showBulkReset && (
+        <div id="bulk-allowances" className="mt-4 border-y border-border py-5">
+          <AllowanceReset />
+        </div>
+      )}
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <InputGroup className="sm:max-w-md">
+          <InputAddon>
+            <MagnifyingGlassIcon />
+          </InputAddon>
+          <Input
+            aria-label="Search users"
+            placeholder={
+              role === "ceo"
+                ? "Search name, handle, or email"
+                : "Search name or handle"
+            }
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </InputGroup>
+        <select
+          aria-label="Filter users"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+          className={SELECT_CLASS}
+        >
+          <option value="all">All users</option>
+          <option value="timed_out">Timed out</option>
+          {Object.entries(ROLE_LABEL).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-5 overflow-hidden rounded-xl border border-border">
+        <table className="w-full table-fixed text-left text-sm">
+          <caption className="sr-only">
+            User directory. View a user to manage their role, timeout, and
+            allowances.
+          </caption>
+          <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
+            <tr>
+              <th scope="col" className="px-4 py-3 font-medium sm:px-5">
+                User
+              </th>
+              <th
+                scope="col"
+                className="hidden w-36 px-3 py-3 font-medium sm:table-cell"
+              >
+                Role
+              </th>
+              <th
+                scope="col"
+                className="hidden w-32 px-3 py-3 font-medium md:table-cell"
+              >
+                Access
+              </th>
+              <th
+                scope="col"
+                className="hidden w-32 px-3 py-3 font-medium xl:table-cell"
+              >
+                Joined
+              </th>
+              <th scope="col" className="w-20 px-3 py-3">
+                <span className="sr-only">Details</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((user) => {
+              const expanded = selected === user.clerkId;
+              return (
+                <Fragment key={user.clerkId}>
+                  <tr
+                    className={cn(
+                      "border-b border-border last:border-0",
+                      expanded ? "bg-primary/[0.05]" : "hover:bg-muted/40",
+                    )}
+                  >
+                    <td className="px-4 py-3.5 sm:px-5">
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-controls={`user-${user.clerkId}`}
+                        onClick={() =>
+                          setSelected(expanded ? null : user.clerkId)
+                        }
+                        className="block w-full min-w-0 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="block truncate font-medium">
+                          {user.label}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {user.username
+                            ? `@${user.username}`
+                            : (user.email ?? user.clerkId)}
+                        </span>
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 md:hidden">
+                          <span className="text-xs text-muted-foreground sm:hidden">
+                            {ROLE_LABEL[user.role]}
+                          </span>
+                          <AccessStatus user={user} />
+                        </span>
+                      </button>
+                    </td>
+                    <td className="hidden px-3 py-3.5 text-muted-foreground sm:table-cell">
+                      {ROLE_LABEL[user.role]}
+                    </td>
+                    <td className="hidden px-3 py-3.5 md:table-cell">
+                      <AccessStatus user={user} />
+                    </td>
+                    <td className="hidden px-3 py-3.5 text-xs text-muted-foreground xl:table-cell">
+                      {new Date(user.joinedAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`${expanded ? "Close" : "View"} ${user.label}`}
+                        aria-expanded={expanded}
+                        aria-controls={`user-${user.clerkId}`}
+                        onClick={() =>
+                          setSelected(expanded ? null : user.clerkId)
+                        }
+                      >
+                        {expanded ? "Close" : "View"}
+                      </Button>
+                    </td>
+                  </tr>
+                  {expanded && (
+                    <tr className="border-b border-border last:border-0">
+                      <td colSpan={5} className="bg-muted/20 p-4 sm:p-5">
+                        <div id={`user-${user.clerkId}`}>
+                          <UserControls user={user} isCeo={role === "ceo"} />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-5 py-14 text-center text-muted-foreground"
+                  role="status"
+                >
+                  {status === "LoadingFirstPage"
+                    ? "Loading users…"
+                    : searching
+                      ? "Searching users…"
+                      : results.length === 0
+                        ? "No users yet."
+                        : "No users match your search."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+        <p role="status">
+          {searching
+            ? "Searching more users…"
+            : status === "LoadingMore"
+              ? "Loading users…"
+              : `${filtered.length} ${filtered.length === 1 ? "user" : "users"} shown`}
+        </p>
+        {status === "CanLoadMore" && !hasFilter && (
+          <Button variant="outline" size="sm" onClick={() => loadMore(50)}>
+            Load more users
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}

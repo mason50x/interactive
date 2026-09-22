@@ -21,11 +21,25 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `NEXT_PUBLIC_ASSET_ORIGIN` | Legacy alias for the asset origin |
 | `EXPERIENCE_ORIGIN` | Experience Worker origin for development and production |
 | `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | Legacy alias for the Worker origin |
+| `EXPERIENCE_ACCESS_SECRET` | Shared app/Experience Worker secret for Mason's X access; at least 32 random characters |
 | `CONVEX_DEPLOY_KEY` | Production deployment and runtime administrative account-sync credential |
 
 `EXPERIENCE_ORIGIN` is a public server-side origin committed in the app's
 `wrangler.jsonc` vars so production receives it. `.env.local` alone does not
 deploy this setting. Update the Wrangler value when moving the Experience Worker.
+
+X is limited to Mason's exact production Clerk account in
+`config/experience-access.json`. Other staff roles do not grant access. Its
+route, service list, HTTP relay and WebSocket relay enforce this restriction;
+the other Experience services retain their existing availability.
+
+Before deploying X, configure the same random `EXPERIENCE_ACCESS_SECRET` as a
+runtime secret on **both** the app Worker and `il-experience`. For local work,
+put the same value in the app's `.env.local` and `experience/.dev.vars`.
+Keep it out of public variables and version control. A missing or mismatched
+secret denies X. The app issues ten-minute, X-only signed grants and renews
+them while Experience is open; no Clerk session token reaches the relay.
+Deploy both the app and Experience Worker when changing this access policy.
 
 Public variables are embedded at build time; changing them requires rebuilding.
 Set `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.

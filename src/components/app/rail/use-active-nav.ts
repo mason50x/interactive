@@ -1,10 +1,14 @@
 "use client";
 
-import { navItems } from "@/lib/nav";
+import type { NavItem } from "@/lib/nav";
 
-/** Match the most specific route; pending navigation highlights immediately. */
-export function useActiveNav(pathname: string, pendingHref: string | null) {
-  const activeHref = navItems.reduce((best, item) => {
+/** Match the visible destinations, including role-specific navigation. */
+export function useActiveNav(
+  pathname: string,
+  pendingHref: string | null,
+  destinations: readonly Pick<NavItem, "href">[],
+) {
+  const activeHref = destinations.reduce((best, item) => {
     const matches =
       pathname === item.href || pathname.startsWith(`${item.href}/`);
     return matches && item.href.length > best.length ? item.href : best;

@@ -34,6 +34,7 @@
  */
 
 import allowlist from "../../config/experience-allowlist.json";
+import { ACCESS_HEADER, verifyExperienceAccess } from "./access.js";
 
 /**
  * Each entry allows a host and its subdomains. An entry with `paths` allows
@@ -44,6 +45,7 @@ import allowlist from "../../config/experience-allowlist.json";
 const SITES = allowlist.sites.map((site) => ({
   host: site.host.toLowerCase(),
   paths: Array.isArray(site.paths) && site.paths.length ? site.paths : null,
+  access: site.access ?? null,
 }));
 
 /** The client splits `x-bare-headers` into numbered parts past this length. */
@@ -57,6 +59,7 @@ const MAX_HEADER_VALUE = 3072;
  * client would make it decode plain bytes.
  */
 const DROP_REQUEST = new Set([
+  ACCESS_HEADER,
   "host",
   "connection",
   "upgrade",
@@ -100,9 +103,9 @@ export default {
         return new Response(null, { status: 204, headers: CORS });
       }
       if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
-        return relayWebSocket(request);
+        return relayWebSocket(request, env);
       }
-      return relayHttp(request);
+      return relayHttp(request, env);
     }
 
     // The Bare manifest. Nothing in the engine reads it, but it is the
@@ -123,10 +126,10 @@ export default {
 };
 
 /** One relayed HTTP request. */
-async function relayHttp(request) {
+async function relayHttp(request, env) {
   const bare = joinHeaders(request.headers);
 
-  const target = parseTarget(bare.get("x-bare-url"), ["http:", "https:"]);
+  const target = await parseTarget(bare.get("x-bare-url"), ["http:", "https:"], bare.get(ACCESS_HEADER), env.EXPERIENCE_ACCESS_SECRET);
   if (target.error) return target.error;
 
   let requestHeaders;
@@ -231,12 +234,12 @@ async function relayHttp(request) {
  * the real destination, and expects one JSON `open` message back before any
  * frames. From then on it is a byte pipe in both directions.
  */
-function relayWebSocket() {
+function relayWebSocket(request, env) {
   const pair = new WebSocketPair();
   const [client, server] = Object.values(pair);
   server.accept();
 
-  const onConnect = (event) => {
+  const onConnect = async (event) => {
     server.removeEventListener("message", onConnect);
 
     let message;
@@ -250,10 +253,14 @@ function relayWebSocket() {
       return;
     }
 
-    const target = parseTarget(message.remote, ["ws:", "wss:", "http:", "https:"]);
+    const target = await parseTarget(message.remote, ["ws:", "wss:", "http:", "https:"], message.headers?.[ACCESS_HEADER], env.EXPERIENCE_ACCESS_SECRET);
     if (target.error) {
       safeClose(server, 1008, "Host is not on the allowlist.");
       return;
+    }
+    if (target.accessUntil) {
+      const expiry = setTimeout(() => safeClose(server, 1008, "Experience access expired."), Math.max(0, target.accessUntil - Date.now()));
+      server.addEventListener("close", () => clearTimeout(expiry), { once: true });
     }
 
     connectUpstream(server, target.url, message).catch((error) => {
@@ -288,7 +295,7 @@ async function connectUpstream(server, url, message) {
     : [];
   if (protocols.length) headers.set("sec-websocket-protocol", protocols.join(", "));
 
-  const response = await fetch(fetchUrl, { headers });
+  const response = await fetch(fetchUrl, { headers, redirect: "manual" });
   const upstream = response.webSocket;
   if (!upstream) {
     safeClose(server, 1011, `Upstream answered ${response.status} instead of upgrading.`);
@@ -327,7 +334,7 @@ async function connectUpstream(server, url, message) {
 /* ------------------------------------------------------------------------ */
 
 /** Parse and allowlist-check a destination. Returns `{ url }` or `{ error }`. */
-function parseTarget(raw, protocols) {
+async function parseTarget(raw, protocols, token, secret) {
   let url;
   try {
     url = new URL(raw ?? "");
@@ -346,7 +353,9 @@ function parseTarget(raw, protocols) {
       ),
     };
   }
-  if (!isAllowed(url)) {
+  const site = allowedSite(url);
+  const accessUntil = site?.access ? await verifyExperienceAccess(token, secret) : null;
+  if (!site || (site.access && !accessUntil)) {
     // Host-only diagnostics: never log signed URLs, queries, or credentials.
     console.warn("experience_destination_denied", { host: url.hostname });
     return {
@@ -358,12 +367,12 @@ function parseTarget(raw, protocols) {
       ),
     };
   }
-  return { url };
+  return { url, accessUntil };
 }
 
-function isAllowed(url) {
+function allowedSite(url) {
   const host = url.hostname.toLowerCase();
-  return SITES.some(
+  return SITES.find(
     ({ host: allowed, paths }) =>
       (host === allowed || host.endsWith(`.${allowed}`)) &&
       (!paths || paths.some((prefix) => url.pathname.startsWith(prefix))),

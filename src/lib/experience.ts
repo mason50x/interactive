@@ -16,6 +16,7 @@
 
 import allowlist from "@config/experience-allowlist.json";
 import { originFromEnv } from "@/lib/origin";
+import { canUseX } from "../../experience/src/access.js";
 
 /** One line of the allowlist, as the Worker also reads it. */
 type ExperienceSite = {
@@ -24,6 +25,7 @@ type ExperienceSite = {
   label: string | null;
   start: string | null;
   paths?: string[];
+  access?: string;
 };
 
 /** An allowlist entry that is also an app: it has a name and a front door. */
@@ -38,11 +40,20 @@ export type ExperienceApp = {
 
 const SITES: ExperienceSite[] = allowlist.sites;
 
-export const EXPERIENCE_APPS: ExperienceApp[] = SITES.flatMap((site) =>
+const ALL_EXPERIENCE_APPS: ExperienceApp[] = SITES.flatMap((site) =>
   site.id && site.label && site.start
     ? [{ id: site.id, label: site.label, host: site.host, start: site.start }]
     : [],
 );
+
+/** Safe default for shared search and other catalogues without a user identity. */
+export const EXPERIENCE_APPS = ALL_EXPERIENCE_APPS.filter(
+  (app) => app.id !== "x",
+);
+
+export function experienceAppsFor(clerkId?: string | null): ExperienceApp[] {
+  return canUseX(clerkId) ? ALL_EXPERIENCE_APPS : EXPERIENCE_APPS;
+}
 
 /** The apps list. */
 export const EXPERIENCE_HREF = "/experience";
@@ -51,8 +62,11 @@ export function experienceAppHref(id: string): string {
   return `${EXPERIENCE_HREF}/${encodeURIComponent(id)}`;
 }
 
-export function findExperienceApp(id: string): ExperienceApp | null {
-  return EXPERIENCE_APPS.find((app) => app.id === id) ?? null;
+export function findExperienceApp(
+  id: string,
+  clerkId?: string | null,
+): ExperienceApp | null {
+  return experienceAppsFor(clerkId).find((app) => app.id === id) ?? null;
 }
 
 /** The experience origin, or `null` when none is configured. */

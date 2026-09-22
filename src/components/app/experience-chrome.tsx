@@ -10,7 +10,7 @@ import {
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ExperienceQuotaDonut,
   useExperienceQuota,
@@ -28,9 +28,11 @@ type BrowserTab = { id: number; appId: string | null; run: number };
 export function ExperienceChrome({
   services,
   initialAppId,
+  accessToken,
 }: {
   services: ExperienceService[];
   initialAppId?: string;
+  accessToken?: string | null;
 }) {
   const [tabs, setTabs] = useState<BrowserTab[]>([
     { id: 0, appId: initialAppId ?? null, run: 0 },
@@ -47,6 +49,41 @@ export function ExperienceChrome({
   const { full, canFull, toggleFull } = useStageFullscreen(stage);
   const active = tabs.find((tab) => tab.id === activeId)!;
   const app = services.find((service) => service.id === active.appId);
+  const latestAccess = useRef(accessToken ?? null);
+  const frames = useRef(new Map<number, HTMLIFrameElement>());
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let stopped = false;
+    async function refresh() {
+      try {
+        const response = await fetch("/experience/access", { method: "POST" });
+        if (stopped) return;
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403)
+            latestAccess.current = null;
+          else return;
+        } else {
+          const data: { token: string } = await response.json();
+          if (stopped) return;
+          latestAccess.current = data.token;
+        }
+        for (const frame of frames.current.values()) {
+          frame.contentWindow?.postMessage(
+            { type: "experience-access", token: latestAccess.current },
+            new URL(frame.src).origin,
+          );
+        }
+      } catch {
+        // A transient failure retries; the relay still rejects expired grants.
+      }
+    }
+    const interval = setInterval(refresh, 60_000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [accessToken]);
 
   function newTab() {
     const id = nextId.current++;
@@ -223,7 +260,25 @@ export function ExperienceChrome({
               ) : quota.allowed ? (
                 <iframe
                   key={tab.run}
-                  src={service.src}
+                  ref={(frame) => {
+                    if (frame) frames.current.set(tab.id, frame);
+                    else frames.current.delete(tab.id);
+                  }}
+                  src={
+                    accessToken
+                      ? `${service.src}#${new URLSearchParams({ access: accessToken, appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
+                      : service.src
+                  }
+                  onLoad={(event) => {
+                    const frame = event.currentTarget;
+                    frame.contentWindow?.postMessage(
+                      {
+                        type: "experience-access",
+                        token: latestAccess.current,
+                      },
+                      new URL(frame.src).origin,
+                    );
+                  }}
                   title={`${service.label} — tab ${tab.id + 1}`}
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                   allow="fullscreen; autoplay; encrypted-media"

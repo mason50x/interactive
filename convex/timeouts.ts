@@ -61,7 +61,19 @@ export const mine = query({
 const directoryUser = v.object({
   clerkId: v.string(),
   label: v.string(),
+  name: v.optional(v.string()),
+  email: v.optional(v.string()),
+  imageUrl: v.optional(v.string()),
   username: v.optional(v.string()),
+  role: v.union(
+    v.literal("ceo"),
+    v.literal("head_moderator"),
+    v.literal("moderator"),
+    v.literal("builder"),
+    v.literal("member"),
+  ),
+  joinedAt: v.number(),
+  canChangeRole: v.boolean(),
   canManage: v.boolean(),
   ceoCleared: v.boolean(),
   timeout: v.union(timeoutView, v.null()),
@@ -86,7 +98,15 @@ export const users = query({
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
+          // Contact details remain limited to the CEO directory audience.
+          ...(caller.role === "ceo"
+            ? { name: user.name, email: user.email }
+            : {}),
+          imageUrl: user.imageUrl,
           username: user.username,
+          role,
+          joinedAt: user.clerkCreatedAt ?? user._creationTime,
+          canChangeRole: caller.role === "ceo" && user.clerkId !== caller.clerkId,
           ceoCleared,
           canManage:
             ranks[role] < ranks[caller.role] &&

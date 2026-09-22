@@ -1,17 +1,20 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { ExperienceChrome } from "@/components/app/experience-chrome";
-import { EXPERIENCE_APPS, experienceSrc } from "@/lib/experience";
+import { experienceAppsFor, experienceSrc } from "@/lib/experience";
+import { experienceAccessFor } from "@/lib/experience-access";
 
 export const metadata: Metadata = { title: "Experience" };
 
 export default async function ExperiencePage() {
-  await auth.protect();
+  const { userId } = await auth.protect();
+  const accessToken = await experienceAccessFor(userId);
   return (
     <ExperienceChrome
-      services={EXPERIENCE_APPS.map((app) => ({
+      accessToken={accessToken}
+      services={experienceAppsFor(userId).map((app) => ({
         ...app,
-        src: experienceSrc(app.start),
+        src: app.id === "x" && !accessToken ? null : experienceSrc(app.start),
       }))}
     />
   );

@@ -1,6 +1,10 @@
 {
   "$comment": "Every site the experience will fetch. The Worker in experience/src/worker.js enforces `host` (exact match or any subdomain) and, when `paths` is present, only URLs under one of those path prefixes. Entries that also carry `id`, `label` and `start` are the apps listed on /experience; the rest are dependencies, enforced but not shown. Edit here, then redeploy both: `npm run deploy` in experience/ and the app.",
   "sites": [
+    {"host": "x.com", "id": "x", "label": "X", "start": "https://x.com/", "access": "x"},
+    {"host": "twitter.com", "label": null, "start": null, "access": "x"},
+    {"host": "twimg.com", "label": null, "start": null, "access": "x"},
+    {"host": "t.co", "label": null, "start": null, "access": "x"},
     {"host": "wikipedia.org", "label": null, "start": null},
     {"host": "wikimedia.org", "label": null, "start": null},
     {"host": "developer.mozilla.org", "label": null, "start": null},

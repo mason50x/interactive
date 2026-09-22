@@ -15,7 +15,7 @@ export default async function AdminPage() {
       <div>
         <PageTitle icon={<ShieldCheckIcon />}>Admin</PageTitle>
         <PageDescription className="mt-2">
-          Manage access and account controls.
+          One directory for people, roles, and access.
         </PageDescription>
       </div>
       <AdminConsole />

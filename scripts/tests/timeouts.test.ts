@@ -42,6 +42,141 @@ const start = (clerkId: string) => ({
   durationMinutes: 60,
 });
 
+test("the paginated directory combines profiles, roles, and timeouts with CEO-only contact details", async () => {
+  const t = await setup();
+  const joinedAt = Date.UTC(2025, 0, 1);
+  await t.run(async (ctx) => {
+    const member = await ctx.db
+      .query("users")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", "member"))
+      .unique();
+    await ctx.db.patch(member!._id, {
+      name: "Member Name",
+      email: "member@example.com",
+      imageUrl: "https://example.com/avatar.png",
+      clerkCreatedAt: joinedAt,
+    });
+  });
+  const ceo = t.withIdentity({ subject: "ceo" });
+  const head = t.withIdentity({ subject: "head" });
+  await head.mutation(api.timeouts.set, start("member"));
+  const args = { paginationOpts: { cursor: null, numItems: 50 } };
+  const ceoUsers = (await ceo.query(api.timeouts.users, args)).page;
+  expect(ceoUsers.find((user) => user.clerkId === "member")).toMatchObject({
+    label: "Member Name",
+    name: "Member Name",
+    email: "member@example.com",
+    username: "member",
+    imageUrl: "https://example.com/avatar.png",
+    joinedAt,
+    role: "member",
+    canChangeRole: true,
+    canManage: true,
+    ceoCleared: false,
+    timeout: { reason: "Repeated disruption", expiresAt: Date.now() + 3_600_000 },
+  });
+  const ceoRow = await t.run((ctx) =>
+    ctx.db
+      .query("users")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", "ceo"))
+      .unique(),
+  );
+  expect(ceoUsers.find((user) => user.clerkId === "ceo")).toMatchObject({
+    role: "ceo",
+    joinedAt: ceoRow!._creationTime,
+    canChangeRole: false,
+    canManage: false,
+    timeout: null,
+  });
+  const headUsers = (await head.query(api.timeouts.users, args)).page;
+  expect(headUsers.every((user) => !user.canChangeRole)).toBe(true);
+  for (const user of headUsers) {
+    expect(user).not.toHaveProperty("name");
+    expect(user).not.toHaveProperty("email");
+  }
+  expect(headUsers.find((user) => user.clerkId === "member")).toMatchObject({
+    label: "Member Name",
+    role: "member",
+    joinedAt,
+    canManage: true,
+    timeout: { reason: "Repeated disruption" },
+  });
+  expect(
+    headUsers.filter((user) => !user.canManage).map((user) => user.clerkId),
+  ).toEqual(["ceo", "head", "peer"]);
+
+  const first = await ceo.query(api.timeouts.users, {
+    paginationOpts: { cursor: null, numItems: 2 },
+  });
+  const second = await ceo.query(api.timeouts.users, {
+    paginationOpts: { cursor: first.continueCursor, numItems: 2 },
+  });
+  const last = await ceo.query(api.timeouts.users, {
+    paginationOpts: { cursor: second.continueCursor, numItems: 2 },
+  });
+  expect(first.isDone).toBe(false);
+  expect(last.isDone).toBe(true);
+  expect([...first.page, ...second.page, ...last.page]).toEqual(ceoUsers);
+});
+
+test("directory roles and controls follow database overrides and revoke a demoted caller", async () => {
+  const t = await setup();
+  const ceo = t.withIdentity({ subject: "ceo" });
+  const head = t.withIdentity({ subject: "head" });
+  const args = { paginationOpts: { cursor: null, numItems: 50 } };
+  await ceo.mutation(api.adminQuotas.setRole, {
+    clerkId: "mod",
+    role: "member",
+  });
+  await ceo.mutation(api.adminQuotas.setRole, {
+    clerkId: "member",
+    role: "head_moderator",
+  });
+  const users = (await head.query(api.timeouts.users, args)).page;
+  expect(users.find((user) => user.clerkId === "mod")).toMatchObject({
+    role: "member",
+    canManage: true,
+    canChangeRole: false,
+  });
+  expect(users.find((user) => user.clerkId === "member")).toMatchObject({
+    role: "head_moderator",
+    canManage: false,
+    canChangeRole: false,
+  });
+  await ceo.mutation(api.adminQuotas.setRole, {
+    clerkId: "head",
+    role: "member",
+  });
+  await expect(head.query(api.timeouts.users, args)).rejects.toThrow(
+    "access required",
+  );
+});
+
+test("directory controls preserve CEO-issued restrictions and deny timed-out managers", async () => {
+  const t = await setup();
+  const ceo = t.withIdentity({ subject: "ceo" });
+  const head = t.withIdentity({ subject: "head" });
+  const args = { paginationOpts: { cursor: null, numItems: 50 } };
+  await ceo.mutation(api.timeouts.set, start("member"));
+  expect(
+    (await head.query(api.timeouts.users, args)).page.find(
+      (user) => user.clerkId === "member",
+    ),
+  ).toMatchObject({
+    role: "member",
+    canManage: false,
+    canChangeRole: false,
+    timeout: { reason: "Repeated disruption" },
+  });
+  expect(
+    (await ceo.query(api.timeouts.users, args)).page.find(
+      (user) => user.clerkId === "member",
+    ),
+  ).toMatchObject({ canManage: true, canChangeRole: true });
+  await ceo.mutation(api.timeouts.set, start("head"));
+  await expect(head.query(api.timeouts.users, args)).rejects.toThrow("timed out");
+});
+
 test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay restricted", async () => {
   const t = await setup();
   await t.withIdentity({ subject: "ceo" }).mutation(api.adminQuotas.setRole, {

@@ -52,7 +52,16 @@
       // otherwise those requests can prevent activation indefinitely.
       const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
       stage = "Loading the browser transport";
-      await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+      let accessToken = new URLSearchParams(location.hash.slice(1)).get("access");
+      const appOrigin = new URLSearchParams(location.hash.slice(1)).get("appOrigin");
+      const configureTransport = () => connection.setTransport("/transport.mjs", [location.origin + "/", accessToken]);
+      window.addEventListener("message", event => {
+        if (event.source !== window.parent || event.origin !== appOrigin || event.data?.type !== "experience-access") return;
+        if (event.data.token !== null && typeof event.data.token !== "string") return;
+        accessToken = event.data.token;
+        configureTransport().catch(() => {});
+      });
+      await configureTransport();
 
       // Wait for a usable worker in *this* registration. `serviceWorker.ready` would
       // never resolve here: it waits for a worker whose scope covers this page,
