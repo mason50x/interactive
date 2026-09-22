@@ -167,12 +167,20 @@ async function relayHttp(request) {
   const body = hasBody ? request.body : undefined;
 
   let upstream;
+  // Fail open on a hanging upstream: dashboard audit (2026-09-21) showed
+  // wall-time P999 at 28-32s driven by third-party embeds (TikTok et al)
+  // that never answer. The deadline covers time-to-first-byte only; once
+  // headers arrive the body streams without a deadline, so long media is
+  // not truncated.
+  const upstreamController = new AbortController();
+  const upstreamTimer = setTimeout(() => upstreamController.abort(), 10000);
   try {
     upstream = await fetch(target.url, {
       method: request.method,
       headers,
       body,
       redirect: "manual",
+      signal: upstreamController.signal,
     });
   } catch (error) {
     // Visible in `npm run tail`; the client only sees the Bare error.
@@ -183,6 +191,8 @@ async function relayHttp(request) {
       "response",
       String(error?.message ?? error),
     );
+  } finally {
+    clearTimeout(upstreamTimer);
   }
 
   const responseHeaders = {};
