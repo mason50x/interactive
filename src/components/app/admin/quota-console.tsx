@@ -15,14 +15,15 @@ import { Card } from "@/components/ui/card";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 
 type QuotaKind = "experience" | "bot";
-type SiteRole = "ceo" | "head_moderator" | "moderator" | "member";
+type SiteRole = "ceo" | "head_moderator" | "moderator" | "builder" | "member";
 const ROLE_LABEL: Record<SiteRole, string> = {
   ceo: "CEO",
   head_moderator: "Head Moderator",
   moderator: "Moderator",
+  builder: "Builder",
   member: "Member",
 };
-const SITE_ROLES: SiteRole[] = ["ceo", "head_moderator", "moderator", "member"];
+const SITE_ROLES: SiteRole[] = ["ceo", "head_moderator", "moderator", "builder", "member"];
 const QUOTA_LABEL: Record<QuotaKind, string> = {
   experience: "Proxy time",
   bot: "Bot usage",
@@ -120,6 +121,7 @@ export function QuotaConsole() {
       next !== "ceo" &&
       next !== "head_moderator" &&
       next !== "moderator" &&
+      next !== "builder" &&
       next !== "member"
     )
       return;

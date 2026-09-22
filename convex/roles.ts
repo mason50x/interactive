@@ -59,7 +59,9 @@ export async function resolveStaffRoles(
 }
 
 export async function resolveAdminClerkIds(ctx: ReadCtx): Promise<string[]> {
-  return (await resolveStaffRoles(ctx)).map(({ clerkId }) => clerkId);
+  return (await resolveStaffRoles(ctx))
+    .filter(({ role }) => ROLES[role].adminBadge)
+    .map(({ clerkId }) => clerkId);
 }
 
 /** CEO check for mutations and CEO-only queries. Throws when not a CEO. */

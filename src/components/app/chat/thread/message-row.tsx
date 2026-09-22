@@ -202,7 +202,9 @@ export function MessageRow({
                       ? "CEO"
                       : staffRole === "head_moderator"
                         ? "Head Moderator"
-                        : "Moderator"
+                        : staffRole === "builder"
+                          ? "Builder"
+                          : "Moderator"
                   }
                   className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
@@ -213,7 +215,9 @@ export function MessageRow({
                     ? "CEO"
                     : staffRole === "head_moderator"
                       ? "Head Moderator"
-                      : "Moderator"}
+                      : staffRole === "builder"
+                        ? "Builder"
+                        : "Moderator"}
                 </TooltipContent>
               </AdminTooltip>
             </TooltipProvider>

@@ -56,12 +56,15 @@ Set one server-owned key, `STAFF_ROLES`, on each Convex deployment:
 {"user_3IhbuJdEMX72wHvrpeidDZP1LY5":"ceo","user_3Im2mCDx3WPHlOsnBXdFAKFbWPx":"moderator"}
 ```
 
-Add an exact Clerk ID with `ceo` or `moderator`; remove it to revoke staff
+Add an exact Clerk ID with `ceo`, `head_moderator`, `moderator`, or `builder`; remove it to revoke staff
 privileges. Unknown roles and malformed configuration grant no access.
-`config/roles.ts` defines the privileges for each role. Both currently retain
+`config/roles.ts` defines the privileges for each role. CEO, head moderator, and moderator retain
 chat moderation, 50 bot uses per rolling day and two hours
 of Experience per UTC day. CEO displays a crown and CEO text; moderator displays
-a shield. Group membership is independent.
+a shield. Builder receives the same 50 bot uses and two hours of Experience,
+but no message-deletion powers, `@everyone`, announcement posting, or Admin
+access. Its Builder badge appears in chat and beside OSS in the sidebar.
+Group membership is independent.
 
 A CEO can also change any account's role — including to `member` — from the
 role selector in the Admin page's user directory. Those edits are stored in

@@ -13,12 +13,13 @@ export const ROLES = {
     botTagsPerDay: 5,
     experienceSecondsPerDay: 90 * 60,
   },
+  builder: { ...staffPrivileges, deleteChatMessages: false, adminBadge: false },
   moderator: { ...staffPrivileges },
   head_moderator: { ...staffPrivileges },
   ceo: { ...staffPrivileges },
 } as const;
 
-export type StaffRole = "ceo" | "head_moderator" | "moderator";
+export type StaffRole = "ceo" | "head_moderator" | "moderator" | "builder";
 
 /** One server-owned map of exact Clerk IDs to roles. Invalid config grants nothing.
  * STAFF_ROLES={"user_mason":"ceo","user_levin":"moderator"}
@@ -29,7 +30,10 @@ export function staffRoles(): { clerkId: string; role: StaffRole }[] {
     if (!value || typeof value !== "object" || Array.isArray(value)) return [];
     return Object.entries(value).flatMap(([clerkId, role]) =>
       clerkId &&
-      (role === "ceo" || role === "head_moderator" || role === "moderator")
+      (role === "ceo" ||
+        role === "head_moderator" ||
+        role === "moderator" ||
+        role === "builder")
         ? [{ clerkId, role }]
         : [],
     );
@@ -39,7 +43,9 @@ export function staffRoles(): { clerkId: string; role: StaffRole }[] {
 }
 
 export function adminClerkIds(): string[] {
-  return staffRoles().map(({ clerkId }) => clerkId);
+  return staffRoles()
+    .filter(({ role }) => ROLES[role].adminBadge)
+    .map(({ clerkId }) => clerkId);
 }
 
 export function roleFor(clerkId: string): keyof typeof ROLES {
