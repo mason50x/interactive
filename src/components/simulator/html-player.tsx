@@ -46,9 +46,11 @@ const BACK = "/learning-simulator?mode=html";
 export default function HtmlPlayer({
   owner,
   contentHash,
+  published = false,
 }: {
   owner: string;
   contentHash: string;
+  published?: boolean;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -75,14 +77,14 @@ export default function HtmlPlayer({
   // The account only ever learns the name and the hash, once per mount, and
   // only if it is reachable: a failure here costs a note, not the session.
   useEffect(() => {
-    if (!entry || !isAuthenticated || registered.current) return;
+    if (published || !entry || !isAuthenticated || registered.current) return;
     registered.current = true;
     void register({ contentHash, label: entry.label }).catch(() => {
       setMetadataError(
         "File is kept on this device. Account library metadata could not sync.",
       );
     });
-  }, [contentHash, entry, isAuthenticated, register]);
+  }, [contentHash, entry, isAuthenticated, register, published]);
   useEffect(() => {
     let alive = true;
     let release: (() => void) | null = null;

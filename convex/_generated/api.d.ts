@@ -47,6 +47,8 @@ import type * as simulator_htmlModel from "../simulator/htmlModel.js";
 import type * as simulator_library from "../simulator/library.js";
 import type * as simulator_limits from "../simulator/limits.js";
 import type * as simulator_model from "../simulator/model.js";
+import type * as simulator_published from "../simulator/published.js";
+import type * as simulator_publishedModel from "../simulator/publishedModel.js";
 import type * as simulator_saves from "../simulator/saves.js";
 import type * as simulator_shared from "../simulator/shared.js";
 import type * as timeoutState from "../timeoutState.js";
@@ -99,6 +101,8 @@ declare const fullApi: ApiFromModules<{
   "simulator/library": typeof simulator_library;
   "simulator/limits": typeof simulator_limits;
   "simulator/model": typeof simulator_model;
+  "simulator/published": typeof simulator_published;
+  "simulator/publishedModel": typeof simulator_publishedModel;
   "simulator/saves": typeof simulator_saves;
   "simulator/shared": typeof simulator_shared;
   timeoutState: typeof timeoutState;

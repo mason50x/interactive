@@ -47,7 +47,9 @@ export function EntryRow({
   deleteMessage,
   onRename,
   onDelete,
+  actions,
 }: {
+  actions?: ReactNode;
   title: string;
   subtitle: ReactNode;
   href: string;
@@ -68,6 +70,7 @@ export function EntryRow({
       <ButtonLink variant="outline" href={href}>
         {action}
       </ButtonLink>
+      {actions}
       {onRename && (
         <Button
           variant="ghost"
