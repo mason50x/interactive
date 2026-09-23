@@ -625,7 +625,6 @@ function ConversationThread({
             me={userId}
             canAct={profile !== null && !readOnly}
             plainMentions={plainMentions}
-            highlighted={message._id === explicitTarget}
             onEdit={
               message.poll
                 ? undefined
