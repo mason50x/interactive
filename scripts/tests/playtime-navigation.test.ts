@@ -15,8 +15,8 @@ test("only the four playtime sections are restricted, including deep links", () 
 
 test("an exhausted sidebar destination has no navigable URL", () => {
   const html = renderToString(createElement(PlaytimeNavLink, {
-    disabled: true, href: "/activities", children: "Activities",
-  }));
+    disabled: true, href: "/activities",
+  }, "Activities"));
   expect(html).toContain('aria-disabled="true"');
   expect(html).not.toContain('href=');
   expect(html).toContain("2 more minutes");
@@ -24,8 +24,8 @@ test("an exhausted sidebar destination has no navigable URL", () => {
 
 test("chat stays a real link while playtime destinations are disabled", () => {
   const html = renderToString(createElement(PlaytimeNavLink, {
-    disabled: false, href: "/chat", children: "Chat",
-  }));
+    disabled: false, href: "/chat",
+  }, "Chat"));
   expect(html).toContain('href="/chat"');
   expect(html).not.toContain('aria-disabled="true"');
 });
