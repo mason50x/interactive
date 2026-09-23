@@ -6,6 +6,17 @@ import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
 
 export default defineSchema({
+  leaderboardScores: defineTable({
+    key: v.string(), clerkId: v.string(), score: v.number(), expiresAt: v.optional(v.number()),
+  }).index("by_key_and_clerk", ["key", "clerkId"])
+    .index("by_key_and_score", ["key", "score"])
+    .index("by_clerk", ["clerkId"])
+    .index("by_expiry", ["expiresAt"]),
+  leaderboardPages: defineTable({
+    day: v.number(), path: v.string(), views: v.number(),
+  }).index("by_day_and_path", ["day", "path"])
+    .index("by_day_and_views", ["day", "views"])
+    .index("by_day", ["day"]),
   // Compact aggregates only: no sessions, heartbeats, or raw view events.
   personalGameViews: defineTable({
     clerkId: v.string(), slug: v.string(), views: v.number(), lastOpenedAt: v.number(),
@@ -21,6 +32,7 @@ export default defineSchema({
     until: v.number(),
     allowanceSeconds: v.optional(v.number()),
     bonusSeconds: v.optional(v.number()),
+    activitySpentOverageSeconds: v.optional(v.number()),
     sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
   playtimeRewards: defineTable({
@@ -29,7 +41,9 @@ export default defineSchema({
     .index("by_clerkId", ["clerkId"]),
   publishedHtmlSimulators: defineTable(publishedFields)
     .index("by_publishKey", ["publishKey"])
-    .index("by_storageId", ["storageId"]),
+    .index("by_storageId", ["storageId"])
+    .index("by_createdBy", ["createdBy"])
+    .index("by_updatedBy", ["updatedBy"]),
   htmlSimulatorEntries: defineTable(htmlFields)
     .index("by_ownerClerkId_and_contentHash", ["ownerClerkId", "contentHash"]),
   simulatorEntries: defineTable(entryFields)
@@ -51,14 +65,21 @@ export default defineSchema({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     clerkUpdatedAt: v.optional(v.number()),
+    activityLimitMinutes: v.optional(v.number()),
 
-    // Legacy data only: retain compatibility with existing user documents.
-    // Agreement UI and enforcement have been removed.
-    agreementVersion: v.optional(v.number()),
-    agreedAt: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"])
     .index("byUsernameKey", ["usernameKey"])
     .searchIndex("searchUsername", { searchField: "username" }),
+
+  // One replaceable snapshot per account, not a page-view or heartbeat log.
+  // Separate from users so frequent beats do not invalidate profile readers.
+  userActivity: defineTable({
+    clerkId: v.string(),
+    currentPath: v.string(),
+    lastActiveAt: v.number(),
+    lastCountedAt: v.optional(v.number()),
+  }).index("byClerkId", ["clerkId"])
+    .index("byLastActiveAt", ["lastActiveAt"]),
 
   userTimeouts: defineTable({
     clerkId: v.string(),
@@ -70,7 +91,9 @@ export default defineSchema({
     issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
     updatedAt: v.number(),
   }).index("byClerkId", ["clerkId"])
-    .index("byCeoClearedAndUpdatedAt", ["ceoCleared", "updatedAt"]),
+    .index("byIssuedBy", ["issuedBy"])
+    .index("byCeoClearedAndUpdatedAt", ["ceoCleared", "updatedAt"])
+    .index("byEnabledAndUpdatedAt", ["enabled", "updatedAt"]),
   timeoutAudit: defineTable({
     clerkId: v.string(),
     actor: v.string(),
@@ -78,7 +101,8 @@ export default defineSchema({
     reason: v.string(),
     expiresAt: v.number(),
     at: v.number(),
-  }).index("byClerkId", ["clerkId"]),
+  }).index("byClerkId", ["clerkId"])
+    .index("byActor", ["actor"]),
 
   /**
    * CEO-editable role overrides, read alongside the server-owned `STAFF_ROLES`
@@ -99,7 +123,8 @@ export default defineSchema({
     ),
     updatedAt: v.number(),
     updatedBy: v.string(),
-  }).index("byClerkId", ["clerkId"]),
+  }).index("byClerkId", ["clerkId"])
+    .index("byUpdatedBy", ["updatedBy"]),
 
   /**
    * One row per user, holding the choices that are theirs rather than the
@@ -197,12 +222,6 @@ export default defineSchema({
     createdAt: v.number(),
     /** Absent on the global room, on purpose. See above. */
     lastMessageAt: v.optional(v.number()),
-    /**
-     * Retained while prod rows still carry it. The morning-greeting writer
-     * is gone, but deleting the field from the validator rejects the
-     * existing documents at deploy time — drop the data first, then this.
-     */
-    lastMorningGreetingDay: v.optional(v.string()),
     /** Groups only. `request` is the one that needs an owner to approve. */
     joinPolicy: v.optional(
       v.union(v.literal("invite"), v.literal("request"), v.literal("open")),
@@ -229,7 +248,8 @@ export default defineSchema({
     hue: v.optional(v.number()),
   })
     .index("byDmKey", ["dmKey"])
-    .index("byKind", ["kind"]),
+    .index("byKind", ["kind"])
+    .index("byCreatedBy", ["createdBy"]),
 
   /**
    * One row per person per conversation, and the only thing a send reads.
@@ -313,6 +333,7 @@ export default defineSchema({
   })
     .index("byConversationSeen", ["conversationId", "lastSeenAt"])
     .index("byConversationUser", ["conversationId", "clerkId"])
+    .index("byClerkId", ["clerkId"])
     // For the sweep alone: rows nobody has refreshed in a long time, across
     // every conversation at once. See `sweepPresence` in `convex/chat/sweep.ts`.
     .index("bySeen", ["lastSeenAt"]),
@@ -348,6 +369,7 @@ export default defineSchema({
   })
     .index("byConversationUntil", ["conversationId", "until"])
     .index("byConversationUser", ["conversationId", "clerkId"])
+    .index("byClerkId", ["clerkId"])
     // For the sweep alone. See `sweepTyping` in `convex/chat/sweep.ts`.
     .index("byUntil", ["until"]),
 

@@ -409,13 +409,8 @@ const BATCH = 100;
  * in creation order and everything after that is younger still. So the cost
  * of a pass is the number of old orphans plus one, not the number of files.
  *
- * ## This assumes every file in storage is a chat picture
- *
- * Today that is true: nothing else in this deployment writes to storage. If
- * something else ever does, its files need a row here in `sent` or an
- * exemption in this loop, or they will be deleted an hour after they land.
- * That is a sharper edge than most of the sweeps in `convex/chat/sweep.ts`
- * have, and it is written here so it is found before it is felt.
+ * Published HTML also uses storage. Its referenced files must survive this
+ * sweep, even though they have no chat attachment row.
  */
 export const sweep = internalMutation({
   args: { cursor: v.optional(v.string()), cutoff: v.optional(v.number()) },
@@ -449,6 +444,10 @@ export const sweep = internalMutation({
         .unique();
 
       if (row !== null && row.status === "sent") continue;
+      const published = await ctx.db.query("publishedHtmlSimulators")
+        .withIndex("by_storageId", (q) => q.eq("storageId", file._id))
+        .first();
+      if (published !== null) continue;
 
       if (row !== null) await deleteAttachment(ctx, row);
       else await ctx.storage.delete(file._id);

@@ -45,6 +45,42 @@ export const access = query({
   },
 });
 
+/** Heartbeats stop in hidden tabs; a snapshot is live for one minute. */
+export const LIVE_WINDOW_MS = 60_000;
+
+export const liveUsers = query({
+  args: { cutoff: v.number() },
+  returns: v.array(v.object({
+    clerkId: v.string(),
+    label: v.string(),
+    username: v.optional(v.string()),
+    currentPath: v.string(),
+    lastActiveAt: v.number(),
+  })),
+  handler: async (ctx, { cutoff }) => {
+    await manager(ctx);
+    // The client advances cutoff every ten seconds, including when the last
+    // active browser closes and no new write can wake the subscription.
+    const threshold = Math.max(Date.now() - LIVE_WINDOW_MS, cutoff);
+    const activity = await ctx.db.query("userActivity")
+      .withIndex("byLastActiveAt", q => q.gt("lastActiveAt", threshold))
+      .order("desc")
+      .take(200);
+    return await Promise.all(activity.map(async row => {
+      const user = await ctx.db.query("users")
+        .withIndex("byClerkId", q => q.eq("clerkId", row.clerkId))
+        .unique();
+      return {
+        clerkId: row.clerkId,
+        label: user?.name ?? user?.username ?? row.clerkId,
+        username: user?.username,
+        currentPath: row.currentPath,
+        lastActiveAt: row.lastActiveAt,
+      };
+    }));
+  },
+});
+
 export const mine = query({
   args: {},
   returns: v.union(timeoutView, v.null()),
@@ -73,6 +109,7 @@ const directoryUser = v.object({
     v.literal("member"),
   ),
   joinedAt: v.number(),
+  activityLimitMinutes: v.optional(v.number()),
   canChangeRole: v.boolean(),
   canManage: v.boolean(),
   ceoCleared: v.boolean(),
@@ -106,6 +143,7 @@ export const users = query({
           username: user.username,
           role,
           joinedAt: user.clerkCreatedAt ?? user._creationTime,
+          activityLimitMinutes: user.activityLimitMinutes,
           canChangeRole: caller.role === "ceo" && user.clerkId !== caller.clerkId,
           ceoCleared,
           canManage:
@@ -123,6 +161,41 @@ export const users = query({
       isDone: result.isDone,
       continueCursor: result.continueCursor,
     };
+  },
+});
+
+/** The last seven days of changes for one account, visible to dashboard staff. */
+export const history = query({
+  args: { clerkId: v.string(), paginationOpts: paginationOptsValidator },
+  returns: v.object({ page: v.array(v.object({
+    id: v.id("timeoutAudit"),
+    at: v.number(),
+    action: v.union(v.literal("on"), v.literal("off")),
+    actorClerkId: v.string(),
+    actorLabel: v.string(),
+    reason: v.string(),
+    expiresAt: v.number(),
+  })), isDone: v.boolean(), continueCursor: v.string() }),
+  handler: async (ctx, { clerkId, paginationOpts }) => {
+    await manager(ctx);
+    const cutoff = Date.now() - 7 * 24 * 60 * 60_000;
+    const result = await ctx.db.query("timeoutAudit")
+      .withIndex("byClerkId", q => q.eq("clerkId", clerkId).gte("_creationTime", cutoff))
+      .order("desc").paginate(paginationOpts);
+    const page = await Promise.all(result.page.map(async row => {
+      const actor = await ctx.db.query("users")
+        .withIndex("byClerkId", q => q.eq("clerkId", row.actor)).first();
+      return {
+        id: row._id,
+        at: row.at,
+        action: row.action,
+        actorClerkId: row.actor,
+        actorLabel: actor?.name ?? actor?.username ?? row.actor,
+        reason: row.reason,
+        expiresAt: row.expiresAt,
+      };
+    }));
+    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
   },
 });
 
@@ -231,7 +304,7 @@ export const expire = internalMutation({
       row.expiresAt === expiresAt &&
       expiresAt <= Date.now()
     ) {
-      await ctx.db.patch(id, { enabled: false });
+      await ctx.db.patch(id, { enabled: false, updatedAt: Date.now() });
     }
     return null;
   },

@@ -49,6 +49,7 @@ export default clerkMiddleware(async (auth, req) => {
     [
       "/home",
       "/admin",
+      "/leaderboard",
       "/activities",
       "/entertainment",
       "/chat",
@@ -75,6 +76,7 @@ export const config = {
     // filename. Otherwise their layouts call auth() without Clerk context.
     "/home/:path*",
     "/admin/:path*",
+    "/leaderboard/:path*",
     "/activities/:path*",
     "/entertainment/:path*",
     "/chat/:path*",

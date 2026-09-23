@@ -1,5 +1,5 @@
 /** All accounts share this policy. Reset uses the school's Central timezone. */
-export const PLAYTIME_SECONDS = 20 * 60;
+export const PLAYTIME_SECONDS = 30 * 60;
 export const CHAT_REWARD_SECONDS = 2 * 60;
 export const PLAYTIME_TIMEZONE = "America/Chicago";
 const DAY = 86_400_000;

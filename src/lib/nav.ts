@@ -3,8 +3,9 @@ import {
   CpuChipIcon,
   ChatBubbleLeftRightIcon,
   GlobeAltIcon,
+  TrophyIcon,
 } from "@heroicons/react/24/outline";
-import { FilmIcon as FilmIconSolid } from "@heroicons/react/24/solid";
+import { FilmIcon as FilmIconSolid, TrophyIcon as TrophyIconSolid } from "@heroicons/react/24/solid";
 import type { IconPair } from "@/lib/icons";
 import { ControllerIcon } from "@/components/app/controller-icon";
 import {
@@ -63,6 +64,11 @@ export const navItems: NavItem[] = [
       solid: ChatIconSolid,
     },
     unread: true,
+  },
+  {
+    label: "Leaderboard",
+    href: "/leaderboard",
+    icon: { outline: TrophyIcon, solid: TrophyIconSolid },
   },
   {
     label: "Experience",

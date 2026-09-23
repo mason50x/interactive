@@ -93,7 +93,6 @@ function ConversationThread({
     isVisible,
     () => true,
   );
-  const [atLatest, setAtLatest] = useState(true);
   const [resumeUnread, setResumeUnread] = useState(true);
   const [initialRead, setInitialRead] = useState<
     FunctionReturnType<typeof api.chat.conversations.readPosition> | undefined
@@ -108,9 +107,10 @@ function ConversationThread({
   const {
     profile,
     isAdmin,
-    behind,
+    staffRoles,
+    serverConversations,
     setReading,
-    clearReadSuppression,
+    isReadSuppressed,
     images: pictures,
   } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
@@ -251,7 +251,10 @@ function ConversationThread({
    */
   const composer = useRef<ComposerHandle>(null);
 
-  const readOnly = detail?.kind === "announcements" && !isAdmin;
+  const canPostAnnouncements = isAdmin || staffRoles.some(
+    ({ clerkId, role }) => clerkId === profile?.clerkId && role === "builder",
+  );
+  const readOnly = detail?.kind === "announcements" && !canPostAnnouncements;
   const archived = daily && daysAgo > 0;
   const { dragging, handlers: dropHandlers } = useDropFiles({
     enabled: pictures && !archived && !readOnly,
@@ -261,7 +264,6 @@ function ConversationThread({
   function returnLatest() {
     setResumeUnread(false);
     setDaysAgo(0);
-    setAtLatest(true);
     pinned.current = true;
     if (explicitTarget)
       router.replace(`${CHAT_HREF}/${conversationId}`, { scroll: false });
@@ -300,29 +302,13 @@ function ConversationThread({
     );
   }
 
-  /** Track focused reading for notifications; the server cursor drives badges. */
+  /** An open, visible conversation is being read, regardless of scroll position. */
   useEffect(() => {
-    if (
-      daysAgo > 0 ||
-      initialRead === undefined ||
-      (target !== null && focusedMessage.current !== target) ||
-      !visible ||
-      !atLatest
-    )
-      return;
+    if (!visible || !detail) return;
     setReading(conversationId);
     return () =>
       setReading((current) => (current === conversationId ? null : current));
-  }, [
-    conversationId,
-    daysAgo,
-    setReading,
-    target,
-    initialRead,
-    visible,
-    atLatest,
-    clearReadSuppression,
-  ]);
+  }, [conversationId, detail, setReading, visible]);
 
   /** Only write when the server still has unread messages. */
   const isBotDm = detail?.kind === "dm" && detail.peerClerkId === "bot";
@@ -332,50 +318,42 @@ function ConversationThread({
     if (emptyBotDm) void welcomeBot({ conversationId });
   }, [conversationId, emptyBotDm, welcomeBot]);
 
+  const openConversation = serverConversations.find(
+    (conversation) => conversation._id === conversationId,
+  );
+  const unread = (openConversation?.unread ?? 0) > 0;
+  const latestMessageId = openConversation?.latestMessage?._id;
+
   useEffect(() => {
-    if (
-      daysAgo > 0 ||
-      initialRead === undefined ||
-      (target !== null && focusedMessage.current !== target) ||
-      !visible ||
-      !atLatest
-    ) {
+    // Save the initial unread anchor before advancing the cursor. Reading is
+    // conversation-wide: jumping to that anchor or an older day must not
+    // require scrolling to the bottom or sending a reply to clear the badge.
+    if (!visible || !detail || initialRead === undefined) return;
+    if (!unread || !latestMessageId) return;
+    const acknowledge = () => {
+      // A manual reminder suspends reading until navigation leaves this thread.
+      if (!isVisible() || isReadSuppressed(conversationId)) return;
+      void markRead({
+        conversationId,
+        throughMessageId: latestMessageId,
+      }).catch(() => setReadRetry((attempt) => attempt + 1));
+    };
+    if (!readRetry) {
+      acknowledge();
       return;
     }
-    if (!newest || !behind) return;
-    // Let layout and navigation settle, and acknowledge only the message
-    // actually displayed. A later arrival must remain unread on the server.
-    const timer = setTimeout(
-      () => {
-        const box = scroller.current;
-        if (
-          !isVisible() ||
-          !box ||
-          box.scrollHeight - box.scrollTop - box.clientHeight >= 64
-        )
-          return;
-        clearReadSuppression(conversationId);
-        void markRead({ conversationId, throughMessageId: newest }).catch(
-          () => {
-            setReadRetry((attempt) => attempt + 1);
-          },
-        );
-      },
-      readRetry ? 1500 : 300,
-    );
+    const timer = setTimeout(acknowledge, 1500);
     return () => clearTimeout(timer);
   }, [
     conversationId,
-    daysAgo,
-    newest,
-    readRetry,
-    behind,
-    markRead,
-    clearReadSuppression,
-    target,
+    detail,
     initialRead,
     visible,
-    atLatest,
+    unread,
+    latestMessageId,
+    readRetry,
+    markRead,
+    isReadSuppressed,
   ]);
 
   useLayoutEffect(() => {
@@ -390,7 +368,6 @@ function ConversationThread({
         const atEnd =
           !!box && box.scrollHeight - box.scrollTop - box.clientHeight < 64;
         pinned.current = atEnd;
-        setAtLatest(atEnd);
       }
     } else {
       if (focusedMessage.current !== null) pinned.current = true;
@@ -509,7 +486,6 @@ function ConversationThread({
     const atEnd =
       element.scrollHeight - element.scrollTop - element.clientHeight < 64;
     pinned.current = atEnd;
-    setAtLatest(atEnd);
   }
 
   // Not a member — which is sometimes a door rather than a wall. See `Outside`.
@@ -566,7 +542,6 @@ function ConversationThread({
               setResumeUnread(false);
               setDaysAgo(day);
               pinned.current = true;
-              setAtLatest(true);
               if (explicitTarget)
                 router.replace(`${CHAT_HREF}/${conversationId}`, {
                   scroll: false,
@@ -738,7 +713,7 @@ function ConversationThread({
       <div className="shrink-0">
         {readOnly ? (
           <p className="px-4 py-4 text-center text-sm text-muted-foreground">
-            Only admins can post in Announcements.
+            Only staff can post in Announcements.
           </p>
         ) : live && detail !== undefined ? (
           <Composer

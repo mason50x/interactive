@@ -1,6 +1,7 @@
+import { addScore } from "../leaderboard";
 import { rewardChatPlaytime } from "../experience";
 import type { ChatAccount } from "./shared";
-import { adminId, staffId } from "./admin";
+import { adminId, announcementPublisherId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
@@ -213,7 +214,7 @@ export const send = mutation({
       return { ok: false, refusal: "not-a-member" };
     }
 
-    if (member.kind === "announcements" && (await adminId(ctx)) === null) {
+    if (member.kind === "announcements" && (await announcementPublisherId(ctx)) === null) {
       return { ok: false, refusal: "read-only" };
     }
 
@@ -358,6 +359,7 @@ export const send = mutation({
     });
 
     await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
+    await addScore(ctx, profile.clerkId, "chat", 1, now);
 
     // The dots go with the words, in the same transaction, so nobody ever
     // sees the message and "still typing" on one screen at once. See
@@ -827,7 +829,7 @@ export const react = mutation({
       profile.clerkId,
     );
     if (member === null || member.status !== "active") return;
-    if (member.kind === "announcements" && (await adminId(ctx)) === null) return;
+    if (member.kind === "announcements" && (await announcementPublisherId(ctx)) === null) return;
 
     const reactions = message.reactions ?? [];
     const existing = reactions.find((entry) => entry.emoji === emoji);
@@ -866,7 +868,7 @@ export const vote = mutation({
     if (message === null || message.status !== "visible" || message.poll === undefined) return { ok: false };
     const member = await membership(ctx, message.conversationId, profile.clerkId);
     if (member?.status !== "active") return { ok: false };
-    if (member.kind === "announcements" && (await adminId(ctx)) === null) return { ok: false };
+    if (member.kind === "announcements" && (await announcementPublisherId(ctx)) === null) return { ok: false };
     if (!Number.isInteger(option) || option < 0 || option >= message.poll.options.length) return { ok: false };
     const previous = message.poll.votes.find(vote => vote.clerkId === profile.clerkId);
     if (previous === undefined && message.poll.votes.length >= MAX_POLL_VOTERS) return { ok: false };
@@ -890,7 +892,7 @@ export const edit = mutation({
     if (member?.status !== "active") return { ok: false, refusal: "not-a-member" };
     const now = Date.now();
     // Poll wording stays fixed so earlier votes cannot acquire a new meaning.
-    if (message.poll !== undefined || now - message._creationTime > EDIT_WINDOW_MS || (member.kind === "announcements" && await adminId(ctx) === null)) return { ok: false, refusal: "read-only" };
+    if (message.poll !== undefined || now - message._creationTime > EDIT_WINDOW_MS || (member.kind === "announcements" && await announcementPublisherId(ctx) === null)) return { ok: false, refusal: "read-only" };
     if (body === message.body) return { ok: true };
     const named = await resolveMentions(ctx, profile, member, body);
     if (!named.ok) return { ok: false, refusal: named.refusal };

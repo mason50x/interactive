@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { expect, test } from "vitest";
 import { convexTest } from "convex-test";
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import type { PublicAccount } from "../../convex/chat/accounts";
@@ -92,6 +93,7 @@ test("same first names use app casing and keep distinct usernames; any account c
 
 test("messages keep their ids and show the current Clerk identity after rename", async () => {
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   const account = {
     id: "sender",
     username: "before",
@@ -113,6 +115,9 @@ test("messages keep their ids and show the current Clerk identity after rename",
     body: "A sunny day for learning.",
   });
   expect(sent.ok).toBe(true);
+  const scores = await t.run(ctx => ctx.db.query("leaderboardScores")
+    .withIndex("by_key_and_clerk", q => q.eq("key", `chat:day:${Math.floor(Date.now() / 86_400_000)}`).eq("clerkId", "sender")).collect());
+  expect(scores[0]?.score).toBe(1);
   const args = {
     conversationId: room,
     dayStart: 0,

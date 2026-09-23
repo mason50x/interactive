@@ -1,4 +1,4 @@
-import { playtimeDay } from "../config/playtime";
+import { PLAYTIME_SECONDS, playtimeDay } from "../config/playtime";
 import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 
@@ -8,6 +8,8 @@ import { components, internal } from "./_generated/api";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
+import { changeActivityLimit } from "./experience";
+import { requireNotTimedOut } from "./timeoutState";
 
 const experienceLimiter = new RateLimiter(components.rateLimiter);
 
@@ -69,6 +71,33 @@ export const users = query({
 });
 
 const quotaKind = v.union(v.literal("experience"), v.literal("bot"));
+
+/** The default follows the global policy; a custom base lasts until cleared. */
+export const setActivityLimit = mutation({
+  args: { clerkId: v.string(), minutes: v.optional(v.number()) },
+  returns: v.null(),
+  handler: async (ctx, { clerkId, minutes }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Admin access required.");
+    await requireNotTimedOut(ctx, identity.subject);
+    const role = await resolveRole(ctx, identity.subject);
+    if (role !== "ceo" && role !== "head_moderator") throw new ConvexError("Admin access required.");
+    if (minutes !== undefined && (!Number.isInteger(minutes) || minutes < 20 || minutes > 160)) {
+      throw new ConvexError("Activity time must be between 20 and 160 minutes.");
+    }
+    const user = await ctx.db.query("users")
+      .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique();
+    if (!user) throw new ConvexError("User not found.");
+    if (role === "head_moderator" && (await resolveRole(ctx, clerkId)) === "ceo") {
+      throw new ConvexError("Only a CEO can change a CEO's activity time.");
+    }
+    const oldMinutes = user.activityLimitMinutes ?? PLAYTIME_SECONDS / 60;
+    const newMinutes = minutes ?? PLAYTIME_SECONDS / 60;
+    if (oldMinutes !== newMinutes) await changeActivityLimit(ctx, clerkId, oldMinutes, newMinutes);
+    await ctx.db.patch(user._id, { activityLimitMinutes: minutes });
+    return null;
+  },
+});
 
 async function resetFor(
   ctx: MutationCtx,

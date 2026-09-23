@@ -1,9 +1,11 @@
+import { PLAYTIME_SECONDS } from "./playtime";
+
 /** Site-wide roles; group membership remains scoped to its conversation. */
 const staffPrivileges = {
   deleteChatMessages: true,
   adminBadge: true,
   botTagsPerDay: 50,
-  experienceSecondsPerDay: 20 * 60,
+  experienceSecondsPerDay: PLAYTIME_SECONDS,
 } as const;
 
 export const ROLES = {
@@ -11,7 +13,7 @@ export const ROLES = {
     deleteChatMessages: false,
     adminBadge: false,
     botTagsPerDay: 5,
-    experienceSecondsPerDay: 20 * 60,
+    experienceSecondsPerDay: PLAYTIME_SECONDS,
   },
   builder: { ...staffPrivileges, deleteChatMessages: false, adminBadge: false },
   moderator: { ...staffPrivileges },

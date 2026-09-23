@@ -1,39 +1,23 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
+import { RailConstellation } from "@/components/app/rail-constellation";
 import { cn } from "@/lib/utils";
 
 /** A softly lit loading interlude, remounted with each activity run. */
 export function PacketCover({
-  detail = "Waiting for R2 response.",
   label = "Activity",
   holdMs = HOLD,
 }: {
   detail?: string;
   label?: string;
-  holdMs?: number;
+  /** null keeps the cover visible until its parent finishes checking access. */
+  holdMs?: number | null;
 }) {
   const [phase, setPhase] = useState<Phase>("held");
 
-  // Which word is printed this time. The draw disagrees across the two renders
-  // of it — the server's and the client's — so the word it picks is only shown
-  // once the client has taken over, and the markup being hydrated against says
-  // the first of them. Nobody has read a caption in the frame that takes.
-  //
-  // Held in state rather than drawn each render because the cover re-renders
-  // when it starts lifting, and the word must not change on its way out. The
-  // caller keys this on the run, so a restart is a remount and a fresh draw:
-  // waiting twice in a row should at least not be the same wait twice.
-  const [roll] = useState(Math.random);
-  const shown = useSyncExternalStore(
-    subscribeNever,
-    () => true,
-    () => false,
-  );
-  const captionIndex = shown ? Math.floor(roll * CAPTIONS.length) : 0;
-  const caption = CAPTIONS[captionIndex];
-
   useEffect(() => {
+    if (holdMs === null) return;
     const lift = window.setTimeout(() => setPhase("lifting"), holdMs);
     const gone = window.setTimeout(() => setPhase("gone"), holdMs + LIFT);
     return () => {
@@ -57,46 +41,39 @@ export function PacketCover({
         phase === "lifting" && "packet-reveal pointer-events-none",
       )}
     >
-      <div className="packet-grid" aria-hidden="true">
-        {Array.from({ length: 64 }, (_, row) => (
-          <span
-            key={row}
-            className="packet-grid-row"
-            style={{ animationDelay: `${row * -0.12}s` }}
-          />
-        ))}
+      <div className="packet-constellation" aria-hidden="true">
+        <RailConstellation
+          maxPoints={54}
+          areaPerPoint={11000}
+          className="z-0 [--web-fade:0.28] dark:[--web-fade:0.32]"
+        />
       </div>
-      <div className="packet-border packet-border-halo" aria-hidden="true" />
-      <div className="packet-border" aria-hidden="true" />
+      <svg className="packet-logo" viewBox="0 0 160 160" aria-hidden="true">
+        <circle
+          className="packet-logo-ring"
+          cx="80"
+          cy="80"
+          r="70"
+          pathLength="432"
+        />
+        <path
+          className="packet-logo-mark"
+          d={LOGO_PATH}
+          transform="translate(34 28)"
+        />
+      </svg>
 
-      <p
-        role="status"
-        className="packet-caption text-shimmer text-[1.75rem] font-semibold"
-      >
-        {caption}
-        <span className="sr-only">. {label} loading.</span>
-      </p>
-      <p className="packet-detail">{detail}</p>
+      <span role="status" className="sr-only">
+        {label} loading.
+      </span>
     </div>
   );
 }
 
 type Phase = "held" | "lifting" | "gone";
 
-/** There is nothing to subscribe to: the only transition this store has is
- *  the server snapshot giving way to the client one at hydration. */
-const subscribeNever = () => () => {};
-
-const CAPTIONS = [
-  "Rummaging",
-  "Brewing",
-  "Conjuring",
-  "Shuffling",
-  "Tinkering",
-  "Watering",
-  "Unpacking",
-];
-
 // The hosted games have no shared ready event; retain the existing timed hold.
+const LOGO_PATH = "M18 21H33.77V74.5H42.73V21H58.5V66.33H82V79H18Z";
+
 const HOLD = 4600;
 const LIFT = 400;

@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as accountCleanup from "../accountCleanup.js";
 import type * as accountSync from "../accountSync.js";
 import type * as activityRequests from "../activityRequests.js";
 import type * as adminQuotas from "../adminQuotas.js";
@@ -24,10 +25,12 @@ import type * as chat_shared from "../chat/shared.js";
 import type * as chat_sweep from "../chat/sweep.js";
 import type * as chat_typing from "../chat/typing.js";
 import type * as crons from "../crons.js";
+import type * as dataMaintenance from "../dataMaintenance.js";
 import type * as experience from "../experience.js";
 import type * as features from "../features.js";
 import type * as gameViews from "../gameViews.js";
 import type * as http from "../http.js";
+import type * as leaderboard from "../leaderboard.js";
 import type * as moderation_confusables from "../moderation/confusables.js";
 import type * as moderation_images from "../moderation/images.js";
 import type * as moderation_inspect from "../moderation/inspect.js";
@@ -62,6 +65,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountCleanup: typeof accountCleanup;
   accountSync: typeof accountSync;
   activityRequests: typeof activityRequests;
   adminQuotas: typeof adminQuotas;
@@ -78,10 +82,12 @@ declare const fullApi: ApiFromModules<{
   "chat/sweep": typeof chat_sweep;
   "chat/typing": typeof chat_typing;
   crons: typeof crons;
+  dataMaintenance: typeof dataMaintenance;
   experience: typeof experience;
   features: typeof features;
   gameViews: typeof gameViews;
   http: typeof http;
+  leaderboard: typeof leaderboard;
   "moderation/confusables": typeof moderation_confusables;
   "moderation/images": typeof moderation_images;
   "moderation/inspect": typeof moderation_inspect;

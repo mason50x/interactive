@@ -26,6 +26,7 @@ vm.runInNewContext(output, {
 for (const path of [
   "/home",
   "/activities",
+  "/leaderboard",
   "/chat",
   "/experience/release",
   "/learning-simulator/html/test.html",

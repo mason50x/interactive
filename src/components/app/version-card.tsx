@@ -83,7 +83,7 @@ function forgetOldReleases() {
  * card wears the comet rim the announcements card used to. A different
  * browser will show it again, and that is fine: it is a nudge, not a record.
  */
-export function VersionCard() {
+export function VersionCard({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const seen = useSyncExternalStore(subscribe, readSeen, () => true);
 
@@ -97,7 +97,10 @@ export function VersionCard() {
   const label = versionLabel(currentRelease.version);
 
   return (
-    <div className="relative shrink-0 pb-2 pl-3">
+    <div
+      className="relative min-w-0"
+      style={{ viewTransitionName: "rail-version" }}
+    >
       {/* The narrow rail: the number alone, the same 44px hit as the icons
           above it. Text rather than an icon because there is no glyph for
           "version" that would not have to be learned, and the number is
@@ -105,11 +108,19 @@ export function VersionCard() {
       <RailButton
         onClick={show}
         aria-label={`${label}: ${currentRelease.title}. See what's new`}
-        className="relative text-[0.75rem] font-medium tabular-nums"
+        className={cn(
+          "relative font-medium tabular-nums",
+          compact ? "text-[0.625rem]" : "text-[0.75rem]",
+        )}
       >
         {label}
         {!seen && (
-          <span className="absolute top-2.5 right-3 size-1.5 rounded-full bg-primary" />
+          <span
+            className={cn(
+              "absolute rounded-full bg-primary",
+              compact ? "top-1 right-0 size-1" : "top-2.5 right-3 size-1.5",
+            )}
+          />
         )}
       </RailButton>
 
@@ -120,30 +131,35 @@ export function VersionCard() {
       <Card
         radius="sm"
         className={cn(
-          "relative hidden overflow-hidden rail-wide wide:block wide:w-[14.25rem]",
-          !seen && "release-unread-glow",
+          "relative hidden h-full overflow-hidden rail-wide wide:block wide:w-full",
+          !seen && !compact && "release-unread-glow",
         )}
       >
         <button
           type="button"
           onClick={show}
           aria-label={`${label}: ${currentRelease.title}. See what's new`}
-          className="flex w-full cursor-pointer items-center justify-center px-3 py-2 outline-none hover:bg-foreground/[0.03] focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset"
+          className={cn(
+            "flex w-full cursor-pointer items-center justify-center outline-none hover:bg-foreground/[0.03] focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
+            compact ? "h-full min-h-14 px-1 py-1" : "px-3 py-2",
+          )}
         >
           <span className="flex flex-col items-center">
             <span
               className={cn(
                 "leading-none font-semibold tabular-nums transition-[font-size] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-                seen
-                  ? "text-[1.5rem] text-foreground"
-                  : "text-shimmer text-[2.5rem]",
+                compact
+                  ? "text-[1.125rem] text-foreground"
+                  : seen
+                    ? "text-[1.5rem] text-foreground"
+                    : "text-shimmer text-[2.5rem]",
               )}
             >
               {label}
             </span>
             {/* Only while unread: the card is asking to be pressed, and this
                 is the one line that says what pressing it does. */}
-            {!seen && (
+            {!seen && !compact && (
               <span className="mt-1.5 text-[0.75rem] text-muted-foreground">
                 View release
               </span>

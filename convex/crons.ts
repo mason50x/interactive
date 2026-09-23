@@ -65,4 +65,11 @@ crons.interval(
   {},
 );
 
+crons.daily("prune leaderboard buckets", { hourUTC: 9, minuteUTC: 20 }, internal.leaderboard.prune, {});
+
+crons.daily("prune timeout history", { hourUTC: 9, minuteUTC: 30 }, internal.dataMaintenance.pruneTimeoutHistory, {});
+crons.daily("prune inactive timeouts", { hourUTC: 9, minuteUTC: 35 }, internal.dataMaintenance.pruneInactiveTimeouts, {});
+crons.daily("prune reward receipts", { hourUTC: 9, minuteUTC: 40 }, internal.dataMaintenance.pruneRewardReceipts, {});
+crons.daily("prune old activity snapshots", { hourUTC: 9, minuteUTC: 45 }, internal.dataMaintenance.pruneUserActivity, {});
+
 export default crons;

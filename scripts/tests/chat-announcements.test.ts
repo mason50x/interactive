@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { afterEach, expect, test, vi } from "vitest";
 import { convexTest } from "convex-test";
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
@@ -9,6 +10,7 @@ afterEach(() => vi.unstubAllEnvs());
 async function setup() {
   vi.stubEnv("STAFF_ROLES", JSON.stringify(Object.fromEntries(("admin,secondAdmin").split(",").map(id => id.trim()).filter(Boolean).map(id => [id, "moderator"]))));
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   for (const id of ["admin", "secondAdmin", "reader"]) {
     await t.mutation(internal.users.upsertFromClerk, {
       data: { id, username: id, updated_at: 1 },

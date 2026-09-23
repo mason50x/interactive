@@ -1,3 +1,4 @@
+import { addScore } from "./leaderboard";
 import { requireNotTimedOut } from "./timeoutState";
 import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
@@ -22,13 +23,41 @@ async function quotaFor(ctx: QueryCtx, clerkId: string) {
   const lease = await ctx.db.query("experienceLeases")
     .withIndex("by_clerkId_and_day", q => q.eq("clerkId", clerkId).eq("day", day))
     .unique();
-  const allowanceSeconds = PLAYTIME_SECONDS + (lease?.bonusSeconds ?? 0);
+  const user = await ctx.db.query("users")
+    .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique();
+  const allowanceSeconds = (user?.activityLimitMinutes ?? PLAYTIME_SECONDS / 60) * 60 + (lease?.bonusSeconds ?? 0);
   const key = `${clerkId}:${day}`;
   const config = { kind: "fixed window" as const, rate: allowanceSeconds, period: resetsAt - day, start: day };
   const value = await limiter.getValue(ctx, "experienceSeconds", { key, config });
   return { now, day, key, config, lease, clerkId,
     status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value)),
       allowanceSeconds, leaseUntil: lease?.until ?? 0, resetsAt, serverNow: now } };
+}
+
+/** Preserve today's spent time when an admin changes the daily base limit. */
+export async function changeActivityLimit(ctx: MutationCtx, clerkId: string, oldMinutes: number, newMinutes: number) {
+  const { day, resetsAt } = playtimeDay(Date.now());
+  const key = `${clerkId}:${day}`;
+  const lease = await ctx.db.query("experienceLeases")
+    .withIndex("by_clerkId_and_day", q => q.eq("clerkId", clerkId).eq("day", day)).unique();
+  const bonus = lease?.bonusSeconds ?? 0;
+  const oldAllowance = oldMinutes * 60 + bonus;
+  const newAllowance = newMinutes * 60 + bonus;
+  const oldConfig = { kind: "fixed window" as const, rate: oldAllowance, period: resetsAt - day, start: day };
+  const remaining = (await limiter.getValue(ctx, "experienceSeconds", { key, config: oldConfig })).value;
+  const spent = Math.max(0, oldAllowance - remaining + (lease?.activitySpentOverageSeconds ?? 0));
+  await limiter.reset(ctx, "experienceSeconds", { key });
+  if (spent > 0) {
+    await limiter.limit(ctx, "experienceSeconds", {
+      key,
+      config: { ...oldConfig, rate: newAllowance },
+      count: Math.min(spent, newAllowance),
+    });
+  }
+  if (lease) await ctx.db.patch(lease._id, {
+    allowanceSeconds: newAllowance,
+    activitySpentOverageSeconds: Math.max(0, spent - newAllowance),
+  });
 }
 async function quota(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
@@ -37,13 +66,13 @@ async function quota(ctx: QueryCtx) {
 }
 
 /** Called only by the accepted chat-send transaction, never by the client.
- * Reward only an exhausted account, so sending a burst cannot stockpile time.
- * Receipts survive message deletion and daily resets; exact copies never earn twice. */
+ * Qualifying messages add time immediately; distinct rewards stack.
+ * Receipts survive message deletion and daily resets; exact copies are blocked
+ * for 180 days, then the receipt is pruned. */
 export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string) {
   const normalized = rewardText(body);
   if (!normalized) return;
   const q = await quotaFor(ctx, clerkId);
-  if (!q.lease || q.status.remainingSeconds > 0 || q.status.leaseUntil > q.now) return;
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized));
   const hash = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("");
   const duplicate = await ctx.db.query("playtimeRewards")
@@ -53,13 +82,22 @@ export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body
     .withIndex("by_clerkId", q => q.eq("clerkId", clerkId)).order("desc").take(50);
   if (recent.some(row => similarReward(normalized, row.normalized))) return;
   await limiter.limit(ctx, "experienceSeconds", {
-    key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds + CHAT_REWARD_SECONDS },
+    key: q.key, config: q.config,
     count: -CHAT_REWARD_SECONDS,
   });
-  await ctx.db.patch(q.lease._id, {
-    bonusSeconds: (q.lease.bonusSeconds ?? 0) + CHAT_REWARD_SECONDS,
-    allowanceSeconds: q.status.allowanceSeconds + CHAT_REWARD_SECONDS,
-  });
+  const allowanceSeconds = q.status.allowanceSeconds + CHAT_REWARD_SECONDS;
+  if (q.lease) {
+    await ctx.db.patch(q.lease._id, {
+      bonusSeconds: (q.lease.bonusSeconds ?? 0) + CHAT_REWARD_SECONDS,
+      allowanceSeconds,
+    });
+  } else {
+    const leaseId = await ctx.db.insert("experienceLeases", {
+      clerkId, day: q.day, until: q.now,
+      bonusSeconds: CHAT_REWARD_SECONDS, allowanceSeconds,
+    });
+    await ctx.scheduler.runAt(q.status.resetsAt, internal.experience.prune, { leaseId, key: q.key });
+  }
   await ctx.db.insert("playtimeRewards", { clerkId, hash, normalized });
 }
 
@@ -92,6 +130,7 @@ export const acquire = mutation({
     if (seconds <= 0) return q.status;
     const result = await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: seconds });
     if (!result.ok) return q.status;
+    await addScore(ctx, q.clerkId, "playtime", seconds, q.now);
     const until = from + seconds * 1000;
     if (q.lease) {
       await ctx.db.patch(q.lease._id, { until });
@@ -119,7 +158,10 @@ export const release = mutation({
       return null;
     }
     const unused = Math.max(0, (q.lease.until - q.now) / 1000);
-    if (unused > 0) await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: -unused });
+    if (unused > 0) {
+      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: -unused });
+      await addScore(ctx, q.clerkId, "playtime", -unused, q.now);
+    }
     await ctx.db.patch(q.lease._id, { sessions: [], until: q.now });
     return null;
   },

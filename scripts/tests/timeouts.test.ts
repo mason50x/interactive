@@ -200,7 +200,7 @@ test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay 
   });
   expect(
     (await head.query(api.experience.status, { day: 0 })).allowanceSeconds,
-  ).toBe(1200);
+  ).toBe(1800);
   await expect(
     head.mutation(api.adminQuotas.setRole, { clerkId: "member", role: "ceo" }),
   ).rejects.toThrow("CEO access required");

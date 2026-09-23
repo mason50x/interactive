@@ -416,7 +416,7 @@
   .text-shimmer {
     /* The two colours the band is made of, named so a caller on a surface the
        theme knows nothing about can say what "unlit" and "lit" mean there —
-       see `.packet-caption`, which shimmers on a black cover. Everywhere else
+       Loading covers use a separate monochrome treatment. Everywhere else
        they resolve to the theme's own pair and nothing changes. */
     --shimmer-base: var(--faint);
     --shimmer-crest: var(--foreground);
@@ -1478,12 +1478,7 @@
   animation-delay: calc(var(--i) * 0.17s), 0s;
 }
 
-/* Flowing dot waves and a thick, softly glowing prismatic rim. */
-@property --packet-light-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
+/* A quiet brand interlude: a breathing mark inside a revolving dashed ring. */
 .packet-cover {
   overflow: hidden;
   isolation: isolate;
@@ -1491,98 +1486,62 @@
   color: var(--foreground);
   transition: opacity 400ms ease-out;
 }
-.packet-grid {
+.packet-constellation {
   position: absolute;
-  inset: -48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  inset: auto 0 0;
+  height: 38%;
   pointer-events: none;
-  mask-image: radial-gradient(ellipse at center, transparent 5%, #000 65%);
+  mask-image: linear-gradient(to top, #000, transparent 95%);
 }
-.packet-grid-row {
-  display: block;
-  flex: 1 0 24px;
-  background: radial-gradient(circle, currentColor 1.7px, transparent 2px)
-    center / 24px 24px;
-  opacity: 0.2;
-  animation: packet-grid-flow 2.8s ease-in-out infinite;
+.packet-logo {
+  position: relative;
+  width: clamp(136px, 16vw, 176px);
+  height: auto;
+  flex-shrink: 0;
+  overflow: visible;
 }
-.packet-border {
-  position: absolute;
-  inset: 12px;
-  border-radius: 24px;
-  padding: 6px;
-  pointer-events: none;
-  background: conic-gradient(
-    from var(--packet-light-angle),
-    transparent 0deg,
-    #a4dfff33 35deg,
-    #86eaff 65deg,
-    #b4a2ff 90deg,
-    #ffb9e8 112deg,
-    #ffe8b0 134deg,
-    #b6ffe433 165deg,
-    transparent 195deg,
-    transparent 245deg,
-    #c4b5fd55 280deg,
-    #b5f3ffbb 308deg,
-    transparent 345deg
-  );
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
+.packet-logo-mark {
+  fill: currentColor;
+  animation: packet-logo-pulse 3s ease-in-out infinite;
+}
+.packet-logo-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-dasharray: 4 32;
+  stroke-linecap: round;
+  opacity: 0.6;
+  transform-origin: 80px 80px;
   animation:
-    packet-light-travel 3.5s linear infinite,
-    packet-rim-flow 3s ease-in-out infinite;
-  opacity: 0.85;
-}
-.packet-border-halo {
-  inset: 8px;
-  padding: 20px;
-  border-radius: 28px;
-  filter: blur(16px);
-  opacity: 0.4;
-}
-.packet-caption {
-  position: relative;
-  --shimmer-base: color-mix(in srgb, var(--foreground) 48%, transparent);
-  --shimmer-crest: var(--foreground);
-}
-.packet-detail {
-  position: relative;
-  margin: 0;
-  color: color-mix(in srgb, var(--foreground) 48%, transparent);
-  font-size: 12px;
+    packet-logo-spin 6s linear infinite,
+    packet-logo-dashes 2.4s ease-in-out infinite;
 }
 .packet-reveal {
   opacity: 0;
 }
-@keyframes packet-grid-flow {
+@keyframes packet-logo-pulse {
   0%,
   100% {
-    transform: translate3d(-14px, -7px, 0) scaleX(0.98);
-  }
-  25% {
-    transform: translate3d(0, -14px, 0) scaleX(1.015);
+    opacity: 0.55;
   }
   50% {
-    transform: translate3d(14px, 7px, 0) scaleX(1.025);
-  }
-  75% {
-    transform: translate3d(0, 14px, 0) scaleX(0.99);
+    opacity: 0.9;
   }
 }
-@keyframes packet-rim-flow {
+@keyframes packet-logo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes packet-logo-dashes {
   0%,
   100% {
-    border-radius: 24px 38px 26px 42px;
-    transform: scale(1);
+    stroke-dasharray: 4 32;
+    stroke-dashoffset: 0;
   }
   50% {
-    border-radius: 42px 24px 38px 26px;
-    transform: scale(0.99);
+    stroke-dasharray: 12 24;
+    stroke-dashoffset: 4;
   }
 }
 /* The wavy rule in the release sheet, drawn from left to right as the sheet
@@ -1600,7 +1559,92 @@
   animation: squiggle-draw 6000ms cubic-bezier(0.45, 0, 0.25, 1) 200ms forwards;
 }
 
+/* The disclosure settles with a small spring overshoot. Each changed clock
+   digit rolls on its own; the stable digits never move. */
+.playtime-spring {
+  transition-timing-function: linear(
+    0,
+    0.08 10%,
+    0.36 25%,
+    0.74 42%,
+    1.025 65%,
+    0.995 85%,
+    1
+  );
+}
+
+@keyframes playtime-digit-in {
+  from {
+    opacity: 0.55;
+    transform: translateY(20%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes playtime-digit-in-increase {
+  from {
+    opacity: 0.55;
+    transform: translateY(-20%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.playtime-digit-in {
+  animation: playtime-digit-in 190ms ease-out both;
+}
+
+.playtime-digit-in-increase {
+  animation: playtime-digit-in-increase 190ms ease-out both;
+}
+
+/* The browser carries the same two rail cards between the stacked layout and
+   the compact playing layout. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(rail-playtime),
+::view-transition-group(rail-version) {
+  animation-duration: 460ms;
+  animation-timing-function: linear(
+    0,
+    0.08 10%,
+    0.36 25%,
+    0.74 42%,
+    1.025 65%,
+    0.995 85%,
+    1
+  );
+}
+
+::view-transition-old(rail-playtime),
+::view-transition-new(rail-playtime),
+::view-transition-old(rail-version),
+::view-transition-new(rail-version) {
+  animation-duration: 220ms;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(rail-playtime),
+  ::view-transition-old(rail-playtime),
+  ::view-transition-new(rail-playtime),
+  ::view-transition-group(rail-version),
+  ::view-transition-old(rail-version),
+  ::view-transition-new(rail-version) {
+    animation-duration: 0.001ms !important;
+  }
+
   .squiggle-draw {
     animation: none;
     stroke-dashoffset: 0;
@@ -1677,11 +1721,6 @@
   }
 }
 
-@keyframes packet-light-travel {
-  to {
-    --packet-light-angle: 360deg;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .packet-cover *,
   .packet-cover {

@@ -3,6 +3,17 @@ import vinext from "vinext";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import commonjs from "vite-plugin-commonjs";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+
+// Vinext's canary shim uses export-star against React's CommonJS build.
+// Vite cannot infer those named exports; explicit re-exports preserve them.
+const reactExports = Object.keys(
+  createRequire(import.meta.url)("react"),
+).filter(
+  (name) =>
+    /^[A-Za-z_$][\w$]*$/.test(name) &&
+    !["default", "ViewTransition", "addTransitionType"].includes(name),
+);
 
 export default defineConfig(({ command }) => ({
   optimizeDeps: {
@@ -41,6 +52,20 @@ export default defineConfig(({ command }) => ({
     },
   },
   plugins: [
+    {
+      name: "react-canary-named-exports",
+      enforce: "pre",
+      transform(code, id) {
+        if (!id.endsWith("virtual:vinext-react-canary")) return;
+        return {
+          code: code.replace(
+            /export \* from ['"]react['"];?/,
+            `export { ${reactExports.join(", ")} } from "react";`,
+          ),
+          map: null,
+        };
+      },
+    },
     // Clerk's ESM distribution still contains require() calls in its server
     // helpers and sign-in routing hooks. Convert these for both runtimes.
     commonjs({

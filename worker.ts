@@ -117,6 +117,7 @@ export default {
       [
         "/home",
         "/admin",
+        "/leaderboard",
         "/activities",
         "/chat",
         "/experience",

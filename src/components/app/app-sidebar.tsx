@@ -26,6 +26,7 @@ import { navItems, type NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
 import { isPlayerRoute } from "@/lib/render-budget";
+import { usePlaytimeActivity } from "@/components/app/playtime-activity";
 
 /**
  * The signed-in app's chrome: a vertical rail, not a header.
@@ -97,6 +98,7 @@ export function AppSidebar() {
   // Keep the artwork dim and slower behind games, video and embedded apps.
   // Catalogue routes remain interactive; only a player consumes this budget.
   const viewing = isPlayerRoute(pathname);
+  const compactPlaytime = usePlaytimeActivity();
 
   const warm = useWarmRoutes(pathname);
 
@@ -232,9 +234,17 @@ export function AppSidebar() {
         })}
       </ul>
 
-      <VersionCard />
-
-      <SidebarPlaytime />
+      <div
+        className={cn(
+          "relative shrink-0 pb-2 pl-3",
+          compactPlaytime
+            ? "grid grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] items-stretch gap-1 wide:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] wide:gap-2"
+            : "flex flex-col gap-2",
+        )}
+      >
+        <SidebarPlaytime compact={compactPlaytime} />
+        <VersionCard compact={compactPlaytime} />
+      </div>
 
       {/* Nothing links back to the marketing site: `/` bounces a live session
           straight back here, so it would be a round trip to nowhere. */}

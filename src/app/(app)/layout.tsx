@@ -7,6 +7,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
+import { PlaytimeActivityProvider } from "@/components/app/playtime-activity";
 import { ActivitiesProvider } from "@/components/app/activities-provider";
 import { AppProviders } from "@/components/app-providers";
 import { CLIENT_ACTIVITIES } from "@/lib/activities";
@@ -76,14 +77,16 @@ export default async function DashboardLayout({
               Here rather than on each page so it is serialised once per full
               load and never on a navigation. See `ActivitiesProvider`. */}
           <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
-            <PlaytimeStatusProvider>
-              <div className="flex h-svh overflow-hidden bg-sidebar">
-                <AppSidebar />
-                <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
-                  <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
-                </main>
-              </div>
-            </PlaytimeStatusProvider>
+            <PlaytimeActivityProvider>
+              <PlaytimeStatusProvider>
+                <div className="flex h-svh overflow-hidden bg-sidebar">
+                  <AppSidebar />
+                  <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
+                    <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
+                  </main>
+                </div>
+              </PlaytimeStatusProvider>
+            </PlaytimeActivityProvider>
           </ActivitiesProvider>
         </ChatProvider>
       </TimeoutGate>

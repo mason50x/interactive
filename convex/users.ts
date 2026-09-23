@@ -1,3 +1,4 @@
+import { recordPage, pageKey } from "./leaderboard";
 import { ensureGlobalMembership } from "./chat/shared";
 import { normalizePersonName } from "../src/lib/person-name";
 import { v } from "convex/values";
@@ -113,6 +114,37 @@ export const store = mutation({
   },
 });
 
+/** One current-page snapshot per signed-in account. The admin query expires it. */
+export const heartbeat = mutation({
+  args: { path: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { path }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    if (
+      !path.startsWith("/") ||
+      path.startsWith("//") ||
+      path.length > 512 ||
+      /[?#\u0000-\u001f]/.test(path)
+    ) throw new Error("Invalid page path.");
+
+    const user = await ctx.db.query("userActivity")
+      .withIndex("byClerkId", q => q.eq("clerkId", identity.subject))
+      .unique();
+    const now = Date.now();
+    const snapshot = { currentPath: path, lastActiveAt: now };
+    const section = pageKey(path);
+    const countView = section !== null && (!user || (
+      (pageKey(user.currentPath) !== section || now - user.lastActiveAt >= 60_000) &&
+      now - (user.lastCountedAt ?? 0) >= 60_000
+    ));
+    if (countView) await recordPage(ctx, path, now);
+    if (user) await ctx.db.patch(user._id, { ...snapshot, ...(countView ? { lastCountedAt: now } : {}) });
+    else await ctx.db.insert("userActivity", { clerkId: identity.subject, ...snapshot, ...(countView ? { lastCountedAt: now } : {}) });
+    return null;
+  },
+});
+
 /** Called by the Clerk webhook on `user.created` / `user.updated`. */
 export const upsertFromClerk = internalMutation({
   args: { data: v.any() },
@@ -155,6 +187,11 @@ export const deleteFromClerk = internalMutation({
       await ctx.db.delete(user._id);
     }
 
+    const activity = await ctx.db.query("userActivity")
+      .withIndex("byClerkId", q => q.eq("clerkId", clerkId))
+      .take(100);
+    for (const row of activity) await ctx.db.delete(row._id);
+
     // Their accent, panic key, and the rest. Nothing else erases this row —
     // it is keyed by the Clerk id rather than owned by the `users` document,
     // so deleting the user above leaves it behind.
@@ -182,6 +219,8 @@ export const deleteFromClerk = internalMutation({
     if (!more) {
       await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAuthor, { clerkId });
       await ctx.scheduler.runAfter(0, internal.simulator.cleanup.purgeOwner, { clerkId });
+      await ctx.scheduler.runAfter(0, internal.leaderboard.purgeAccount, { clerkId });
+      await ctx.scheduler.runAfter(0, internal.accountCleanup.purge, { clerkId });
     }
 
     // Add deletes for any other table keyed by this user above this line.

@@ -60,7 +60,7 @@ export type Chat = {
   }[];
   adminBadgesLoaded: boolean;
   /**
-   * The conversation whose thread is open at its live end, or `null`. Set by
+   * The conversation whose thread is open and visible, or `null`. Set by
    * `Thread` and used to decide when its reading position can advance.
    */
   reading: Id<"conversations"> | null;

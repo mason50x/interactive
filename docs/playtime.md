@@ -1,8 +1,13 @@
 # Shared daily playtime
 
-Every account, including staff, receives 1,200 seconds at 7:35 a.m. Central Time
-(`America/Chicago`). There is no rollover; daily chat bonuses expire at that
-boundary. `config/playtime.ts` owns the timezone, allowance, and reward rules.
+Every account, including staff, receives 1,800 seconds by default at 7:35 a.m.
+Central Time (`America/Chicago`). Head Moderators and CEOs can set a user's
+daily base limit to any whole number from 20 to 160 minutes, or restore the
+default. A Head Moderator cannot change a CEO's limit. Changing a limit during
+the day preserves time already spent; lowering it below spent time leaves no
+time until a reward or the next reset. There is no rollover; daily chat bonuses
+expire at that boundary. `config/playtime.ts` owns the timezone, default
+allowance, and reward rules.
 
 The existing `experience.status/acquire/release` APIs now serve games, proxy
 apps, entertainment players, and all three simulator player types. Catalogues,
@@ -14,8 +19,7 @@ The outer game player and direct `/learn` document both gate their content and
 share the same lease, so they do not charge twice. Hidden documents stop and
 release, matching the existing proxy behavior.
 
-The sidebar shows a live countdown above the account menu and a keyboard-accessible
-popover describing what uses time, how to earn more, and when time resets.
+The sidebar shows a live countdown with expandable details above the version card.
 Exhaustion unmounts players, grays out the four playtime tabs, and redirects active
 playtime routes to Chat. Chat stays fully usable. Direct links and browser Back
 receive the same route guard. The standalone `/learn` document retains a local
@@ -23,11 +27,11 @@ exhaustion notice with a chat link. Existing moderation timeouts are separate.
 
 ## Chat rewards
 
-Only the normal, authenticated, accepted chat-send mutation can award time. An
-account must already be exhausted, including its last prepaid seconds. Messages
-sent while time remains do not bank rewards. Each eligible send adds exactly 120
-seconds atomically with message creation. Retries, edits, rejected messages, and
-bot replies cannot independently award time.
+Only the normal, authenticated, accepted chat-send mutation can award time.
+Each eligible send adds 120 seconds immediately, including while time remains;
+rewards stack within the day. A chat before the first player session creates that
+day's allowance record. Retries, edits, rejected messages, and bot replies cannot
+independently award time.
 
 Most normal text messages qualify, including one-word replies such as “hi,”
 “ok,” and “thanks.” There are no minimum word-count, vocabulary-diversity, or
@@ -44,13 +48,13 @@ both messages have at least eight words. Short replies only use exact normalized
 duplicate checks, so ordinary overlapping phrases are not mistaken for spam. Receipts
 survive chat deletion and daily resets, but account deletion removes them in
 bounded batches. Checks and credit share one Convex transaction, so concurrent
-sends cannot award twice while the account still has its new two minutes.
+sends cannot award twice for the same message.
 
 ## Rollout
 
 Deploy Convex before the frontend. `bonusSeconds` is optional for existing data.
 Daily keys use the reset's epoch milliseconds, distinct from the legacy UTC day
-numbers: the new policy starts users at 20 minutes when deployed. Existing
+numbers: the new policy starts users at 30 minutes when deployed. Existing
 scheduled legacy cleanup remains compatible and cannot erase a new policy key.
 The existing CEO Experience reset now resets the entire shared allowance,
 including daily bonuses; it retains duplicate receipts.

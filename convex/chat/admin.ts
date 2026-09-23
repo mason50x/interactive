@@ -3,11 +3,20 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import { deleteMessage, membership } from "./shared";
 
-import { resolvePrivileges, resolveAdminClerkIds, resolveStaffRoles } from "../roles";
+import { resolvePrivileges, resolveAdminClerkIds, resolveStaffRoles, resolveRole } from "../roles";
 
 export async function adminId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity || await activeTimeout(ctx, identity.subject) || !(await resolvePrivileges(ctx, identity.subject)).deleteChatMessages) return null;
+  const user = await ctx.db.query("users")
+    .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
+  return user ? identity.subject : null;
+}
+
+/** Staff, including Builders, may contribute to Announcements. */
+export async function announcementPublisherId(ctx: QueryCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity || await activeTimeout(ctx, identity.subject) || (await resolveRole(ctx, identity.subject)) === "member") return null;
   const user = await ctx.db.query("users")
     .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).unique();
   return user ? identity.subject : null;

@@ -1,6 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useConvexAuth, usePaginatedQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
@@ -9,10 +15,15 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { api } from "@convex/_generated/api";
+import { useActivities } from "@/components/app/activities-provider";
 import { Button } from "@/components/ui/button";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { Avatar } from "@/components/app/user-menu/avatar";
+import { adminPageLabel } from "@/lib/admin-page-label";
 import { cn } from "@/lib/utils";
+import styles from "./admin.module.css";
 import { AllowanceReset, UserControls } from "./user-controls";
+import { useLiveUsers } from "./use-live-users";
 
 export type DirectoryUser = FunctionReturnType<
   typeof api.timeouts.users
@@ -33,6 +44,7 @@ export const SELECT_CLASS =
 const COLUMN_BREAKPOINTS = [
   "(min-width: 40rem)",
   "(min-width: 48rem)",
+  "(min-width: 64rem)",
   "(min-width: 80rem)",
 ];
 function subscribeColumns(onChange: () => void) {
@@ -49,10 +61,10 @@ function visibleColumns() {
   );
 }
 function serverColumns() {
-  return 5;
+  return 6;
 }
 
-function AccessStatus({ user }: { user: DirectoryUser }) {
+function AccountStatus({ user }: { user: DirectoryUser }) {
   return (
     <span
       className={cn(
@@ -64,10 +76,47 @@ function AccessStatus({ user }: { user: DirectoryUser }) {
         aria-hidden="true"
         className={cn(
           "size-1.5 rounded-full",
-          user.timeout ? "bg-destructive" : "bg-success",
+          user.timeout
+            ? "bg-destructive"
+            : user.ceoCleared
+              ? "bg-primary"
+              : "bg-muted-foreground",
         )}
       />
-      {user.timeout ? "Timed out" : user.ceoCleared ? "CEO cleared" : "Active"}
+      {user.timeout ? "Timed out" : user.ceoCleared ? "CEO cleared" : "Allowed"}
+    </span>
+  );
+}
+
+function CurrentPage({
+  label,
+  path,
+  loading,
+}: {
+  label?: string;
+  path?: string;
+  loading: boolean;
+}) {
+  return path && label ? (
+    <span
+      className="inline-flex min-w-0 items-center gap-1.5 text-xs"
+      title={path}
+    >
+      <span
+        aria-hidden="true"
+        className="size-1.5 shrink-0 rounded-full bg-success"
+      />
+      <span className="truncate">{label}</span>
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      {!loading && (
+        <span
+          aria-hidden="true"
+          className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
+        />
+      )}
+      {loading ? "Checking…" : "Offline"}
     </span>
   );
 }
@@ -84,9 +133,21 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
     isAuthenticated ? {} : "skip",
     { initialNumItems: 50 },
   );
+  const activities = useActivities();
+  const activityTitles = useMemo(
+    () =>
+      new Map(activities.map((activity) => [activity.slug, activity.title])),
+    [activities],
+  );
+  const liveUsers = useLiveUsers();
+  const currentPages = useMemo(
+    () => new Map(liveUsers?.map((user) => [user.clerkId, user.currentPath])),
+    [liveUsers],
+  );
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selected, setSelected] = useState<string | null>(null);
+  const [closing, setClosing] = useState<string | null>(null);
   const [showBulkReset, setShowBulkReset] = useState(false);
   const term = search.trim().toLowerCase();
   const hasFilter = Boolean(term) || filter !== "all";
@@ -95,6 +156,17 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
   useEffect(() => {
     if (hasFilter && status === "CanLoadMore") loadMore(50);
   }, [hasFilter, status, loadMore]);
+
+  useEffect(() => {
+    if (!closing) return;
+    const timer = window.setTimeout(() => setClosing(null), 360);
+    return () => window.clearTimeout(timer);
+  }, [closing]);
+
+  function toggleUser(clerkId: string) {
+    setClosing(selected);
+    setSelected(selected === clerkId ? null : clerkId);
+  }
 
   const filtered = results.filter((user) => {
     const matchesSearch = [
@@ -162,9 +234,19 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
           </Button>
         )}
       </div>
-      {role === "ceo" && showBulkReset && (
-        <div id="bulk-allowances" className="mt-4 border-y border-border py-5">
-          <AllowanceReset />
+      {role === "ceo" && (
+        <div
+          id="bulk-allowances"
+          className={styles.reveal}
+          data-open={showBulkReset}
+          aria-hidden={!showBulkReset}
+          inert={!showBulkReset}
+        >
+          <div className={styles.revealContent}>
+            <div className="mt-4 border-y border-border py-4">
+              <AllowanceReset />
+            </div>
+          </div>
         </div>
       )}
 
@@ -187,9 +269,15 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
               </th>
               <th
                 scope="col"
-                className="hidden w-32 px-3 py-3 font-medium md:table-cell"
+                className="hidden w-44 px-3 py-3 font-medium md:table-cell"
               >
-                Access
+                Current Page
+              </th>
+              <th
+                scope="col"
+                className="hidden w-36 px-3 py-3 font-medium lg:table-cell"
+              >
+                Account Status
               </th>
               <th
                 scope="col"
@@ -205,37 +293,53 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
           <tbody>
             {filtered.map((user) => {
               const expanded = selected === user.clerkId;
+              const path = currentPages.get(user.clerkId);
+              const pageLabel = path
+                ? adminPageLabel(path, activityTitles)
+                : undefined;
               return (
                 <Fragment key={user.clerkId}>
                   <tr
                     className={cn(
-                      "border-b border-border last:border-0",
+                      "cursor-pointer border-b border-border last:border-0",
                       expanded ? "bg-primary/[0.05]" : "hover:bg-muted/40",
                     )}
+                    onClick={() => toggleUser(user.clerkId)}
                   >
                     <td className="px-4 py-3.5 sm:px-5">
                       <button
                         type="button"
                         aria-expanded={expanded}
                         aria-controls={`user-${user.clerkId}`}
-                        onClick={() =>
-                          setSelected(expanded ? null : user.clerkId)
-                        }
-                        className="block w-full min-w-0 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="flex w-full min-w-0 items-center gap-3 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <span className="block truncate font-medium">
-                          {user.label}
-                        </span>
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                          {user.username
-                            ? `@${user.username}`
-                            : (user.email ?? user.clerkId)}
-                        </span>
-                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 md:hidden">
-                          <span className="text-xs text-muted-foreground sm:hidden">
-                            {ROLE_LABEL[user.role]}
+                        <Avatar
+                          src={user.imageUrl}
+                          name={user.label}
+                          size={36}
+                        />
+                        <span className="block min-w-0 flex-1">
+                          <span className="block truncate font-medium">
+                            {user.label}
                           </span>
-                          <AccessStatus user={user} />
+                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                            {user.username
+                              ? `@${user.username}`
+                              : (user.email ?? user.clerkId)}
+                          </span>
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 lg:hidden">
+                            <span className="text-xs text-muted-foreground sm:hidden">
+                              {ROLE_LABEL[user.role]}
+                            </span>
+                            <span className="md:hidden">
+                              <CurrentPage
+                                path={path}
+                                label={pageLabel}
+                                loading={liveUsers === undefined}
+                              />
+                            </span>
+                            <AccountStatus user={user} />
+                          </span>
                         </span>
                       </button>
                     </td>
@@ -243,7 +347,14 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                       {ROLE_LABEL[user.role]}
                     </td>
                     <td className="hidden px-3 py-3.5 md:table-cell">
-                      <AccessStatus user={user} />
+                      <CurrentPage
+                        path={path}
+                        label={pageLabel}
+                        loading={liveUsers === undefined}
+                      />
+                    </td>
+                    <td className="hidden px-3 py-3.5 lg:table-cell">
+                      <AccountStatus user={user} />
                     </td>
                     <td className="hidden px-3 py-3.5 text-xs text-muted-foreground xl:table-cell">
                       {new Date(user.joinedAt).toLocaleDateString(undefined, {
@@ -259,9 +370,6 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         aria-label={`${expanded ? "Close" : "View"} ${user.label}`}
                         aria-expanded={expanded}
                         aria-controls={`user-${user.clerkId}`}
-                        onClick={() =>
-                          setSelected(expanded ? null : user.clerkId)
-                        }
                       >
                         <span className="hidden sm:inline">
                           {expanded ? "Close" : "View"}
@@ -276,14 +384,24 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                       </Button>
                     </td>
                   </tr>
-                  {expanded && (
+                  {(expanded || closing === user.clerkId) && (
                     <tr className="border-b border-border last:border-0">
-                      <td
-                        colSpan={columnCount}
-                        className="bg-muted/20 p-4 sm:p-5"
-                      >
-                        <div id={`user-${user.clerkId}`}>
-                          <UserControls user={user} isCeo={role === "ceo"} />
+                      <td colSpan={columnCount} className="bg-muted/20 p-0">
+                        <div
+                          id={`user-${user.clerkId}`}
+                          className={styles.reveal}
+                          data-open={expanded}
+                          aria-hidden={!expanded}
+                          inert={!expanded}
+                        >
+                          <div className={styles.revealContent}>
+                            <div className="p-4 sm:p-5">
+                              <UserControls
+                                user={user}
+                                isCeo={role === "ceo"}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </td>
                     </tr>

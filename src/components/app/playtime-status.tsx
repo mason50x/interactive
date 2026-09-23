@@ -31,9 +31,9 @@ export function PlaytimeStatusProvider({ children }: { children: ReactNode }) {
 export function usePlaytimeExhausted() {
   return useContext(ExhaustedContext);
 }
-export function SidebarPlaytime() {
+export function SidebarPlaytime({ compact = false }: { compact?: boolean }) {
   const quota = useContext(StatusContext);
-  return quota ? <PlaytimeSidebar quota={quota} /> : null;
+  return quota ? <PlaytimeSidebar quota={quota} compact={compact} /> : null;
 }
 
 /** Direct links and browser Back cannot keep a spent player mounted. Chat,

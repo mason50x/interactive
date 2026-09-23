@@ -4,6 +4,7 @@ import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { PreferencesProvider } from "@/components/preferences-provider";
 import { StoreUser } from "@/components/store-user";
+import { ActivityPresence } from "@/components/app/activity-presence";
 
 /** Shared providers for the main app. The /learn player uses only the auth and
  * Convex providers it needs for its live playtime gate, without analytics. */
@@ -22,6 +23,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
             the accent and the panic key apply to the whole tree. */}
           <PreferencesProvider>
             <StoreUser />
+            <ActivityPresence />
             {children}
             <GoogleAnalytics />
           </PreferencesProvider>

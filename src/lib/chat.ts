@@ -45,7 +45,7 @@ export type Refusal = Extract<SendResult, { ok: false }>["refusal"];
  * addressed as though they had.
  */
 const REFUSALS: Record<string, string> = {
-  "read-only": "Only admins can post in Announcements.",
+  "read-only": "Only staff can post in Announcements.",
   empty: "There is nothing to send.",
   "too-long": "That is too long for one message.",
   "hidden-characters": "That message had invisible characters in it.",

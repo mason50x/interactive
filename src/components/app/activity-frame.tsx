@@ -162,7 +162,6 @@ function ActivityFrameContent({
         key={`cover-${src}-${run}`}
         detail={variant === "tv" ? "Getting your episode ready." : undefined}
         label={variant === "tv" ? "Entertainment" : undefined}
-        holdMs={variant === "tv" ? 1600 : undefined}
       />
 
       <div className="pointer-events-none absolute top-3 right-3 left-3 z-20 flex flex-wrap items-start gap-2">

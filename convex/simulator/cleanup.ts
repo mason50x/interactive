@@ -26,6 +26,9 @@ export const purgeOwner = internalMutation({
       )
       .take(20);
     for (const entry of entries) await ctx.db.delete(entry._id);
+    if (html.length === 20 || entries.length === 20) {
+      await ctx.scheduler.runAfter(0, internal.simulator.cleanup.purgeOwner, { clerkId });
+    }
     return null;
   },
 });

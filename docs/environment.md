@@ -78,8 +78,9 @@ privileges. Unknown roles and malformed configuration grant no access.
 chat moderation, 50 bot uses per rolling day and two hours
 of Experience per UTC day. CEO displays a crown and CEO text; moderator displays
 a shield. Builder receives the same 50 bot uses and two hours of Experience,
-but no message-deletion powers, `@everyone`, announcement posting, or Admin
+but no message-deletion powers, `@everyone`, or Admin
 access. Its Builder badge appears in chat and beside OSS in the sidebar.
+Builders can post in Announcements.
 Group membership is independent.
 
 A CEO can also change any account's role — including to `member` — from the
