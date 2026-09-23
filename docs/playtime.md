@@ -41,21 +41,21 @@ link-only, mention-only, repeated-character spam, repeated single-word filler,
 and messages over 2,000 characters do not qualify. Text accompanying a link,
 mention, or emoji can qualify; ordinary chat moderation still applies.
 
-SHA-256 receipts prevent an account from reusing any previously rewarded message,
+SHA-256 receipts prevent an account from reusing a message rewarded in the last 180 days,
 ignoring case, formatting characters, punctuation, and numeric suffixes. An 80%
 word overlap check against its last 50 rewards also rejects near-copies when
 both messages have at least eight words. Short replies only use exact normalized
 duplicate checks, so ordinary overlapping phrases are not mistaken for spam. Receipts
-survive chat deletion and daily resets, but account deletion removes them in
-bounded batches. Checks and credit share one Convex transaction, so concurrent
+survive chat deletion and daily resets; a daily job removes receipts after 180
+days, and account deletion removes them in bounded batches. Checks and credit share one Convex transaction, so concurrent
 sends cannot award twice for the same message.
 
 ## Rollout
 
 Deploy Convex before the frontend. `bonusSeconds` is optional for existing data.
 Daily keys use the reset's epoch milliseconds, distinct from the legacy UTC day
-numbers: the new policy starts users at 30 minutes when deployed. Existing
-scheduled legacy cleanup remains compatible and cannot erase a new policy key.
+numbers. The legacy lease rows were removed from development and production on
+September 23, 2026. Existing scheduled cleanup cannot erase a new policy key.
 The existing CEO Experience reset now resets the entire shared allowance,
 including daily bonuses; it retains duplicate receipts.
 

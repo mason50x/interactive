@@ -143,7 +143,7 @@ test("CEO can assign Builder, revoke existing moderator powers, and demote env B
     conversationId: room._id,
     body: "Builder announcement",
   })).toMatchObject({ ok: true });
-  expect(await ceo.query(api.adminQuotas.users, {})).toContainEqual(
+  expect((await ceo.query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } })).page).toContainEqual(
     expect.objectContaining({ clerkId: "mod", role: "builder" }),
   );
   await ceo.mutation(api.adminQuotas.setRole, {
@@ -170,7 +170,7 @@ test("env migration preserves Builder and head moderators can time out Builders"
   const t = await setup();
   await t.mutation(internal.roles.migrateFromEnv, {});
   expect(
-    await t.withIdentity({ subject: "ceo" }).query(api.adminQuotas.users, {}),
+    (await t.withIdentity({ subject: "ceo" }).query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } })).page,
   ).toContainEqual(
     expect.objectContaining({ clerkId: "builder", role: "builder" }),
   );

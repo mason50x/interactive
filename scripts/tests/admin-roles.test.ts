@@ -37,8 +37,8 @@ async function roleOf(
 ) {
   const users = await t
     .withIdentity({ subject: boss })
-    .query(api.adminQuotas.users, {});
-  return users.find((user) => user.clerkId === clerkId)?.role;
+    .query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } });
+  return users.page.find((user) => user.clerkId === clerkId)?.role;
 }
 
 test("a CEO promotes a member and the merged role takes effect everywhere", async () => {

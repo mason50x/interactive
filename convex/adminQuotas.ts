@@ -1,11 +1,11 @@
 import { PLAYTIME_SECONDS, playtimeDay } from "../config/playtime";
 import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 
 import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
-import { roleFor } from "../config/roles";
 import { components, internal } from "./_generated/api";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
 import { changeActivityLimit } from "./experience";
@@ -35,8 +35,8 @@ const siteRole = v.union(
 
 /** A compact directory for the quota console. Clerk remains the source of truth. */
 export const users = query({
-  args: {},
-  returns: v.array(
+  args: { paginationOpts: paginationOptsValidator },
+  returns: v.object({ page: v.array(
     v.object({
       clerkId: v.string(),
       name: v.optional(v.string()),
@@ -44,29 +44,18 @@ export const users = query({
       username: v.optional(v.string()),
       role: siteRole,
     }),
-  ),
-  handler: async (ctx) => {
+  ), isDone: v.boolean(), continueCursor: v.string() }),
+  handler: async (ctx, { paginationOpts }) => {
     await requireCeo(ctx);
-    const overrides = new Map(
-      (await ctx.db.query("staffRoles").collect()).map((row) => [
-        row.clerkId,
-        row.role,
-      ]),
-    );
-    const rows = await ctx.db.query("users").collect();
-    return rows
-      .map((user) => ({
+    const result = await ctx.db.query("users").paginate(paginationOpts);
+    const page = await Promise.all(result.page.map(async user => ({
         clerkId: user.clerkId,
         name: user.name,
         email: user.email,
         username: user.username,
-        role: overrides.get(user.clerkId) ?? roleFor(user.clerkId),
-      }))
-      .sort((a, b) =>
-        (a.name ?? a.username ?? a.email ?? a.clerkId).localeCompare(
-          b.name ?? b.username ?? b.email ?? b.clerkId,
-        ),
-      );
+        role: await resolveRole(ctx, user.clerkId),
+      })));
+    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
   },
 });
 
@@ -131,7 +120,7 @@ export const reset = mutation({
     clerkId: v.optional(v.string()),
     quotas: v.array(quotaKind),
   },
-  returns: v.object({ usersReset: v.number() }),
+  returns: v.object({ usersReset: v.number(), pending: v.boolean() }),
   handler: async (ctx, { clerkId, quotas }) => {
     await requireCeo(ctx);
     const selected = [...new Set(quotas)];
@@ -144,12 +133,28 @@ export const reset = mutation({
         .unique();
       if (!user) throw new ConvexError("User not found.");
       await resetFor(ctx, clerkId, selected);
-      return { usersReset: 1 };
+      return { usersReset: 1, pending: false };
     }
 
-    const allUsers = await ctx.db.query("users").collect();
-    for (const user of allUsers) await resetFor(ctx, user.clerkId, selected);
-    return { usersReset: allUsers.length };
+    const page = await ctx.db.query("users").paginate({ numItems: 20, cursor: null });
+    for (const user of page.page) await resetFor(ctx, user.clerkId, selected);
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.adminQuotas.continueReset, {
+      quotas: selected, cursor: page.continueCursor,
+    });
+    return { usersReset: page.page.length, pending: !page.isDone };
+  },
+});
+
+export const continueReset = internalMutation({
+  args: { quotas: v.array(quotaKind), cursor: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { quotas, cursor }) => {
+    const page = await ctx.db.query("users").paginate({ numItems: 20, cursor });
+    for (const user of page.page) await resetFor(ctx, user.clerkId, quotas);
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.adminQuotas.continueReset, {
+      quotas, cursor: page.continueCursor,
+    });
+    return null;
   },
 });
 

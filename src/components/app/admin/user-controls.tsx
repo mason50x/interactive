@@ -62,7 +62,9 @@ export function AllowanceReset({ user }: { user?: DirectoryUser }) {
       setFeedback({
         message: user
           ? `Allowances reset for ${user.label}.`
-          : `Allowances reset for ${result.usersReset} accounts.`,
+          : result.pending
+            ? "Reset started. Remaining accounts will finish shortly."
+            : `Allowances reset for ${result.usersReset} accounts.`,
       });
     } catch {
       setFeedback({ error: true, message: "The reset failed. Try again." });

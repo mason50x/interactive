@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
+import { playtimeDay } from "../../config/playtime";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
@@ -102,4 +103,24 @@ test("dashboard staff can read each user's seven-day timeout log and old records
   expect((await ceo.query(api.timeouts.history, historyArgs)).page).toEqual([]);
   expect(await t.mutation(internal.dataMaintenance.pruneTimeoutHistory, {})).toBe(2);
   expect(await t.mutation(internal.dataMaintenance.pruneInactiveTimeouts, {})).toBe(1);
+});
+
+test("a bulk allowance reset finishes accounts beyond the first page", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.UTC(2026, 8, 23, 18));
+  vi.stubEnv("STAFF_ROLES", JSON.stringify({ ceo: "ceo" }));
+  const t = setup();
+  await t.run(async ctx => {
+    const { day } = playtimeDay(Date.now());
+    for (let i = 0; i < 25; i++) {
+      const clerkId = `member-${i}`;
+      await ctx.db.insert("users", { clerkId });
+      await ctx.db.insert("experienceLeases", { clerkId, day, until: Date.now() });
+    }
+  });
+  expect(await t.withIdentity({ subject: "ceo" }).mutation(api.adminQuotas.reset, {
+    quotas: ["experience"],
+  })).toEqual({ usersReset: 20, pending: true });
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  expect(await t.run(ctx => ctx.db.query("experienceLeases").take(1))).toEqual([]);
 });

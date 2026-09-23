@@ -207,7 +207,7 @@ test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay 
   await expect(
     head.mutation(api.adminQuotas.reset, { quotas: ["bot"] }),
   ).rejects.toThrow("CEO access required");
-  await expect(head.query(api.adminQuotas.users, {})).rejects.toThrow(
+  await expect(head.query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } })).rejects.toThrow(
     "CEO access required",
   );
 });
