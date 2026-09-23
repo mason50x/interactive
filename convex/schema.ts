@@ -20,8 +20,13 @@ export default defineSchema({
     day: v.number(),
     until: v.number(),
     allowanceSeconds: v.optional(v.number()),
+    bonusSeconds: v.optional(v.number()),
     sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
+  playtimeRewards: defineTable({
+    clerkId: v.string(), hash: v.string(), normalized: v.string(),
+  }).index("by_clerkId_and_hash", ["clerkId", "hash"])
+    .index("by_clerkId", ["clerkId"]),
   publishedHtmlSimulators: defineTable(publishedFields)
     .index("by_publishKey", ["publishKey"])
     .index("by_storageId", ["storageId"]),

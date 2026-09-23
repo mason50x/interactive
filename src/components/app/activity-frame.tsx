@@ -1,5 +1,6 @@
 "use client";
 
+import { PlaytimeGate } from "./experience-quota";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { ActivityControls } from "@/components/app/activity-controls";
 import styles from "@/components/app/activity-frame.module.css";
@@ -45,7 +46,17 @@ import { safePanicUrl } from "@/lib/panic-key";
  *
  * The pill of controls is `ActivityControls`; what it controls is here.
  */
-export function ActivityFrame({
+export function ActivityFrame(
+  props: Parameters<typeof ActivityFrameContent>[0],
+) {
+  return (
+    <PlaytimeGate>
+      <ActivityFrameContent {...props} />
+    </PlaytimeGate>
+  );
+}
+
+function ActivityFrameContent({
   title,
   src,
   variant = "activity",

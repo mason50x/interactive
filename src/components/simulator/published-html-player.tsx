@@ -1,5 +1,6 @@
 "use client";
 
+import { PlaytimeGate } from "@/components/app/experience-quota";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
@@ -22,7 +23,11 @@ const Player = dynamic(() => import("./html-player"), {
 export function PublishedHtmlPlayer({ id }: { id: string }) {
   const { userId } = useAuth();
   if (!userId) return <CenteredSpinner />;
-  return <PublishedSession key={`${userId}:${id}`} id={id} userId={userId} />;
+  return (
+    <PlaytimeGate>
+      <PublishedSession key={`${userId}:${id}`} id={id} userId={userId} />
+    </PlaytimeGate>
+  );
 }
 
 function PublishedSession({ id, userId }: { id: string; userId: string }) {

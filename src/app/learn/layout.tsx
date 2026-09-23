@@ -16,14 +16,9 @@ export const metadata: Metadata = {
  * dark band between that one and the bundle, which is exactly what the app's
  * ring exists to get rid of.
  *
- * What is absent is the point. No `AppProviders`, so this page loads no Clerk
- * script and no Convex client of its own — nothing the framed bundle could
- * borrow. The bundle itself is a cross-origin document on the asset origin
- * (see `HostedActivity`); the browser keeps it away from anything of ours, and
- * this shell keeps the page around it empty so there is nothing to keep it
- * away *from*. An activity that wants to persist a score would say so over
- * `postMessage` and let the app — which does hold the session — decide whether
- * to write it.
+ * The player owns a minimal Clerk/Convex boundary to enforce the same live
+ * playtime lease when this URL is opened directly. The activity bundle remains
+ * isolated on its cross-origin asset host.
  */
 export default function LearnLayout({ children }: { children: ReactNode }) {
   return (

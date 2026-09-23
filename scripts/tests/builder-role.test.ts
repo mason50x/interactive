@@ -51,8 +51,8 @@ test("Builder gets moderator allowances and distinct presentation without modera
   expect(await builder.query(api.adminQuotas.access, {})).toBe(false);
   expect(await builder.query(api.timeouts.access, {})).toBeNull();
   expect(await builder.query(api.experience.status, { day: 0 })).toMatchObject({
-    allowanceSeconds: 7200,
-    remainingSeconds: 7200,
+    allowanceSeconds: 1200,
+    remainingSeconds: 1200,
   });
   await t.run(async (ctx) => {
     const name = await botQuotaName(ctx, "builder");
@@ -147,7 +147,7 @@ test("CEO can assign Builder, revoke existing moderator powers, and demote env B
     await t
       .withIdentity({ subject: "builder" })
       .query(api.experience.status, { day: 0 }),
-  ).toMatchObject({ allowanceSeconds: 5400 });
+  ).toMatchObject({ allowanceSeconds: 1200 });
   expect(await t.run((ctx) => botQuotaName(ctx, "builder"))).toBe("botTags");
   expect(await ceo.query(api.chat.admin.roles, {})).not.toContainEqual({
     clerkId: "builder",

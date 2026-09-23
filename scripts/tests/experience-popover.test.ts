@@ -14,6 +14,6 @@ test("the quota donut server-renders before its fullscreen portal container moun
       visible: false,
     },
   }));
-  expect(html).toContain("Daily Experience time: checking allowance");
+  expect(html).toContain("Daily playtime: checking allowance");
   expect(html).toContain('aria-haspopup="dialog"');
 });

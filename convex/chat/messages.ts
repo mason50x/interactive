@@ -1,3 +1,4 @@
+import { rewardChatPlaytime } from "../experience";
 import type { ChatAccount } from "./shared";
 import { adminId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
@@ -355,6 +356,8 @@ export const send = mutation({
               height: row.height,
             })),
     });
+
+    await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
 
     // The dots go with the words, in the same transaction, so nobody ever
     // sees the message and "still typing" on one screen at once. See
