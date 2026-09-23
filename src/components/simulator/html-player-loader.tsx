@@ -1,5 +1,6 @@
 "use client";
 
+import { PlaytimeGate } from "@/components/app/experience-quota";
 import dynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import { CenteredSpinner } from "@/components/ui/spinner";
@@ -24,10 +25,12 @@ export function HtmlPlayerLoader({ contentHash }: { contentHash: string }) {
   const { userId } = useAuth();
   if (!userId) return <CenteredSpinner />;
   return (
-    <Player
-      key={`${userId}:${contentHash}`}
-      owner={userId}
-      contentHash={contentHash}
-    />
+    <PlaytimeGate>
+      <Player
+        key={`${userId}:${contentHash}`}
+        owner={userId}
+        contentHash={contentHash}
+      />
+    </PlaytimeGate>
   );
 }

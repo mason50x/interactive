@@ -1,4 +1,5 @@
-import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
+import { playtimeDay } from "../config/playtime";
+import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 
 import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
@@ -81,7 +82,7 @@ async function resetFor(
   }
 
   if (quotas.includes("experience")) {
-    const day = Math.floor(Date.now() / DAY);
+    const { day } = playtimeDay(Date.now());
     await experienceLimiter.reset(ctx, "experienceSeconds", {
       key: `${clerkId}:${day}`,
     });

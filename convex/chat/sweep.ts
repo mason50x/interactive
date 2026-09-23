@@ -317,6 +317,10 @@ export const purgeAuthor = internalMutation({
     }
 
     let moreRelated = false;
+    const rewards = before === undefined ? await ctx.db.query("playtimeRewards")
+      .withIndex("by_clerkId", q => q.eq("clerkId", clerkId)).take(BATCH) : [];
+    for (const row of rewards) await ctx.db.delete(row._id);
+    moreRelated ||= rewards.length === BATCH;
     // Every picture still owned directly by this account. The ones on messages
     // went with the messages above; these are unfinished uploads. The general sweep would eventually find an
     // orphan, but an account erasure must remove its bytes immediately.

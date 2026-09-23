@@ -1,7 +1,8 @@
 import { requireNotTimedOut } from "./timeoutState";
-import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
+import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
-import { resolvePrivileges, resolveRole } from "./roles";
+import { PLAYTIME_SECONDS, CHAT_REWARD_SECONDS, playtimeDay, rewardText, similarReward } from "../config/playtime";
+import type { MutationCtx } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "./_generated/server";
 
@@ -14,23 +15,52 @@ const statusValidator = v.object({
   serverNow: v.number(),
 });
 
+async function quotaFor(ctx: QueryCtx, clerkId: string) {
+  const now = Date.now();
+  // Epoch milliseconds distinguish this policy from legacy midnight day keys.
+  const { day, resetsAt } = playtimeDay(now);
+  const lease = await ctx.db.query("experienceLeases")
+    .withIndex("by_clerkId_and_day", q => q.eq("clerkId", clerkId).eq("day", day))
+    .unique();
+  const allowanceSeconds = PLAYTIME_SECONDS + (lease?.bonusSeconds ?? 0);
+  const key = `${clerkId}:${day}`;
+  const config = { kind: "fixed window" as const, rate: allowanceSeconds, period: resetsAt - day, start: day };
+  const value = await limiter.getValue(ctx, "experienceSeconds", { key, config });
+  return { now, day, key, config, lease, clerkId,
+    status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value)),
+      allowanceSeconds, leaseUntil: lease?.until ?? 0, resetsAt, serverNow: now } };
+}
 async function quota(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("Sign in to use Experience.");
-  const now = Date.now();
-  const day = Math.floor(now / DAY);
-  const allowanceSeconds = (await resolvePrivileges(ctx, identity.subject)).experienceSecondsPerDay;
-  const key = `${identity.subject}:${day}`;
-  const config = { kind: "fixed window" as const, rate: allowanceSeconds, period: DAY, start: day * DAY };
-  const value = await limiter.getValue(ctx, "experienceSeconds", { key, config });
-  const lease = await ctx.db.query("experienceLeases")
-    .withIndex("by_clerkId_and_day", q => q.eq("clerkId", identity.subject).eq("day", day))
-    .unique();
-  const previousAllowance = lease?.allowanceSeconds ?? ((await resolveRole(ctx, identity.subject)) !== "member" ? 18_000 : 300);
-  const adjustment = lease ? allowanceSeconds - previousAllowance : 0;
-  return { now, day, key, config, lease, adjustment, clerkId: identity.subject,
-    status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value + adjustment)),
-      allowanceSeconds, leaseUntil: lease?.until ?? 0, resetsAt: (day + 1) * DAY, serverNow: now } };
+  if (!identity) throw new ConvexError("Sign in to use playtime.");
+  return quotaFor(ctx, identity.subject);
+}
+
+/** Called only by the accepted chat-send transaction, never by the client.
+ * Reward only an exhausted account, so sending a burst cannot stockpile time.
+ * Receipts survive message deletion and daily resets; exact copies never earn twice. */
+export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string) {
+  const normalized = rewardText(body);
+  if (!normalized) return;
+  const q = await quotaFor(ctx, clerkId);
+  if (!q.lease || q.status.remainingSeconds > 0 || q.status.leaseUntil > q.now) return;
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized));
+  const hash = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("");
+  const duplicate = await ctx.db.query("playtimeRewards")
+    .withIndex("by_clerkId_and_hash", q => q.eq("clerkId", clerkId).eq("hash", hash)).first();
+  if (duplicate) return;
+  const recent = await ctx.db.query("playtimeRewards")
+    .withIndex("by_clerkId", q => q.eq("clerkId", clerkId)).order("desc").take(50);
+  if (recent.some(row => similarReward(normalized, row.normalized))) return;
+  await limiter.limit(ctx, "experienceSeconds", {
+    key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds + CHAT_REWARD_SECONDS },
+    count: -CHAT_REWARD_SECONDS,
+  });
+  await ctx.db.patch(q.lease._id, {
+    bonusSeconds: (q.lease.bonusSeconds ?? 0) + CHAT_REWARD_SECONDS,
+    allowanceSeconds: q.status.allowanceSeconds + CHAT_REWARD_SECONDS,
+  });
+  await ctx.db.insert("playtimeRewards", { clerkId, hash, normalized });
 }
 
 // The day is a subscription refresh key only. Accounting always uses server time.
@@ -50,13 +80,9 @@ export const acquire = mutation({
     if (sessionId !== undefined && (!sessionId || sessionId.length > 100)) throw new ConvexError("Invalid session");
     const q = await quota(ctx);
     await requireNotTimedOut(ctx, q.clerkId);
-    if (q.lease && q.adjustment !== 0) {
-      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds - q.adjustment }, count: -q.adjustment, reserve: true });
-      await ctx.db.patch(q.lease._id, { allowanceSeconds: q.status.allowanceSeconds });
-    }
     const sessions = (q.lease?.sessions ?? []).filter(s => s.until > q.now && s.id !== sessionId);
     if (sessionId) {
-      if (sessions.length >= 32) throw new ConvexError("Too many open Experience apps");
+      if (sessions.length >= 32) throw new ConvexError("Too many open activities");
       sessions.push({ id: sessionId, until: q.now + 15_000 });
       if (q.lease) await ctx.db.patch(q.lease._id, { sessions });
     }
@@ -86,10 +112,6 @@ export const release = mutation({
   returns: v.null(),
   handler: async (ctx, { sessionId }) => {
     const q = await quota(ctx);
-    if (q.lease && q.adjustment !== 0) {
-      await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: { ...q.config, rate: q.status.allowanceSeconds - q.adjustment }, count: -q.adjustment, reserve: true });
-      await ctx.db.patch(q.lease._id, { allowanceSeconds: q.status.allowanceSeconds });
-    }
     if (!q.lease?.sessions?.some(s => s.id === sessionId)) return null;
     const sessions = q.lease.sessions.filter(s => s.id !== sessionId && s.until > q.now);
     if (sessions.length) {

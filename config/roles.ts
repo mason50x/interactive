@@ -3,7 +3,7 @@ const staffPrivileges = {
   deleteChatMessages: true,
   adminBadge: true,
   botTagsPerDay: 50,
-  experienceSecondsPerDay: 2 * 60 * 60,
+  experienceSecondsPerDay: 20 * 60,
 } as const;
 
 export const ROLES = {
@@ -11,7 +11,7 @@ export const ROLES = {
     deleteChatMessages: false,
     adminBadge: false,
     botTagsPerDay: 5,
-    experienceSecondsPerDay: 90 * 60,
+    experienceSecondsPerDay: 20 * 60,
   },
   builder: { ...staffPrivileges, deleteChatMessages: false, adminBadge: false },
   moderator: { ...staffPrivileges },

@@ -12,6 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  PlaytimeBlocked,
   ExperienceQuotaDonut,
   useExperienceQuota,
 } from "@/components/app/experience-quota";
@@ -296,18 +297,7 @@ export function ExperienceChrome({
                   className="h-full w-full border-0 bg-white"
                 />
               ) : (
-                <div
-                  role="status"
-                  className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground"
-                >
-                  {quota.error
-                    ? "Unable to check your daily time. Retrying…"
-                    : quota.remaining === 0
-                      ? "Your daily Experience time is used up. Come back after midnight UTC."
-                      : !quota.visible
-                        ? "Experience is paused while this tab is hidden."
-                        : "Checking your daily Experience time…"}
-                </div>
+                <PlaytimeBlocked quota={quota} />
               )}
             </div>
           );

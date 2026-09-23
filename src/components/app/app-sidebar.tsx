@@ -1,7 +1,12 @@
 "use client";
 
+import {
+  PlaytimeNavLink,
+  SidebarPlaytime,
+  usePlaytimeExhausted,
+} from "./playtime-status";
+import { isPlaytimeRoute } from "@config/playtime";
 import { Fragment } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { ShieldCheckIcon as ShieldCheckIconSolid } from "@heroicons/react/24/solid";
@@ -58,6 +63,7 @@ import { isPlayerRoute } from "@/lib/render-budget";
  */
 export function AppSidebar() {
   const pathname = usePathname();
+  const exhausted = usePlaytimeExhausted();
   const { preferences } = usePreferences();
   const { hasUnread, mentioned, conversations, profile, staffRoles } =
     useChat();
@@ -110,23 +116,27 @@ export function AppSidebar() {
           scroll inside it. */}
       <ul className="relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pb-2 pl-3">
         {destinations.map((item) => {
+          const disabled = exhausted && isPlaytimeRoute(item.href);
           const active = item.href === activeHref;
           const lit = item.href === litHref;
           const Icon = item.icon.solid;
           return (
             <Fragment key={item.href}>
               <li>
-                <Link
+                <PlaytimeNavLink
+                  disabled={disabled}
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   data-lit={lit ? "true" : undefined}
-                  {...warm(item.href)}
+                  {...(disabled ? {} : warm(item.href))}
                   className={cn(
                     "group nav-row relative flex h-11 items-center overflow-hidden rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap backdrop-blur-[3px]",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
-                    lit
-                      ? "font-bold text-foreground"
-                      : "text-muted-foreground transition-[background-color,color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground",
+                    disabled
+                      ? "cursor-not-allowed opacity-40"
+                      : lit
+                        ? "font-bold text-foreground"
+                        : "text-muted-foreground transition-[background-color,color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground",
                   )}
                 >
                   {/* The underline follows the visible content: icon and label
@@ -214,8 +224,8 @@ export function AppSidebar() {
                     </span>
                   ) : null}
 
-                  <NavPending href={item.href} report={report} />
-                </Link>
+                  {!disabled && <NavPending href={item.href} report={report} />}
+                </PlaytimeNavLink>
               </li>
             </Fragment>
           );
@@ -223,6 +233,8 @@ export function AppSidebar() {
       </ul>
 
       <VersionCard />
+
+      <SidebarPlaytime />
 
       {/* Nothing links back to the marketing site: `/` bounces a live session
           straight back here, so it would be a round trip to nowhere. */}

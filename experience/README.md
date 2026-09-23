@@ -13,8 +13,11 @@ switched off, so this is the only place the Worker answers.
 The app frames that page from `/experience` — see `src/lib/experience.ts`.
 The route and sidebar entry are included in production and development builds.
 Set `EXPERIENCE_ORIGIN` to the Experience Worker origin in the app deployment.
-Signed-in accounts share ten minutes per UTC day across apps; verified admins
-get five hours. Convex stores the allowance and removes expired daily records.
+Every account starts with 20 minutes shared across proxy apps, games,
+entertainment and simulators. Browsing catalogues is free. The allowance resets
+at 7:35 a.m. America/Chicago (including daylight saving changes). At exhaustion,
+an accepted unique, detailed chat message earns two minutes; see
+[the playtime policy](../docs/playtime.md). Convex owns all accounting.
 
 ## Layout
 

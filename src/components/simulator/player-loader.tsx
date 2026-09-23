@@ -1,5 +1,6 @@
 "use client";
 
+import { PlaytimeGate } from "@/components/app/experience-quota";
 import dynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
@@ -31,6 +32,12 @@ export function PlayerLoader(props: {
   const { isAuthenticated } = useConvexAuth();
   if (!userId || !isAuthenticated) return <CenteredSpinner />;
   return (
-    <Player key={`${userId}:${props.contentHash}`} owner={userId} {...props} />
+    <PlaytimeGate>
+      <Player
+        key={`${userId}:${props.contentHash}`}
+        owner={userId}
+        {...props}
+      />
+    </PlaytimeGate>
   );
 }

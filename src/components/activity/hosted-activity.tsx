@@ -12,7 +12,7 @@ import {
  * This is the inner half of a nested frame, and the nesting is deliberate:
  *
  *     app origin     ActivityFrame        session-gated route, CSP frame-ancestors
- *       └─ app origin  /learn (this)      static shell, no session client near it
+ *       └─ app origin  /learn (this)      live playtime gate
  *            └─ asset origin  the bundle  static files, cross-origin to everything
  *
  * The obvious alternative — point `ActivityFrame` straight at the bucket and

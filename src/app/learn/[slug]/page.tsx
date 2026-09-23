@@ -4,7 +4,7 @@ import { TimeoutMessage } from "@/components/app/timeout-message";
 import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
-import { HostedActivity } from "@/components/activity/hosted-activity";
+import { MeteredActivity } from "@/components/activity/metered-activity";
 import { activityBundleUrl } from "@/lib/assets";
 import { findActivity } from "@/lib/activities";
 
@@ -49,5 +49,5 @@ export default async function LearnPage({
   const src = activityBundleUrl(activity.path);
   if (!src) notFound();
 
-  return <HostedActivity title={activity.title} src={src} />;
+  return <MeteredActivity title={activity.title} src={src} />;
 }
