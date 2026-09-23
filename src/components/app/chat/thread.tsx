@@ -5,7 +5,6 @@ import { PhotoIcon } from "@heroicons/react/24/outline";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
-  Fragment,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -457,13 +456,6 @@ function ConversationThread({
    * and reversing it in place would reorder the store the query reads from.
    */
   const ordered = [...results].reverse();
-  const firstUnreadId = initialRead
-    ? ordered.find(
-        (message) =>
-          message.status === "visible" &&
-          message._creationTime > initialRead.lastReadAt,
-      )?._id
-    : undefined;
 
   /**
    * Whoever has spoken in what is loaded, newest first, for the composer to
@@ -619,48 +611,36 @@ function ConversationThread({
         ) : null}
 
         {ordered.map((message, index) => (
-          <Fragment key={message._id}>
-            {message._id === firstUnreadId ? (
-              <div className="my-3 flex items-center gap-3 text-xs font-medium text-blue-500">
-                <span className="h-px flex-1 bg-blue-500" />
-                New messages
-                <span className="h-px flex-1 bg-blue-500" />
-              </div>
-            ) : null}
-            <MessageRow
-              message={message}
-              previous={
-                message._id === firstUnreadId ? undefined : ordered[index - 1]
-              }
-              next={
-                ordered[index + 1]?._id === firstUnreadId
-                  ? undefined
-                  : (ordered[index + 1] ??
-                    (live && outbox.entries[0]?.status !== "failed"
-                      ? pendingMessages[0]
-                      : undefined))
-              }
-              mine={message.authorClerkId === userId}
-              me={userId}
-              canAct={profile !== null && !readOnly}
-              plainMentions={plainMentions}
-              highlighted={message._id === target}
-              onEdit={
-                message.poll
-                  ? undefined
-                  : () => {
-                      setEditing(message);
-                      composer.current?.focus();
-                    }
-              }
-              onReply={() => {
-                setEditing(null);
-                setReplyingTo(message);
-                composer.current?.focus();
-              }}
-              onJumpToMessage={jumpToMessage}
-            />
-          </Fragment>
+          <MessageRow
+            key={message._id}
+            message={message}
+            previous={ordered[index - 1]}
+            next={
+              ordered[index + 1] ??
+              (live && outbox.entries[0]?.status !== "failed"
+                ? pendingMessages[0]
+                : undefined)
+            }
+            mine={message.authorClerkId === userId}
+            me={userId}
+            canAct={profile !== null && !readOnly}
+            plainMentions={plainMentions}
+            highlighted={message._id === explicitTarget}
+            onEdit={
+              message.poll
+                ? undefined
+                : () => {
+                    setEditing(message);
+                    composer.current?.focus();
+                  }
+            }
+            onReply={() => {
+              setEditing(null);
+              setReplyingTo(message);
+              composer.current?.focus();
+            }}
+            onJumpToMessage={jumpToMessage}
+          />
         ))}
         {!live
           ? null
