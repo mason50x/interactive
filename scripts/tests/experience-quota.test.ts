@@ -307,22 +307,46 @@ test.each([
   });
 });
 
-test("reward text rejects numeric, repetitive, short, link, and padded messages", () => {
-  expect(rewardText(detailed)).not.toBeNull();
+test.each([
+  "hi",
+  "ok",
+  "thanks",
+  "Sounds good!",
+  "hello there",
+  "soooo good",
+  "你好",
+  "Sí!",
+  "Thanks 😊",
+  "@someone hi",
+  "Check this https://example.com",
+])("normal short message qualifies: %s", (body) => {
+  expect(rewardText(body)).not.toBeNull();
+});
+
+test("reward text still rejects empty, numeric, and obvious spam", () => {
   for (const text of [
-    "123456 ".repeat(20),
+    "",
+    "   ",
+    "123456",
+    "😊",
+    "https://example.com",
+    "@someone",
     "hello ".repeat(20),
-    "hello there",
-    "a b c d e f g h i j k l ".repeat(4),
-    "https://example.com " + detailed,
-    "@someone " + detailed,
+    "aaaa",
     "a".repeat(2001),
-    "aaaa " + detailed,
   ]) {
     expect(rewardText(text)).toBeNull();
   }
+  expect(rewardText("HI! 123")).toBe(rewardText("hi"));
   expect(rewardText(detailed)).toBe(
     rewardText(detailed.toUpperCase().replace(" ", "\u200b ") + " 12"),
+  );
+});
+
+test("short overlapping replies are distinct while long near-copies stay blocked", () => {
+  expect(similarReward("hi", "hi")).toBe(true);
+  expect(similarReward("how are you doing", "how are you doing today")).toBe(
+    false,
   );
   expect(
     similarReward(
@@ -332,7 +356,7 @@ test("reward text rejects numeric, repetitive, short, link, and padded messages"
   ).toBe(true);
 });
 
-test("real chat sends grant credit atomically; retries and nonmembers cannot claim it", async () => {
+test("short chat sends grant credit atomically; retries and nonmembers cannot claim it", async () => {
   const { t, user } = setup();
   const room = await t.run(async (ctx) => {
     await ctx.db.insert("users", {
@@ -365,7 +389,7 @@ test("real chat sends grant credit atomically; retries and nonmembers cannot cla
   await exhaust(t, user);
   const args = {
     conversationId: room,
-    body: detailed,
+    body: "Sounds good!",
     clientNonce: "reward-message",
   };
   expect(
@@ -399,12 +423,10 @@ test("a CEO quota reset restores the shared allowance and discards bonus time", 
   await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
   await exhaust(t, user);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
-  await t
-    .withIdentity({ subject: "boss" })
-    .mutation(api.adminQuotas.reset, {
-      clerkId: "person",
-      quotas: ["experience"],
-    });
+  await t.withIdentity({ subject: "boss" }).mutation(api.adminQuotas.reset, {
+    clerkId: "person",
+    quotas: ["experience"],
+  });
   const status = await user.query(api.experience.status, { day: 0 });
   expect(status.remainingSeconds).toBe(1200);
   expect(status.allowanceSeconds).toBe(1200);

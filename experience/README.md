@@ -16,7 +16,7 @@ Set `EXPERIENCE_ORIGIN` to the Experience Worker origin in the app deployment.
 Every account starts with 20 minutes shared across proxy apps, games,
 entertainment and simulators. Browsing catalogues is free. The allowance resets
 at 7:35 a.m. America/Chicago (including daylight saving changes). At exhaustion,
-an accepted unique, detailed chat message earns two minutes; see
+an accepted new chat message, including a short reply, earns two minutes; see
 [the playtime policy](../docs/playtime.md). Convex owns all accounting.
 
 ## Layout

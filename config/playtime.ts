@@ -36,33 +36,34 @@ export function playtimeDay(now: number) {
 }
 
 export const REWARD_REQUIREMENTS =
-  "Write at least 60 characters and 12 words, including 8 different words. Use your own detailed message; numbers, repeated text, and copies do not count.";
+  "Most normal messages count, including short replies like “hi” or “thanks.” Numbers alone, repeated spam, and previously rewarded copies do not count.";
 
-/** Bounded Unicode patterns, plus diversity checks: no nested regex backtracking.
- * These are anti-spam heuristics, not proof of meaning. Normalization ignores
- * casing, punctuation, numeric suffixes and invisible formatting characters. */
+/** Normal conversation counts, even a single short word. Strip links/mentions
+ * before fingerprinting so changing a tag or numeric suffix cannot farm credit.
+ * The normal chat moderation pipeline still runs before this reward policy. */
 export function rewardText(body: string): string | null {
   if (body.length > 2000) return null;
   const text = body
     .normalize("NFKC")
     .replace(/\p{Cf}/gu, "")
-    .toLowerCase();
-  if (/(?:https?:\/\/|www\.)\S+|@\S+|([\p{L}\p{N}])\1{3,}/u.test(text))
-    return null;
+    .toLowerCase()
+    .replace(/(?:https?:\/\/|www\.)\S+|@\S+/gu, " ");
   const words = text.match(/\p{L}[\p{L}\p{M}]*(?:['’][\p{L}\p{M}]+)*/gu) ?? [];
-  const unique = new Set(words);
-  if (words.length < 12 || unique.size < 8 || unique.size / words.length < 0.5)
-    return null;
-  const normalized = words.join(" ");
-  if (normalized.length < 60 || words.join("").length / text.length < 0.65)
-    return null;
-  if (words.filter((word) => word.length >= 4).length < 4) return null;
-  return normalized;
+  const letters = words.join("");
+  if (letters.length < 2 || /^(\p{L})\1{3,}$/u.test(letters)) return null;
+  // Reject repeated filler, without imposing essay-style vocabulary requirements.
+  if (words.length >= 3 && new Set(words).size === 1) return null;
+  return words.join(" ");
 }
 
 export function similarReward(a: string, b: string) {
-  const left = new Set(a.split(" "));
-  const right = new Set(b.split(" "));
+  if (a === b) return true;
+  const aWords = a.split(" ");
+  const bWords = b.split(" ");
+  // Short everyday replies naturally overlap; only longer text needs fuzzy matching.
+  if (aWords.length < 8 || bWords.length < 8) return false;
+  const left = new Set(aWords);
+  const right = new Set(bWords);
   const common = [...left].filter((word) => right.has(word)).length;
   return common / Math.max(left.size, right.size) >= 0.8;
 }
