@@ -60,7 +60,7 @@ export function PlaytimeNavLink({
         role="link"
         aria-disabled="true"
         className={props.className}
-        title="Playtime is used up. Send a unique, detailed chat message for 2 more minutes."
+        title="Playtime is used up. Send a new chat message for 2 more minutes."
       >
         {children}
       </span>

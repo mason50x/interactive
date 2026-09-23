@@ -329,7 +329,7 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
         <div className="w-full max-w-lg space-y-5">
           <h1 className="text-3xl font-semibold">Your playtime is used up</h1>
           <p>
-            Send a unique, detailed chat message to get 2 more minutes of
+            Send a new chat message to get 2 more minutes of
             playtime.
           </p>
           <p className="text-sm text-muted-foreground">

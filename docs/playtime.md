@@ -29,17 +29,19 @@ sent while time remains do not bank rewards. Each eligible send adds exactly 120
 seconds atomically with message creation. Retries, edits, rejected messages, and
 bot replies cannot independently award time.
 
-Qualifying text must contain at least 60 normalized characters, 12 words, eight
-distinct words, and four words of at least four characters. At least half the
-words must be distinct, and letters must comprise at least 65% of the text.
-Links, mentions, four repeated characters, numerical spam, and text over 2,000
-characters are rejected for rewards (ordinary chat moderation still applies).
-Unicode-aware bounded regexes and word checks avoid catastrophic backtracking.
-These are anti-spam heuristics, not a semantic assessment of message quality.
+Most normal text messages qualify, including one-word replies such as “hi,”
+“ok,” and “thanks.” There are no minimum word-count, vocabulary-diversity, or
+sentence-length requirements. At least two letters are needed after normalizing
+Unicode and removing links and mentions. Empty, numeric-only, emoji-only,
+link-only, mention-only, repeated-character spam, repeated single-word filler,
+and messages over 2,000 characters do not qualify. Text accompanying a link,
+mention, or emoji can qualify; ordinary chat moderation still applies.
 
 SHA-256 receipts prevent an account from reusing any previously rewarded message,
 ignoring case, formatting characters, punctuation, and numeric suffixes. An 80%
-word overlap check against its last 50 rewards also rejects near-copies. Receipts
+word overlap check against its last 50 rewards also rejects near-copies when
+both messages have at least eight words. Short replies only use exact normalized
+duplicate checks, so ordinary overlapping phrases are not mistaken for spam. Receipts
 survive chat deletion and daily resets, but account deletion removes them in
 bounded batches. Checks and credit share one Convex transaction, so concurrent
 sends cannot award twice while the account still has its new two minutes.
