@@ -33,13 +33,14 @@ export const pruneInactiveTimeouts = internalMutation({
   },
 });
 
-/** Reward repeats are blocked for 180 days; old normalized text is removed. */
+/** Reward repeats only matter inside a 30-minute window; a day of margin, then
+ * the normalized text is removed. */
 export const pruneRewardReceipts = internalMutation({
   args: {},
   returns: v.number(),
   handler: async ctx => {
     const rows = await ctx.db.query("playtimeRewards")
-      .withIndex("by_creation_time", q => q.lt("_creationTime", Date.now() - 180 * DAY))
+      .withIndex("by_creation_time", q => q.lt("_creationTime", Date.now() - DAY))
       .take(BATCH);
     for (const row of rows) await ctx.db.delete(row._id);
     if (rows.length === BATCH) await ctx.scheduler.runAfter(0, internal.dataMaintenance.pruneRewardReceipts, {});

@@ -1,6 +1,9 @@
 /** All accounts share this policy. Reset uses the school's Central timezone. */
 export const PLAYTIME_SECONDS = 30 * 60;
 export const CHAT_REWARD_SECONDS = 2 * 60;
+/** Sending the same thing again inside this window is a spam attempt. Past it,
+ * saying "ok" or "thanks" again in a conversation is ordinary chat. */
+export const REWARD_REPEAT_WINDOW_MS = 30 * 60_000;
 export const PLAYTIME_TIMEZONE = "America/Chicago";
 const DAY = 86_400_000;
 const calendar = new Intl.DateTimeFormat("en-US", {
@@ -36,7 +39,7 @@ export function playtimeDay(now: number) {
 }
 
 export const REWARD_REQUIREMENTS =
-  "Most normal messages count, including short replies like “hi” or “thanks.” Numbers alone, repeated spam, and previously rewarded copies do not count.";
+  "Most normal messages count, including short replies like “hi” or “thanks.” Numbers alone, filler, and the same message sent again within 30 minutes do not count.";
 
 /** Normal conversation counts, even a single short word. Strip links/mentions
  * before fingerprinting so changing a tag or numeric suffix cannot farm credit.
