@@ -38,12 +38,12 @@ test("everyone receives a private pinned bot DM, without duplicates or a bot pro
   expect(list.find((conversation) => conversation.peerClerkId === "bot")).toMatchObject({
     kind: "dm",
     peerClerkId: "bot",
-    peerName: "Wizard",
-    peerAvatarUrl: "/chat/wizard-avatar.webp",
+    peerName: "ChatGPT",
+    peerAvatarUrl: "/chat/chatgpt-avatar.svg",
   });
   expect(
     await alice.query(api.chat.conversations.get, { conversationId: dm }),
-  ).toMatchObject({ peerName: "Wizard" });
+  ).toMatchObject({ peerName: "ChatGPT" });
   expect(
     await t
       .withIdentity({ subject: "bob" })
@@ -151,7 +151,7 @@ test("empty bot DMs get one delayed personalized welcome without generation", as
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({
       authorClerkId: "bot",
-      body: expect.stringContaining("Hey, alice. I'm Wizard."),
+      body: "Hi, alice! I'm ChatGPT. What would you like help with?",
     });
     expect(await t.run((ctx) => ctx.db.query("typing").take(10))).toHaveLength(
       0,
@@ -365,20 +365,50 @@ test("historical bot messages and reply previews use current branding without ch
     conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER, paginationOpts: { numItems: 20, cursor: null },
   });
   expect(result.page.find(message => message.authorClerkId === "bot"))
-    .toMatchObject({ authorName: "Wizard", authorHandle: "wizard", body: "An existing answer." });
+    .toMatchObject({ authorName: "ChatGPT", authorHandle: "chat", body: "An existing answer." });
   expect(result.page.find(message => message.replyTo)?.replyTo)
-    .toMatchObject({ authorName: "Wizard", authorHandle: "wizard", preview: "An existing answer." });
+    .toMatchObject({ authorName: "ChatGPT", authorHandle: "chat", preview: "An existing answer." });
+});
+
+test("the old persona greeting reads as the current general welcome everywhere", async () => {
+  const { t, alice, dm } = await setup();
+  const oldBody = "Hello, Mason! I'm your bot, with a little old-fashioned charm. Ask me a question, bring me a puzzle, or just say hello. What's on your mind?";
+  const newBody = "Hi, Mason! I'm ChatGPT. What would you like help with?";
+  const original = await t.run(ctx => ctx.db.insert("messages", {
+    conversationId: dm, authorClerkId: "bot", authorHandle: "wizard",
+    authorName: "Wizard", body: oldBody, status: "visible", flags: [],
+  }));
+  const page = await alice.query(api.chat.messages.list, {
+    conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(page.page.find(message => message._id === original)?.body).toBe(newBody);
+  await alice.mutation(api.chat.bot.welcome, { conversationId: dm });
+  expect((await t.run(ctx => ctx.db.get(original)))?.body).toBe(newBody);
+  const list = await alice.query(api.chat.conversations.list, {});
+  expect(list.find(conversation => conversation._id === dm)?.latestMessage?.body).toBe(newBody);
+  const hits = await alice.query(api.chat.messages.search, { text: "", authorClerkId: "bot" });
+  expect(hits.find(message => message._id === original)?.body).toBe(newBody);
+  await t.run(ctx => ctx.db.insert("messages", {
+    conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
+    body: "Thanks!", replyToId: original, status: "visible", flags: [],
+  }));
+  const replies = await alice.query(api.chat.messages.list, {
+    conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(replies.page.find(message => message.replyTo)?.replyTo?.preview).toBe(newBody);
 });
 
 
-test.each(["@wizard", "@Wizard", "@WIZARD", "@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot @wizard"])("%s resolves to one bot request", async (tag) => {
+test.each(["@chat", "@Chat", "@CHAT", "@chatgpt", "@ChatGPT", "@gpt", "@GPT", "@wizard", "@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot @chat"])("%s resolves to one bot request", async (tag) => {
   const { t, alice, global } = await setup();
   const result = await alice.mutation(api.chat.messages.send, {
     conversationId: global, body: `${tag} What is 10 plus three?`,
   });
   expect(result).toMatchObject({ ok: true });
   const messages = await t.run(ctx => ctx.db.query("messages").take(10));
-  expect(messages[0].mentions).toEqual([{ clerkId: "bot", handle: "wizard" }]);
+  expect(messages[0].mentions).toEqual([{ clerkId: "bot", handle: "chat" }]);
   const jobs = await t.run(ctx => ctx.db.system.query("_scheduled_functions").take(20));
   expect(jobs.filter(job => job.name.includes("bot:ask"))).toHaveLength(1);
 });

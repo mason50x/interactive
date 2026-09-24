@@ -15,6 +15,7 @@ export function PacketCover({
   holdMs?: number | null;
 }) {
   const [phase, setPhase] = useState<Phase>("held");
+  const [queueMessage, setQueueMessage] = useState(QUEUE_MESSAGES[0]);
 
   useEffect(() => {
     if (holdMs === null) return;
@@ -26,13 +27,23 @@ export function PacketCover({
     };
   }, [holdMs]);
 
+  useEffect(() => {
+    if (holdMs === null) return;
+    const randomize = window.setTimeout(() => {
+      setQueueMessage(
+        QUEUE_MESSAGES[Math.floor(Math.random() * QUEUE_MESSAGES.length)],
+      );
+    }, 0);
+    return () => window.clearTimeout(randomize);
+  }, [holdMs]);
+
   if (phase === "gone") return null;
 
   return (
     <div
       // Under the control pill on purpose (it sits at `z-20`): the way back to
       // the activities list and the panic key's button both have to stay
-      // reachable during a wait, and five seconds is long enough for someone
+      // reachable during a wait, and 3.5 seconds is long enough for someone
       // to want out of one.
       className={cn(
         "packet-cover absolute inset-0 z-10 flex flex-col items-center justify-center gap-3",
@@ -63,6 +74,15 @@ export function PacketCover({
         />
       </svg>
 
+      {holdMs !== null && (
+        <span
+          aria-hidden="true"
+          className="text-shimmer relative text-center text-sm font-medium"
+        >
+          {queueMessage}
+        </span>
+      )}
+
       <span role="status" className="sr-only">
         {label} loading.
       </span>
@@ -75,5 +95,12 @@ type Phase = "held" | "lifting" | "gone";
 // The hosted games have no shared ready event; retain the existing timed hold.
 const LOGO_PATH = "M18 21H33.77V74.5H42.73V21H58.5V66.33H82V79H18Z";
 
-const HOLD = 4600;
+const QUEUE_MESSAGES = [
+  "You're 2nd in line…",
+  "You're up next…",
+  "Saving your spot…",
+  "Getting your seat ready…",
+];
+
+const HOLD = 3500;
 const LIFT = 400;

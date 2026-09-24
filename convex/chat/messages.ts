@@ -21,7 +21,7 @@ import { EVERYONE, findMentionTokens } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screen, screenStatic, type SendContext } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
-import { BOT_HANDLE, BOT_ID, BOT_NAME, botRateLimiter } from "./botConfig";
+import { BOT_HANDLE, BOT_ID, BOT_NAME, botRateLimiter, presentBotBody } from "./botConfig";
 import {
   avatarAppearance,
   callerAccount,
@@ -548,11 +548,8 @@ async function resolveMentions(
   for (const token of findMentionTokens(body)) {
     if (tokens.has(token.handle)) continue;
 
-    // The old man. A reserved handle, so `accountByHandle` below would find
-    // nobody and the contact rule would take it from there — which is the
-    // right answer everywhere but the room, the one place he lives. He is
-    // put in `people` so the thread draws him as a chip; `send` knows not to
-    // write him a mention row. See `convex/chat/bot.ts`.
+    // The assistant's handles are reserved. Add its identity so the thread
+    // draws a chip; `send` knows not to write a mention row for it.
     if (BOT_MENTION_HANDLES.has(token.handle)) {
       if (member.kind !== "global" && member.dmPeer !== BOT_ID) return { ok: false, refusal: "mention" };
       bot = true;
@@ -640,7 +637,7 @@ async function replyOf(
     return { messageId: message.replyToId, unavailable: true };
   }
 
-  const body = target.body.replace(/\s+/g, " ").trim();
+  const body = presentBotBody(target.body, target.authorClerkId).replace(/\s+/g, " ").trim();
   const pictures = target.images?.length ?? 0;
   const preview =
     body !== ""
@@ -749,7 +746,7 @@ async function presentMessages(ctx: QueryCtx, rows: Doc<"messages">[], profile: 
         authorAvatarHue: avatar.avatarHue,
         authorAvatarEmoji: avatar.avatarEmoji,
         authorAvatarInitials: avatar.avatarInitials,
-        body: gone ? "" : message.body,
+        body: gone ? "" : presentBotBody(message.body, message.authorClerkId),
         editedAt: gone ? undefined : message.editedAt,
         poll: gone ? undefined : pollOf(message, clerkId),
         replyTo: gone ? undefined : await replyOf(ctx, message, originals, accounts),
@@ -1158,8 +1155,9 @@ export const search = query({
       if (named === null) continue;
       hits.push({
         _id: message._id, _creationTime: message._creationTime, conversationId: message.conversationId,
-        authorHandle: (await accountFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
-        authorClerkId: message.authorClerkId, hasImages: pictures, body: message.body, ...named,
+        authorHandle: message.authorClerkId === BOT_ID ? BOT_HANDLE : (await accountFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
+        authorClerkId: message.authorClerkId, hasImages: pictures,
+        body: presentBotBody(message.body, message.authorClerkId), ...named,
       });
     }
     return hits;

@@ -4,7 +4,9 @@ import {
   ArrowUturnLeftIcon,
   EllipsisHorizontalIcon,
   FaceSmileIcon,
+  TrashIcon as OutlineTrashIcon,
 } from "@heroicons/react/24/outline";
+import { TrashIcon as SolidTrashIcon } from "@heroicons/react/24/solid";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
@@ -103,7 +105,7 @@ export function MessageMenu({
         {editable ? <MenuItem onClick={onEdit}>Edit message</MenuItem> : null}
         {mine || gone ? null : (
           <MenuItem onClick={onReply} className="gap-2">
-            <ArrowUturnLeftIcon className="size-4 text-faint" />
+            <ArrowUturnLeftIcon className="size-4" />
             Reply
           </MenuItem>
         )}
@@ -111,6 +113,7 @@ export function MessageMenu({
         {isAdmin ? (
           <MenuItem
             tone="destructive"
+            className="gap-2"
             disabled={adminDeleting}
             onClick={async () => {
               onAdminError(null);
@@ -126,7 +129,8 @@ export function MessageMenu({
               }
             }}
           >
-            Admin delete
+            <OutlineTrashIcon className="size-4" />
+            Mod Delete
           </MenuItem>
         ) : null}
 
@@ -134,8 +138,10 @@ export function MessageMenu({
           deletable ? (
             <MenuItem
               tone="destructive"
+              className="gap-2"
               onClick={() => void remove({ messageId: message._id })}
             >
+              <SolidTrashIcon className="size-4" />
               Delete
             </MenuItem>
           ) : null

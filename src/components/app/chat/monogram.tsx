@@ -95,6 +95,7 @@ export function Monogram({
       aria-hidden
       className={cn(
         "monogram relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[0.8125rem] font-semibold select-none",
+        bot && "bg-white! dark:bg-black!",
         className,
       )}
       // Only the hue crosses over. The lightness and chroma are in
@@ -104,12 +105,10 @@ export function Monogram({
     >
       {bot ? null : (emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase())}
       {bot ? (
-        // The old man has no profile row, so his app-owned portrait is fixed
-        // here. The image itself moves inside the clipped circle; every place
-        // that already renders a Monogram therefore gets the same idle face.
+        // The assistant has no profile row, so its app-owned mark is fixed here.
         <Photo
           src={BOT_AVATAR}
-          className="absolute inset-0 size-full rounded-[inherit] object-cover [image-rendering:pixelated]"
+          className="absolute inset-0 size-full rounded-[inherit] object-contain invert dark:invert-0"
         />
       ) : imageUrl === undefined ? null : (
         <Photo

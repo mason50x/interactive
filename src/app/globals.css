@@ -1482,7 +1482,7 @@
 .packet-cover {
   overflow: hidden;
   isolation: isolate;
-  background-color: var(--background);
+  background-color: var(--surface);
   color: var(--foreground);
   transition: opacity 400ms ease-out;
 }

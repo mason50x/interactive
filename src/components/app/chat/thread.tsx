@@ -312,11 +312,10 @@ function ConversationThread({
 
   /** Only write when the server still has unread messages. */
   const isBotDm = detail?.kind === "dm" && detail.peerClerkId === "bot";
-  const emptyBotDm = isBotDm && status === "Exhausted" && results.length === 0;
 
   useEffect(() => {
-    if (emptyBotDm) void welcomeBot({ conversationId });
-  }, [conversationId, emptyBotDm, welcomeBot]);
+    if (isBotDm) void welcomeBot({ conversationId });
+  }, [conversationId, isBotDm, welcomeBot]);
 
   const openConversation = serverConversations.find(
     (conversation) => conversation._id === conversationId,

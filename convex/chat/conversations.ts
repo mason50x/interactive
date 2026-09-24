@@ -1,4 +1,4 @@
-import { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "./botConfig";
+import { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR, presentBotBody } from "./botConfig";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { MAX_TITLE } from "../moderation/limits";
@@ -221,8 +221,9 @@ export const list = query({
         firstUnreadMessageId: firstUnread?._id,
         latestMessage: latest === null ? undefined : {
           _id: latest._id, _creationTime: latest._creationTime,
-          authorClerkId: latest.authorClerkId, authorHandle: latest.authorHandle,
-          body: latest.body.slice(0, 160) || (latest.images?.length ? "Photo" : "Message"),
+          authorClerkId: latest.authorClerkId,
+          authorHandle: latest.authorClerkId === BOT_ID ? BOT_HANDLE : latest.authorHandle,
+          body: presentBotBody(latest.body, latest.authorClerkId).slice(0, 160) || (latest.images?.length ? "Photo" : "Message"),
         },
         unreadExact: exact,
         mentioned,
