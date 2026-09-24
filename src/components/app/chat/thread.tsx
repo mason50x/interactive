@@ -93,7 +93,6 @@ function ConversationThread({
     isVisible,
     () => true,
   );
-  const [resumeUnread, setResumeUnread] = useState(true);
   const [initialRead, setInitialRead] = useState<
     FunctionReturnType<typeof api.chat.conversations.readPosition> | undefined
   >(undefined);
@@ -124,13 +123,9 @@ function ConversationThread({
   const now = useDayClock();
   const [selectedDaysAgo, setDaysAgo] = useState(0);
 
-  const requestedTarget =
-    explicitTarget ??
-    (resumeUnread &&
-    initialRead?.firstUnreadAt != null &&
-    (!daily || initialRead.firstUnreadAt >= dayBounds(now, 0).start)
-      ? initialRead.firstUnreadId
-      : null);
+  // Only a link to a message opens the thread anywhere but its latest.
+  // Unread messages are the newest ones, so the end is where they are read.
+  const requestedTarget = explicitTarget;
   const location = useQuery(
     api.chat.messages.location,
     requestedTarget ? { messageId: requestedTarget, conversationId } : "skip",
@@ -159,20 +154,10 @@ function ConversationThread({
 
   useEffect(() => {
     if (!target || results.some((message) => message._id === target)) return;
-    const at = location?.createdAt ?? initialRead?.firstUnreadAt;
+    const at = location?.createdAt;
     if (at == null || (daily && (at < day.start || at >= day.end))) return;
     if (status === "CanLoadMore") loadMore(40);
-  }, [
-    target,
-    results,
-    location,
-    initialRead,
-    daily,
-    day.start,
-    day.end,
-    status,
-    loadMore,
-  ]);
+  }, [target, results, location, daily, day.start, day.end, status, loadMore]);
 
   const markRead = useMutation(
     api.chat.conversations.markRead,
@@ -273,7 +258,6 @@ function ConversationThread({
   });
 
   function returnLatest() {
-    setResumeUnread(false);
     setDaysAgo(0);
     pinned.current = true;
     if (explicitTarget)
@@ -305,7 +289,6 @@ function ConversationThread({
   }
 
   function jumpToMessage(messageId: Id<"messages">) {
-    setResumeUnread(false);
     pinned.current = false;
     router.replace(
       `${CHAT_HREF}/${conversationId}?message=${encodeURIComponent(messageId)}`,
@@ -551,7 +534,6 @@ function ConversationThread({
             now={now}
             daysAgo={daysAgo}
             onChange={(day) => {
-              setResumeUnread(false);
               setDaysAgo(day);
               pinned.current = true;
               if (explicitTarget)
