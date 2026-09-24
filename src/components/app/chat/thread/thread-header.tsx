@@ -5,7 +5,7 @@ import Link from "next/link";
 import { GroupPanel } from "@/components/app/chat/group-panel";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
-import { Present } from "@/components/app/chat/presence";
+import { PeerPresence, Present } from "@/components/app/chat/presence";
 import { conversationName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import type { Id } from "@convex/_generated/dataModel";
@@ -75,20 +75,18 @@ export function ThreadHeader({
                 <h1 className="truncate text-[0.9375rem] font-semibold">
                   {name}
                 </h1>
-                {/* The handle, or the fact that they are writing — the
-                    one thing worth taking that line over for, and shown
-                    up here as well as in the thread because the thread's
-                    dots are below the fold for anybody reading back. */}
-                {detail.peerName === undefined &&
-                typists.length === 0 ? null : (
-                  <span className="block truncate text-[0.75rem] text-faint">
-                    {typists.length > 0 ? (
-                      <span className="text-shimmer">typing…</span>
-                    ) : (
-                      `@${detail.peerHandle}`
-                    )}
-                  </span>
-                )}
+                <span className="flex items-center gap-1.5 truncate text-[0.75rem] text-faint">
+                  {typists.length > 0 ? (
+                    <span className="text-shimmer">typing… ·</span>
+                  ) : null}
+                  <PeerPresence
+                    conversationId={conversationId}
+                    peerClerkId={detail.peerClerkId}
+                  />
+                  {detail.peerName === undefined ? null : (
+                    <span>· @{detail.peerHandle}</span>
+                  )}
+                </span>
               </span>
             </PersonCard>
           ) : (

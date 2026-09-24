@@ -324,7 +324,7 @@ export default defineSchema({
    * reading it is themselves heartbeating into it. Their own beat re-runs their
    * own subscription, and stale rows drop out of the answer.
    *
-   * Direct messages keep no rows at all. Nothing reads a count of two.
+   * Direct messages keep no rows here. Their peer status reads app activity.
    */
   presence: defineTable({
     conversationId: v.id("conversations"),
