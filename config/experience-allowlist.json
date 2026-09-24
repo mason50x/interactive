@@ -86,6 +86,21 @@
     {"host": "waa-pa.clients6.google.com", "label": null, "start": null},
     {"host": "ogs.google.com", "label": null, "start": null},
     {"host": "www.apple.com", "label": null, "start": null, "paths": ["/ac/", "/v/", "/wss/"]},
-    {"host": "amp-api-edge.media.apple.com", "label": null, "start": null}
+    {"host": "amp-api-edge.media.apple.com", "label": null, "start": null},
+    {"host": "soccerrng.netlify.app", "id": "soccerrng", "label": "Soccer RNG", "start": "https://soccerrng.netlify.app/"},
+    {"host": "assets.footylogos.com", "label": null, "start": null, "paths": ["/logos/"]},
+    {"host": "publish.realmadrid.com", "label": null, "start": null, "paths": ["/content/dam/"]},
+    {"host": "assets.realmadrid.com", "label": null, "start": null, "paths": ["/is/image/realmadrid/"]},
+    {"host": "www.fcbarcelona.com", "label": null, "start": null, "paths": ["/photo-resources/"]},
+    {"host": "media.psg.fr", "label": null, "start": null, "paths": ["/image/upload/"]},
+    {"host": "img.fcbayern.com", "label": null, "start": null, "paths": ["/image/upload/"]},
+    {"host": "dynamic-crop-cdn.scoreplay.io", "label": null, "start": null, "paths": ["/472/"]},
+    {"host": "contentfulproxy.stadion.io", "label": null, "start": null, "paths": ["/9ec6988xevcz/", "/unzgbvss5tuy/"]},
+    {"host": "www.juventus.com", "label": null, "start": null, "paths": ["/images/image/"]},
+    {"host": "intermilan.bynder.com", "label": null, "start": null, "paths": ["/transform/"]},
+    {"host": "www.acmilan.com", "label": null, "start": null, "paths": ["/_next/image"]},
+    {"host": "media.asroma.com", "label": null, "start": null, "paths": ["/prod/images/"]},
+    {"host": "s7g10.scene7.com", "label": null, "start": null, "paths": ["/is/image/BORUSSIADORTMUNDGMBHANDCOKGAA/"]},
+    {"host": "images.mlssoccer.com", "label": null, "start": null, "paths": ["/image/private/"]}
   ]
 }
