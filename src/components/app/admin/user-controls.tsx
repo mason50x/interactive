@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils";
 import styles from "./admin.module.css";
 import {
   ROLE_LABEL,
-  SELECT_CLASS,
   type DirectoryUser,
   type SiteRole,
 } from "./user-directory";
+import { AdminSelect } from "./admin-select";
 
 type Feedback = { message: string; error?: boolean } | null;
 function FeedbackMessage({ value }: { value: Feedback }) {
@@ -181,9 +181,8 @@ function ActivityLimitControl({ user }: { user: DirectoryUser }) {
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <select
+        <AdminSelect
           aria-label={`Activity time limit for ${user.label}`}
-          className={SELECT_CLASS}
           value={mode}
           disabled={busy}
           onChange={(event) => {
@@ -195,7 +194,7 @@ function ActivityLimitControl({ user }: { user: DirectoryUser }) {
             Default ({PLAYTIME_SECONDS / 60} minutes)
           </option>
           <option value="custom">Custom</option>
-        </select>
+        </AdminSelect>
         {mode === "custom" && (
           <label className="flex items-center gap-2 text-sm">
             <Input
@@ -275,9 +274,8 @@ function RoleControl({ user }: { user: DirectoryUser }) {
         Role
       </label>
       <div className="flex flex-wrap gap-2">
-        <select
+        <AdminSelect
           id={`role-${user.clerkId}`}
-          className={SELECT_CLASS}
           value={draft}
           disabled={!user.canChangeRole || busy}
           onChange={(event) => {
@@ -290,7 +288,7 @@ function RoleControl({ user }: { user: DirectoryUser }) {
               {label}
             </option>
           ))}
-        </select>
+        </AdminSelect>
         {user.canChangeRole && (
           <Button
             className="h-9"

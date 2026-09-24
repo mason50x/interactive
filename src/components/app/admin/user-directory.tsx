@@ -22,6 +22,7 @@ import { Avatar } from "@/components/app/user-menu/avatar";
 import { adminPageLabel } from "@/lib/admin-page-label";
 import { cn } from "@/lib/utils";
 import styles from "./admin.module.css";
+import { AdminSelect } from "./admin-select";
 import { AllowanceReset, UserControls } from "./user-controls";
 import { useLiveUsers } from "./use-live-users";
 
@@ -36,9 +37,6 @@ export const ROLE_LABEL: Record<SiteRole, string> = {
   builder: "Builder",
   member: "Member",
 };
-export const SELECT_CLASS =
-  "h-9 min-w-0 max-w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50";
-
 // A span over hidden cells creates phantom columns in a fixed-layout table.
 // Keep expanded rows aligned with the sm, md, and xl columns above them.
 const COLUMN_BREAKPOINTS = [
@@ -202,11 +200,10 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
             onChange={(event) => setSearch(event.target.value)}
           />
         </InputGroup>
-        <select
+        <AdminSelect
           aria-label="Filter users"
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
-          className={SELECT_CLASS}
         >
           <option value="all">All users</option>
           <option value="timed_out">Timed out</option>
@@ -215,7 +212,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
               {label}
             </option>
           ))}
-        </select>
+        </AdminSelect>
         {role === "ceo" && (
           <Button
             variant="ghost"
