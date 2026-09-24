@@ -415,13 +415,15 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
           </div>
           <div
             id={`timeout-editor-${user.clerkId}`}
-            className={styles.reveal}
+            // Bleed sideways so the fields' focus rings aren't clipped by the
+            // reveal's overflow: hidden.
+            className={cn(styles.reveal, "-mx-1")}
             data-open={editing}
             aria-hidden={!editing}
             inert={!editing}
           >
             <div className={styles.revealContent}>
-              <div className="space-y-3 pt-3">
+              <div className="space-y-3 px-1 pt-3 pb-1">
                 <label className="block text-xs font-medium">
                   Reason
                   <Textarea
