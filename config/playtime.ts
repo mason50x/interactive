@@ -39,7 +39,7 @@ export function playtimeDay(now: number) {
 }
 
 export const REWARD_REQUIREMENTS =
-  "Most normal messages count, including short replies like “hi” or “thanks.” Numbers alone, filler, and the same message sent again within 30 minutes do not count.";
+  "Only messages in Everyone, Announcements and Admins count, not direct messages, group chats or messages to the bot. Most normal messages count, including short replies like “hi” or “thanks.” Numbers alone, filler, and the same message sent again within 30 minutes do not count.";
 
 /** Normal conversation counts, even a single short word. Strip links/mentions
  * before fingerprinting so changing a tag or numeric suffix cannot farm credit.
