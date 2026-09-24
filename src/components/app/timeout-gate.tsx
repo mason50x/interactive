@@ -42,8 +42,11 @@ function AccessReveal({
     const reveal = revealRef.current;
     if (revealed || !loader || !reveal) return;
 
+    // The logo itself rather than the loader around it, so the circle opens
+    // from the mark even if the cover ever stops centring it.
+    const logo = loader.querySelector(".packet-logo") ?? loader;
     const alignReveal = () => {
-      const logoBounds = loader.getBoundingClientRect();
+      const logoBounds = logo.getBoundingClientRect();
       const revealBounds = reveal.getBoundingClientRect();
       // Clip coordinates are local to the reveal, not the viewport.
       reveal.style.setProperty(
@@ -56,11 +59,17 @@ function AccessReveal({
       );
     };
 
-    alignReveal();
-    const observer = new ResizeObserver(alignReveal);
-    observer.observe(loader);
-    observer.observe(reveal);
-    return () => observer.disconnect();
+    // Every frame for the length of the reveal, not on resize: the reveal can
+    // move without changing size (a scroll, the viewport settling, the ChromeOS
+    // shelf or toolbar), and a ResizeObserver never hears about that, which
+    // left the circle opening from a stale point on Chromebooks.
+    let frame = 0;
+    const follow = () => {
+      alignReveal();
+      frame = requestAnimationFrame(follow);
+    };
+    follow();
+    return () => cancelAnimationFrame(frame);
   }, [ready, revealed]);
 
   return (
