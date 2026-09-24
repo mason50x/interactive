@@ -267,6 +267,7 @@ export function ConversationList() {
                         }
                         brand={conversation.kind === "global"}
                         announcements={conversation.kind === "announcements"}
+                        admins={conversation.kind === "admins"}
                       />
 
                       <span className="min-w-0 flex-1">
@@ -303,9 +304,11 @@ export function ConversationList() {
                               ? "Everyone here"
                               : conversation.kind === "announcements"
                                 ? "General announcements"
-                                : conversation.kind === "group"
-                                  ? "Group"
-                                  : `@${conversation.peerHandle ?? ""}`}
+                                : conversation.kind === "admins"
+                                  ? "Staff only"
+                                  : conversation.kind === "group"
+                                    ? "Group"
+                                    : `@${conversation.peerHandle ?? ""}`}
                           </span>
                         )}
                       </span>

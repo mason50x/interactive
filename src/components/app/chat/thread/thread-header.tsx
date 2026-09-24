@@ -105,6 +105,7 @@ export function ThreadHeader({
                 hue={detail.hue}
                 brand={detail.kind === "global"}
                 announcements={detail.kind === "announcements"}
+                admins={detail.kind === "admins"}
                 className="size-7 text-[0.75rem]"
               />
               <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">

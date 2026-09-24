@@ -269,13 +269,14 @@ export function openDmError(
  * applies everywhere else a person is named on one line.
  */
 export function conversationName(conversation: {
-  kind: "global" | "announcements" | "dm" | "group";
+  kind: "global" | "announcements" | "admins" | "dm" | "group";
   title?: string;
   peerHandle?: string;
   peerName?: string;
 }): string {
   if (conversation.kind === "global") return "Everyone";
   if (conversation.kind === "announcements") return "Announcements";
+  if (conversation.kind === "admins") return "Admins";
   if (conversation.kind === "dm") {
     return conversation.peerName ?? conversation.peerHandle ?? "Direct message";
   }

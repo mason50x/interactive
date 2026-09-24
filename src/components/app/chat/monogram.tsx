@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { MegaphoneIcon } from "@heroicons/react/24/solid";
+import { MegaphoneIcon, ShieldCheckIcon } from "@heroicons/react/24/solid";
 import { LogoMark } from "@/components/wordmark";
 import { Photo } from "@/components/app/chat/photo";
 import { BOT_AVATAR, BOT_HANDLE, handleHue } from "@/lib/chat";
@@ -53,6 +53,7 @@ export function Monogram({
   hue: given,
   brand,
   announcements,
+  admins,
   className,
 }: {
   handle: string;
@@ -62,12 +63,13 @@ export function Monogram({
   hue?: number;
   brand?: boolean;
   announcements?: boolean;
+  admins?: boolean;
   className?: string;
 }) {
   const hue = given ?? handleHue(handle);
   const bot = handle === BOT_HANDLE;
 
-  if (brand || announcements) {
+  if (brand || announcements || admins) {
     return (
       <span
         aria-hidden
@@ -83,6 +85,8 @@ export function Monogram({
             weight as the faces beside it. */}
         {announcements ? (
           <MegaphoneIcon className="size-[72%]" />
+        ) : admins ? (
+          <ShieldCheckIcon className="size-[72%]" />
         ) : (
           <LogoMark className="h-[65%] w-[72%]" />
         )}
