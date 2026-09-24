@@ -53,7 +53,7 @@ export const badges = query({
 /** Staff presentation is separate from the caller's mutation capabilities. */
 export const roles = query({
   args: {},
-  returns: v.array(v.object({ clerkId: v.string(), role: v.union(v.literal("ceo"), v.literal("head_moderator"), v.literal("moderator"), v.literal("builder")) })),
+  returns: v.array(v.object({ clerkId: v.string(), role: v.union(v.literal("ceo"), v.literal("head_moderator"), v.literal("moderator"), v.literal("builder")), hideBadge: v.optional(v.literal(true)) })),
   handler: async ctx => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];

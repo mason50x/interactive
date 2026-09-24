@@ -44,23 +44,40 @@ export async function resolvePrivileges(ctx: ReadCtx, clerkId: string) {
 /**
  * The staff list for badges, the sidebar, and the CEO headcount guard: the
  * env map with every table row applied, dropping explicit `member` rows.
+ * `hideBadge` is presentation only and never narrows a role's powers.
  */
 export async function resolveStaffRoles(
   ctx: ReadCtx,
-): Promise<{ clerkId: string; role: StaffRole }[]> {
-  const merged = new Map<string, StaffRole>(
-    staffRoles().map((entry) => [entry.clerkId, entry.role]),
+): Promise<{ clerkId: string; role: StaffRole; hideBadge?: true }[]> {
+  const merged = new Map<string, { role: StaffRole; hideBadge?: true }>(
+    staffRoles().map((entry) => [entry.clerkId, { role: entry.role }]),
   );
   for (const row of await ctx.db.query("staffRoles").collect()) {
     if (row.role === "member") merged.delete(row.clerkId);
-    else merged.set(row.clerkId, row.role);
+    else
+      merged.set(row.clerkId, {
+        role: row.role,
+        ...(row.hideBadge ? { hideBadge: true as const } : {}),
+      });
   }
-  return [...merged].map(([clerkId, role]) => ({ clerkId, role }));
+  return [...merged].map(([clerkId, entry]) => ({ clerkId, ...entry }));
+}
+
+/** Whether chat shows this account's staff badge. Absent row means shown. */
+export async function badgeHidden(
+  ctx: ReadCtx,
+  clerkId: string,
+): Promise<boolean> {
+  const row = await ctx.db
+    .query("staffRoles")
+    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+    .unique();
+  return row?.hideBadge === true;
 }
 
 export async function resolveAdminClerkIds(ctx: ReadCtx): Promise<string[]> {
   return (await resolveStaffRoles(ctx))
-    .filter(({ role }) => ROLES[role].adminBadge)
+    .filter(({ role, hideBadge }) => ROLES[role].adminBadge && !hideBadge)
     .map(({ clerkId }) => clerkId);
 }
 

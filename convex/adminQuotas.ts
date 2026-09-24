@@ -247,3 +247,44 @@ export const setRole = mutation({
     return { clerkId, role };
   },
 });
+
+/**
+ * Shows or hides one account's staff badge in chat. Cosmetic only: the role,
+ * and every power it grants, stay exactly as they are.
+ *
+ * CEO-gated, like `setRole`. An account the env map names has no table row
+ * yet, so the first toggle writes one carrying the role it already resolves
+ * to, which leaves the effective role unchanged.
+ */
+export const setBadgeVisible = mutation({
+  args: { clerkId: v.string(), visible: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { clerkId, visible }) => {
+    const caller = await requireCeo(ctx);
+    const user = await ctx.db
+      .query("users")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .unique();
+    if (!user) throw new ConvexError("User not found.");
+    const existing = await ctx.db
+      .query("staffRoles")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        hideBadge: !visible,
+        updatedAt: Date.now(),
+        updatedBy: caller,
+      });
+    } else {
+      await ctx.db.insert("staffRoles", {
+        clerkId,
+        role: await resolveRole(ctx, clerkId),
+        hideBadge: !visible,
+        updatedAt: Date.now(),
+        updatedBy: caller,
+      });
+    }
+    return null;
+  },
+});

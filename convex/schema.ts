@@ -138,6 +138,11 @@ export default defineSchema({
       v.literal("builder"),
       v.literal("member"),
     ),
+    /**
+     * Cosmetic only: hides the staff badge everywhere chat shows one. The
+     * role's powers are untouched. Absent means shown.
+     */
+    hideBadge: v.optional(v.boolean()),
     updatedAt: v.number(),
     updatedBy: v.string(),
   }).index("byClerkId", ["clerkId"])

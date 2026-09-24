@@ -160,3 +160,50 @@ test("env migration copies staff once and never overwrites CEO edits", async () 
   expect(await roleOf(t, mod)).toBe("member");
   expect(await roleOf(t, boss)).toBe("ceo");
 });
+
+test("a CEO hides a staff badge without changing the role's powers", async () => {
+  const t = await setup();
+  const ceo = t.withIdentity({ subject: boss });
+
+  await ceo.mutation(api.adminQuotas.setBadgeVisible, {
+    clerkId: mod,
+    visible: false,
+  });
+  expect(await ceo.query(api.chat.admin.roles, {})).toContainEqual({
+    clerkId: mod,
+    role: "moderator",
+    hideBadge: true,
+  });
+  expect(await roleOf(t, mod)).toBe("moderator");
+  expect(
+    await t.withIdentity({ subject: mod }).query(api.chat.admin.mine, {}),
+  ).toBe(true);
+  const directory = await ceo.query(api.timeouts.users, {
+    paginationOpts: { cursor: null, numItems: 50 },
+  });
+  expect(directory.page.find((user) => user.clerkId === mod)?.badgeHidden).toBe(
+    true,
+  );
+
+  await ceo.mutation(api.adminQuotas.setBadgeVisible, {
+    clerkId: mod,
+    visible: true,
+  });
+  expect(await ceo.query(api.chat.admin.roles, {})).toContainEqual({
+    clerkId: mod,
+    role: "moderator",
+  });
+});
+
+test("only CEOs can change badge visibility", async () => {
+  const t = await setup();
+  for (const subject of [mod, amy, null] as const) {
+    const caller = subject === null ? t : t.withIdentity({ subject });
+    await expect(
+      caller.mutation(api.adminQuotas.setBadgeVisible, {
+        clerkId: mod,
+        visible: false,
+      }),
+    ).rejects.toThrow("CEO access required.");
+  }
+});

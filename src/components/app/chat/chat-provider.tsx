@@ -57,6 +57,8 @@ export type Chat = {
   staffRoles: {
     clerkId: string;
     role: "ceo" | "head_moderator" | "moderator" | "builder";
+    /** Presentation only: the badge is hidden, the role's powers are not. */
+    hideBadge?: true;
   }[];
   adminBadgesLoaded: boolean;
   /**

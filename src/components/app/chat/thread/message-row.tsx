@@ -66,7 +66,7 @@ export function MessageRow({
   const react = useMutation(api.chat.messages.react);
   const { isAdmin, staffRoles } = useChat();
   const staffRole = staffRoles.find(
-    (entry) => entry.clerkId === message.authorClerkId,
+    (entry) => entry.clerkId === message.authorClerkId && !entry.hideBadge,
   )?.role;
   const [adminError, setAdminError] = useState<string | null>(null);
 
