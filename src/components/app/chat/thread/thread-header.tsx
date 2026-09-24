@@ -6,10 +6,12 @@ import { GroupPanel } from "@/components/app/chat/group-panel";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
 import { PeerPresence, Present } from "@/components/app/chat/presence";
+import { RoomControls } from "@/components/app/chat/thread/room-controls";
 import { conversationName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ConversationDetail } from "@convex/chat/conversations";
+import type { RoomControls as Controls } from "@convex/chat/roomControls";
 import type { Typist } from "@convex/chat/typing";
 
 /**
@@ -23,12 +25,18 @@ export function ThreadHeader({
   conversationId,
   detail,
   typists,
+  controls,
+  canModerate,
 }: {
   conversationId: Id<"conversations">;
   /** `undefined` while the conversation is still on its way. */
   detail: ConversationDetail | undefined;
   /** Who else is writing in here, for a direct message's second line. */
   typists: Typist[];
+  /** The Everyone room's lock and slow mode, when this is that room. */
+  controls: Controls | undefined;
+  /** Moderators and above, who get the room controls in the Everyone room. */
+  canModerate: boolean;
 }) {
   const name = detail === undefined ? "" : conversationName(detail);
 
@@ -114,6 +122,10 @@ export function ThreadHeader({
 
           {detail.kind === "group" ? (
             <GroupPanel conversationId={conversationId} />
+          ) : null}
+
+          {detail.kind === "global" && canModerate ? (
+            <RoomControls conversationId={conversationId} controls={controls} />
           ) : null}
         </>
       )}

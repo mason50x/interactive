@@ -4,6 +4,7 @@ import type { ChatAccount } from "./shared";
 import { adminId, announcementPublisherId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
+import { lockedFor, roomControlRefusal } from "./roomControls";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
@@ -306,6 +307,15 @@ export const send = mutation({
     // account that has not sent anything since the two fields moved, and
     const sender = await senderRow(ctx, profile.clerkId);
     const state = senderState(sender);
+
+    // The Everyone room's lock and slow mode. Staff are exempt, and nothing
+    // more is read while both are off. See `convex/chat/roomControls.ts`.
+    if (member.kind === "global") {
+      const held = await roomControlRefusal(
+        ctx, conversationId, profile.clerkId, state.recent, now,
+      );
+      if (held !== null) return { ok: false, refusal: held };
+    }
 
     const context: SendContext = {
       surface: member.kind === "announcements" ? "global" : member.kind,
@@ -890,6 +900,7 @@ export const edit = mutation({
     const now = Date.now();
     // Poll wording stays fixed so earlier votes cannot acquire a new meaning.
     if (message.poll !== undefined || now - message._creationTime > EDIT_WINDOW_MS || (member.kind === "announcements" && await announcementPublisherId(ctx) === null)) return { ok: false, refusal: "read-only" };
+    if (member.kind === "global" && await lockedFor(ctx, message.conversationId, profile.clerkId)) return { ok: false, refusal: "read-only" };
     if (body === message.body) return { ok: true };
     const named = await resolveMentions(ctx, profile, member, body);
     if (!named.ok) return { ok: false, refusal: named.refusal };

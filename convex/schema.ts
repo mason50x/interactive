@@ -252,6 +252,23 @@ export default defineSchema({
     .index("byCreatedBy", ["createdBy"]),
 
   /**
+   * Staff switches on the Everyone room: a lock and a slow mode.
+   *
+   * Its own table rather than fields on `conversations`, so a send can read
+   * it without putting the room's document in its read set. Only staff
+   * write here, and rarely, so busy senders still share no write. No row
+   * means both are off. No author is kept, so deleting an account leaves
+   * nothing here to scrub.
+   */
+  roomControls: defineTable({
+    conversationId: v.id("conversations"),
+    locked: v.boolean(),
+    /** 0 is off. One of `SLOW_MODE_SECONDS` in `convex/chat/roomControls.ts`. */
+    slowModeSeconds: v.number(),
+    updatedAt: v.number(),
+  }).index("byConversation", ["conversationId"]),
+
+  /**
    * One row per person per conversation, and the only thing a send reads.
    *
    * It carries membership, the group role, the read position, and a copy of the

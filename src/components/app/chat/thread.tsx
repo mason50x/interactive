@@ -251,10 +251,21 @@ function ConversationThread({
    */
   const composer = useRef<ComposerHandle>(null);
 
-  const canPostAnnouncements = isAdmin || staffRoles.some(
-    ({ clerkId, role }) => clerkId === profile?.clerkId && role === "builder",
+  const canPostAnnouncements =
+    isAdmin ||
+    staffRoles.some(
+      ({ clerkId, role }) => clerkId === profile?.clerkId && role === "builder",
+    );
+  // The Everyone room's lock and slow mode. Staff are exempt from both.
+  const controls = useQuery(
+    api.chat.roomControls.get,
+    detail?.kind === "global" ? { conversationId } : "skip",
   );
-  const readOnly = detail?.kind === "announcements" && !canPostAnnouncements;
+  const roomLocked = controls?.locked === true;
+  const slowModeSeconds = controls?.slowModeSeconds ?? 0;
+  const readOnly =
+    (detail?.kind === "announcements" && !canPostAnnouncements) ||
+    (roomLocked && !isAdmin);
   const archived = daily && daysAgo > 0;
   const { dragging, handlers: dropHandlers } = useDropFiles({
     enabled: pictures && !archived && !readOnly,
@@ -522,6 +533,8 @@ function ConversationThread({
         conversationId={conversationId}
         detail={detail}
         typists={typists}
+        controls={controls}
+        canModerate={isAdmin}
       />
 
       <div
@@ -712,37 +725,56 @@ function ConversationThread({
       <div className="shrink-0">
         {readOnly ? (
           <p className="px-4 py-4 text-center text-sm text-muted-foreground">
-            Only staff can post in Announcements.
+            {detail?.kind === "announcements"
+              ? "Only staff can post in Announcements."
+              : "Staff have locked this room for now."}
           </p>
         ) : live && detail !== undefined ? (
-          <Composer
-            ref={composer}
-            onSubmit={submit}
-            pictures={pictures}
-            replyingTo={replyingTo}
-            onCancelReply={() => setReplyingTo(null)}
-            onRestoreReply={setReplyingTo}
-            editing={editing}
-            onCancelEdit={() => setEditing(null)}
-            onEdit={async (messageId, body) => {
-              const result = await edit({ messageId, body });
-              if (result.ok) {
-                setEditing(null);
-                return null;
-              }
-              if (result.refusal === "read-only")
-                throw new Error("This message can no longer be edited.");
-              return result.refusal;
-            }}
-            conversationId={conversationId}
-            kind={detail === undefined ? null : detail.kind}
-            peer={peer}
-            authors={authors}
-            me={userId}
-            canMentionEveryone={isAdmin}
-          />
+          <>
+            {roomLocked || slowModeSeconds > 0 ? (
+              <p className="px-4 pt-2 text-center text-[0.8125rem] text-muted-foreground">
+                {roomLocked
+                  ? "This room is locked. Only staff can post."
+                  : `Slow mode is on: one message every ${slowModeLabel(slowModeSeconds)}${isAdmin ? ", except for staff" : ""}.`}
+              </p>
+            ) : null}
+            <Composer
+              ref={composer}
+              onSubmit={submit}
+              pictures={pictures}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+              onRestoreReply={setReplyingTo}
+              editing={editing}
+              onCancelEdit={() => setEditing(null)}
+              onEdit={async (messageId, body) => {
+                const result = await edit({ messageId, body });
+                if (result.ok) {
+                  setEditing(null);
+                  return null;
+                }
+                if (result.refusal === "read-only")
+                  throw new Error("This message can no longer be edited.");
+                return result.refusal;
+              }}
+              conversationId={conversationId}
+              kind={detail === undefined ? null : detail.kind}
+              peer={peer}
+              authors={authors}
+              me={userId}
+              canMentionEveryone={isAdmin}
+            />
+          </>
         ) : null}
       </div>
     </div>
   );
+}
+
+function slowModeLabel(seconds: number): string {
+  if (seconds % 60 === 0) {
+    const minutes = seconds / 60;
+    return minutes === 1 ? "minute" : `${minutes} minutes`;
+  }
+  return `${seconds} seconds`;
 }
