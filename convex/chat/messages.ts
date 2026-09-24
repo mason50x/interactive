@@ -36,6 +36,9 @@ import {
   senderState,
 } from "./shared";
 
+/** Rooms whose messages earn playtime. See `rewardChatPlaytime`. */
+const REWARDED_ROOMS: ReadonlySet<string> = new Set(["global", "announcements", "admins"]);
+
 /**
  * Saying something, and reading what was said.
  *
@@ -368,7 +371,11 @@ export const send = mutation({
             })),
     });
 
-    await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
+    // Playtime is earned only in the shared rooms. Private and group chats,
+    // and anything addressed to the bot, would let one person farm time alone.
+    if (REWARDED_ROOMS.has(member.kind) && !named.bot) {
+      await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
+    }
     await addScore(ctx, profile.clerkId, "chat", 1, now);
 
     // The dots go with the words, in the same transaction, so nobody ever
