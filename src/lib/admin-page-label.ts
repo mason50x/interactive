@@ -17,18 +17,21 @@ export function adminPageLabel(
     case "activities":
     case "learn":
       return activity();
+    // The old names stay so a presence row written before the rename still
+    // reads properly.
+    case "tv":
     case "entertainment":
-      return detail
-        ? `Entertainment · ${friendlySegment(detail)}`
-        : "Entertainment";
+      return detail ? `TV · ${friendlySegment(detail)}` : "TV";
     case "chat":
       return detail ? "Chat · Conversation" : "Chat";
+    case "browse":
     case "experience":
-      return detail ? `Experience · ${friendlySegment(detail)}` : "Experience";
+      return detail ? `Browse · ${friendlySegment(detail)}` : "Browse";
+    case "emulate":
     case "learning-simulator":
       return detail
-        ? `Simulators · ${detail === "html" ? "HTML simulator" : detail === "published" ? "Published simulator" : "Simulator"}`
-        : "Simulators";
+        ? `Emulate · ${detail === "html" ? "HTML simulator" : detail === "published" ? "Published simulator" : "Simulator"}`
+        : "Emulate";
     default:
       return section ? friendlySegment(section) : "Home";
   }

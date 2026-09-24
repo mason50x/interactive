@@ -1,33 +1,32 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { ChevronRightIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon } from "@heroicons/react/16/solid";
+import Link from "next/link";
+import { useCallback, useRef, useState } from "react";
 import { useAccountModal } from "@/components/app/account-modal";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
-import { VersionCard } from "@/components/app/version-card";
-import { GitHubIcon } from "@/components/ui/github-icon";
 import { StaffBadge } from "@/components/ui/staff-badge";
 import { useTheme } from "@/components/theme-provider";
 import {
   Menu,
   MenuContent,
   MenuItem,
+  MenuLinkItem,
   MenuSeparator,
   MenuTrigger,
 } from "@/components/ui/menu";
-import { signOutRequest } from "@/lib/search-actions";
-import { onSettingsRequest } from "@/lib/preferences";
 import { useClickOutside } from "@/lib/use-click-outside";
 import { useCachedAdminBadge } from "@/lib/use-cached-admin-badge";
 import { cn } from "@/lib/utils";
 import { normalizePersonName } from "@/lib/person-name";
 
 /**
- * The account control at the foot of the rail: who you are, and the two
+ * The account control at the end of the header: who you are, and the two
  * things you can do about it.
  *
  * This replaces Clerk's `<UserButton />` rather than restyling it. The stock
@@ -36,9 +35,6 @@ import { normalizePersonName } from "@/lib/person-name";
  * layout for it to go. What is left of Clerk here is the data (`useUser`),
  * the modal behind the Settings row (`useAccountModal`) and the one action it
  * owns (`signOut`).
- *
- * Collapsed, below `lg`, it is the avatar alone; the name and the affordance
- * appear with the rail.
  */
 export function UserMenu() {
   const { isLoaded, user } = useUser();
@@ -51,26 +47,17 @@ export function UserMenu() {
         )?.role ?? "member")
       : undefined,
   );
+  const hasAdminPanel = staffRoles.some(
+    (entry) =>
+      entry.clerkId === user?.id &&
+      (entry.role === "ceo" || entry.role === "head_moderator"),
+  );
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
   const { open: openAccount, pages: accountPages } = useAccountModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const signOutRef = useRef<HTMLDivElement>(null);
-
-  // The rail's search can name a setting — "constellation", "panic key" — or
-  // the account, and what it does with either is open the modal on that page.
-  // See `requestSettings`.
-  useEffect(() => onSettingsRequest(openAccount), [openAccount]);
-
-  useEffect(
-    () =>
-      signOutRequest.subscribe(() => {
-        setMenuOpen(true);
-        setConfirmingSignOut(true);
-      }),
-    [],
-  );
 
   // A press on anything but the sign-out row puts it back. This listens on the
   // document rather than on the popup because the theme submenu is portalled
@@ -83,7 +70,7 @@ export function UserMenu() {
   if (!isLoaded || !user) {
     // Holds the row's exact height so the rail does not jump when the session
     // resolves. Not a spinner: this is usually a single frame.
-    return <div className="h-14" aria-hidden />;
+    return <div className="size-11 shrink-0" aria-hidden />;
   }
 
   const name =
@@ -104,46 +91,21 @@ export function UserMenu() {
           if (!open) setConfirmingSignOut(false);
         }}
       >
-        <div className="relative">
-          <MenuTrigger
-            aria-label={`Account: ${name}`}
-            className="group flex h-14 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-foreground backdrop-blur-[3px] transition-colors outline-none hover:bg-foreground/[0.05] data-popup-open:bg-foreground/[0.05]"
-          >
-            {/* The margin centres the avatar in the icon rail's 60px row and
-              eases away as the name arrives, the same 8px slide the nav rows'
-              icons make; see `AppSidebar`. */}
-            <span className="ml-1 flex shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
-              <Avatar src={user.imageUrl} name={name} size={36} />
+        <MenuTrigger
+          aria-label={`Account: ${name}`}
+          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full backdrop-blur-[3px] transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/60"
+        >
+          <Avatar src={user.imageUrl} name={name} size={36} />
+        </MenuTrigger>
+
+        <MenuContent side="bottom" align="end" sideOffset={8} className="w-60">
+          {/* The trigger is only a face, so the popup opens by saying whose
+            account it is — and wears the staff chip that used to sit under
+            the name in the rail. */}
+          <div className="flex min-w-0 items-center gap-2 px-2.5 pt-1.5 pb-2">
+            <span className="min-w-0 truncate text-[0.875rem] font-medium">
+              {normalizePersonName(user.fullName) ?? name}
             </span>
-            {/* Right padding keeps a long name clear of the version, which is
-              laid over this line from outside the button. */}
-            <span className="hidden min-w-0 flex-1 pr-12 pb-5 text-left rail-wide wide:block">
-              <span className="block truncate text-[0.9375rem] leading-tight">
-                {normalizePersonName(user.fullName) ?? name}
-              </span>
-            </span>
-            {/* Points at the popup: up while it is closed because that is where
-              it will appear, and flipped once it is open because from there
-              the only thing left to do is put it away. Wrapped so the swap's
-              transition list and the turn's are on different elements. */}
-            <span className="hidden shrink-0 rail-wide wide:block">
-              <ChevronUpIcon
-                strokeWidth={3}
-                className="size-4 text-faint transition-transform duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-popup-open:rotate-180"
-              />
-            </span>
-          </MenuTrigger>
-          {/* The release notes' door, on the name's line and just short of
-            the chevron. Outside the menu button for the same reason as the
-            chips below: a button cannot hold another. */}
-          <VersionCard variant="inline" className="absolute top-2 right-8" />
-          {/* Separate from the menu button so the source link stays a native link. */}
-          <div
-            className={cn(
-              "absolute bottom-2 left-[3.375rem] hidden items-center gap-1.5 rail-wide wide:flex",
-              showAdminBadge === null && "invisible",
-            )}
-          >
             {showAdminBadge && showAdminBadge !== "member" ? (
               <span
                 className={cn(
@@ -154,33 +116,10 @@ export function UserMenu() {
                 <StaffBadge role={showAdminBadge} sidebar />
               </span>
             ) : null}
-            <a
-              href="https://github.com/mason50x/interactive"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="OSS — source code on GitHub"
-              className={cn(
-                chipClassName,
-                "text-zinc-600 transition-colors hover:text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring dark:text-zinc-200 dark:hover:text-white",
-              )}
-            >
-              <GitHubIcon className="size-3 shrink-0" />
-              OSS
-            </a>
           </div>
-        </div>
 
-        {/* Once the rail is wide the popup takes the trigger's exact width,
-          so the two share both edges instead of the menu hanging over
-          into the shell. Narrow, the trigger is a 4.5rem icon and there
-          is nothing useful to match, so it falls back to a width of its
-          own. `lg:` matches the sidebar’s responsive breakpoint. */}
-        <MenuContent
-          side="top"
-          align="start"
-          sideOffset={8}
-          className="w-[15rem] lg:w-[var(--anchor-width)]"
-        >
+          <MenuSeparator className="-mx-1.5 mb-1.5" />
+
           {/* One door. Behind it is Clerk's account modal with the site's
             settings as its first page and Clerk's own — profile, email
             addresses, password, connected accounts, devices — after it;
@@ -190,10 +129,7 @@ export function UserMenu() {
 
             The avatar leads the row rather than a gear: the row is the
             door to your account as much as to the site's settings, and
-            the face is what says so. It is a row and not a portrait: the
-            trigger below already says whose account this is, so repeating
-            the name and the address inside the popup as well was three
-            restatements of a question nobody had. `MenuItem` closes the
+            the face is what says so. `MenuItem` closes the
             menu on click, which is what keeps it from sitting open behind
             the modal it launches. */}
           <MenuItem
@@ -211,6 +147,25 @@ export function UserMenu() {
               className="size-4 shrink-0 text-faint"
             />
           </MenuItem>
+
+          {hasAdminPanel && (
+            <MenuLinkItem
+              closeOnClick
+              render={<Link href="/admin" />}
+              tone="muted"
+              size="tall"
+              className="justify-between"
+            >
+              <span className="flex items-center gap-2.5">
+                <ShieldCheckIcon className="size-4 shrink-0" />
+                Admin
+              </span>
+              <ChevronRightIcon
+                strokeWidth={3}
+                className="size-4 shrink-0 text-faint"
+              />
+            </MenuLinkItem>
+          )}
 
           <ThemeSubmenu preference={preference} onChange={setPreference} />
 

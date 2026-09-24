@@ -3,10 +3,12 @@
 import {
   ArrowUturnLeftIcon,
   EllipsisHorizontalIcon,
-  FaceSmileIcon,
   TrashIcon as OutlineTrashIcon,
 } from "@heroicons/react/24/outline";
-import { TrashIcon as SolidTrashIcon } from "@heroicons/react/24/solid";
+import {
+  FaceSmileIcon,
+  TrashIcon as SolidTrashIcon,
+} from "@heroicons/react/24/solid";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
@@ -18,11 +20,7 @@ import type { ChatMessage } from "@convex/chat/messages";
 /**
  * The two menus on a message: a row of reactions, and everything else.
  *
- * Both are controlled by the row rather than by themselves, because the bar
- * they sit in has to stay visible while either is open — Base UI keeps
- * measuring the trigger to place the popup, and a bar that fades the moment
- * the pointer leaves the message takes the anchor with it. See `MessageRow`
- * for the state; this is what is drawn from it.
+ * Both are controlled by the row so context-click can open the same menu.
  */
 
 /** The small round well both triggers sit in. */
@@ -45,7 +43,12 @@ export function ReactionPicker({
       <MenuTrigger aria-label="React" className={TRIGGER}>
         <FaceSmileIcon className="size-4" />
       </MenuTrigger>
-      <MenuContent align="end" padding="xs" className="flex gap-0.5">
+      <MenuContent
+        align="end"
+        motion="none"
+        padding="xs"
+        className="reaction-picker grid grid-cols-6 gap-0.5"
+      >
         {REACTIONS.map((emoji) => (
           <MenuItem
             key={emoji}
@@ -85,7 +88,7 @@ export function MessageMenu({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReply: () => void;
-  /** Said in the row's own bar, beside the time, rather than in the menu. */
+  /** Said below the message, rather than in the menu. */
   onAdminError: (message: string | null) => void;
 }) {
   const remove = useMutation(api.chat.messages.remove);

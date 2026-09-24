@@ -387,8 +387,6 @@ test("the old persona greeting reads as the current general welcome everywhere",
   expect((await t.run(ctx => ctx.db.get(original)))?.body).toBe(newBody);
   const list = await alice.query(api.chat.conversations.list, {});
   expect(list.find(conversation => conversation._id === dm)?.latestMessage?.body).toBe(newBody);
-  const hits = await alice.query(api.chat.messages.search, { text: "", authorClerkId: "bot" });
-  expect(hits.find(message => message._id === original)?.body).toBe(newBody);
   await t.run(ctx => ctx.db.insert("messages", {
     conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
     body: "Thanks!", replyToId: original, status: "visible", flags: [],

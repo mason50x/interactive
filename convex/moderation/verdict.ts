@@ -13,14 +13,13 @@ import {
   type RecentSend,
   type Refusal,
 } from "./rules";
-import { overRate, tierFor } from "./rate";
 
 /**
  * The one function that decides whether a message exists.
  *
  * Everything else in this directory is a component of it: the shape check, the
  * folding, the word lists, the patterns, and the arrangements. This is the
- * order they run in, and the order is load-bearing — cheap shape and rate checks
+ * order they run in, and the order is load-bearing — cheap shape checks
  * happen before the bounded text scan.
  *
  * ## It is pure
@@ -104,13 +103,8 @@ function worst(matches: Match[]): Match | null {
 }
 
 export function screen(raw: string, context: SendContext): Verdict {
-  const tier = tierFor(context.createdAt, context.messagesSent, context.now);
-  if (overRate(context.recent, tier, context.now)) {
-    return refuse("too-fast");
-  }
-
-  // A message that is only pictures. The rate still applies, but there is no
-  // text to fold, scan, or match, and the shape check would refuse it as empty.
+  // A message that is only pictures has no text to fold, scan, or match,
+  // and the shape check would refuse it as empty.
   // The duplicate and broadcast rules are skipped because an attachment can be
   // sent exactly once, so its key cannot appear twice in the ring.
   if (raw.trim() === "" && context.attachmentKey !== undefined) {
@@ -161,7 +155,7 @@ export function screen(raw: string, context: SendContext): Verdict {
   // Casual profanity and mild insults do not block conversation.
   const hash = hashBody(forms.squashed);
 
-  if (isDuplicate(context.recent, hash, context.now)) return refuse("duplicate");
+  if (isDuplicate(context.recent, hash)) return refuse("duplicate");
 
   if (isBroadcast(context.recent, hash, context.conversationId, context.now)) {
     return refuse("broadcast");
@@ -174,8 +168,8 @@ export function screen(raw: string, context: SendContext): Verdict {
  * The same screening, for text that is not a message.
  *
  * A group title is read by everyone who sees the group and has no sender, no
- * conversation and no history, so the rate windows and the
- * cross-message rules have nothing to work on. What is left is the part that
+ * conversation and no history, so the cross-message rules have nothing to
+ * work on. What is left is the part that
  * reads the text itself — shape, lexicon, patterns. Tier three is refused here
  * as it is in `screen`, with the difference that there is no arrangement to
  * read: a name is not something you say once, and no pronoun nearby is going to

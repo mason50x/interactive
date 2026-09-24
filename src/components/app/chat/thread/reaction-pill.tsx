@@ -2,7 +2,7 @@
 
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { popupVariants } from "@/components/ui/popup";
 import { CenteredSpinner } from "@/components/ui/spinner";
 import { personName } from "@/lib/chat";
@@ -10,6 +10,57 @@ import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ChatReaction } from "@convex/chat/messages";
+
+const REACTION_COLORS: Record<string, string> = {
+  "👍": "#3b82f6",
+  "❤️": "#f43f5e",
+  "😂": "#f59e0b",
+  "😮": "#eab308",
+  "😢": "#38bdf8",
+  "🔥": "#f97316",
+  "🎉": "#a855f7",
+  "👏": "#f59e0b",
+  "🙌": "#a855f7",
+  "🤔": "#eab308",
+  "😍": "#ec4899",
+  "👎": "#64748b",
+};
+
+function AnimatedCount({ count }: { count: number }) {
+  const [previous, setPrevious] = useState(count);
+  const [leaving, setLeaving] = useState<number | null>(null);
+
+  if (previous !== count) {
+    setLeaving(previous);
+    setPrevious(count);
+  }
+
+  useEffect(() => {
+    if (leaving === null) return;
+    const timer = window.setTimeout(() => setLeaving(null), 220);
+    return () => window.clearTimeout(timer);
+  }, [leaving, count]);
+
+  return (
+    <span
+      aria-hidden="true"
+      className="relative inline-grid min-w-[1.5ch] overflow-hidden text-center leading-5 tabular-nums"
+    >
+      <span
+        key={count}
+        className={cn(
+          "col-start-1 row-start-1",
+          leaving !== null && "reaction-count-enter",
+        )}
+      >
+        {count}
+      </span>
+      {leaving === null ? null : (
+        <span className="reaction-count-exit absolute inset-0">{leaving}</span>
+      )}
+    </span>
+  );
+}
 
 /**
  * One reaction under a message: the emoji, how many, and — on hover — who.
@@ -46,22 +97,28 @@ export function ReactionPill({
         render={
           <button
             type="button"
+            data-mine={reaction.mine ? "true" : undefined}
             aria-disabled={!canAct}
             onClick={() => {
               if (canAct) onReact();
             }}
-            className={cn(
-              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.75rem] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-              reaction.mine
-                ? "border-primary/50 bg-primary/10"
-                : "border-border hover:bg-foreground/[0.05]",
-            )}
+            className="reaction-pill flex h-8 items-center gap-1 rounded-lg border py-0.5 pr-2 pl-0.5 text-[0.75rem] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            style={
+              {
+                "--reaction-color":
+                  REACTION_COLORS[reaction.emoji] ?? "var(--primary)",
+              } as CSSProperties
+            }
             aria-label={`${reaction.emoji} reaction from ${reaction.count} ${reaction.count === 1 ? "person" : "people"}. Hover to see who reacted.`}
           />
         }
       >
-        <span>{reaction.emoji}</span>
-        <span className="text-muted-foreground">{reaction.count}</span>
+        <span className="reaction-emoji flex size-6 items-center justify-center rounded-md text-[0.875rem]">
+          {reaction.emoji}
+        </span>
+        <span className="text-muted-foreground">
+          <AnimatedCount count={reaction.count} />
+        </span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Positioner

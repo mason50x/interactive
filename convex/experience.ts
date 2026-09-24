@@ -2,7 +2,7 @@ import { addScore } from "./leaderboard";
 import { requireNotTimedOut } from "./timeoutState";
 import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
-import { PLAYTIME_SECONDS, CHAT_REWARD_SECONDS, REWARD_REPEAT_WINDOW_MS, playtimeDay, rewardText, similarReward } from "../config/playtime";
+import { PLAYTIME_SECONDS, CHAT_REWARD_SECONDS, playtimeDay, rewardText, similarReward } from "../config/playtime";
 import type { MutationCtx } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import { internalMutation, mutation, query, type QueryCtx } from "./_generated/server";
@@ -67,21 +67,17 @@ async function quota(ctx: QueryCtx) {
 
 /** Called only by the accepted chat-send transaction, never by the client.
  * Qualifying messages add time immediately; distinct rewards stack.
- * Receipts survive message deletion and daily resets. Only a repeat inside the
- * spam window is blocked, so the same short reply can earn again later. */
+ * Receipts survive message deletion and daily resets. The third similar
+ * qualifying message in a row does not earn time. */
 export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string) {
   const normalized = rewardText(body);
   if (!normalized) return;
+  const recent = await ctx.db.query("playtimeRewards")
+    .withIndex("by_clerkId", q => q.eq("clerkId", clerkId)).order("desc").take(2);
+  if (recent.length === 2 && recent.every(row => similarReward(normalized, row.normalized))) return;
   const q = await quotaFor(ctx, clerkId);
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized));
   const hash = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("");
-  const since = q.now - REWARD_REPEAT_WINDOW_MS;
-  const duplicate = await ctx.db.query("playtimeRewards")
-    .withIndex("by_clerkId_and_hash", q => q.eq("clerkId", clerkId).eq("hash", hash)).order("desc").first();
-  if (duplicate && duplicate._creationTime > since) return;
-  const recent = await ctx.db.query("playtimeRewards")
-    .withIndex("by_clerkId", q => q.eq("clerkId", clerkId)).order("desc").take(50);
-  if (recent.some(row => row._creationTime > since && similarReward(normalized, row.normalized))) return;
   await limiter.limit(ctx, "experienceSeconds", {
     key: q.key, config: q.config,
     count: -CHAT_REWARD_SECONDS,

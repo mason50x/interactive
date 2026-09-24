@@ -18,11 +18,11 @@ vi.mock("@/components/app/tv/entertainment-setup", () => ({
   EntertainmentSetup: () => null,
 }));
 
-import Layout from "@/app/(app)/entertainment/layout";
-import Catalogue from "@/app/(app)/entertainment/page";
+import Layout from "@/app/(app)/tv/layout";
+import Catalogue from "@/app/(app)/tv/page";
 import Player, {
   generateMetadata,
-} from "@/app/(app)/entertainment/[slug]/page";
+} from "@/app/(app)/tv/[slug]/page";
 import { EntertainmentSetup } from "@/components/app/tv/entertainment-setup";
 import { TvPlayer } from "@/components/app/tv/tv-player";
 
@@ -36,7 +36,7 @@ beforeEach(() => {
 
 test("all members can access setup, catalogue, player, and show metadata without staff authorization", async () => {
   expect((await Layout({ children: "content" })).type).toBe(EntertainmentSetup);
-  expect((await Catalogue()).props.children[1].props.shows).toEqual([]);
+  expect((await Catalogue()).props.children.props.shows).toEqual([]);
   expect(
     (await Player({ params: Promise.resolve({ slug: "test-show" }) })).type,
   ).toBe(TvPlayer);

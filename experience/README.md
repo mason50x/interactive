@@ -10,13 +10,13 @@ plan. A experience engine in the browser handles the pages; a small Bare v3 serv
 That hostname is on the same zone as the R2 bucket. The workers.dev address is
 switched off, so this is the only place the Worker answers.
 
-The app frames that page from `/experience` — see `src/lib/experience.ts`.
+The app frames that page from `/browse` — see `src/lib/experience.ts`.
 The route and sidebar entry are included in production and development builds.
 Set `EXPERIENCE_ORIGIN` to the Experience Worker origin in the app deployment.
-Every account starts with 20 minutes shared across proxy apps, games,
+Every account starts with 30 minutes shared across proxy apps, games,
 entertainment and simulators. Browsing catalogues is free. The allowance resets
-at 7:35 a.m. America/Chicago (including daylight saving changes). At exhaustion,
-an accepted new chat message, including a short reply, earns two minutes; see
+at 7:30 a.m. America/Chicago (including daylight saving changes). At exhaustion,
+an eligible chat message, including a short reply, earns 30 seconds; see
 [the playtime policy](../docs/playtime.md). Convex owns all accounting.
 
 ## Layout
@@ -62,8 +62,8 @@ no environment variables; the allowlist is compiled in.
 Edit `config/experience-allowlist.json`, then run `npm run deploy` here and deploy
 the app. `host` is what the Worker enforces, as an exact match or any
 subdomain, so `wikipedia.org` covers `en.wikipedia.org`. An entry with `id`,
-`label` and `start` is an app: it gets a tile on `/experience` and
-opens at `/experience/<id>` inside a browser-shaped shell. Sites usually pull
+`label` and `start` is an app: it gets a tile on `/browse` and
+opens at `/browse/<id>` inside a browser-shaped shell. Sites usually pull
 scripts and images from a second domain; add that too, with `label` and
 `start` set to `null` so it is enforced but not listed. When the dependency is
 one path on a domain you do not want to open, add `paths`: a list of path
@@ -221,9 +221,9 @@ and cookie compatibility fixes together.
 
 ## Xbox Cloud Gaming and proxy compatibility (2026-09-22)
 
-Xbox Cloud Gaming is available at `/experience/xbox`, starting at
+Xbox Cloud Gaming is available at `/browse/xbox`, starting at
 `https://www.xbox.com/play`. Its unmodified official 180×180 icon is bundled in
-`public/experience/xbox.png`; the source is recorded in `public/experience/ASSETS.md`.
+`public/app-icons/xbox.png`; the source is recorded in `public/app-icons/ASSETS.md`.
 
 The dependency inventory comes from Xbox's current landing page, its shipped
 JavaScript, and a browser trace through Microsoft sign-in. The shared allowlist
@@ -288,7 +288,7 @@ released to production.
 
 Soccer RNG (https://soccerrng.netlify.app/, branded "Touchline" in-page) is a
 catalog app with its own logo bundled locally: the site's inline SVG favicon,
-saved as `public/experience/soccerrng.svg`. Its `/api/*` calls and Netlify
+saved as `public/app-icons/soccerrng.svg`. Its `/api/*` calls and Netlify
 scripts are same-origin, so only the player portraits and club crests it
 hotlinks need dependency entries. Each is path-scoped to the image prefix the
 page actually uses, so the clubs' own websites stay outside the allowlist:
@@ -315,16 +315,16 @@ image host here.
 ## Discord, GeForce NOW, and Snapchat (2026-09-24)
 
 Three catalog apps, each with its official icon bundled locally (sources in
-`public/experience/ASSETS.md`). Hosts come from a Chromium trace of each
+`public/app-icons/ASSETS.md`). Hosts come from a Chromium trace of each
 landing and sign-in page plus the hostnames in their shipped JavaScript.
 
-- **Discord** (`/experience/discord`, starts at `https://discord.com/app`):
+- **Discord** (`/browse/discord`, starts at `https://discord.com/app`):
   `discord.com`, `discordapp.com`, `discordapp.net` (CDN, media proxy),
   `discord.gg` (gateway and QR-login WebSockets), `discord.media` (voice
   signalling), the `discord-attachments-uploads-prd.storage.googleapis.com`
   upload bucket, and `hcaptcha.com` for login challenges. `hcaptcha.net`
   stays denied.
-- **GeForce NOW** (`/experience/geforce-now`, starts at
+- **GeForce NOW** (`/browse/geforce-now`, starts at
   `https://play.geforcenow.com/`): `geforcenow.com`, `nvidiagrid.net`
   (artwork, regional `cloudmatchbeta` zones), `gx.nvidia.com`,
   `gxn.nvidia.com`, `api.gdn.nvidia.com`, and sign-in through
@@ -334,7 +334,7 @@ landing and sign-in page plus the hostnames in their shipped JavaScript.
   out. It gets Xbox's frame grants (pointer lock, gamepad, microphone, wake
   lock); like Xbox, its WebRTC stream and STUN are browser-native and not
   relayed.
-- **Snapchat** (`/experience/snapchat`, starts at
+- **Snapchat** (`/browse/snapchat`, starts at
   `https://www.snapchat.com/web`): `snapchat.com`, `sc-cdn.net`,
   `images.bitmoji.com`, `sdk.bitmoji.com`, and the login page's Contentful
   space (`graphql.contentful.com/content/v1/spaces/kp51zybwznx4/`). Its

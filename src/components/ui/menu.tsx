@@ -93,6 +93,21 @@ function MenuContent({
   );
 }
 
+function MenuLinkItem({
+  className,
+  tone,
+  size,
+  ...props
+}: MenuPrimitive.LinkItem.Props & VariantProps<typeof menuItemVariants>) {
+  return (
+    <MenuPrimitive.LinkItem
+      data-slot="menu-item"
+      className={cn(menuItemVariants({ tone, size }), className)}
+      {...props}
+    />
+  );
+}
+
 function MenuItem({
   className,
   tone,
@@ -154,6 +169,7 @@ export {
   MenuGroup,
   MenuGroupLabel,
   MenuItem,
+  MenuLinkItem,
   MenuRadioGroup,
   MenuRadioItem,
   MenuSeparator,

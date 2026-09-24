@@ -3,21 +3,21 @@ import Image from "next/image";
 import { SolidIcon } from "@/components/ui/icon";
 
 const SERVICE_ICONS: Record<string, string> = {
-  x: "/experience/x.png",
-  xbox: "/experience/xbox.png",
-  tiktok: "/experience/tiktok.png",
-  spotify: "/experience/spotify.ico",
-  gemini: "/experience/gemini.svg",
-  "apple-music": "/experience/apple-music.png",
-  soccerrng: "/experience/soccerrng.svg",
-  discord: "/experience/discord.ico",
-  "geforce-now": "/experience/geforce-now.png",
-  snapchat: "/experience/snapchat.png",
+  x: "/app-icons/x.png",
+  xbox: "/app-icons/xbox.png",
+  tiktok: "/app-icons/tiktok.png",
+  spotify: "/app-icons/spotify.ico",
+  gemini: "/app-icons/gemini.svg",
+  "apple-music": "/app-icons/apple-music.png",
+  soccerrng: "/app-icons/soccerrng.svg",
+  discord: "/app-icons/discord.ico",
+  "geforce-now": "/app-icons/geforce-now.png",
+  snapchat: "/app-icons/snapchat.png",
 };
 
 /**
  * Brand marks are bundled locally so tiles and tabs do not contact the
- * services to render their icons. Sources are in public/experience/ASSETS.md.
+ * services to render their icons. Sources are in public/app-icons/ASSETS.md.
  */
 export function ExperienceAppIcon({
   id,

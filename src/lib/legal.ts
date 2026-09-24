@@ -203,7 +203,7 @@ export const terms: LegalDocument = {
       blocks: [
         {
           kind: "p",
-          text: "The Service includes chat: a room open to everyone with an account, private messages between two people, and groups. Chat uses your account username, first name, and picture. Your email address and last name are not shown to other users.",
+          text: "The Service includes chat: a room open to everyone with an account and private messages between two people. Chat uses your account username, first name, and picture. Your email address and last name are not shown to other users.",
         },
         { kind: "p", text: "In chat you agree not to:" },
         {
@@ -233,7 +233,7 @@ export const terms: LegalDocument = {
         },
         {
           kind: "p",
-          text: "We may remove any message, hide any message that has been reported, and close any account, without notice. Groups you create are yours to run: you may invite, admit, remove, and promote people within them, and that power reaches no further than the group itself.",
+          text: "We may remove any message, hide any message that has been reported, and close any account, without notice.",
         },
       ],
     },
@@ -539,7 +539,7 @@ export const privacy: LegalDocument = {
         },
         {
           kind: "p",
-          text: "Messages in the room open to everyone are deleted after thirty days. Messages in private conversations and groups are kept until the conversation or the account is deleted.",
+          text: "Messages in the room open to everyone are deleted after thirty days. Messages in private conversations are kept until the conversation or the account is deleted.",
         },
         {
           kind: "p",

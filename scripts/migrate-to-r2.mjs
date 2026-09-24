@@ -602,11 +602,13 @@ async function main() {
         }
       }
 
-      // Only upstream's strips are copied. A `.webp` is our own 16:9 art —
+      // Only upstream's strips are copied. Curated art is already committed.
+      // A `.webp` is our own 16:9 art —
       // see `localArt` in `build-catalogue.mjs` — and exists nowhere upstream
       // to copy from; it is already in the repo, which is the point of it.
       let copied = 0;
       for (const game of games) {
+        if (curatedSlugs.has(game.slug)) continue;
         if (game.thumbnail.endsWith(".webp")) continue;
         await copyFile(
           join(staging, THUMBNAILS_SOURCE, game.thumbnail),

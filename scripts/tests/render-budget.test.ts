@@ -23,11 +23,11 @@ describe("decorative rendering budget", () => {
   test.each([
     ["/activities", false],
     ["/activities/crossy", true],
-    ["/entertainment/show", true],
-    ["/learning-simulator/html/hash", true],
-    ["/experience/browser", true],
-    ["/learning-simulator", false],
-    ["/experience", false],
+    ["/tv/show", true],
+    ["/emulate/html/hash", true],
+    ["/browse/browser", true],
+    ["/emulate", false],
+    ["/browse", false],
     ["/chat/room", false],
   ])("player budget for %s", (path, expected) => {
     expect(isPlayerRoute(path)).toBe(expected);

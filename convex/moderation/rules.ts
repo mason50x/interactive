@@ -1,4 +1,4 @@
-import { BROADCAST, DUPLICATE_WINDOW_MS } from "./limits";
+import { BROADCAST } from "./limits";
 import type { Category } from "./lexicon";
 import type { PatternCategory } from "./patterns";
 
@@ -33,7 +33,6 @@ export type Refusal =
   | "location"
   | "duplicate"
   | "broadcast"
-  | "too-fast"
   // The Everyone room's staff controls. See `convex/chat/roomControls.ts`.
   | "locked"
   | "slow-mode"
@@ -143,23 +142,20 @@ export function hashBody(squashed: string): string {
   return (hash >>> 0).toString(36);
 }
 
-/** The same thing, again, within the window. */
+/** Refuse the third consecutive copy, regardless of elapsed time. */
 export function isDuplicate(
   recent: RecentSend[],
   hash: string,
-  now: number,
 ): boolean {
-  for (const send of recent) {
-    if (send.hash === hash && now - send.at < DUPLICATE_WINDOW_MS) return true;
-  }
-  return false;
+  return recent.length >= 2 &&
+    recent[recent.length - 1].hash === hash &&
+    recent[recent.length - 2].hash === hash;
 }
 
 /**
  * The same thing into several conversations at once.
  *
- * Counted across conversations rather than within one, because within one it is
- * a duplicate and outside one it is somebody working through a list. The
+ * Counted across conversations rather than within one. The
  * current conversation counts towards the total, so the threshold is reached on
  * the third room rather than the fourth.
  */

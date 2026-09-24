@@ -19,7 +19,5 @@ export function hasLimitedRenderBudget(device: DeviceHints): boolean {
 
 /** Embedded apps and players get the frame budget, including on fast machines. */
 export function isPlayerRoute(pathname: string): boolean {
-  return /^\/(activities|entertainment|learning-simulator|experience)\/[^/]+/.test(
-    pathname,
-  );
+  return /^\/(activities|tv|emulate|browse)\/[^/]+/.test(pathname);
 }

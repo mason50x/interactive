@@ -2599,5 +2599,14 @@
   "thumbnail": "blackjack.webp",
   "rank": 490,
   "bytes": 2491798
+ },
+ {
+  "slug": "ddlc",
+  "path": "cldd",
+  "title": "Doki Doki Literature Club!",
+  "genre": "exploration",
+  "thumbnail": "ddlc.jpg",
+  "rank": 491,
+  "bytes": 249960991
  }
 ]

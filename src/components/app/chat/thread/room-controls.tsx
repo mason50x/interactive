@@ -42,8 +42,8 @@ function errorText(error: unknown, fallback: string): string {
 }
 
 /**
- * The shield in the Everyone room's header, for moderators and above: lock
- * the room, slow it down, or delete its recent messages in bulk.
+ * The Mod Tools button in the Everyone room's header, for moderators and
+ * above: lock the room, slow it down, or delete its recent messages in bulk.
  *
  * Only drawn for staff who can delete messages; the server checks the same
  * thing on every change. Lock and slow mode commit as soon as they are
@@ -132,14 +132,12 @@ export function RoomControls({
         setNotice(null);
       }}
     >
-      <Popover.Trigger
-        aria-label="Room controls"
-        className={cn(
-          "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors outline-none hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:bg-foreground/[0.06] data-popup-open:text-foreground",
-          active ? "text-primary" : "text-muted-foreground",
-        )}
-      >
-        <ShieldCheckIcon className="size-5" />
+      <Popover.Trigger className="flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:bg-foreground/[0.06] data-popup-open:text-foreground">
+        <span>Mod Tools</span>
+        <ShieldCheckIcon
+          className={cn("size-5", active && "text-primary")}
+          aria-hidden="true"
+        />
       </Popover.Trigger>
 
       <Popover.Portal>

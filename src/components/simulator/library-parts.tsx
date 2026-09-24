@@ -133,8 +133,7 @@ export function HtmlImportPanel({
   );
 }
 
-/** The "Your progress" heading with its search box and, before the box,
- *  whatever action the library puts up there — the clear-all button. */
+/** The "Your progress" heading with its search and library actions. */
 export function ProgressSection({
   search,
   setSearch,

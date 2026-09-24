@@ -78,7 +78,7 @@ function PublishedSession({ id, userId }: { id: string; userId: string }) {
             : error}
         </Alert>
         <div className="flex gap-3">
-          <ButtonLink href="/learning-simulator?mode=html" variant="outline">
+          <ButtonLink href="/emulate?mode=html" variant="outline">
             Back to simulators
           </ButtonLink>
           {entry && (

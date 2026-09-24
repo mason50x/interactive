@@ -120,6 +120,11 @@ export default {
         "/leaderboard",
         "/activities",
         "/chat",
+        "/tv",
+        "/browse",
+        "/emulate",
+        // Renamed sections, still answered with a redirect.
+        "/entertainment",
         "/experience",
         "/learning-simulator",
         "/dashboard",

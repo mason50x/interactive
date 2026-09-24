@@ -168,7 +168,7 @@ export default defineSchema({
    */
   preferences: defineTable({
     clerkId: v.string(),
-    /** The drifting mesh behind the dashboard rail. */
+    /** Legacy: the removed background animation. Kept so old rows stay valid. */
     constellation: v.optional(v.boolean()),
     /**
      * An id from `accents` in `src/lib/preferences.ts`, not a colour. Storing
@@ -195,6 +195,11 @@ export default defineSchema({
      * arbitrary string in the tab strip.
      */
     tabMask: v.optional(v.string()),
+    /**
+     * Which of River Falls High School's three lunches this person has (1–3),
+     * so the home page's bell schedule can split Block 3 around it.
+     */
+    lunch: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"]),
 
   /** Per-account moderation counters, separate from Clerk identity. */
@@ -539,23 +544,7 @@ export default defineSchema({
     .index("byConversation", ["conversationId"])
     .index("byAuthor", ["authorClerkId"])
     .index("byAuthorNonce", ["authorClerkId", "clientNonce"])
-    .index("byConversationStatus", ["conversationId", "status"])
-    /**
-     * What the rail's search reads.
-     *
-     * `status` is a filter field rather than something the handler drops
-     * afterwards, because a hidden message must not consume one of the rows
-     * the search returns. Legacy hidden rows must not crowd out visible results.
-     *
-     * Who is allowed to see a match is *not* expressible here. It depends on
-     * the caller's membership rows, which no filter field can name, so the
-     * index is deliberately unscoped and `search` in `convex/chat/messages.ts`
-     * applies permissions to every row before any of it leaves the server.
-     */
-    .searchIndex("searchBody", {
-      searchField: "body",
-      filterFields: ["status", "conversationId", "authorClerkId"],
-    }),
+    .index("byConversationStatus", ["conversationId", "status"]),
 
   /**
    * One row per person a message names, so "mentioned you" is a lookup.

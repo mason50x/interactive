@@ -10,13 +10,20 @@ import {
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { ChartBarIcon, MicrophoneIcon } from "@heroicons/react/24/solid";
+import {
+  ChartBarIcon,
+  FaceSmileIcon,
+  MicrophoneIcon,
+} from "@heroicons/react/24/solid";
 import { useQuery } from "convex/react";
 import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
+  lazy,
   useRef,
+  Suspense,
   useState,
   type Ref,
 } from "react";
@@ -60,6 +67,9 @@ import type {
 /** Rich editing, saved drafts, attachments, polls and dictation for one conversation. */
 /** The Markdown payload cap, enforced by the server as well as the rich editor. */
 const MAX_BODY = 2000;
+const EmojiPicker = lazy(
+  () => import("@/components/app/chat/thread/emoji-picker"),
+);
 
 /**
  * A spoken segment after whatever is already in the box. A space between
@@ -454,7 +464,7 @@ export function Composer({
           between `rounded-full` and this, and animating a radius from nine
           thousand pixels to twenty-five is a shape doing something strange
           on the way. */}
-      <div className="composer flex flex-col rounded-[25px] border border-border bg-surface shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] transition-[border-color,box-shadow] focus-within:border-primary focus-within:shadow-[0_1px_2px_rgba(15,15,15,0.04),0_6px_16px_rgba(15,15,15,0.1),0_16px_36px_-8px_rgba(15,15,15,0.18)]">
+      <div className="composer flex flex-col rounded-[25px] border border-border/70 bg-surface/80 shadow-[0_8px_30px_-12px_rgba(15,15,15,0.22)] backdrop-blur-xl">
         {editing !== null ? (
           <div className="mx-3 mt-3 flex items-center gap-2 rounded-2xl bg-primary/[0.06] px-3 py-2 text-sm text-primary">
             <PencilSquareIcon className="size-4" />
@@ -548,6 +558,7 @@ export function Composer({
                   inputRef.current?.focus();
                 }}
                 onUpload={() => fileInput.current?.click()}
+                onEmoji={(emoji) => inputRef.current?.insertEmoji(emoji)}
               />
               <input
                 ref={fileInput}
@@ -630,9 +641,10 @@ export function Composer({
             </Button>
           ) : null}
           <Button
-            size="lg"
+            size="icon-lg"
             shape="circle"
-            className="pr-3.5 pl-3"
+            className="shrink-0"
+            aria-label={editing !== null ? "Save message" : "Send message"}
             onClick={() => void submit()}
             disabled={!canSend}
           >
@@ -644,13 +656,6 @@ export function Composer({
                 className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
               />
             )}
-            {savingEdit
-              ? "Saving…"
-              : editing !== null
-                ? "Save"
-                : sending
-                  ? "Sending…"
-                  : "Send"}
           </Button>
         </div>
       </div>
@@ -676,6 +681,7 @@ function PlusMenu({
   onUpload,
   canPoll,
   onPoll,
+  onEmoji,
   disabled,
 }: {
   quota: Parameters<typeof BotQuota>[0]["quota"];
@@ -685,10 +691,66 @@ function PlusMenu({
   onUpload: () => void;
   canPoll: boolean;
   onPoll: () => void;
+  onEmoji: (emoji: string) => void;
   disabled: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"actions" | "emojis">("actions");
+  const [panelHeight, setPanelHeight] = useState<number | "expanded" | null>(
+    null,
+  );
+  const popupRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const resizeFrame = useRef<number | null>(null);
+  const returnToEditor = useRef(false);
+
+  useLayoutEffect(() => {
+    return () => {
+      if (resizeFrame.current !== null)
+        window.cancelAnimationFrame(resizeFrame.current);
+    };
+  }, []);
+
+  function showView(next: "actions" | "emojis") {
+    const popup = popupRef.current;
+    if (popup === null) return;
+    if (resizeFrame.current !== null)
+      window.cancelAnimationFrame(resizeFrame.current);
+    // Hold the current geometry while React swaps the contents. The next
+    // frame animates from this exact height to the new view's height.
+    setPanelHeight(popup.getBoundingClientRect().height);
+    setView(next);
+    resizeFrame.current = window.requestAnimationFrame(() => {
+      if (next === "emojis") {
+        setPanelHeight("expanded");
+      } else if (actionsRef.current !== null) {
+        const style = window.getComputedStyle(popup);
+        const chrome =
+          parseFloat(style.paddingTop) +
+          parseFloat(style.paddingBottom) +
+          parseFloat(style.borderTopWidth) +
+          parseFloat(style.borderBottomWidth);
+        setPanelHeight(
+          actionsRef.current.getBoundingClientRect().height + chrome,
+        );
+      }
+      resizeFrame.current = null;
+    });
+  }
+
   return (
-    <Menu>
+    <Menu
+      modal={false}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setView("actions");
+          setPanelHeight(null);
+          returnToEditor.current = false;
+        }
+      }}
+    >
       <MenuTrigger
         aria-label="More"
         disabled={disabled}
@@ -709,31 +771,79 @@ function PlusMenu({
           sideOffset={14}
           className="z-50 outline-none"
         >
-          <MenuPrimitive.Popup className="composer-skin popup-slide flex w-[16.5rem] flex-col rounded-[20px] border border-border bg-surface p-1.5 text-foreground shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] outline-none">
-            {pictures ? (
-              <>
-                <BotQuota quota={quota} />
-                <MenuSeparator className="mx-1" />
-              </>
-            ) : null}
-            {pictures ? (
-              <MenuItem
-                onClick={onUpload}
-                disabled={full}
-                className="data-disabled:pointer-events-none data-disabled:opacity-50"
-              >
-                <ArrowUpTrayIcon className="size-[1.125rem]" />
-                Upload a picture
-              </MenuItem>
-            ) : null}
-            <MenuItem
-              onClick={onPoll}
-              disabled={!canPoll}
-              className="data-disabled:pointer-events-none data-disabled:opacity-50"
-            >
-              <ChartBarIcon className="size-[1.125rem]" />
-              Create a poll
-            </MenuItem>
+          <MenuPrimitive.Popup
+            ref={popupRef}
+            data-view={view}
+            style={{
+              height:
+                panelHeight === "expanded"
+                  ? "min(22rem, calc(100dvh - 6rem))"
+                  : (panelHeight ?? undefined),
+            }}
+            finalFocus={() => !returnToEditor.current}
+            onKeyDownCapture={(event) => {
+              if (view === "emojis" && event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                showView("actions");
+              }
+            }}
+            className="composer-skin popup-slide plus-menu-popup flex flex-col rounded-[20px] border border-border bg-surface p-1.5 text-foreground shadow-[0_1px_2px_rgba(15,15,15,0.04),0_4px_12px_rgba(15,15,15,0.08),0_12px_28px_-8px_rgba(15,15,15,0.14)] outline-none"
+          >
+            {view === "actions" ? (
+              <div ref={actionsRef} className="plus-menu-actions flex flex-col">
+                {pictures ? (
+                  <>
+                    <BotQuota quota={quota} />
+                    <MenuSeparator className="mx-1" />
+                  </>
+                ) : null}
+                {pictures ? (
+                  <MenuItem
+                    onClick={onUpload}
+                    disabled={full}
+                    className="data-disabled:pointer-events-none data-disabled:opacity-50"
+                  >
+                    <ArrowUpTrayIcon className="size-[1.125rem]" />
+                    Upload a picture
+                  </MenuItem>
+                ) : null}
+                <MenuItem
+                  closeOnClick={false}
+                  onClick={() => showView("emojis")}
+                >
+                  <FaceSmileIcon className="size-[1.125rem]" />
+                  Emojis
+                </MenuItem>
+                <MenuItem
+                  onClick={onPoll}
+                  disabled={!canPoll}
+                  className="data-disabled:pointer-events-none data-disabled:opacity-50"
+                >
+                  <ChartBarIcon className="size-[1.125rem]" />
+                  Create a poll
+                </MenuItem>
+              </div>
+            ) : (
+              <div className="plus-menu-emojis flex min-h-0 flex-1 flex-col">
+                <Suspense
+                  fallback={
+                    <p className="p-3 text-sm text-muted-foreground">
+                      Loading emojis…
+                    </p>
+                  }
+                >
+                  <EmojiPicker
+                    onBack={() => showView("actions")}
+                    onPick={(emoji) => {
+                      returnToEditor.current = true;
+                      onEmoji(emoji);
+                      setOpen(false);
+                    }}
+                  />
+                </Suspense>
+              </div>
+            )}
           </MenuPrimitive.Popup>
         </MenuPrimitive.Positioner>
       </MenuPrimitive.Portal>

@@ -4,7 +4,7 @@ import { StaffBadge } from "@/components/ui/staff-badge";
 
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Tooltip as AdminTooltip,
   TooltipProvider,
@@ -70,22 +70,36 @@ export function MessageRow({
   )?.role;
   const [adminError, setAdminError] = useState<string | null>(null);
 
-  // Held rather than left to `:hover`, because the bar below is the menu's
-  // anchor. Base UI measures the trigger to place the popup and keeps
-  // measuring it while it is open — so a bar that vanishes the moment the
-  // pointer leaves the message takes the anchor with it, and the popup falls
-  // back to the top-left corner of the viewport and sits there. Keeping the
-  // bar mounted and visible for as long as either menu is open is the fix.
   const [reacting, setReacting] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const menuOpen = reacting || choosing;
+  const hasReactions = message.reactions.length > 0;
+  const reactionContent = useRef<HTMLDivElement>(null);
+  const [reactionHeight, setReactionHeight] = useState<number>();
+
+  useLayoutEffect(() => {
+    const content = reactionContent.current;
+    if (content) setReactionHeight(content.getBoundingClientRect().height);
+  }, [message.reactions]);
+
+  useEffect(() => {
+    const content = reactionContent.current;
+    if (!content || !hasReactions) return;
+    const observer = new ResizeObserver(() => {
+      setReactionHeight(content.getBoundingClientRect().height);
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [hasReactions]);
 
   const grouped = messagesConnect(previous, message);
   const joinsNext = messagesConnect(message, next);
+  const showTail = !joinsNext && (mine || message.replyTo !== undefined);
   const corners = cn(
     "rounded-3xl",
     grouped && (mine ? "rounded-tr-md" : "rounded-tl-md"),
     joinsNext && (mine ? "rounded-br-md" : "rounded-bl-md"),
+    showTail && (mine ? "rounded-br-lg" : "rounded-bl-lg"),
   );
   const gone = message.status !== "visible";
   const bot = isBot(message.authorClerkId);
@@ -123,11 +137,6 @@ export function MessageRow({
     mine && !gone && !message.poll && withinEditWindow && onEdit !== undefined;
   const choosable = isAdmin || !mine || deletable || editable;
 
-  const time = new Date(message._creationTime).toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
   /** Who said it, as the card that opens when they are pressed. */
   const author = {
     clerkId: message.authorClerkId,
@@ -145,6 +154,38 @@ export function MessageRow({
     !plainMentions &&
     (message.mentionsEveryone ||
       message.mentions.some((mention) => mention.clerkId === me));
+
+  const actions =
+    (gone && !isAdmin) || !canAct ? null : (
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-0.5 transition-opacity duration-150",
+          !menuOpen &&
+            "pointer-events-none opacity-0 group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100 group-hover/message:pointer-events-auto group-hover/message:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
+        )}
+      >
+        <ReactionPicker
+          messageId={message._id}
+          open={reacting}
+          onOpenChange={setReacting}
+        />
+        {choosable ? (
+          <MessageMenu
+            message={message}
+            mine={mine}
+            gone={gone}
+            deletable={deletable}
+            editable={editable}
+            onEdit={onEdit}
+            isAdmin={isAdmin}
+            open={choosing}
+            onOpenChange={setChoosing}
+            onReply={onReply}
+            onAdminError={setAdminError}
+          />
+        ) : null}
+      </div>
+    );
 
   return (
     <div
@@ -198,9 +239,9 @@ export function MessageRow({
             "rounded-3xl ring-2 ring-primary ring-offset-2 ring-offset-background",
         )}
       >
-        {!mine && !grouped ? (
-          <div className="mb-1 flex h-5 max-w-full items-center gap-2 px-1">
-            {!mine && !grouped && staffRole ? (
+        {!mine ? (
+          <div className="mb-1 flex min-h-6 max-w-full items-center gap-1 px-1">
+            {!grouped && staffRole ? (
               <TooltipProvider delay={250}>
                 <AdminTooltip>
                   <TooltipTrigger
@@ -230,18 +271,19 @@ export function MessageRow({
               </TooltipProvider>
             ) : null}
 
-            {mine || grouped ? null : bot ? (
-              <span className="truncate text-[0.75rem] font-normal text-muted-foreground">
+            {bot ? (
+              <span className="min-w-0 truncate text-[0.75rem] font-normal text-muted-foreground">
                 {personName(author)}
               </span>
             ) : (
               <PersonCard
                 person={author}
-                className="cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="min-w-0 cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
               >
                 {personName(author)}
               </PersonCard>
             )}
+            {actions}
           </div>
         ) : null}
 
@@ -280,22 +322,34 @@ export function MessageRow({
                 : "text-foreground",
             )}
           >
-            {/* The bubble itself, behind the words rather than around them:
-                an inset layer is the same rectangle the padding already
-                described, and it is what carries the gradient and the rim —
-                see `.bubble-mine` in `globals.css`. */}
+            {/* The bubble's solid fill and final-message tail sit behind the text. */}
             <span
               aria-hidden
               className={cn(
-                "absolute inset-0 rounded-[inherit] border",
-                mine
-                  ? "bubble-mine bg-primary"
-                  : "bubble-theirs bg-surface-muted",
-                // The rim goes to the accent when it is about you. See
+                "absolute inset-0 rounded-[inherit]",
+                mine ? "bubble-mine" : "bubble-theirs",
+                // The fill gets a subtle accent when it is about you. See
                 // `.bubble-named` in `globals.css`.
                 named && "bubble-named",
               )}
-            />
+            >
+              {showTail && (
+                <svg
+                  viewBox="0 0 24 14"
+                  className={cn(
+                    "bubble-tail pointer-events-none absolute -bottom-[2px] h-[7px] w-3",
+                    mine ? "-right-1.5" : "-left-1.5 -scale-x-100",
+                  )}
+                >
+                  <path
+                    d="M0 0h10c0 5.5 4 10 11 11.2 2.2.4 3 1.1 2.3 2-.7.9-2.3 1-3.8.7C10 13 3 9.5 0 4Z"
+                    stroke="var(--bubble-fill)"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
             <div className="relative">
               <MessageText
                 message={message}
@@ -322,28 +376,42 @@ export function MessageRow({
             </div>
           </div>
         )}
-        {message.reactions.length > 0 ? (
-          <Tooltip.Provider delay={250} closeDelay={100}>
-            <div
-              className={cn("mt-1 flex flex-wrap gap-1", mine && "justify-end")}
-            >
-              {message.reactions.map((reaction) => (
-                <ReactionPill
-                  key={reaction.emoji}
-                  messageId={message._id}
-                  reaction={reaction}
-                  canAct={canAct}
-                  onReact={() =>
-                    void react({
-                      messageId: message._id,
-                      emoji: reaction.emoji,
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </Tooltip.Provider>
-        ) : null}
+        <div
+          data-slot="message-reactions"
+          className="overflow-hidden transition-[height,opacity] duration-300 ease-out motion-reduce:transition-none"
+          style={{
+            height: reactionHeight,
+            opacity: hasReactions ? 1 : 0,
+          }}
+        >
+          <div
+            ref={reactionContent}
+            className={cn(
+              "flex flex-wrap gap-1",
+              mine && "justify-end",
+              hasReactions && "pt-1",
+            )}
+          >
+            {hasReactions ? (
+              <Tooltip.Provider delay={250} closeDelay={100}>
+                {message.reactions.map((reaction) => (
+                  <ReactionPill
+                    key={reaction.emoji}
+                    messageId={message._id}
+                    reaction={reaction}
+                    canAct={canAct}
+                    onReact={() =>
+                      void react({
+                        messageId: message._id,
+                        emoji: reaction.emoji,
+                      })
+                    }
+                  />
+                ))}
+              </Tooltip.Provider>
+            ) : null}
+          </div>
+        </div>
 
         {adminError ? (
           <p role="alert" className="mt-1 text-xs text-destructive">
@@ -351,55 +419,11 @@ export function MessageRow({
           </p>
         ) : null}
       </div>
-      <div
-        className="flex w-12 shrink-0 flex-col items-center gap-0.5 self-center"
-        aria-label={`Sent at ${time}`}
-      >
-        <span
-          className={cn(
-            "text-[0.625rem] whitespace-nowrap text-faint transition-opacity duration-150",
-            menuOpen
-              ? "opacity-100"
-              : "opacity-0 group-focus-within/message:opacity-100 group-hover/message:opacity-100 pointer-coarse:opacity-100",
-          )}
-        >
-          {time}
-        </span>
-
-        {(gone && !isAdmin) || !canAct ? null : (
-          <div
-            className={cn(
-              "flex items-center gap-0.5 transition-opacity duration-150",
-              menuOpen
-                ? "opacity-100"
-                : "opacity-0 group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
-              !menuOpen && "pointer-events-none",
-            )}
-          >
-            <ReactionPicker
-              messageId={message._id}
-              open={reacting}
-              onOpenChange={setReacting}
-            />
-
-            {choosable ? (
-              <MessageMenu
-                message={message}
-                mine={mine}
-                gone={gone}
-                deletable={deletable}
-                editable={editable}
-                onEdit={onEdit}
-                isAdmin={isAdmin}
-                open={choosing}
-                onOpenChange={setChoosing}
-                onReply={onReply}
-                onAdminError={setAdminError}
-              />
-            ) : null}
-          </div>
-        )}
-      </div>
+      {mine && actions ? (
+        <div className="flex w-[3.25rem] shrink-0 items-center self-center">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

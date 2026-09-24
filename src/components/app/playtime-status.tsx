@@ -28,6 +28,10 @@ export function PlaytimeStatusProvider({ children }: { children: ReactNode }) {
     </StatusContext.Provider>
   );
 }
+/** The shell's playtime clock, for anything that wants to show it. */
+export function usePlaytimeQuota() {
+  return useContext(StatusContext);
+}
 export function usePlaytimeExhausted() {
   return useContext(ExhaustedContext);
 }
@@ -60,7 +64,7 @@ export function PlaytimeNavLink({
         role="link"
         aria-disabled="true"
         className={props.className}
-        title="Playtime is used up. Send a new chat message for 2 more minutes."
+        title="Playtime is used up. Send a real chat message for 30 more seconds."
       >
         {children}
       </span>

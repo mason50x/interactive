@@ -1,25 +1,17 @@
 "use client";
 
 import {
-  Cog6ToothIcon,
   EllipsisHorizontalIcon,
   EnvelopeIcon,
   EnvelopeOpenIcon,
   StarIcon,
-  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useChat } from "@/components/app/chat/chat-provider";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
-import { conversationName, requestGroupPanel } from "@/lib/chat";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
+import { conversationName } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
 import { api } from "@convex/_generated/api";
 import type { ConversationSummary } from "@convex/chat/conversations";
@@ -189,27 +181,6 @@ export function ConversationActions({
               )}
               {raw.unread > 0 ? "Mark as read" : "Mark as unread"}
             </MenuItem>
-            {conversation.kind === "group" ? (
-              <>
-                <MenuSeparator />
-                {conversation.role !== "member" ? (
-                  <MenuItem
-                    onClick={() => requestGroupPanel(conversation._id, "add")}
-                  >
-                    <UserPlusIcon className="size-4" />
-                    Add someone
-                  </MenuItem>
-                ) : null}
-                <MenuItem
-                  onClick={() =>
-                    requestGroupPanel(conversation._id, "settings")
-                  }
-                >
-                  <Cog6ToothIcon className="size-4" />
-                  Group settings
-                </MenuItem>
-              </>
-            ) : null}
           </MenuContent>
         </Menu>
       </div>

@@ -64,5 +64,49 @@
         "sounds/lose.mp3"
       ]
     }
+  },
+  {
+    "slug": "ddlc",
+    "path": "cldd",
+    "title": "Doki Doki Literature Club!",
+    "genre": "exploration",
+    "thumbnail": "ddlc.jpg",
+    "rank": 491,
+    "bytes": 249960991,
+    "source": {
+      "kind": "renpy-web",
+      "publisher": "Team Salvato; browser build hosted by Gamenora",
+      "productUrl": "https://ddlc.moe/",
+      "bundleUrl": "https://html5.gdata1.com/Doki%20Doki%20Literature%20Club!/",
+      "retrieved": "2026-09-24",
+      "gameZipSha256": "8f65bfcde01ae42fc58c8fc7dc5c50f5521b5876ee42c7988b722f7af59d4299",
+      "files": [
+        "index.html",
+        "manifest.json",
+        "pwa_catalog.json",
+        "service-worker.js",
+        "renpy-pre.js",
+        "renpy.js",
+        "renpy.data",
+        "renpy.wasm",
+        "web-presplash.jpg",
+        "icons/icon-72x72.png",
+        "icons/icon-72x72-maskable.png",
+        "icons/icon-96x96.png",
+        "icons/icon-96x96-maskable.png",
+        "icons/icon-128x128.png",
+        "icons/icon-128x128-maskable.png",
+        "icons/icon-144x144.png",
+        "icons/icon-144x144-maskable.png",
+        "icons/icon-152x152.png",
+        "icons/icon-152x152-maskable.png",
+        "icons/icon-192x192.png",
+        "icons/icon-192x192-maskable.png",
+        "icons/icon-384x384.png",
+        "icons/icon-384x384-maskable.png",
+        "icons/icon-512x512.png",
+        "icons/icon-512x512-maskable.png"
+      ]
+    }
   }
 ]

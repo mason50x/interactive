@@ -51,10 +51,10 @@ export default clerkMiddleware(async (auth, req) => {
       "/admin",
       "/leaderboard",
       "/activities",
-      "/entertainment",
+      "/tv",
       "/chat",
-      "/experience",
-      "/learning-simulator",
+      "/browse",
+      "/emulate",
       LEARN_PATH_PREFIX,
     ].some((root) => inRouteTree(path, root))
   ) {
@@ -66,7 +66,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   const { userId } = await auth();
   if (userId) {
-    return NextResponse.redirect(new URL("/activities", req.url));
+    return NextResponse.redirect(new URL("/home", req.url));
   }
 });
 
@@ -78,10 +78,10 @@ export const config = {
     "/admin/:path*",
     "/leaderboard/:path*",
     "/activities/:path*",
-    "/entertainment/:path*",
+    "/tv/:path*",
     "/chat/:path*",
-    "/experience/:path*",
-    "/learning-simulator/:path*",
+    "/browse/:path*",
+    "/emulate/:path*",
     "/learn/:path*",
     "/auth/:path*",
     // Public route trees that mount ClerkProvider also need Clerk context.

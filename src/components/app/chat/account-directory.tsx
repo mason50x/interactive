@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@convex/_generated/api";
@@ -8,39 +8,24 @@ import { Monogram } from "@/components/app/chat/monogram";
 import { Button } from "@/components/ui/button";
 import { CHAT_HREF } from "@/lib/nav";
 import { openDmError } from "@/lib/chat";
-import { useDebounced } from "@/lib/use-debounced";
 
 /** Existing DMs are above; every other account can be opened directly here. */
 export function AccountDirectory({
   exclude,
-  term,
 }: {
   exclude: ReadonlySet<string>;
-  term: string;
 }) {
   const router = useRouter();
   const openDm = useMutation(api.chat.conversations.openDm);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const search = useDebounced(term.trim(), 150);
-  const searching = search.length >= 2;
   const directory = usePaginatedQuery(
     api.chat.accounts.directory,
-    searching ? "skip" : {},
+    {},
     { initialNumItems: 50 },
   );
-  const hits = useQuery(
-    api.chat.accounts.search,
-    searching ? { term: search } : "skip",
-  );
-  const people = (searching ? (hits ?? []) : directory.results).filter(
-    (person) =>
-      !exclude.has(person.clerkId) &&
-      (searching ||
-        !search ||
-        `${person.handle} ${person.displayName ?? ""}`
-          .toLowerCase()
-          .includes(search.toLowerCase())),
+  const people = directory.results.filter(
+    (person) => !exclude.has(person.clerkId),
   );
   async function message(clerkId: string) {
     if (busy) return;
@@ -86,7 +71,7 @@ export function AccountDirectory({
           {error}
         </p>
       ) : null}
-      {!searching && directory.status === "CanLoadMore" ? (
+      {directory.status === "CanLoadMore" ? (
         <Button
           variant="ghost"
           size="sm"
@@ -96,10 +81,8 @@ export function AccountDirectory({
           Show more people
         </Button>
       ) : null}
-      {(!searching &&
-        (directory.status === "LoadingFirstPage" ||
-          directory.status === "LoadingMore")) ||
-      (searching && hits === undefined) ? (
+      {directory.status === "LoadingFirstPage" ||
+      directory.status === "LoadingMore" ? (
         <p role="status" className="px-2 py-2 text-sm text-muted-foreground">
           Loading people…
         </p>

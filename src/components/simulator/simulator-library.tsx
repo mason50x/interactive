@@ -5,12 +5,11 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { CodeBracketSquareIcon, CpuChipIcon } from "@heroicons/react/24/solid";
-import styles from "./library.module.css";
 import { GameBoyLibrary } from "./library";
 import { CenteredSpinner } from "@/components/ui/spinner";
-import { Page, PageTitle } from "@/components/ui/page";
-import { ChipIconSolid } from "@/components/app/nav-icons";
+import { Page } from "@/components/ui/page";
 import { readStorage, writeStorage } from "@/lib/storage";
+import { SegmentedControl } from "@/components/ui/segmented";
 
 // The HTML library is the default view, and the Game Boy one is small; only
 // the HTML library is split out because its store and its player pull in
@@ -53,29 +52,19 @@ function Library() {
   return (
     <Page>
       <header className="flex flex-wrap items-center justify-between gap-5">
-        <PageTitle icon={<ChipIconSolid />}>Simulators</PageTitle>
-        <div
-          role="group"
+        <SegmentedControl
           aria-label="Simulation format"
-          className={styles.modeSwitch}
-          data-mode={mode}
-        >
-          <span aria-hidden="true" className={styles.modeIndicator} />
-          {MODES.map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={mode === value}
-              onClick={() =>
-                router.replace(`?mode=${value}`, { scroll: false })
-              }
-              className={styles.modeButton}
-            >
-              <Icon aria-hidden="true" className="size-[18px]" />
-              {label}
-            </button>
-          ))}
-        </div>
+          value={mode}
+          onValueChange={(value) =>
+            router.replace(`?mode=${value}`, { scroll: false })
+          }
+          options={MODES.map(({ value, label, Icon }) => ({
+            value,
+            label,
+            icon: <Icon />,
+          }))}
+          tone="neutral"
+        />
       </header>
       {mode === "html" ? (
         <HtmlLibrary key={userId} />

@@ -44,12 +44,12 @@ export const mine = query({
     // Deliberately not the raw document. `_id` and `_creationTime` are of no
     // use to the client and would only invite it to send one back.
     return {
-      constellation: row.constellation,
       accent: row.accent,
       panicEnabled: row.panicEnabled,
       panicKey: row.panicKey,
       panicUrl: row.panicUrl,
       tabMask: row.tabMask,
+      lunch: row.lunch,
     };
   },
 });
@@ -71,12 +71,12 @@ export const mine = query({
  */
 export const save = mutation({
   args: {
-    constellation: v.optional(v.boolean()),
     accent: v.optional(v.string()),
     panicEnabled: v.optional(v.boolean()),
     panicKey: v.optional(v.string()),
     panicUrl: v.optional(v.string()),
     tabMask: v.optional(v.string()),
+    lunch: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const clerkId = await callerId(ctx);
@@ -96,6 +96,9 @@ export const save = mutation({
       ...(args.tabMask === undefined
         ? {}
         : { tabMask: args.tabMask.slice(0, 32) }),
+      ...(args.lunch === undefined
+        ? {}
+        : { lunch: [1, 2, 3].includes(args.lunch) ? args.lunch : undefined }),
     };
 
     const existing = await ctx.db

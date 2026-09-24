@@ -9,11 +9,11 @@ it("renders the bundled TikTok logo and resolves its catalog route", () => {
   expect(findExperienceApp("tiktok")).toEqual({
     id: "tiktok", label: "TikTok", host: "tiktok.com", start: "https://www.tiktok.com/",
   });
-  expect(experienceAppHref("tiktok")).toBe("/experience/tiktok");
+  expect(experienceAppHref("tiktok")).toBe("/browse/tiktok");
   const html = renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "tiktok" }));
-  expect(html).toContain('src="/experience/tiktok.png"');
+  expect(html).toContain('src="/app-icons/tiktok.png"');
   expect(html).toContain('aria-hidden="true"');
-  const png = readFileSync(new URL("../../public/experience/tiktok.png", import.meta.url));
+  const png = readFileSync(new URL("../../public/app-icons/tiktok.png", import.meta.url));
   expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
   expect(png.readUInt32BE(16)).toBe(32);
   expect(png.readUInt32BE(20)).toBe(32);
@@ -22,18 +22,18 @@ it("renders the bundled TikTok logo and resolves its catalog route", () => {
 
 it("retains the bundled X logo while its catalog route is disabled", () => {
   expect(findExperienceApp("x")).toBeNull();
-  expect(experienceAppHref("x")).toBe("/experience/x");
+  expect(experienceAppHref("x")).toBe("/browse/x");
   const html = renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "x" }));
-  expect(html).toContain('src="/experience/x.png"');
-  const png = readFileSync(new URL("../../public/experience/x.png", import.meta.url));
+  expect(html).toContain('src="/app-icons/x.png"');
+  const png = readFileSync(new URL("../../public/app-icons/x.png", import.meta.url));
   expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
 });
 
 it("offers Xbox Cloud Gaming with its official bundled logo", () => {
   expect(findExperienceApp("xbox")).toEqual({ id: "xbox", label: "Xbox Cloud Gaming", host: "xbox.com", start: "https://www.xbox.com/play" });
-  expect(experienceAppHref("xbox")).toBe("/experience/xbox");
-  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "xbox" }))).toContain('src="/experience/xbox.png"');
-  const png = readFileSync(new URL("../../public/experience/xbox.png", import.meta.url));
+  expect(experienceAppHref("xbox")).toBe("/browse/xbox");
+  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "xbox" }))).toContain('src="/app-icons/xbox.png"');
+  const png = readFileSync(new URL("../../public/app-icons/xbox.png", import.meta.url));
   expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
   expect(png.readUInt32BE(16)).toBe(180);
   expect(png.readUInt32BE(20)).toBe(180);
@@ -41,9 +41,9 @@ it("offers Xbox Cloud Gaming with its official bundled logo", () => {
 
 it("offers Soccer RNG with its own bundled logo", () => {
   expect(findExperienceApp("soccerrng")).toEqual({ id: "soccerrng", label: "Soccer RNG", host: "soccerrng.netlify.app", start: "https://soccerrng.netlify.app/" });
-  expect(experienceAppHref("soccerrng")).toBe("/experience/soccerrng");
-  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "soccerrng" }))).toContain('src="/experience/soccerrng.svg"');
-  const svg = readFileSync(new URL("../../public/experience/soccerrng.svg", import.meta.url), "utf8");
+  expect(experienceAppHref("soccerrng")).toBe("/browse/soccerrng");
+  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "soccerrng" }))).toContain('src="/app-icons/soccerrng.svg"');
+  const svg = readFileSync(new URL("../../public/app-icons/soccerrng.svg", import.meta.url), "utf8");
   expect(svg).toMatch(/^<svg xmlns='http:\/\/www\.w3\.org\/2000\/svg' viewBox='0 0 64 64'>/);
 });
 
@@ -53,8 +53,8 @@ it.each([
   { id: "snapchat", label: "Snapchat", host: "snapchat.com", start: "https://www.snapchat.com/web", icon: "snapchat.png" },
 ])("offers $label with its official bundled logo", ({ icon, ...app }) => {
   expect(findExperienceApp(app.id)).toEqual(app);
-  expect(experienceAppHref(app.id)).toBe(`/experience/${app.id}`);
-  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: app.id }))).toContain(`src="/experience/${icon}"`);
-  const bytes = readFileSync(new URL(`../../public/experience/${icon}`, import.meta.url));
+  expect(experienceAppHref(app.id)).toBe(`/browse/${app.id}`);
+  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: app.id }))).toContain(`src="/app-icons/${icon}"`);
+  const bytes = readFileSync(new URL(`../../public/app-icons/${icon}`, import.meta.url));
   expect(bytes.subarray(0, 4).toString("hex")).toBe(icon.endsWith(".ico") ? "00000100" : "89504e47");
 });

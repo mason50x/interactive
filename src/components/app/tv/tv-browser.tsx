@@ -24,7 +24,7 @@ export function TvBrowser({ shows }: { shows: readonly TvEntry[] }) {
             renderCard={(show) => (
               <CatalogueCard
                 title={show.title}
-                href={`/entertainment/${show.slug}`}
+                href={`/tv/${show.slug}`}
                 thumbnail={show.thumbnail}
                 category={
                   CATEGORIES[show.genre as keyof typeof CATEGORIES].label

@@ -113,7 +113,7 @@ export default function Player({
   return (
     <div ref={page} className={styles.page}>
       <div className={styles.back}>
-        <ButtonLink variant="ghost" href="/learning-simulator">
+        <ButtonLink variant="ghost" href="/emulate">
           <ArrowLeftIcon /> Back
         </ButtonLink>
       </div>

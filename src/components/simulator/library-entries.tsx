@@ -97,9 +97,8 @@ export function EntryRow({
 }
 
 /**
- * What the list says with nothing in it. With a search in the box, the
- * message is that nothing matched and the artwork stays away; otherwise it
- * is the invitation to open a file, drawn with the library's pixel art.
+ * What the list says with nothing in it, beside the library's pixel art.
+ * A search with no matches shows a separate message.
  */
 export function LibraryEmpty({
   search,

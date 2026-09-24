@@ -54,10 +54,9 @@ export type Activity = {
    */
   rank: number;
   /**
-   * Filename under `public/thumbnails`, in one of two shapes. A `.webp` is
-   * ours: 960x540, 16:9, the frame the tile actually wants. A `.jpg` is
-   * upstream's: a 480x100 strip the tile has to crop. 179 of the 318 are the
-   * former — see `localArt` in `scripts/build-catalogue.mjs`.
+   * Filename under `public/thumbnails`. Most `.webp` files are our 16:9
+   * artwork; most `.jpg` files are upstream strips. Curated activities can
+   * supply their own art in either format.
    */
   thumbnail: string;
   /** Directory size upstream, for the migration script's accounting. */
@@ -122,24 +121,12 @@ export function popularityLabel(activity: Pick<Activity, "rank">): string {
   return `Catalogue #${activity.rank + 1}`;
 }
 
-/** Lower-cased and stripped of everything but letters and digits, so that
- *  "papa's" matches "papas" and "run 3" matches "run3". */
+/** Lower-cased and stripped of everything but letters and digits. */
 function normalise(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-/**
- * Substring search over title, slug, and genre, preserving the given order.
- *
- * Deliberately not fuzzy. With a few hundred short titles a plain contains-
- * match is both predictable and instant, and the ranking that matters — the
- * popular ones first — is already carried by the array's order. An empty
- * query is not a search and returns the list untouched.
- *
- * It takes the list rather than reaching for one, which is what lets the same
- * function run on the server against `ACTIVITIES` and in the browser against
- * whatever slice of it a component was handed.
- */
+/** Substring search over title, slug, and genre, preserving the given order. */
 export function filterActivities<
   T extends Pick<Activity, "title" | "slug" | "genre">,
 >(activities: readonly T[], query: string): readonly T[] {

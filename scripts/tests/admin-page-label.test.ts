@@ -14,10 +14,10 @@ test("admin current pages use readable route and activity names", () => {
   expect(adminPageLabel("/chat/conversation-id", activities)).toBe(
     "Chat · Conversation",
   );
-  expect(adminPageLabel("/experience/youtube", activities)).toBe(
-    "Experience · YouTube",
+  expect(adminPageLabel("/browse/youtube", activities)).toBe(
+    "Browse · YouTube",
   );
-  expect(adminPageLabel("/learning-simulator/html/hash", activities)).toBe(
-    "Simulators · HTML simulator",
+  expect(adminPageLabel("/emulate/html/hash", activities)).toBe(
+    "Emulate · HTML simulator",
   );
 });

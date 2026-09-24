@@ -97,7 +97,7 @@ export function PublishedHtmlLibrary({
             <div className="space-y-2">
               <CatalogueCard
                 title={entry.label}
-                href={`/learning-simulator/published/${entry._id}`}
+                href={`/emulate/published/${entry._id}`}
                 thumbnail=""
                 category="HTML simulation"
                 hueColor="#22d3ee"

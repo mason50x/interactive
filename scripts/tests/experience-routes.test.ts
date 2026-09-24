@@ -14,9 +14,9 @@ vi.mock("@/components/app/experience-chrome", () => ({
   ExperienceChrome: () => null,
 }));
 
-import Catalogue from "@/app/(app)/experience/page";
-import AppPage from "@/app/(app)/experience/[app]/page";
-import { POST } from "@/app/(app)/experience/access/route";
+import Catalogue from "@/app/(app)/browse/page";
+import AppPage from "@/app/(app)/browse/[app]/page";
+import { POST } from "@/app/(app)/browse/access/route";
 
 beforeEach(() => {
   vi.stubEnv(

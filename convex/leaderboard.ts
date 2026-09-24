@@ -3,7 +3,7 @@ import { internalMutation, query, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 const DAY = 86_400_000;
-const PAGE_PATHS = ["/activities", "/entertainment", "/chat", "/experience", "/learning-simulator", "/leaderboard"] as const;
+const PAGE_PATHS = ["/activities", "/tv", "/chat", "/browse", "/emulate", "/leaderboard"] as const;
 export const dayKey = (now: number) => Math.floor(now / DAY);
 const weekKey = (now: number) => Math.floor((dayKey(now) + 3) / 7); // Monday UTC
 const monthKey = (now: number) => new Date(now).getUTCFullYear() * 12 + new Date(now).getUTCMonth();
@@ -25,8 +25,12 @@ export async function addScore(ctx: MutationCtx, clerkId: string, metric: "playt
   }
 }
 
+/** Sections renamed since; a tab still open on an old URL counts as the new one. */
+const RENAMED: Record<string, string> = { "/entertainment": "/tv", "/experience": "/browse", "/learning-simulator": "/emulate" };
+
 export function pageKey(path: string): string | null {
-  const segment = `/${path.split("/")[1] ?? ""}`;
+  const raw = `/${path.split("/")[1] ?? ""}`;
+  const segment = RENAMED[raw] ?? raw;
   return PAGE_PATHS.includes(segment as typeof PAGE_PATHS[number]) ? segment : null;
 }
 

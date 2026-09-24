@@ -53,8 +53,23 @@ test.each([
   expect(screen(body, context)).toMatchObject({ allow: true, body });
 });
 
-test("encoded and plain visible text share duplicate detection", () => {
+test("third consecutive visible copy is refused, with no time window", () => {
   const original = screen("Hello there", context);
   if (!original.allow) throw new Error("Test text should be accepted");
-  expect(screen("H&#101;llo there", { ...context, recent: [{ at: context.now, conversationId: context.conversationId, hash: original.hash, flagged: false }] })).toEqual({ allow: false, refusal: "duplicate" });
+  const copy = { at: context.now - 24 * 60 * 60_000, conversationId: context.conversationId, hash: original.hash, flagged: false };
+  expect(screen("H&#101;llo there", { ...context, recent: [copy] }).allow).toBe(true);
+  expect(screen("H&#101;llo there", { ...context, recent: [copy, copy] })).toEqual({ allow: false, refusal: "duplicate" });
+  const different = screen("Something else", context);
+  if (!different.allow) throw new Error("Test text should be accepted");
+  expect(screen("H&#101;llo there", { ...context, recent: [copy, { ...copy, hash: different.hash }] }).allow).toBe(true);
+});
+
+test("rapid different messages are not rate limited", () => {
+  const recent = Array.from({ length: 20 }, (_, index) => ({
+    at: context.now,
+    conversationId: context.conversationId,
+    hash: String(index),
+    flagged: false,
+  }));
+  expect(screen("A new thought", { ...context, recent }).allow).toBe(true);
 });

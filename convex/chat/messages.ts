@@ -1,7 +1,7 @@
 import { addScore } from "../leaderboard";
 import { rewardChatPlaytime } from "../experience";
 import type { ChatAccount } from "./shared";
-import { adminId, announcementPublisherId, staffId } from "./admin";
+import { announcementPublisherId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { botQuotaName } from "./botConfig";
 import { lockedFor, roomControlRefusal } from "./roomControls";
@@ -816,7 +816,7 @@ async function imagesOf(
 }
 
 /**
- * Add or remove one of the six reactions.
+ * Add or remove one of the available reactions.
  *
  * The emoji set is fixed in `convex/moderation/limits.ts`, which is the entire
  * moderation story for reactions: there is nothing to screen, because there is
@@ -1058,156 +1058,3 @@ export const remove = mutation({
     await deleteMessage(ctx, message);
   },
 });
-
-/**
- * How many rows the search index is asked for before permissions are applied.
- *
- * The index cannot know which conversations the caller is in — see
- * `searchBody` in `convex/schema.ts` — so it answers from every message in
- * the deployment and this handler throws away the ones that are not the
- * caller's. That means over-fetching: the ratio of kept to scanned is worst
- * for someone in nothing but the global room, and this number is what decides
- * whether they get a full palette or three results. Bounded rather than
- * paginated because there is no "next page" in a palette — you refine the
- * query instead.
- */
-const SEARCH_SCAN = 96;
-
-/** How many survive into the palette. */
-const SEARCH_RESULTS = 6;
-
-/**
- * One message, with enough of its conversation to be named in a list that is
- * mostly not about chat.
- *
- * The conversation is described by the same three fields `conversationName`
- * in `src/lib/chat.ts` takes, so the palette labels a hit with the function
- * the conversation list and the thread header already use rather than a
- * fourth opinion about what a room is called.
- */
-export type MessageHit = {
-  _id: Id<"messages">;
-  _creationTime: number;
-  conversationId: Id<"conversations">;
-  kind: "global" | "announcements" | "admins" | "dm" | "group";
-  title?: string;
-  peerHandle?: string;
-  authorHandle: string;
-  authorClerkId: string;
-  hasImages: boolean;
-  body: string;
-};
-
-
-export const search = query({
-  args: {
-    text: v.string(), conversationId: v.optional(v.id("conversations")),
-    authorClerkId: v.optional(v.string()), sender: v.optional(v.string()),
-    after: v.optional(v.number()), before: v.optional(v.number()), hasImages: v.optional(v.boolean()),
-    limit: v.optional(v.number()),
-  },
-  returns: v.array(v.object({
-    _id: v.id("messages"), _creationTime: v.number(), conversationId: v.id("conversations"),
-    kind: v.union(v.literal("global"), v.literal("announcements"), v.literal("admins"), v.literal("dm"), v.literal("group")),
-    title: v.optional(v.string()), peerHandle: v.optional(v.string()),
-    authorHandle: v.string(), authorClerkId: v.string(), hasImages: v.boolean(), body: v.string(),
-  })),
-  handler: async (ctx, { text, conversationId, authorClerkId, sender, after, before, hasImages, limit }): Promise<MessageHit[]> => {
-    const needle = text.trim().slice(0, 500);
-    const filtered = conversationId !== undefined || authorClerkId !== undefined || Boolean(sender?.trim()) || after !== undefined || before !== undefined || hasImages !== undefined;
-    const resultLimit = limit === undefined || !Number.isFinite(limit)
-      ? (filtered ? 30 : SEARCH_RESULTS)
-      : Math.max(1, Math.min(30, Math.floor(limit)));
-    if (needle === "" && !filtered) return [];
-    if ((after !== undefined && !Number.isFinite(after)) || (before !== undefined && !Number.isFinite(before)) || (after !== undefined && before !== undefined && after >= before)) return [];
-    const profile = await callerAccount(ctx);
-    if (profile === null) return [];
-    if (conversationId !== undefined && (await membership(ctx, conversationId, profile.clerkId))?.status !== "active") return [];
-    let author = authorClerkId;
-    if (sender?.trim()) {
-      const handle = sender.trim().replace(/^@/, "").toLowerCase();
-      const person = handle === BOT_HANDLE.toLowerCase() ? { clerkId: BOT_ID } : await accountByHandle(ctx, handle);
-      if (person === null || (author !== undefined && author !== person.clerkId)) return [];
-      author = person.clerkId;
-    }
-
-    let rows: Doc<"messages">[];
-    if (needle !== "") {
-      rows = await ctx.db.query("messages").withSearchIndex("searchBody", q => {
-        let search = q.search("body", needle).eq("status", "visible");
-        if (conversationId !== undefined) search = search.eq("conversationId", conversationId);
-        if (author !== undefined) search = search.eq("authorClerkId", author);
-        return search;
-      }).take(filtered || resultLimit > SEARCH_RESULTS ? 500 : SEARCH_SCAN);
-    } else {
-      // A filter-only search reads bounded ranges of the caller's own rooms.
-      // Dates belong in the index bounds, before the scan cap is applied.
-      const rooms = conversationId === undefined
-        ? (await ctx.db.query("conversationMembers").withIndex("byUser", q => q.eq("clerkId", profile.clerkId).eq("status", "active")).take(50)).map(member => member.conversationId)
-        : [conversationId];
-      const pages = await Promise.all(rooms.map(room => ctx.db.query("messages").withIndex("byConversationStatus", q => {
-        const range = q.eq("conversationId", room).eq("status", "visible");
-        if (after !== undefined && before !== undefined) return range.gte("_creationTime", after).lt("_creationTime", before);
-        if (after !== undefined) return range.gte("_creationTime", after);
-        if (before !== undefined) return range.lt("_creationTime", before);
-        return range;
-      }).order("desc").take(SEARCH_SCAN)));
-      rows = pages.flat().sort((a, b) => b._creationTime - a._creationTime);
-    }
-
-    type Named = Pick<MessageHit, "kind" | "title" | "peerHandle">;
-    const known = new Map<string, Named | null>();
-    const hits: MessageHit[] = [];
-    for (const message of rows) {
-      if (hits.length >= resultLimit) break;
-      if (author !== undefined && message.authorClerkId !== author) continue;
-      if (after !== undefined && message._creationTime < after) continue;
-      if (before !== undefined && message._creationTime >= before) continue;
-      const pictures = (message.images?.length ?? 0) > 0;
-      if (hasImages !== undefined && pictures !== hasImages) continue;
-      let named = known.get(message.conversationId);
-      if (named === undefined) {
-        named = await nameFor(ctx, message.conversationId, profile.clerkId);
-        known.set(message.conversationId, named);
-      }
-      if (named === null) continue;
-      hits.push({
-        _id: message._id, _creationTime: message._creationTime, conversationId: message.conversationId,
-        authorHandle: message.authorClerkId === BOT_ID ? BOT_HANDLE : (await accountFor(ctx, message.authorClerkId))?.handle ?? message.authorHandle,
-        authorClerkId: message.authorClerkId, hasImages: pictures,
-        body: presentBotBody(message.body, message.authorClerkId), ...named,
-      });
-    }
-    return hits;
-  },
-});
-
-/**
- * How to label a conversation to this caller, or `null` if it is not theirs.
- *
- * The kind and the other person's id come off the caller's own member row
- * rather than the conversation document, which is the same trick the send path
- * uses: one indexed read answers both "may they see this" and "what is it",
- * and the conversation itself is only fetched for a group's title.
- */
-async function nameFor(
-  ctx: QueryCtx,
-  conversationId: Id<"conversations">,
-  clerkId: string,
-): Promise<Pick<MessageHit, "kind" | "title" | "peerHandle"> | null> {
-  const member = await membership(ctx, conversationId, clerkId);
-  if (member === null || member.status !== "active") return null;
-
-  if (member.kind === "dm") {
-    const peer =
-      member.dmPeer === undefined ? null : await accountFor(ctx, member.dmPeer);
-    return { kind: "dm", peerHandle: member.dmPeer === BOT_ID ? BOT_HANDLE : peer?.handle };
-  }
-
-  if (member.kind === "group") {
-    const conversation = await ctx.db.get(conversationId);
-    return { kind: "group", title: conversation?.title };
-  }
-
-  return { kind: member.kind };
-}

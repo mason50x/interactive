@@ -26,7 +26,7 @@ import {
 import { LibraryShell } from "./library-shell";
 import { PixelController } from "./pixel-controller";
 
-const ROOT = "/learning-simulator";
+const ROOT = "/emulate";
 
 /**
  * The Game Boy library: every program this account has progress for, from

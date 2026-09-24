@@ -34,7 +34,7 @@ export type Chat = {
   conversations: ConversationSummary[];
   /** The current server result, including pending optimistic cursor updates. */
   serverConversations: ConversationSummary[];
-  /** Unread messages in direct messages and groups. The room is not counted. */
+  /** Unread messages in direct messages. The room is not counted. */
   unread: number;
   /** Anything at all, the room's dot included. */
   hasUnread: boolean;
@@ -45,7 +45,6 @@ export type Chat = {
    */
   mentioned: boolean;
 
-  waiting: number;
   /**
    * Whether pictures may be sent. Read off the deployment — see
    * `convex/features.ts` — and `false` until the answer arrives, so the
@@ -86,7 +85,6 @@ const EMPTY: Chat = {
   unread: 0,
   hasUnread: false,
   mentioned: false,
-  waiting: 0,
   images: false,
   isAdmin: false,
   staffRoles: [],
@@ -117,7 +115,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
   const profile = useAuthedQuery(api.chat.accounts.mine, {});
   const conversations = useAuthedQuery(api.chat.conversations.list, {});
-  const invitations = useAuthedQuery(api.chat.groups.invitations, {});
   const staffRoles = useAuthedQuery(api.chat.admin.roles, {});
   const isAdmin = useAuthedQuery(api.chat.admin.mine, {});
   const features = useAuthedQuery(api.features.get, {});
@@ -225,8 +222,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return () => setTabUnread(false);
   }, [isAuthenticated, hasUnread]);
 
-  const waiting = (invitations ?? []).length;
-
   const value: Chat = {
     profile: profile ?? null,
     loading: profile === undefined,
@@ -235,7 +230,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     unread,
     hasUnread,
     mentioned,
-    waiting,
     images: features?.images ?? false,
     isAdmin: isAuthenticated && isAdmin === true,
     staffRoles: isAuthenticated ? (staffRoles ?? []) : [],

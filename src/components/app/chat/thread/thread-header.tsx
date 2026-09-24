@@ -2,7 +2,6 @@
 
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import { GroupPanel } from "@/components/app/chat/group-panel";
 import { Monogram } from "@/components/app/chat/monogram";
 import { PersonCard } from "@/components/app/chat/person-card";
 import { PeerPresence, Present } from "@/components/app/chat/presence";
@@ -120,10 +119,6 @@ export function ThreadHeader({
           {detail.kind === "dm" ? null : (
             <Present conversationId={conversationId} />
           )}
-
-          {detail.kind === "group" ? (
-            <GroupPanel conversationId={conversationId} />
-          ) : null}
 
           {detail.kind === "global" && canModerate ? (
             <RoomControls conversationId={conversationId} controls={controls} />

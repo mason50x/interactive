@@ -169,7 +169,7 @@ function ActivityFrameContent({
           positioned={false}
           title={title}
           contentLabel={variant === "tv" ? "Entertainment" : "activity"}
-          backHref={variant === "tv" ? "/entertainment" : undefined}
+          backHref={variant === "tv" ? "/tv" : undefined}
           backLabel={variant === "tv" ? "Back to Entertainment" : undefined}
           open={open}
           onToggle={() => setOpen((value) => !value)}

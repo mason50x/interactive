@@ -20,7 +20,7 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /** A temporary viewing theme; it never changes the saved appearance choice. */
 export function isEntertainmentPlayer(pathname: string): boolean {
-  return /^\/entertainment\/[^/]+\/?$/.test(pathname);
+  return /^\/tv\/[^/]+\/?$/.test(pathname);
 }
 
 function isThemePreference(value: unknown): value is ThemePreference {

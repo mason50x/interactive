@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * What a floating surface looks like, in the one place every menu, popover
  * and hint reads it from.
  *
- * A menu on a message, a popover on a name, the search's results, the
+ * A menu on a message, a popover on a name, the
  * account menu: they are the same object seen in different places, and the
  * only thing keeping them the same used to be a class string typed out in
  * nine files. The surface is one radius, one hairline, one shadow. What

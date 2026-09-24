@@ -24,12 +24,14 @@ function SegmentedControl<Value extends string>({
   value,
   onValueChange,
   options,
+  tone = "primary",
   className,
   ...props
 }: Omit<ComponentProps<"div">, "onChange"> & {
   value: Value;
   onValueChange: (value: Value) => void;
   options: readonly { value: Value; label: ReactNode; icon?: ReactNode }[];
+  tone?: "primary" | "neutral";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -79,7 +81,10 @@ function SegmentedControl<Value extends string>({
       <span
         ref={indicatorRef}
         aria-hidden="true"
-        className="pointer-events-none invisible absolute top-0 left-0 rounded-md bg-primary shadow-sm data-[ready=true]:transition-[transform,width] data-[ready=true]:duration-300 data-[ready=true]:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+        className={cn(
+          "pointer-events-none invisible absolute top-0 left-0 rounded-md shadow-sm data-[ready=true]:transition-[transform,width] data-[ready=true]:duration-300 data-[ready=true]:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+          tone === "neutral" ? "bg-surface" : "bg-primary",
+        )}
       />
       {options.map((option) => {
         const pressed = option.value === value;
@@ -92,7 +97,9 @@ function SegmentedControl<Value extends string>({
             className={cn(
               "relative z-10 flex h-full cursor-pointer items-center gap-1.5 rounded-md px-3 text-[0.8125rem] font-medium transition-colors duration-200 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none",
               pressed
-                ? "text-primary-foreground"
+                ? tone === "neutral"
+                  ? "text-foreground"
+                  : "text-primary-foreground"
                 : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
             )}
           >

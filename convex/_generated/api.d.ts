@@ -41,7 +41,6 @@ import type * as moderation_limits from "../moderation/limits.js";
 import type * as moderation_mentions from "../moderation/mentions.js";
 import type * as moderation_normalize from "../moderation/normalize.js";
 import type * as moderation_patterns from "../moderation/patterns.js";
-import type * as moderation_rate from "../moderation/rate.js";
 import type * as moderation_rules from "../moderation/rules.js";
 import type * as moderation_verdict from "../moderation/verdict.js";
 import type * as preferences from "../preferences.js";
@@ -56,8 +55,8 @@ import type * as simulator_published from "../simulator/published.js";
 import type * as simulator_publishedModel from "../simulator/publishedModel.js";
 import type * as simulator_saves from "../simulator/saves.js";
 import type * as simulator_shared from "../simulator/shared.js";
-import type * as timeoutState from "../timeoutState.js";
 import type * as timeoutPuzzles from "../timeoutPuzzles.js";
+import type * as timeoutState from "../timeoutState.js";
 import type * as timeouts from "../timeouts.js";
 import type * as users from "../users.js";
 
@@ -101,7 +100,6 @@ declare const fullApi: ApiFromModules<{
   "moderation/mentions": typeof moderation_mentions;
   "moderation/normalize": typeof moderation_normalize;
   "moderation/patterns": typeof moderation_patterns;
-  "moderation/rate": typeof moderation_rate;
   "moderation/rules": typeof moderation_rules;
   "moderation/verdict": typeof moderation_verdict;
   preferences: typeof preferences;
@@ -116,8 +114,8 @@ declare const fullApi: ApiFromModules<{
   "simulator/publishedModel": typeof simulator_publishedModel;
   "simulator/saves": typeof simulator_saves;
   "simulator/shared": typeof simulator_shared;
-  timeoutState: typeof timeoutState;
   timeoutPuzzles: typeof timeoutPuzzles;
+  timeoutState: typeof timeoutState;
   timeouts: typeof timeouts;
   users: typeof users;
 }>;

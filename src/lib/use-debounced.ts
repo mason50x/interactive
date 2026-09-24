@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 /**
  * A value, `delay` milliseconds behind the one it was given.
  *
- * For a search box feeding a query: the box updates on every keystroke, the
+ * For a text field feeding a query: the field updates on every keystroke, the
  * query waits for the typing to pause. The returned value starts equal to the
  * first one it sees, so nothing renders an empty step before the first tick.
  *

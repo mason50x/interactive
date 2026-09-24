@@ -224,11 +224,10 @@ export function Typing({ typists }: { typists: Typist[] }) {
               className="typing-in relative rounded-3xl px-3.5 py-2"
               style={{ "--i": faces.length } as CSSProperties}
             >
-              {/* The same bubble a message from them is drawn in, behind the
-                  dots rather than around them — see `.bubble-theirs`. */}
+              {/* The same solid fill as a message from them, behind the dots. */}
               <span
                 aria-hidden
-                className="bubble-theirs absolute inset-0 rounded-3xl border bg-surface-muted"
+                className="absolute inset-0 rounded-3xl bg-surface-muted"
               />
               <span
                 aria-hidden

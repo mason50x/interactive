@@ -103,7 +103,7 @@ export function EntertainmentSetup({
               We need some permissions
             </h1>
             <p className="mt-4 max-w-sm text-base leading-relaxed text-muted-foreground">
-              Follow the guide{" "}
+              Follow the steps{" "}
               <span className="hidden lg:inline">on the right</span>
               <span className="lg:hidden">below</span> to set up entertainment.
             </p>
@@ -141,33 +141,56 @@ export function EntertainmentSetup({
               )}
             </div>
           </div>
-          <figure className="min-w-0">
-            <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                poster="/entertainment-setup/enable-cookies-poster.jpg"
-                aria-label="Video guide: allow third-party cookies for this site"
-                className="aspect-[1280/966] w-full"
-              >
-                <source
-                  src="/entertainment-setup/enable-cookies.mp4"
-                  type="video/mp4"
-                />
-                <track
-                  kind="captions"
-                  src="/entertainment-setup/enable-cookies.vtt"
-                  srcLang="en"
-                  label="English"
-                  default
-                />
-                Your browser cannot play this video.
-              </video>
-            </div>
-          </figure>
+          <article className="min-w-0 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Chrome · desktop
+            </p>
+            <h2 className="mt-2 text-xl font-semibold">
+              Allow this site to use third-party cookies
+            </h2>
+            <ol className="mt-6 list-decimal space-y-4 pl-5 text-sm leading-relaxed marker:font-semibold">
+              <li>
+                Sign in to{" "}
+                <a
+                  className="font-medium underline underline-offset-2"
+                  href="https://drive.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Google Drive
+                </a>{" "}
+                in this browser.
+              </li>
+              <li>
+                Open Chrome’s <strong>⋮ menu</strong>, then{" "}
+                <strong>Settings</strong> →{" "}
+                <strong>Privacy and security</strong> →{" "}
+                <strong>Third-party cookies</strong>.
+              </li>
+              <li>
+                Under <strong>Sites allowed to use third-party cookies</strong>,
+                choose <strong>Add</strong>. Enter this site’s address from the
+                tab, without a path, and save.
+              </li>
+              <li>
+                Return to this tab and choose{" "}
+                <strong>I’ve enabled it — continue</strong>.
+              </li>
+            </ol>
+            <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
+              If Chrome is managed by a school or workplace, an administrator
+              may control this setting. You can remove the exception later in
+              the same settings page.
+            </p>
+            <a
+              className="mt-4 inline-block text-xs font-medium underline underline-offset-2"
+              href="https://support.google.com/chrome/answer/95647"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google Chrome’s current instructions ↗
+            </a>
+          </article>
         </section>
       )}
     </>

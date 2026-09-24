@@ -31,7 +31,7 @@ import type { SettingsPage } from "@/lib/preferences";
  * it in this tree, under `PreferencesProvider`, with Clerk none the wiser.
  *
  * `open` takes the page to land on. Both doors — the row in the account menu
- * and the search's "account" result — go through here, because the pages have
+ * go through here, because the pages have
  * to be registered on every call: `openUserProfile` with no custom pages
  * would open the same modal one page short.
  */

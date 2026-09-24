@@ -21,17 +21,6 @@
   }
 }
 
-@utility rail-wide {
-  transition:
-    background-color 150ms,
-    color 150ms;
-}
-@utility rail-narrow {
-  transition:
-    background-color 150ms,
-    color 150ms;
-}
-
 /*
  * shadcn's token vocabulary, mapped onto our palette rather than its neutral
  * defaults. Two mappings are worth knowing:
@@ -326,19 +315,6 @@
     font-weight: 600;
   }
 
-  /* Half a step down from `.text-display`, for the two headings that carry it
-     at full page-title size — 600 reads heavy at 2.75rem in a way it does not
-     at the 1.5rem the utility is also used at. Inter is loaded as a variable
-     font with no pinned weight, so 550 is a real instance rather than a
-     rounded one.
-
-     It lives here rather than as `font-medium` on the element because this
-     block is emitted after Tailwind's own weight utilities and `.text-display`
-     would win the cascade against them. */
-  .text-display-title {
-    font-weight: 550;
-  }
-
   .text-serif-display {
     font-family: var(--font-serif), Georgia, "Times New Roman", serif;
     font-weight: 400;
@@ -362,7 +338,7 @@
    * account's accent instead of being a second, permanent blue. The mix
    * percentages are what was picked by eye; the hue is not.
    *
-   * This face belongs to one element that `AppSidebar` slides between rows,
+   * This face belongs to one element that `AppHeader` slides between rows,
    * not to the rows themselves. A gradient cannot be interpolated, so a face
    * drawn on each row can only cut from one to the next, and a cut across the
    * gap between two rows reads as the selection jumping.
@@ -518,100 +494,32 @@
       0 1px 2px rgba(0, 0, 0, 0.45);
   }
 
-  /*
-   * Message bubbles, built the way the rail's selected pill is built.
-   *
-   * Same three parts, same order, for the same reason: a face lit from above,
-   * a specular line along the top edge, and a border a shade darker than the
-   * foot of the gradient so the bubble sits on the thread rather than glows
-   * off it. A thread is a column of small objects and the rail is a column of
-   * small objects, and one of them looking pressed out of plastic while the
-   * other is a flat tint is the kind of difference nobody names and everybody
-   * sees.
-   *
-   * Yours mixes off `--primary`, so it is the account's accent and moves when
-   * that does — the same mix percentages as `.nav-pill`, because your messages
-   * and your selected page are the same object in two places.
-   *
-   * Everybody else's mixes off `--surface-muted`, and is quieter on purpose:
-   * the same construction with the contrast taken out of it. The highlight is
-   * nearly white in the light theme because it is a light grey catching light,
-   * and almost nothing in the dark one, where a 30% white line on #1f1f1f is
-   * a stripe rather than a rim.
-   *
-   * The `bg-*` utility stays on the element under all of this. The gradient
-   * covers it, but it is what the bubble is if the gradient does not paint —
-   * and it is what the text colour was picked against.
-   */
+  /* The bubble and its tail share one flat fill. */
   .bubble-mine {
-    background-image: linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--primary) 88%, #ffffff),
-      color-mix(in oklab, var(--primary) 93%, #000000)
-    );
-    border-color: color-mix(in oklab, var(--primary) 84%, #000000);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.12),
-      0 1px 2px
-        color-mix(
-          in oklab,
-          color-mix(in oklab, var(--primary) 50%, #000000) 30%,
-          transparent
-        );
+    --bubble-fill: var(--primary);
   }
 
   .bubble-theirs {
-    background-image: linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--surface-muted) 86%, #ffffff),
-      color-mix(in oklab, var(--surface-muted) 97%, #000000)
-    );
-    border-color: color-mix(in oklab, var(--surface-muted) 87%, #000000);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.04),
-      0 1px 2px rgba(15, 15, 15, 0.07);
+    --bubble-fill: var(--surface-muted);
   }
 
-  :root[data-theme="dark"] .bubble-mine {
-    background-image: linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--primary) 94%, #ffffff),
-      color-mix(in oklab, var(--primary) 90%, #000000)
-    );
-    border-color: color-mix(in oklab, var(--primary) 72%, #000000);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-      0 1px 2px rgba(0, 0, 0, 0.45);
+  .bubble-mine,
+  .bubble-theirs {
+    background-color: var(--bubble-fill);
   }
 
-  :root[data-theme="dark"] .bubble-theirs {
-    background-image: linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--surface-muted) 92%, #ffffff),
-      color-mix(in oklab, var(--surface-muted) 94%, #000000)
-    );
-    border-color: color-mix(in oklab, var(--surface-muted) 60%, #000000);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-      0 1px 2px rgba(0, 0, 0, 0.4);
+  .bubble-tail {
+    fill: var(--bubble-fill);
   }
 
-  /*
-   * Somebody else's bubble that says your name.
-   *
-   * The rim goes to the accent and nothing else moves: the bubble is still
-   * theirs, still grey, still on the left. A tinted fill was tried and read
-   * as a different kind of message rather than the same message with your
-   * name in it. Declared after both `.bubble-theirs` rules and with a dark
-   * rule of its own, because the dark rule above outranks a lone class.
-   */
+  /* A subtle solid tint marks messages that mention the reader. */
   .bubble-theirs.bubble-named,
   :root[data-theme="dark"] .bubble-theirs.bubble-named {
-    border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+    --bubble-fill: color-mix(
+      in oklab,
+      var(--surface-muted) 90%,
+      var(--primary)
+    );
   }
 
   /*
@@ -663,6 +571,23 @@
    * pill with three words of placeholder in it — the field read as a slightly
    * different black, and the eye could not find the edge to click.
    */
+  .thread-composer-footer::before {
+    content: "";
+    position: absolute;
+    inset: -5rem 0 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in oklab, var(--background) 90%, transparent) 55%,
+      var(--background)
+    );
+    backdrop-filter: blur(24px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40%);
+    mask-image: linear-gradient(to bottom, transparent, #000 40%);
+  }
+
   :root[data-theme="dark"] .composer,
   :root[data-theme="dark"] .composer-skin {
     background-color: var(--surface-muted);
@@ -670,11 +595,46 @@
     box-shadow: var(--elevation-card);
   }
 
-  /* Lit by the field alone: the plus, the microphone and Send take focus
-     too, and the box turning blue for a menu opening reads as the wrong
-     thing being pressed. */
-  :root[data-theme="dark"] .composer:has(textarea:focus) {
-    border-color: var(--primary);
+  .plus-menu-popup.popup-slide {
+    width: min(16.5rem, calc(100vw - 1rem));
+    overflow: hidden;
+    /* 18px is the centre of the 36px plus; 32px reaches from the popup's
+       bottom edge across the 14px gap and another 18px into the trigger. */
+    transform-origin: 18px calc(100% + 32px);
+    transition:
+      width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 220ms ease-out;
+  }
+
+  .plus-menu-popup[data-view="emojis"] {
+    width: min(20rem, calc(100vw - 1rem));
+  }
+
+  .plus-menu-actions,
+  .plus-menu-emojis {
+    animation: plus-menu-content-in 180ms ease-out both;
+  }
+
+  @keyframes plus-menu-content-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .plus-menu-popup.popup-slide {
+      transition: none;
+    }
+
+    .plus-menu-actions,
+    .plus-menu-emojis {
+      animation: none;
+    }
   }
 
   /*
@@ -718,6 +678,11 @@
     transform: translateY(0.625rem);
   }
 
+  .plus-menu-popup.popup-slide[data-starting-style],
+  .plus-menu-popup.popup-slide[data-ending-style] {
+    transform: scale(0.12);
+  }
+
   /* The same thing for a popup that hangs below its trigger instead of above
      it: it starts a little higher and settles downward, so it still reads as
      having come out of the thing that was pressed rather than up off the page.
@@ -727,6 +692,84 @@
   .popup-drop[data-ending-style] {
     opacity: 0;
     transform: translateY(-0.625rem);
+  }
+
+  .reaction-picker {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 180ms ease-out;
+    transform-origin: var(--transform-origin);
+  }
+
+  .reaction-picker[data-starting-style],
+  .reaction-picker[data-ending-style] {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.96);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reaction-picker {
+      transition: none;
+    }
+  }
+
+  .reaction-pill {
+    border-color: var(--border);
+    background-color: var(--surface);
+  }
+
+  .reaction-pill[data-mine="true"] {
+    border-color: color-mix(in oklab, var(--reaction-color) 75%, var(--border));
+    background-color: color-mix(
+      in oklab,
+      var(--reaction-color) 14%,
+      var(--surface)
+    );
+  }
+
+  .reaction-pill:not([data-mine="true"]):hover {
+    background-color: color-mix(
+      in oklab,
+      var(--reaction-color) 7%,
+      var(--surface)
+    );
+  }
+
+  .reaction-emoji {
+    background-color: color-mix(
+      in oklab,
+      var(--reaction-color) 28%,
+      var(--surface)
+    );
+  }
+
+  @keyframes reaction-count-enter {
+    from {
+      opacity: 0;
+      transform: translateY(45%);
+    }
+  }
+
+  @keyframes reaction-count-exit {
+    to {
+      opacity: 0;
+      transform: translateY(-45%);
+    }
+  }
+
+  .reaction-count-enter {
+    animation: reaction-count-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .reaction-count-exit {
+    animation: reaction-count-exit 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reaction-count-enter,
+    .reaction-count-exit {
+      animation: none;
+    }
   }
 
   /*
@@ -1192,127 +1235,6 @@
   }
 }
 
-/* The orb of pixels that turns in the rail's search panel before anything has
-   been typed.
-
-   Fifty square dots placed on an actual sphere and spun, rather than a circle
-   of dots pretending. Each dot's transform is the standard spherical
-   placement — swing by longitude, tilt by latitude, push out by the radius —
-   inside a `preserve-3d` shell under a short `perspective`, so the browser
-   does the projection. That projection is most of what sells it: the dots
-   bunch up at the silhouette and thin out across the middle on their own, and
-   the near face spreads wider than the far one, neither of which is written
-   anywhere here.
-
-   ## The shading is stepped, not smooth
-
-   A dot cannot be dimmed by its own depth in CSS — there is no way to read a
-   computed z back out. But the depth is knowable in advance: a dot at
-   longitude L faces the camera exactly when the shell has turned by -L, so its
-   brightness over one revolution is a fixed cycle that is merely *offset* by
-   where it sits. That offset is `--phase`, and it is the whole mechanism —
-   every dot runs the identical animation and only the delay differs.
-
-   The cycle steps through eight fixed levels rather than fading between them,
-   which is deliberate and is what keeps this in the same world as the square,
-   whole-pixel dots: quantised shading is how a sphere is drawn with a limited
-   palette, and eight bands read as banding on purpose rather than as a
-   gradient that failed.
-
-   Latitude is left out of the brightness on purpose. A dot near a pole is
-   genuinely closer to the axis and would shade to nothing, which is correct
-   and looks worse — the poles are the part that makes the shape legible as a
-   ball rather than a barrel, and they are worth keeping lit.
-
-   ## Stilled
-
-   Under `prefers-reduced-motion` the blanket rule at the foot of this file
-   collapses both animations, and every dot falls back to the `--rest` opacity
-   written on it: the same eight-level shading, frozen at the rotation the
-   sphere starts at. So the still version is a lit orb rather than a flat
-   scatter of identical dots — which is the difference between a stilled
-   animation and a broken one. */
-@keyframes pixel-orb-spin {
-  from {
-    transform: rotateX(-16deg) rotateY(0deg);
-  }
-  to {
-    transform: rotateX(-16deg) rotateY(360deg);
-  }
-}
-
-@keyframes pixel-orb-face {
-  0% {
-    opacity: 1;
-  }
-  12.5% {
-    opacity: 0.85;
-  }
-  25% {
-    opacity: 0.6;
-  }
-  37.5% {
-    opacity: 0.38;
-  }
-  50% {
-    opacity: 0.2;
-  }
-  62.5% {
-    opacity: 0.38;
-  }
-  75% {
-    opacity: 0.6;
-  }
-  87.5% {
-    opacity: 0.85;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.pixel-orb {
-  position: relative;
-  width: 3.5rem;
-  height: 3.5rem;
-  /* Shallow enough to be visible and long enough not to fish-eye the near
-     face. The sphere is 44px across inside a 56px box; anything under about
-     150px here starts bending it. */
-  perspective: 200px;
-}
-
-.pixel-orb-shell {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  /* Written as a base as well as animated, so the tilt survives the animation
-     being collapsed. A sphere seen exactly edge-on at the equator has its two
-     poles hidden behind the middle, which is the one angle at which a point
-     cloud reads as a ring again. */
-  transform: rotateX(-16deg);
-  animation: pixel-orb-spin 6s linear infinite;
-}
-
-.pixel-orb-dot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  /* Half the dot, so the placement below measures from the sphere's centre
-     rather than from the dot's top-left corner. */
-  margin: -1.5px 0 0 -1.5px;
-  background: currentColor;
-  opacity: var(--rest);
-  transform: rotateY(calc(var(--lon) * 1deg)) rotateX(calc(var(--lat) * 1deg))
-    translateZ(1.375rem);
-  animation: pixel-orb-face 6s steps(1, end) infinite;
-  /* Negative, so every dot is already lit correctly on the first frame. The
-     positive form of the same offset would open with a dark sphere that
-     brightens into place over six seconds. */
-  animation-delay: calc((var(--phase) - 1) * 6s);
-}
-
 /* The speech bubble that stands in for a conversation nobody has started yet,
    in the empty thread.
 
@@ -1544,21 +1466,6 @@
     stroke-dashoffset: 4;
   }
 }
-/* The wavy rule in the release sheet, drawn from left to right as the sheet
-   arrives. Starts a beat after the panel so the line is seen being drawn on
-   a page that is already there. */
-@keyframes squiggle-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-.squiggle-draw {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: squiggle-draw 6000ms cubic-bezier(0.45, 0, 0.25, 1) 200ms forwards;
-}
-
 /* The disclosure settles with a small spring overshoot. Each changed clock
    digit rolls on its own; the stable digits never move. */
 .playtime-spring {
@@ -1637,11 +1544,6 @@
   ::view-transition-old(rail-playtime),
   ::view-transition-new(rail-playtime) {
     animation-duration: 0.001ms !important;
-  }
-
-  .squiggle-draw {
-    animation: none;
-    stroke-dashoffset: 0;
   }
 }
 

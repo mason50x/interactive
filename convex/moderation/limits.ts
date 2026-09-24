@@ -65,47 +65,11 @@ export const DELETE_WINDOW_MS = 30 * 1000;
 /**
  * How many recent sends are remembered on the sender's own profile.
  *
- * This one bounded array is the entire cross-message memory of the system —
- * rate windows, duplicate detection, broadcast detection and repeat-targeting
- * all read it, and none of them needs a table or a second document because of
- * it. Twenty covers the longest window below with room to spare.
+ * This one bounded array is the entire cross-message memory of the system.
+ * Duplicate detection and broadcast detection read it without another table.
+ * Twenty entries cover the recent send history with room to spare.
  */
 export const RECENT_RING = 20;
-
-/**
- * The rate windows, by trust tier. Each is "at most `count` in `ms`".
- *
- * Two windows per tier rather than one: the short window stops a paste-bomb,
- * the long one stops a patient flood that stays under it. A tier only ever
- * relaxes these — there is no tier that can send faster than `trusted`.
- */
-export const RATES = {
-  fresh: [
-    { count: 3, ms: 10_000 },
-    { count: 20, ms: 5 * 60_000 },
-  ],
-  regular: [
-    { count: 5, ms: 10_000 },
-    { count: 40, ms: 5 * 60_000 },
-  ],
-  trusted: [
-    { count: 8, ms: 10_000 },
-    { count: 80, ms: 5 * 60_000 },
-  ],
-} as const;
-
-export type Tier = keyof typeof RATES;
-
-/** What it takes to stop being new, and what it takes to be trusted. */
-export const TRUST = {
-  freshUntilMs: 24 * 60 * 60 * 1000,
-  freshUntilMessages: 10,
-  trustedAfterMs: 7 * 24 * 60 * 60 * 1000,
-  trustedAfterMessages: 200,
-};
-
-/** Saying the same thing twice inside this window is saying it twice. */
-export const DUPLICATE_WINDOW_MS = 10 * 60_000;
 
 /** The same text into this many conversations this fast is a broadcast. */
 export const BROADCAST = { conversations: 3, ms: 5 * 60_000 };
@@ -129,10 +93,13 @@ export const ALLOWED_LINK_HOSTS: ReadonlySet<string> = new Set<string>([]);
 export const GLOBAL_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Reaction emoji, fixed here so there is nothing about them to moderate. */
-export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as const;
+export const REACTIONS = [
+  "👍", "❤️", "😂", "😮", "😢", "🔥",
+  "🎉", "👏", "🙌", "🤔", "😍", "👎",
+] as const;
 
 /** The most distinct reactions one message may carry. */
-export const MAX_REACTION_KINDS = 6;
+export const MAX_REACTION_KINDS = 12;
 
 /** The most reactors recorded per emoji. Past this, only the count moves. */
 export const MAX_REACTORS = 100;

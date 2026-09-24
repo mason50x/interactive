@@ -3,9 +3,13 @@ import {
   CpuChipIcon,
   ChatBubbleLeftRightIcon,
   GlobeAltIcon,
+  HomeIcon,
   TrophyIcon,
 } from "@heroicons/react/24/outline";
-import { FilmIcon as FilmIconSolid, TrophyIcon as TrophyIconSolid } from "@heroicons/react/24/solid";
+import {
+  FilmIcon as FilmIconSolid,
+  TrophyIcon as TrophyIconSolid,
+} from "@heroicons/react/24/solid";
 import type { IconPair } from "@/lib/icons";
 import { ControllerIcon } from "@/components/app/controller-icon";
 import {
@@ -13,6 +17,7 @@ import {
   ChipIconSolid,
   ControllerIconSolid,
   GlobeIconSolid,
+  HomeIconSolid,
 } from "@/components/app/nav-icons";
 
 export type NavItem = {
@@ -23,19 +28,25 @@ export type NavItem = {
    * Whether this row shows an unread dot.
    *
    * A flag rather than a number, because the number is not the rail's to know:
-   * `AppSidebar` reads it from `useChat()` and the rail stays a list of
+   * `AppHeader` reads it from `useChat()` and the rail stays a list of
    * destinations. Only one row has ever wanted it, and a second would be one
    * more line here rather than a different shape.
    */
   unread?: boolean;
 };
 
-/** The catalogue. Has a search box of its own, separate from the rail's. */
+/** The activities catalogue, with its own search box. */
 export const ACTIVITIES_HREF = "/activities";
 
-const SIMULATOR_HREF = "/learning-simulator";
+const SIMULATOR_HREF = "/emulate";
 
 export const CHAT_HREF = "/chat";
+
+/** Where a signed-in session lands: the logo, sign-in and `/` all go here. */
+export const HOME_HREF = "/home";
+
+/** Shown as an icon in the header rather than in the centre links. */
+export const LEADERBOARD_HREF = "/leaderboard";
 
 /**
  * Every destination inside the signed-in app, in the order the rail shows
@@ -52,9 +63,14 @@ export const navItems: NavItem[] = [
     icon: { outline: ControllerIcon, solid: ControllerIconSolid },
   },
   {
-    label: "Entertainment",
-    href: "/entertainment",
+    label: "TV",
+    href: "/tv",
     icon: { outline: FilmIcon, solid: FilmIconSolid },
+  },
+  {
+    label: "Home",
+    href: HOME_HREF,
+    icon: { outline: HomeIcon, solid: HomeIconSolid },
   },
   {
     label: "Chat",
@@ -67,16 +83,16 @@ export const navItems: NavItem[] = [
   },
   {
     label: "Leaderboard",
-    href: "/leaderboard",
+    href: LEADERBOARD_HREF,
     icon: { outline: TrophyIcon, solid: TrophyIconSolid },
   },
   {
-    label: "Experience",
-    href: "/experience",
+    label: "Browse",
+    href: "/browse",
     icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
   },
   {
-    label: "Simulators",
+    label: "Emulate",
     href: SIMULATOR_HREF,
     icon: { outline: CpuChipIcon, solid: ChipIconSolid },
   },

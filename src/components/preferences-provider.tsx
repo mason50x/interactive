@@ -30,11 +30,14 @@ type PreferencesContextValue = {
   preferences: Preferences;
   /** Writes one or more settings. Lands on the page before the server sees it. */
   update: (patch: Partial<Preferences>) => void;
+  /** The server has answered for this visitor, so a `null` is a real "unset". */
+  loaded: boolean;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue>({
   preferences: defaultPreferences,
   update: () => {},
+  loaded: false,
 });
 
 /**
@@ -73,12 +76,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         {},
         {
           // `??` and not `||`: `false` is a value here, not an absence.
-          constellation: args.constellation ?? current?.constellation,
           accent: args.accent ?? current?.accent,
           panicEnabled: args.panicEnabled ?? current?.panicEnabled,
           panicKey: args.panicKey ?? current?.panicKey,
           panicUrl: args.panicUrl ?? current?.panicUrl,
           tabMask: args.tabMask ?? current?.tabMask,
+          lunch: args.lunch ?? current?.lunch,
         },
       );
     },
@@ -113,11 +116,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const value = useMemo<PreferencesContextValue>(
     () => ({
       preferences,
-      update: (patch) => {
-        void save(patch);
+      loaded: !authLoading && row !== undefined,
+      update: ({ lunch, ...patch }) => {
+        void save({ ...patch, ...(lunch ? { lunch } : {}) });
       },
     }),
-    [preferences, save],
+    [preferences, save, authLoading, row],
   );
 
   // The document is already wearing `preferencesScript`'s answer, which came
@@ -187,7 +191,7 @@ function useCachedPreferences(): {
  * Bound in the capture phase so it runs before anything on the page can
  * swallow the keystroke — a menu that traps Escape, an activity canvas that eats
  * every key — and deliberately *not* skipped while a field has focus. A panic
- * key that does not work because the cursor is in the search box is a panic
+ * key that does not work because the cursor is in an input field is a panic
  * key that does not work; the sheet warns about bare letters for exactly this
  * reason, rather than quietly refusing to fire.
  *

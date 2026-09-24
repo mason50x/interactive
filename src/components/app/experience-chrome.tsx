@@ -7,18 +7,20 @@ import {
   HomeIcon,
   LockClosedIcon,
   MagnifyingGlassIcon,
+  EllipsisVerticalIcon,
+  Cog6ToothIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   PlaytimeBlocked,
-  ExperienceQuotaDonut,
   useExperienceQuota,
 } from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
 import { Button } from "@/components/ui/button";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import type { ExperienceApp } from "@/lib/experience";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +65,7 @@ export function ExperienceChrome({
     let stopped = false;
     async function refresh() {
       try {
-        const response = await fetch("/experience/access", { method: "POST" });
+        const response = await fetch("/browse/access", { method: "POST" });
         if (stopped) return;
         if (!response.ok) {
           if (response.status === 401 || response.status === 403)
@@ -143,7 +145,10 @@ export function ExperienceChrome({
           {tabs.map((tab, index) => {
             const service = services.find((item) => item.id === tab.appId);
             const selected = tab.id === activeId;
-            const label = service?.label ?? "Start";
+            const label =
+              tab.appId === "__settings"
+                ? "Settings"
+                : (service?.label ?? "Start");
             return (
               <div
                 key={tab.id}
@@ -177,7 +182,9 @@ export function ExperienceChrome({
                   }}
                   className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-t-xl px-3 text-sm outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-ring"
                 >
-                  {service ? (
+                  {tab.appId === "__settings" ? (
+                    <Cog6ToothIcon className="size-4 shrink-0" />
+                  ) : service ? (
                     <ExperienceAppIcon
                       id={service.id}
                       className="size-4 shrink-0"
@@ -229,7 +236,12 @@ export function ExperienceChrome({
         </ChromeButton>
         <div
           className="mx-1 flex h-8 min-w-0 flex-1 items-center gap-2 rounded-full bg-muted px-3 text-sm"
-          title={app?.start ?? "Interoogle Start"}
+          title={
+            app?.start ??
+            (active.appId === "__settings"
+              ? "Interoogle Settings"
+              : "Interoogle Start")
+          }
         >
           {app ? (
             <LockClosedIcon className="size-3.5 shrink-0 text-muted-foreground" />
@@ -237,10 +249,26 @@ export function ExperienceChrome({
             <MagnifyingGlassIcon className="size-3.5 shrink-0 text-muted-foreground" />
           )}
           <span className="truncate text-muted-foreground">
-            {app ? new URL(app.start).host : "Interoogle / Start"}
+            {app
+              ? new URL(app.start).host
+              : active.appId === "__settings"
+                ? "interoogle://settings"
+                : "Interoogle / Start"}
           </span>
         </div>
-        <ExperienceQuotaDonut quota={quota} container={stage} />
+        <Menu>
+          <MenuTrigger
+            aria-label="Browser menu"
+            className="grid size-9 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <EllipsisVerticalIcon className="size-5" />
+          </MenuTrigger>
+          <MenuContent side="bottom" align="end" className="w-48">
+            <MenuItem onClick={() => openService("__settings")}>
+              <Cog6ToothIcon className="size-4" /> Settings
+            </MenuItem>
+          </MenuContent>
+        </Menu>
         {canFull && (
           <ChromeButton
             label={full ? "Exit fullscreen" : "Fullscreen"}
@@ -267,7 +295,9 @@ export function ExperienceChrome({
               hidden={tab.id !== activeId}
               className="h-full"
             >
-              {!service ? (
+              {tab.appId === "__settings" ? (
+                <BrowserSettings />
+              ) : !service ? (
                 <StartPage services={services} onOpen={openService} />
               ) : !service.src ? (
                 <div
@@ -388,6 +418,68 @@ function StartPage({
           No services match “{query}”.
         </p>
       )}
+    </div>
+  );
+}
+
+function BrowserSettings() {
+  const [appearance, setAppearance] = useState("System default");
+  const [search, setSearch] = useState("Interoogle");
+  return (
+    <div className="h-full overflow-y-auto bg-background px-6 py-10 text-foreground sm:px-12">
+      <div className="mx-auto max-w-2xl">
+        <div className="flex items-center gap-3 border-b border-border pb-6">
+          <Cog6ToothIcon className="size-7 text-muted-foreground" />
+          <div>
+            <h1 className="text-2xl font-semibold">Settings</h1>
+            <p className="text-sm text-muted-foreground">
+              Your Interoogle browser experience
+            </p>
+          </div>
+        </div>
+        <section className="py-7">
+          <h2 className="mb-4 text-sm font-semibold">Appearance</h2>
+          <label className="flex items-center justify-between gap-4 rounded-xl border border-border p-4 text-sm">
+            Theme
+            <select
+              value={appearance}
+              onChange={(event) => setAppearance(event.target.value)}
+              className="rounded-lg border border-border bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option>System default</option>
+              <option>Light</option>
+              <option>Dark</option>
+            </select>
+          </label>
+        </section>
+        <section className="border-t border-border py-7">
+          <h2 className="mb-4 text-sm font-semibold">Search engine</h2>
+          <label className="flex items-center justify-between gap-4 rounded-xl border border-border p-4 text-sm">
+            Search used in the address bar
+            <select
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="rounded-lg border border-border bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option>Interoogle</option>
+              <option>Google</option>
+              <option>Bing</option>
+            </select>
+          </label>
+        </section>
+        <section className="border-t border-border py-7">
+          <h2 className="mb-4 text-sm font-semibold">Privacy and security</h2>
+          <div className="rounded-xl border border-border p-4 text-sm">
+            <p className="font-medium">Safe browsing</p>
+            <p className="mt-1 text-muted-foreground">
+              Standard protection is on for this experience.
+            </p>
+          </div>
+        </section>
+        <p className="text-xs text-muted-foreground">
+          These controls preview a browser settings page for the experience.
+        </p>
+      </div>
     </div>
   );
 }

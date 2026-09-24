@@ -66,7 +66,7 @@ export function senderState(row: Doc<"chatSenders"> | null): SenderState {
  * Drop the sender row, if there is one.
  *
  * Called wherever a profile is deleted or emptied. The two are one identity and
- * they end together: a ring left behind is a rate limit applied to whoever
+ * they end together: a ring left behind is a spam history applied to whoever
  * claims the handle next, and a surviving `messagesSent` is the trust tier of an
  * account that no longer exists.
  */
@@ -81,10 +81,8 @@ export async function clearSender(
 /**
  * Push one send onto the ring, dropping the oldest.
  *
- * Twenty entries, oldest first out. Every cross-message rule in
- * `convex/moderation/rules.ts` reads this array and none of them looks further
- * back than ten minutes, so twenty is generous even for somebody sending as
- * fast as the rate limit allows.
+ * Twenty entries, oldest first out. The duplicate rule reads the last two;
+ * the broadcast and optional room slow-mode rules use recent sends.
  */
 export function pushRecent(
   recent: RecentSend[],

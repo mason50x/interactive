@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Monogram } from "@/components/app/chat/monogram";
 import {
   Tooltip,
@@ -22,6 +23,7 @@ export function Present({
   const here = useMutation(api.chat.presence.here);
   const gone = useMutation(api.chat.presence.gone);
   const presence = useQuery(api.chat.presence.count, { conversationId });
+  const { user } = useUser();
 
   /**
    * Beat while the tab is in front of somebody, and stop when it is not.
@@ -76,14 +78,23 @@ export function Present({
   // only state `conversations.get` would be drawing a header for at all.
   if (presence === undefined || presence === null) return null;
 
-  const remaining = Math.max(0, presence.present - presence.people.length);
+  const others = presence.people.filter(
+    (person) => person.clerkId !== user?.id,
+  );
+  const otherCount = Math.max(
+    0,
+    presence.present -
+      (presence.people.some((person) => person.clerkId === user?.id) ? 1 : 0),
+  );
+  if (otherCount === 0) return null;
+  const remaining = Math.max(0, otherCount - others.length);
   return (
     <TooltipProvider delay={250}>
       <div
         className="hidden shrink-0 items-center sm:flex"
-        aria-label={`${presence.present}${presence.capped ? "+" : ""} online in this conversation`}
+        aria-label={`${otherCount}${presence.capped ? "+" : ""} other people online in this conversation`}
       >
-        {presence.people.map((person, index) => (
+        {others.map((person, index) => (
           <Tooltip key={person.clerkId}>
             <TooltipTrigger
               render={

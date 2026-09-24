@@ -1,6 +1,6 @@
 # Shared daily playtime
 
-Every account, including staff, receives 1,800 seconds by default at 7:35 a.m.
+Every account, including staff, receives 1,800 seconds by default at 7:30 a.m.
 Central Time (`America/Chicago`). Head Moderators and CEOs can set a user's
 daily base limit to any whole number from 20 to 160 minutes, or restore the
 default. A Head Moderator cannot change a CEO's limit. Changing a limit during
@@ -28,29 +28,27 @@ exhaustion notice with a chat link. Existing moderation timeouts are separate.
 ## Chat rewards
 
 Only the normal, authenticated, accepted chat-send mutation can award time.
-Each eligible send adds 120 seconds immediately, including while time remains;
+Each eligible send adds 30 seconds immediately, including while time remains;
 rewards stack within the day. A chat before the first player session creates that
 day's allowance record. Retries, edits, rejected messages, and bot replies cannot
 independently award time.
 
 Most normal text messages qualify, including one-word replies such as “hi,”
 “ok,” and “thanks.” There are no minimum word-count, vocabulary-diversity, or
-sentence-length requirements. At least two letters are needed after normalizing
+sentence-length requirements. At least one word with two letters is needed after normalizing
 Unicode and removing links and mentions. Empty, numeric-only, emoji-only,
 link-only, mention-only, repeated-character spam, repeated single-word filler,
 and messages over 2,000 characters do not qualify. Text accompanying a link,
 mention, or emoji can qualify; ordinary chat moderation still applies.
 
-SHA-256 receipts stop an account from earning twice for the same message sent
-again within 30 minutes, ignoring case, formatting characters, punctuation, and
-numeric suffixes. That window targets repeated spam attempts, not conversation:
-the same “ok” or “thanks” earns again once the window has passed, in the same
-thread or any other. An 80% word overlap check against its last 50 rewards also
-rejects near-copies inside the window when both messages have at least eight
-words. Short replies only use exact normalized duplicate checks, so ordinary
-overlapping phrases are not mistaken for spam. Receipts survive chat deletion
-and daily resets; a daily job removes receipts after a day, and account deletion removes them in bounded batches. Checks and credit share one Convex transaction, so concurrent
-sends cannot award twice for the same message.
+The first two consecutive matching messages can earn time. A third similar
+message earns nothing until another qualifying message breaks the run. Case,
+punctuation, numeric suffixes, links, and mentions do not make a new message.
+An 80% word overlap also catches near-copies when both messages have at least
+eight words. Short replies use exact normalized matching. There is no reward
+cooldown or daily cap. Receipts survive chat deletion and daily resets; a daily
+job removes them after a day, and account deletion removes them in bounded
+batches. Checks and credit share one Convex transaction.
 
 ## Rollout
 
@@ -64,4 +62,4 @@ including daily bonuses; it retains duplicate receipts.
 This follows the app's existing player enforcement model. Public third-party
 asset/proxy URLs are not made private by this feature; separately opened remote
 sites are outside this app's timer. A signed-in production smoke test should
-cover all player types, visibility changes, chat rewards, and the 7:35 reset.
+cover all player types, visibility changes, chat rewards, and the 7:30 reset.

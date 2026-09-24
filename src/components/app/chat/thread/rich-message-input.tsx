@@ -39,7 +39,10 @@ function documentMarkdown(editor: Editor, document = editor.state.doc): string {
   markdownByDocument.set(document, markdown);
   return markdown;
 }
-export type RichMessageInputHandle = { focus: () => void };
+export type RichMessageInputHandle = {
+  focus: () => void;
+  insertEmoji: (emoji: string) => void;
+};
 type Mention = { start: number; end: number; query: string };
 
 export function RichMessageInput({
@@ -314,6 +317,9 @@ export function RichMessageInput({
     () => ({
       focus: () => {
         editor?.commands.focus("end");
+      },
+      insertEmoji: (emoji) => {
+        editor?.chain().focus().insertContent(emoji).run();
       },
     }),
     [editor],

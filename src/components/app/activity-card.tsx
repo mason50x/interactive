@@ -22,6 +22,7 @@ export function ActivityCard({
       category={meta.label}
       hueColor={meta.hue}
       icon={meta.icon}
+      showCategory={false}
       note={note ?? popularityLabel(activity)}
     />
   );

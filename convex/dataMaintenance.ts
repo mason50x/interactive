@@ -33,8 +33,7 @@ export const pruneInactiveTimeouts = internalMutation({
   },
 });
 
-/** Reward repeats only matter inside a 30-minute window; a day of margin, then
- * the normalized text is removed. */
+/** Keep a day's reward history for consecutive repeat checks. */
 export const pruneRewardReceipts = internalMutation({
   args: {},
   returns: v.number(),

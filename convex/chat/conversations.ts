@@ -1,10 +1,8 @@
 import { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR, presentBotBody } from "./botConfig";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { MAX_TITLE } from "../moderation/limits";
 import { EVERYONE } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
-import { screenStatic } from "../moderation/verdict";
 import { mutation, query, type QueryCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import {
@@ -174,6 +172,7 @@ export const list = query({
 
     const summaries: ConversationSummary[] = [];
     for (const member of members) {
+      if (member.kind === "group") continue;
       const conversation = await ctx.db.get(member.conversationId);
       if (conversation === null) continue;
       // Read from the live role, like `membership`, so a demotion the row
@@ -292,7 +291,7 @@ export const openDm = mutation({
 
 export type CreateResult =
   | { ok: true; conversationId: Id<"conversations"> }
-  | { ok: false; reason: Refusal | "no-profile" };
+  | { ok: false; reason: Refusal | "no-profile" | "closed" };
 
 /**
  * Make a group.
@@ -311,32 +310,10 @@ export const createGroup = mutation({
     ),
   },
   handler: async (ctx, { title, joinPolicy }): Promise<CreateResult> => {
-    const profile = await callerAccount(ctx);
-    if (profile === null) return { ok: false, reason: "no-profile" };
-    const screened = screenStatic(title, MAX_TITLE);
-    if (!screened.ok) return { ok: false, reason: screened.refusal };
-
-    const now = Date.now();
-    const conversationId = await ctx.db.insert("conversations", {
-      kind: "group",
-      title: screened.text,
-      createdBy: profile.clerkId,
-      createdAt: now,
-      lastMessageAt: now,
-      joinPolicy,
-    });
-
-    await ctx.db.insert("conversationMembers", {
-      conversationId,
-      clerkId: profile.clerkId,
-      kind: "group",
-      role: "owner",
-      status: "active",
-      joinedAt: now,
-      lastReadAt: now,
-    });
-
-    return { ok: true, conversationId };
+    void ctx;
+    void title;
+    void joinPolicy;
+    return { ok: false, reason: "closed" };
   },
 });
 
@@ -403,7 +380,7 @@ export const get = query({
     if (member === null || member.status !== "active") return null;
 
     const conversation = await ctx.db.get(conversationId);
-    if (conversation === null) return null;
+    if (conversation === null || conversation.kind === "group") return null;
 
     let peerHandle: string | undefined;
     let peerName: string | undefined;

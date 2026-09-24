@@ -1,5 +1,4 @@
 "use client";
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import {
   useDeferredValue,
   useMemo,
@@ -8,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { CategoryMenu } from "@/components/app/activities/category-menu";
-import { Input, InputAddon, InputGroup } from "@/components/ui/input";
+import { LineSearch } from "@/components/ui/line-search";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { GENRES } from "@/lib/genres";
 import { cn } from "@/lib/utils";
@@ -38,15 +37,9 @@ export function CatalogueBrowser<
   categories?: Record<string, { label: string; hue: string }>;
   defaultSortLabel?: string;
 }) {
-  // This page's own string, not the rail's. The two used to be one, and typing
-  // here filled the rail's box and opened it too. See `ActivitiesProvider`.
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState<string>("all");
   const [sort, setSort] = useState<Sort>("popular");
-
-  // Typing stays responsive while the grid re-filters against the full
-  // catalogue: React renders the input from the live value and the cards from
-  // the lagging one, instead of blocking the keystroke on 318 comparisons.
   const deferred = useDeferredValue(query);
   const needle = deferred.trim();
   const searching = needle.length > 0;
@@ -111,35 +104,12 @@ export function CatalogueBrowser<
         )}
       >
         <search className="min-w-0 basis-full sm:flex-1 sm:basis-0">
-          {/* The field's own tint rather than the group's white, so it sits in
-              the bar the way the funnel and the sort control beside it do,
-              and only turns to paper once you are typing in it. */}
-          <InputGroup
-            size="lg"
-            className="bg-foreground/[0.03] px-3 transition-colors focus-within:bg-background"
-          >
-            <InputAddon className="text-muted-foreground">
-              <MagnifyingGlassIcon />
-            </InputAddon>
-            <Input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${catalogue.length} ${noun} by name`}
-              aria-label={`Search ${noun}`}
-              className="text-[0.9375rem] placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
-            />
-            {searching && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <XMarkIcon className="size-4" />
-              </button>
-            )}
-          </InputGroup>
+          <LineSearch
+            value={query}
+            onChange={setQuery}
+            label={`Search ${noun}`}
+            placeholder={`Search ${catalogue.length} ${noun} by name`}
+          />
         </search>
 
         <CategoryMenu
@@ -151,6 +121,7 @@ export function CatalogueBrowser<
         />
 
         <SegmentedControl
+          tone="neutral"
           aria-label={`Sort ${noun}`}
           value={sort}
           onValueChange={setSort}
@@ -164,9 +135,6 @@ export function CatalogueBrowser<
           {genre !== "all" ? ` in ${categories[genre].label}` : ""}.
         </p>
       ) : (
-        /* Only once something has been narrowed. Unfiltered, the count is the
-           number already sitting in the placeholder of the field above it, and
-           the grid itself is the answer. */
         filtered && (
           <p className="-mb-2 text-xs text-faint">
             {shown.length} of {catalogue.length}

@@ -26,7 +26,6 @@ import {
   useDayClock,
 } from "@/components/app/chat/thread/day-pager";
 import { MessageRow } from "@/components/app/chat/thread/message-row";
-import { Outside } from "@/components/app/chat/thread/outside";
 import { Quiet } from "@/components/app/chat/thread/quiet";
 import { replyFromMessage } from "@/components/app/chat/thread/reply-preview";
 import { ThreadHeader } from "@/components/app/chat/thread/thread-header";
@@ -481,8 +480,12 @@ function ConversationThread({
     pinned.current = atEnd;
   }
 
-  // Not a member — which is sometimes a door rather than a wall. See `Outside`.
-  if (detail === null) return <Outside conversationId={conversationId} />;
+  if (detail === null)
+    return (
+      <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
+        This conversation is unavailable.
+      </div>
+    );
 
   const live = !daily || daysAgo === 0;
 
@@ -523,7 +526,7 @@ function ConversationThread({
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-3 sm:px-8 lg:px-14 xl:px-20"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-20 sm:px-8 lg:px-14 xl:px-20"
       >
         {daily ? (
           <DayPager
@@ -700,11 +703,9 @@ function ConversationThread({
         {live ? <Typing typists={typists} /> : null}
       </div>
 
-      {/* Under the thread, in the flow. It floated over the messages on a
-          blur for a while, and what that bought — no rule across the column
-          — cost the last message of every conversation, which sat half
-          behind it until you scrolled. A footer is a footer. */}
-      <div className="shrink-0">
+      {/* The fade reaches into the thread while the composer stays in flow,
+          so the last message can still scroll fully above it. */}
+      <div className="thread-composer-footer relative isolate z-10 shrink-0 pt-2">
         {readOnly ? (
           <p className="px-4 py-4 text-center text-sm text-muted-foreground">
             {detail?.kind === "announcements"

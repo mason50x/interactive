@@ -31,7 +31,7 @@ export function useNavPending() {
  * Reports whether the row it sits in has been clicked and is still waiting.
  *
  * `useLinkStatus` only answers inside a `Link`, so this has to be a child of
- * one — which is also why the pending row is state on `AppSidebar` and not on
+ * one — which is also why the pending row is state on `AppHeader` and not on
  * each row: the pill is one element for the whole list, so the list is what has
  * to know which row to send it to.
  *

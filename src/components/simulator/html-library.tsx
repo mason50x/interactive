@@ -33,7 +33,7 @@ import { PublishedHtmlLibrary } from "./published-html-library";
 import type { PublishedDraft } from "./published-html-editor";
 import { validatePublishedHtml } from "@config/published-html";
 
-const ROOT = "/learning-simulator/html";
+const ROOT = "/emulate/html";
 
 /**
  * The HTML library: the self-contained pages this account has opened,

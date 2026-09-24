@@ -9,7 +9,7 @@ import type { ActivityEntry } from "@/lib/activity";
  * `src/lib/activities.ts` is `server-only`, so the entries reach a browser one
  * way: as a prop on this provider, serialised into the RSC payload of the
  * dashboard layout behind its `auth.protect()`. Everything in the signed-in app
- * that draws activities — the rail's search, the home page's rows, the
+ * that draws activities — the home page's rows, the
  * activities grid — reads them from here rather than taking its own copy as a
  * page prop.
  *

@@ -299,7 +299,9 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                   <tr
                     className={cn(
                       "cursor-pointer border-b border-border last:border-0",
-                      expanded ? "bg-primary/[0.05]" : "hover:bg-muted/40",
+                      expanded
+                        ? "border-l-2 border-l-foreground bg-muted/25"
+                        : "hover:bg-muted/40",
                     )}
                     onClick={() => toggleUser(user.clerkId)}
                   >

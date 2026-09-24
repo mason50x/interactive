@@ -8,6 +8,7 @@ import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import Link from "next/link";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -17,11 +18,9 @@ import {
 } from "react";
 import { api } from "@convex/_generated/api";
 
-import {
-  playtimeDay,
-  REWARD_REQUIREMENTS,
-} from "@config/playtime";
+import { playtimeDay, REWARD_REQUIREMENTS } from "@config/playtime";
 import { cn } from "@/lib/utils";
+import { useClickOutside } from "@/lib/use-click-outside";
 import { useReportPlaytimeActivity } from "@/components/app/playtime-activity";
 import {
   availablePlaytimeSeconds,
@@ -78,7 +77,7 @@ export function useExperienceQuota(active = false) {
     // A same-origin keepalive request survives page teardown; an ordinary
     // Convex WebSocket mutation cannot be relied on after the tab closes.
     const releaseOnExit = (id: string) => {
-      void fetch("/experience/release", {
+      void fetch("/browse/release", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId: id }),
@@ -299,21 +298,21 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
     <div className="w-72 max-w-full space-y-3 text-sm">
       <ExperienceQuotaNotice quota={quota} />
       <p>
-        Your daily minutes are shared across games, the proxy,
-        entertainment, and simulators. Time runs only while a player or proxy
-        app is open in a visible tab; browsing is free.
+        Your daily minutes are shared across games, the proxy, entertainment,
+        and simulators. Time runs only while a player or proxy app is open in a
+        visible tab; browsing is free.
       </p>
       <p>
-        Qualifying chat messages add 2 minutes each, even while time remains.{" "}
+        Qualifying chat messages add 30 seconds each, even while time remains.{" "}
         {REWARD_REQUIREMENTS}
       </p>
       <p>
-        Chat stays available. Sending the same message again, or a near-copy,
-        within 30 minutes does not count.
+        Chat stays available. A third similar message in a row does not earn
+        time.
       </p>
       <p className="text-muted-foreground">
-        Resets to your daily limit every day at 7:30 a.m. Central
-        Time. Extra minutes do not carry over.
+        Resets to your daily limit every day at 7:30 a.m. Central Time. Extra
+        minutes do not carry over.
       </p>
       <ButtonLink href="/chat" size="sm">
         Open chat
@@ -401,7 +400,7 @@ function RollingTime({
   );
 }
 
-/** A rail card with details that open in the rail's own layout. */
+/** The time left, as text in the header; its details drop open over the page. */
 export function PlaytimeSidebar({
   quota,
   compact = false,
@@ -418,105 +417,86 @@ export function PlaytimeSidebar({
     const timer = window.setTimeout(() => setShowMinutes(true), 3500);
     return () => window.clearTimeout(timer);
   }, [compact]);
+  const root = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useClickOutside(root, close, open);
   const detailsId = useId();
   const seconds = quota.remaining;
-  const minutesOnly = compact && showMinutes && seconds !== null && seconds >= 60;
+  const minutesOnly =
+    compact && showMinutes && seconds !== null && seconds >= 60;
   const label =
     seconds === null
       ? "—:—"
       : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   return (
-    <div className="min-w-0" style={{ viewTransitionName: "rail-playtime" }}>
-      <div
-        aria-label={`Playtime: ${label} remaining`}
+    <div
+      ref={root}
+      className="relative shrink-0"
+      style={{ viewTransitionName: "rail-playtime" }}
+    >
+      <button
+        type="button"
+        disabled={compact}
+        aria-expanded={compact ? undefined : open}
+        aria-controls={compact ? undefined : detailsId}
+        aria-label={
+          compact
+            ? `Playtime: ${label} remaining`
+            : `Playtime: ${label} remaining. ${open ? "Hide" : "View"} details`
+        }
+        onClick={() => setOpen((value) => !value)}
         className={cn(
-          "flex h-11 w-full items-center justify-center font-medium text-muted-foreground tabular-nums rail-narrow wide:hidden",
-          compact ? "text-[0.625rem]" : "text-[0.75rem]",
+          "flex h-9 items-center gap-1 rounded-lg px-2 text-[0.8125rem] font-medium text-muted-foreground tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+          compact
+            ? "cursor-default"
+            : "cursor-pointer transition-colors hover:text-foreground",
         )}
       >
-        <RollingTime label={label} seconds={seconds} minutesOnly={minutesOnly} />
-      </div>
-      <Card
-        radius="sm"
-        className="relative hidden h-full overflow-hidden rail-wide wide:block wide:w-full"
-      >
-        <button
-          type="button"
-          disabled={compact}
-          aria-expanded={compact ? undefined : open}
-          aria-controls={compact ? undefined : detailsId}
-          aria-label={
-            compact
-              ? `Playtime: ${label} remaining`
-              : `Playtime: ${label} remaining. ${open ? "Hide" : "View"} details`
-          }
-          onClick={() => setOpen((value) => !value)}
-          className={cn(
-            "playtime-spring flex w-full items-center justify-center transition-[background-color,scale] duration-300 outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset motion-reduce:transition-none",
-            compact
-              ? "h-full min-h-14 cursor-default px-1 py-1"
-              : "cursor-pointer px-3 py-2 hover:bg-foreground/[0.03] active:scale-[0.985]",
-          )}
-        >
-          <span className="flex flex-col items-center">
-            <span
-              className={cn(
-                "flex items-center justify-center font-semibold tabular-nums",
-                compact ? "text-[2rem]" : "text-[2.5rem]",
-              )}
-              style={{ lineHeight: 1 }}
-            >
-              <RollingTime label={label} seconds={seconds} minutesOnly={minutesOnly} />
-            </span>
-            {!compact && (
-              <span className="mt-1.5 flex items-center gap-1 text-[0.75rem] text-muted-foreground">
-                {seconds === 0 ? "Chat for +2m" : "Time remaining"}
-                <ChevronDownIcon
-                  aria-hidden="true"
-                  className={cn(
-                    "playtime-spring size-3 transition-transform duration-[440ms] motion-reduce:transition-none",
-                    open && "rotate-180",
-                  )}
-                />
-              </span>
+        <span className="flex items-center" style={{ lineHeight: 1 }}>
+          <RollingTime
+            label={label}
+            seconds={seconds}
+            minutesOnly={minutesOnly}
+          />
+        </span>
+        {!compact && (
+          <ChevronDownIcon
+            aria-hidden="true"
+            className={cn(
+              "playtime-spring size-3.5 transition-transform duration-[440ms] motion-reduce:transition-none",
+              open && "rotate-180",
             )}
-          </span>
-        </button>
-        <div
-          id={detailsId}
-          aria-hidden={!open || compact}
-          inert={!open || compact}
-          className={cn(
-            "playtime-spring grid transition-[grid-template-rows] duration-[440ms] motion-reduce:transition-none",
-            open && !compact ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-          )}
+          />
+        )}
+      </button>
+      <div
+        id={detailsId}
+        aria-hidden={!open}
+        inert={!open}
+        className={cn(
+          "playtime-spring absolute top-full right-0 mt-1 w-64 transition-[opacity,transform,visibility] duration-[350ms] motion-reduce:transition-none",
+          open
+            ? "visible translate-y-0 opacity-100"
+            : "invisible -translate-y-2 opacity-0",
+        )}
+      >
+        <Card
+          radius="sm"
+          className="space-y-1.5 px-3 py-2.5 text-xs leading-snug text-foreground/85"
         >
-          <div className="min-h-0 overflow-hidden">
-            <div
-              className={cn(
-                "space-y-1.5 border-t border-border px-3 py-2.5 text-xs leading-snug text-foreground/85 transition-[opacity,transform] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-                open && !compact
-                  ? "translate-y-0 opacity-100 delay-75 duration-[350ms]"
-                  : "-translate-y-2 opacity-0 duration-150",
-              )}
-            >
-              <p>
-                Your daily time counts only in an
-                open player or proxy app.
-              </p>
-              <p>
-                Resets at 7:30 a.m. CT. Qualifying chats add 2 minutes each.
-              </p>
-              <Link
-                href="/chat"
-                className="inline-block font-medium text-primary hover:underline"
-              >
-                Open chat →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </Card>
+          {seconds === 0 && (
+            <p className="font-medium">Chat for 30 more seconds.</p>
+          )}
+          <p>Your daily time counts only in an open player or proxy app.</p>
+          <p>Resets at 7:30 a.m. CT. Qualifying chats add 30 seconds each.</p>
+          <Link
+            href="/chat"
+            className="inline-block font-medium text-primary hover:underline"
+          >
+            Open chat →
+          </Link>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -530,16 +510,14 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
       >
         <div className="w-full max-w-lg space-y-5">
           <h1 className="text-3xl font-semibold">Your playtime is used up</h1>
-          <p>Send a new chat message to get 2 more minutes of playtime.</p>
-          <p className="text-sm text-muted-foreground">
-            {REWARD_REQUIREMENTS}
-          </p>
+          <p>Send a real chat message to get 30 more seconds of playtime.</p>
+          <p className="text-sm text-muted-foreground">{REWARD_REQUIREMENTS}</p>
           <ButtonLink href="/chat" target="_top">
             Go to chat
           </ButtonLink>
           <p className="text-sm text-muted-foreground">
-            Your activity allowance resets at
-            7:30 a.m. Central Time. Chat stays fully available.
+            Your activity allowance resets at 7:30 a.m. Central Time. Chat stays
+            fully available.
           </p>
         </div>
       </section>

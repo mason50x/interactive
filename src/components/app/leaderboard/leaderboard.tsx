@@ -6,7 +6,9 @@ import Image from "next/image";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useChat } from "@/components/app/chat/chat-provider";
-import { Card } from "@/components/ui/card";
+import { useActivities } from "@/components/app/activities-provider";
+import { useGamePopularity } from "@/components/app/game-views";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { cn } from "@/lib/utils";
 import {
   ChatIconSolid,
@@ -24,20 +26,21 @@ import {
 } from "@heroicons/react/24/solid";
 
 const DAY = 86_400_000;
-type Metric = "playtime" | "chat" | "pages";
+type Metric = "playtime" | "chat" | "pages" | "games";
 type Period = "day" | "week" | "month" | "all";
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 const tabs: { id: Metric; label: string; icon: Icon }[] = [
   { id: "playtime", label: "Time played", icon: ClockIcon },
   { id: "chat", label: "Most chatty", icon: ChatBubbleLeftRightIcon },
   { id: "pages", label: "Popular pages", icon: ChartBarIcon },
+  { id: "games", label: "Popular games", icon: ControllerIconSolid },
 ];
 const pages: Record<string, { label: string; icon: Icon }> = {
   "/activities": { label: "Activities", icon: ControllerIconSolid },
-  "/entertainment": { label: "Entertainment", icon: FilmIcon },
+  "/tv": { label: "TV", icon: FilmIcon },
   "/chat": { label: "Chat", icon: ChatIconSolid },
-  "/experience": { label: "Experience", icon: GlobeIconSolid },
-  "/learning-simulator": { label: "Simulators", icon: ChipIconSolid },
+  "/browse": { label: "Browse", icon: GlobeIconSolid },
+  "/emulate": { label: "Emulate", icon: ChipIconSolid },
   "/leaderboard": { label: "Leaderboard", icon: TrophyIcon },
 };
 function formatTime(seconds: number) {
@@ -50,6 +53,8 @@ function formatTime(seconds: number) {
 export function Leaderboard() {
   const { isAuthenticated } = useConvexAuth();
   const { profile } = useChat();
+  const catalogue = useActivities();
+  const games = useGamePopularity();
   const [metric, setMetric] = useState<Metric>("playtime");
   const [period, setPeriod] = useState<Period>("all");
   const [clock, setClock] = useState(() => Math.floor(Date.now() / DAY));
@@ -61,91 +66,103 @@ export function Leaderboard() {
     return () => clearInterval(timer);
   }, []);
   const activePeriod =
-    metric === "pages"
-      ? "day"
-      : metric === "playtime" && period !== "day"
+    metric === "games"
+      ? period === "all"
         ? "all"
-        : period === "all" && metric === "chat"
-          ? "day"
-          : period;
+        : "week"
+      : metric === "pages"
+        ? "day"
+        : metric === "playtime" && period !== "day"
+          ? "all"
+          : period === "all" && metric === "chat"
+            ? "day"
+            : period;
   const result = useQuery(
     api.leaderboard.standings,
-    isAuthenticated ? { metric, period: activePeriod, clock } : "skip",
+    isAuthenticated && metric !== "games"
+      ? { metric, period: activePeriod, clock }
+      : "skip",
   );
   const entries =
-    metric === "pages"
-      ? result?.pages.map((row) => ({
-          id: row.path,
-          title: pages[row.path]?.label ?? row.path,
-          subtitle: row.path,
-          value: row.views,
-          href: row.path,
-          imageUrl: null,
-        }))
-      : result?.people.map((row) => ({
-          id: row.clerkId,
-          title: row.name,
-          subtitle: row.handle ? `@${row.handle}` : "Member",
-          value: row.score,
-          imageUrl: row.imageUrl,
-          href: undefined,
-        }));
+    metric === "games"
+      ? games
+          ?.map((row) => ({
+            id: row.slug,
+            title:
+              catalogue.find((game) => game.slug === row.slug)?.title ??
+              row.slug,
+            subtitle: "Activity",
+            value: period === "all" ? row.views : row.weeklyViews,
+            href: `/activities/${row.slug}`,
+            imageUrl: null,
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 25)
+      : metric === "pages"
+        ? result?.pages.map((row) => ({
+            id: row.path,
+            title: pages[row.path]?.label ?? row.path,
+            subtitle: row.path,
+            value: row.views,
+            href: row.path,
+            imageUrl: null,
+          }))
+        : result?.people.map((row) => ({
+            id: row.clerkId,
+            title: row.name,
+            subtitle: row.handle ? `@${row.handle}` : "Member",
+            value: row.score,
+            imageUrl: row.imageUrl,
+            href: undefined,
+          }));
   const top = entries?.[0];
   const max = top?.value ?? 1;
   const selected = tabs.find((tab) => tab.id === metric)!;
   const periods: { id: Period; label: string }[] =
-    metric === "playtime"
+    metric === "games"
       ? [
+          { id: "week", label: "This week" },
           { id: "all", label: "All time" },
-          { id: "day", label: "Today" },
         ]
-      : metric === "chat"
+      : metric === "playtime"
         ? [
+            { id: "all", label: "All time" },
             { id: "day", label: "Today" },
-            { id: "week", label: "This week" },
-            { id: "month", label: "This month" },
           ]
-        : [{ id: "day", label: "Today" }];
+        : metric === "chat"
+          ? [
+              { id: "day", label: "Today" },
+              { id: "week", label: "This week" },
+              { id: "month", label: "This month" },
+            ]
+          : [{ id: "day", label: "Today" }];
   const format = (value: number) =>
     metric === "playtime"
       ? formatTime(value)
-      : `${Math.round(value).toLocaleString()} ${metric === "chat" ? (Math.round(value) === 1 ? "message" : "messages") : Math.round(value) === 1 ? "visit" : "visits"}`;
+      : `${Math.round(value).toLocaleString()} ${metric === "chat" ? (Math.round(value) === 1 ? "message" : "messages") : metric === "games" ? (Math.round(value) === 1 ? "play" : "plays") : Math.round(value) === 1 ? "visit" : "visits"}`;
 
   return (
     <div className="flex flex-col gap-7">
-      <div
-        className="inline-flex max-w-full self-start overflow-x-auto rounded-2xl border border-sidebar-border bg-sidebar p-1.5"
-        role="tablist"
-        aria-label="Leaderboard metric"
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={metric === tab.id}
-            onClick={() => {
-              setMetric(tab.id);
-              setPeriod(tab.id === "playtime" ? "all" : "day");
-            }}
-            className={cn(
-              "flex shrink-0 items-center justify-center gap-2.5 rounded-xl px-4 py-2 text-sm font-semibold transition-[background-color,color] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-ring",
-              metric === tab.id
-                ? "bg-surface text-foreground shadow-sm"
-                : "text-sidebar-foreground/70 hover:bg-surface/60 hover:text-sidebar-foreground",
-            )}
-          >
-            <tab.icon aria-hidden="true" className="size-5 shrink-0" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        aria-label="By leaderboard"
+        value={metric}
+        onValueChange={(value) => {
+          setMetric(value);
+          setPeriod(
+            value === "playtime" ? "all" : value === "games" ? "week" : "day",
+          );
+        }}
+        options={tabs.map((tab) => ({
+          value: tab.id,
+          label: tab.label,
+          icon: <tab.icon />,
+        }))}
+        tone="neutral"
+        className="max-w-full self-start overflow-x-auto"
+      />
 
-      <section
-        aria-live="polite"
-        className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_270px]"
-      >
-        <Card className="min-w-0 overflow-hidden">
+      <section aria-live="polite" className="min-w-0">
+        <div className="min-w-0 overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-5 sm:px-7">
             <h2 className="flex items-center gap-2.5 text-2xl font-semibold text-foreground">
               <selected.icon
@@ -159,27 +176,16 @@ export function Leaderboard() {
                 Today
               </span>
             ) : (
-              <div
-                className="flex rounded-full bg-muted p-1"
+              <SegmentedControl
                 aria-label="Time period"
-              >
-                {periods.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    aria-pressed={activePeriod === option.id}
-                    onClick={() => setPeriod(option.id)}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-primary",
-                      activePeriod === option.id
-                        ? "bg-surface text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+                value={activePeriod}
+                onValueChange={setPeriod}
+                options={periods.map((option) => ({
+                  value: option.id,
+                  label: option.label,
+                }))}
+                tone="neutral"
+              />
             )}
           </div>
           {entries === undefined ? (
@@ -286,18 +292,7 @@ export function Leaderboard() {
               })}
             </ol>
           )}
-        </Card>
-        <Card className="p-6">
-          <p className="text-sm font-semibold text-muted-foreground">
-            Current leader
-          </p>
-          <p className="mt-2 text-xl font-semibold break-words text-foreground">
-            {top?.title ?? "Waiting for activity"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {top ? format(top.value) : "Be the first to appear"}
-          </p>
-        </Card>
+        </div>
       </section>
     </div>
   );

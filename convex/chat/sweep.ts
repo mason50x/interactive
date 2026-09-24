@@ -129,6 +129,27 @@ export const purgeConversation = internalMutation({
   },
 });
 
+/** One-time removal of retired user-created groups, including their messages. */
+export const purgeAllGroups = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db.query("conversations")
+      .withIndex("byKind", (q) => q.eq("kind", "group"))
+      .paginate({ cursor: cursor ?? null, numItems: 20 });
+    for (const group of page.page) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeConversation, {
+        conversationId: group._id,
+      });
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.chat.sweep.purgeAllGroups, {
+        cursor: page.continueCursor,
+      });
+    }
+    return { scheduled: page.page.length, more: !page.isDone };
+  },
+});
+
 /**
  * Delete membership rows whose conversation is gone.
  *

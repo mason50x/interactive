@@ -24,13 +24,11 @@
  */
 
 import { type AccentId, DEFAULT_ACCENT, isAccentId } from "@/lib/accent";
-import { channel } from "@/lib/events";
 import { BLANK_PAGE } from "@/lib/panic-key";
+import { isLunchNumber, type LunchNumber } from "@/lib/school-schedule";
 import { isTabMaskId, NO_TAB_MASK, type TabMaskId } from "@/lib/tab-mask";
 
 export type Preferences = {
-  /** The drifting mesh behind the dashboard rail. */
-  constellation: boolean;
   /** An id from `accents`. */
   accent: AccentId;
   panicEnabled: boolean;
@@ -39,6 +37,8 @@ export type Preferences = {
   panicUrl: string;
   /** An id from `tabMasks`; `none` is the app wearing its own name. */
   tabMask: TabMaskId;
+  /** River Falls High School lunch, 1–3, or `null` until they pick one. */
+  lunch: LunchNumber | null;
 };
 
 /**
@@ -63,12 +63,12 @@ export type Preferences = {
  * reach for, not a thing to wake up inside of.
  */
 export const defaultPreferences: Preferences = {
-  constellation: true,
   accent: DEFAULT_ACCENT,
   panicEnabled: false,
   panicKey: "ctrl+shift+x",
   panicUrl: BLANK_PAGE,
   tabMask: NO_TAB_MASK,
+  lunch: null,
 };
 
 /**
@@ -85,10 +85,6 @@ export function resolvePreferences(
   if (!row) return defaultPreferences;
 
   return {
-    constellation:
-      typeof row.constellation === "boolean"
-        ? row.constellation
-        : defaultPreferences.constellation,
     accent: isAccentId(row.accent) ? row.accent : defaultPreferences.accent,
     panicEnabled:
       typeof row.panicEnabled === "boolean"
@@ -105,40 +101,9 @@ export function resolvePreferences(
     tabMask: isTabMaskId(row.tabMask)
       ? row.tabMask
       : defaultPreferences.tabMask,
+    lunch: isLunchNumber(row.lunch) ? row.lunch : defaultPreferences.lunch,
   };
 }
 
-/**
- * How anything gets the account modal open without owning it.
- *
- * The modal's pages are registered by `UserMenu`, at the very bottom of the
- * rail, because that is where the row that opens it lives. The rail's search
- * is at the top of the same column and has no way to reach that — and
- * threading a provider through the layout for one function would be a context
- * whose only two participants are eight inches apart on the same screen.
- *
- * A window event lets callers depend only on this module, and the menu
- * listens and opens itself. See `useAccountModal`.
- */
-const SETTINGS_EVENT = "50x:settings-request";
-
-/**
- * The two pages a caller can ask for by name: the site's settings, which
- * is the modal's first page, and Clerk's own account page behind it. Security
- * is one click from either and nothing searches for it.
- */
+/** The settings page or Clerk's account page in the account modal. */
 export type SettingsPage = "settings" | "account";
-
-const settingsChannel = channel<SettingsPage>(SETTINGS_EVENT);
-
-/** Ask the account modal to open, on the settings page unless told
- *  otherwise. Nothing happens if the rail is not mounted, which is every page
- *  outside the signed-in app. */
-export function requestSettings(page: SettingsPage = "settings") {
-  settingsChannel.request(page);
-}
-
-/** The menu's side of it. Returns the unsubscribe, for an effect's cleanup. */
-export function onSettingsRequest(handler: (page: SettingsPage) => void) {
-  return settingsChannel.subscribe((page) => handler(page ?? "settings"));
-}

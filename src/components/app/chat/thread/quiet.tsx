@@ -22,7 +22,7 @@ import {
 export function Quiet({ archived = false }: { archived?: boolean }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10">
-      {/* The accent, like the search orb — the two pieces of decoration in the
+      {/* The accent is a small piece of decoration in the
           app are painted in whatever colour the account picked. */}
       <div aria-hidden className="dot-bubble text-primary">
         <div className="dot-bubble-shell">

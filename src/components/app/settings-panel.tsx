@@ -19,8 +19,8 @@ import { tabMaskAssets } from "@/lib/tab-mask";
  *
  * It used to be a sheet of its own, beside the account modal rather than
  * inside it, on the argument that every control here changes the page
- * *behind* the panel — the accent repaints the rail, the constellation stops
- * drifting — and a modal hides that. The argument lost to the one it was up
+ * *behind* the panel — the accent repaints the page — and a modal hides
+ * that. The argument lost to the one it was up
  * against: two doors in the same menu, "Account" and "Settings", for what
  * anyone else would call one thing. The controls still write as they are
  * touched, and the rail is still visible past the modal's edge.
@@ -60,13 +60,6 @@ export function SettingsPanel() {
           <AccentPicker
             value={preferences.accent}
             onChange={(accent) => update({ accent })}
-          />
-        </Row>
-
-        <Row label="Constellation">
-          <Switch
-            checked={preferences.constellation}
-            onCheckedChange={(constellation) => update({ constellation })}
           />
         </Row>
 

@@ -60,25 +60,14 @@ export function CategoryMenu({
       <MenuTrigger
         aria-label={chosen ? `Category: ${chosen.label}` : "Filter by category"}
         className={cn(
-          "flex h-10 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-[0.8125rem] transition-colors outline-none",
+          "flex size-10 shrink-0 items-center justify-center rounded-lg border text-[0.8125rem] transition-colors outline-none",
           "focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring",
           chosen
-            ? "border-border bg-foreground/[0.08] font-medium text-foreground"
-            : "border-border bg-foreground/[0.03] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+            ? "border-foreground/40 font-medium text-foreground"
+            : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
         )}
       >
         <FunnelIcon className="size-4 shrink-0" />
-        {chosen && (
-          <>
-            <span
-              className="size-1.5 shrink-0 rounded-full"
-              style={{ background: chosen.hue }}
-            />
-            {/* The label is the one part that goes when there is no room for
-                it. The dot and the filled trigger still say a filter is on. */}
-            <span className="hidden sm:inline">{chosen.label}</span>
-          </>
-        )}
       </MenuTrigger>
 
       <MenuContent align="end" sideOffset={8} className="min-w-[13rem]">

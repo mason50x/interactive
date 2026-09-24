@@ -46,6 +46,21 @@ const nextConfig: NextConfig = {
     return [
       { source: "/dashboard", destination: "/activities", permanent: true },
       { source: "/dashboard/:path+", destination: "/:path+", permanent: true },
+      // The sections were renamed; old links and bookmarks still land.
+      ...(
+        [
+          ["/entertainment", "/tv"],
+          ["/experience", "/browse"],
+          ["/learning-simulator", "/emulate"],
+        ] as const
+      ).flatMap(([from, to]) => [
+        { source: from, destination: to, permanent: true },
+        {
+          source: `${from}/:path+`,
+          destination: `${to}/:path+`,
+          permanent: true,
+        },
+      ]),
     ];
   },
 

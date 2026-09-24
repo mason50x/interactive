@@ -325,7 +325,7 @@ test("poll choices are moderated, one vote per member can change or clear, and i
   ).toBe(0);
 });
 
-test("search filters by sender and dates; exact context reaches old messages without leaking inaccessible rooms", async () => {
+test("exact context reaches old messages without leaking inaccessible rooms", async () => {
   const { t, room, alice, eve } = await setup();
   const ids = await t.run(async (ctx) => {
     const ids = [];
@@ -342,31 +342,6 @@ test("search filters by sender and dates; exact context reaches old messages wit
       );
     return ids;
   });
-  const cutoff = (await t.run((ctx) => ctx.db.get(ids[30])))!._creationTime;
-  const hits = await alice.query(api.chat.messages.search, {
-    text: "Chapter",
-    conversationId: room,
-    sender: "@bob",
-    before: cutoff,
-    hasImages: false,
-  });
-  expect(hits.length).toBeGreaterThan(0);
-  expect(
-    hits.every(
-      (hit) => hit.authorClerkId === "bob" && hit._creationTime < cutoff,
-    ),
-  ).toBe(true);
-  const filtered = await alice.query(api.chat.messages.search, {
-    text: "",
-    conversationId: room,
-    sender: "bob",
-    after: cutoff,
-  });
-  expect(
-    filtered.every(
-      (hit) => hit.authorClerkId === "bob" && hit._creationTime >= cutoff,
-    ),
-  ).toBe(true);
   const context = await alice.query(api.chat.messages.context, {
     messageId: ids[20],
   });
@@ -375,12 +350,6 @@ test("search filters by sender and dates; exact context reaches old messages wit
   expect(
     await eve.query(api.chat.messages.context, { messageId: ids[20] }),
   ).toBeNull();
-  expect(
-    await eve.query(api.chat.messages.search, {
-      text: "Chapter",
-      conversationId: room,
-    }),
-  ).toEqual([]);
   expect(
     await alice.query(api.chat.messages.context, { messageId: "invalid-id" }),
   ).toBeNull();

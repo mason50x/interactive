@@ -2,7 +2,6 @@ import { BOT_ID } from "../../config/bot";
 export { BOT_ID, BOT_HANDLE, BOT_NAME, BOT_AVATAR } from "../../config/bot";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@convex/_generated/api";
-import { channel } from "@/lib/events";
 
 /**
  * The client's half of chat: types, copy, and nothing that decides anything.
@@ -69,9 +68,8 @@ const REFUSALS: Record<string, string> = {
   link: "Links are not allowed here.",
   location: "Addresses cannot be shared here.",
 
-  duplicate: "You just sent that.",
+  duplicate: "You already sent that twice in a row.",
   broadcast: "That has gone to enough places.",
-  "too-fast": "Slow down a moment.",
   locked: "Staff have locked this room for now.",
   "slow-mode": "Slow mode is on. Wait a little before sending again.",
 
@@ -100,13 +98,26 @@ export function refusalMessage(refusal: Refusal): string {
 /**
  * The reactions, fixed.
  *
- * The same six as `REACTIONS` in `convex/moderation/limits.ts`, duplicated for
+ * The same choices as `REACTIONS` in `convex/moderation/limits.ts`, duplicated for
  * bundle isolation: Convex bundles from `convex/` and the browser
  * bundles from `src/`, so a shared constant would have to live in one and be
  * imported across the boundary this module exists to keep. Change one, change
  * the other. The server is the one that decides.
  */
-export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as const;
+export const REACTIONS = [
+  "👍",
+  "❤️",
+  "😂",
+  "😮",
+  "😢",
+  "🔥",
+  "🎉",
+  "👏",
+  "🙌",
+  "🤔",
+  "😍",
+  "👎",
+] as const;
 
 /**
  * The faces a group may wear, and the colours it may wear them on.
@@ -230,29 +241,7 @@ export function typingLabel(
   return `${names[0]}, ${names[1]} and ${others} others are typing`;
 }
 
-/**
- * Why a group did not get made.
- *
- * The filter refusals stay vague on purpose, the same as the composer's — see
- * `refusalMessage` above.
- */
-export function groupNameError(reason: Refusal | "no-profile"): string {
-  switch (reason) {
-    case "no-profile":
-      return "Your account is still syncing. Try again shortly.";
-    case "empty":
-      return "Give it a name first.";
-    case "too-long":
-      return "That name is too long.";
-    default:
-      return "That name will not work. Try another.";
-  }
-}
-
-
-export function openDmError(
-  reason: "no-profile" | "unknown",
-): string {
+export function openDmError(reason: "no-profile" | "unknown"): string {
   switch (reason) {
     case "unknown":
       return "That account is gone.";
@@ -311,53 +300,6 @@ export function untilLabel(until: number, now: number): string {
   if (minutes < 60) return minutes === 1 ? "a minute" : `${minutes} minutes`;
   const hours = Math.round(minutes / 60);
   return hours === 1 ? "an hour" : `${hours} hours`;
-}
-
-/**
- * Asking the chat column to show a group's panel.
- *
- * The panels — who is in a group, what it is called, who may join — take the
- * conversation column over rather than opening a sheet on top of everything.
- * That is what they should do: a group's membership is a place in this app, not
- * a dialog, and a dialog is exactly the thing that goes away the moment you
- * touch what is behind it.
- *
- * The trouble is that the column is not the only place they are opened from.
- * The cog on a group's row is inside it, but the one in the thread header is in
- * the other pane entirely, and threading a callback from a conversation row and
- * a thread header into one piece of state means a context around both, holding
- * a value neither pane wants to re-render for.
- *
- * So: a window event, exactly as `requestSettings` in `src/lib/preferences.ts`
- * does it, and for the same reason. Callers need nothing but this module, and
- * the column listens and shows itself.
- */
-const GROUP_PANEL_EVENT = "50x:group-panel";
-
-/** Which of the two the column should show. */
-export type GroupPanelMode = "add" | "settings";
-
-export type GroupPanelRequest = {
-  conversationId: string;
-  mode: GroupPanelMode;
-};
-
-const groupPanelChannel = channel<GroupPanelRequest>(GROUP_PANEL_EVENT);
-
-/** Ask for one. Nothing happens where the conversation column is not mounted,
- *  which is everywhere outside chat. */
-export function requestGroupPanel(
-  conversationId: string,
-  mode: GroupPanelMode,
-) {
-  groupPanelChannel.request({ conversationId, mode });
-}
-
-/** The column's side of it. Returns the unsubscribe, for an effect's cleanup. */
-export function onGroupPanelRequest(
-  handler: (request: GroupPanelRequest) => void,
-) {
-  return groupPanelChannel.subscribe(handler);
 }
 
 /**

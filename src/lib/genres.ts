@@ -13,7 +13,7 @@ import type { Icon } from "@/lib/icons";
  * The presentation half of a genre — everything the catalogue does not carry.
  *
  * `activity.ts` carries the `Genre` type and knows a genre only as one of six
- * strings. What a card, a filter menu and the rail's search results need on
+ * strings. What a card, a filter menu and search results need on
  * top of that is a human label, a mark, and a colour, none of which upstream
  * supplies and none of which a build script could invent. So they live here,
  * hand-written, keyed by the same six strings.

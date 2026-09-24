@@ -12,6 +12,7 @@ export function CatalogueCard({
   category,
   hueColor,
   icon: Icon,
+  showCategory = true,
   note,
 }: {
   title: string;
@@ -20,6 +21,7 @@ export function CatalogueCard({
   category: string;
   hueColor: string;
   icon: IconType;
+  showCategory?: boolean;
   note?: string;
 }) {
   // A handful of upstream tiles point at art that is not in the repo, and one
@@ -84,13 +86,15 @@ export function CatalogueCard({
          * out of the way — the title is truncated at either height, so the
          * motion bought nothing and cost a moving target to read.
          */}
-        <div className="flex items-center gap-1.5">
-          <Icon
-            className="size-3.5 shrink-0"
-            style={{ color: "color-mix(in oklab, var(--hue) 70%, white)" }}
-          />
-          <span className="text-xs text-white/75">{category}</span>
-        </div>
+        {showCategory && (
+          <div className="flex items-center gap-1.5">
+            <Icon
+              className="size-3.5 shrink-0"
+              style={{ color: "color-mix(in oklab, var(--hue) 70%, white)" }}
+            />
+            <span className="text-xs text-white/75">{category}</span>
+          </div>
+        )}
 
         <p className="mt-1 truncate text-[0.9375rem] font-medium text-white">
           {title}
