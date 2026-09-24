@@ -30,6 +30,7 @@ import type * as dataMaintenance from "../dataMaintenance.js";
 import type * as experience from "../experience.js";
 import type * as features from "../features.js";
 import type * as gameViews from "../gameViews.js";
+import type * as geometry from "../geometry.js";
 import type * as http from "../http.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as moderation_confusables from "../moderation/confusables.js";
@@ -56,6 +57,7 @@ import type * as simulator_publishedModel from "../simulator/publishedModel.js";
 import type * as simulator_saves from "../simulator/saves.js";
 import type * as simulator_shared from "../simulator/shared.js";
 import type * as timeoutState from "../timeoutState.js";
+import type * as timeoutPuzzles from "../timeoutPuzzles.js";
 import type * as timeouts from "../timeouts.js";
 import type * as users from "../users.js";
 
@@ -88,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   experience: typeof experience;
   features: typeof features;
   gameViews: typeof gameViews;
+  geometry: typeof geometry;
   http: typeof http;
   leaderboard: typeof leaderboard;
   "moderation/confusables": typeof moderation_confusables;
@@ -114,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   "simulator/saves": typeof simulator_saves;
   "simulator/shared": typeof simulator_shared;
   timeoutState: typeof timeoutState;
+  timeoutPuzzles: typeof timeoutPuzzles;
   timeouts: typeof timeouts;
   users: typeof users;
 }>;
