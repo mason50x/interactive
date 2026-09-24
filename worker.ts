@@ -17,7 +17,7 @@ function isAccessOpen(now: Date = new Date()): boolean {
   const minutes = hour * 60 + minute;
   return (
     ["Mon", "Tue", "Wed", "Thu", "Fri"].includes(weekday ?? "") &&
-    minutes >= 7 * 60 + 35 &&
+    minutes >= 7 * 60 + 30 &&
     minutes < 14 * 60 + 55
   );
 }
@@ -47,7 +47,7 @@ function accessClosedResponse(request: Request): Response {
   return new Response(
     request.method === "HEAD"
       ? null
-      : '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Outside working hours</title><body><main><h1>Outside working hours</h1><p>Access is available Monday–Friday, 7:35 a.m.–2:55 p.m. Central time.</p><p>Please return during working hours.</p></main></body></html>',
+      : '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Outside working hours</title><body><main><h1>Outside working hours</h1><p>Access is available Monday–Friday, 7:30 a.m.–2:55 p.m. Central time.</p><p>Please return during working hours.</p></main></body></html>',
     {
       status: 403,
       headers: {
@@ -65,8 +65,8 @@ function accessClosedResponse(request: Request): Response {
 export default {
   async fetch(request: Request, env, ctx) {
     // Production-only gate: development servers stay up around the clock.
-    // Blocks Friday 2:55 p.m. through Monday 7:35 a.m. Central, plus every
-    // night outside 7:35 a.m.–2:55 p.m. on weekdays. Loopback requests are
+    // Blocks Friday 2:55 p.m. through Monday 7:30 a.m. Central, plus every
+    // night outside 7:30 a.m.–2:55 p.m. on weekdays. Loopback requests are
     // always development servers (wrangler dev / vinext dev), which also
     // serve the production bundle with NODE_ENV inlined as "production".
     if (

@@ -55,7 +55,7 @@ describe("Worker availability", () => {
   });
 
   it.each([
-    "2026-09-14T07:35:00-05:00",
+    "2026-09-14T07:30:00-05:00",
     "2026-09-14T10:00:00-05:00",
     "2026-09-18T14:54:59-05:00",
   ])("serves production requests at %s", async (time) => {
@@ -75,7 +75,7 @@ describe("Worker availability", () => {
   });
 
   it.each([
-    "2026-09-14T07:34:59-05:00",
+    "2026-09-14T07:29:59-05:00",
     "2026-09-18T14:55:00-05:00",
     "2026-09-19T12:00:00-05:00",
     "2026-09-20T23:00:00-05:00",
@@ -144,7 +144,7 @@ describe("Worker availability", () => {
 
   it("preserves response policy", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-14T07:35:00-05:00"));
+    vi.setSystemTime(new Date("2026-09-14T07:30:00-05:00"));
     fetchApp.mockResolvedValue(new Response("app"));
     const response = await worker.fetch(
       new Request("https://example.com/home"),
