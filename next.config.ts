@@ -18,6 +18,21 @@ import type { NextConfig } from "next";
  */
 
 const nextConfig: NextConfig = {
+  /**
+   * Keep pages alive across navigations.
+   *
+   * With this on, the router hides the page you leave with React's
+   * `<Activity>` instead of unmounting it, so going from a game to chat and
+   * back finds the game where you left it — same for an open conversation or
+   * the experience browser's tabs. The router keeps the three most recent
+   * pages this way; older ones render fresh.
+   *
+   * Hidden pages run their effect cleanups, which is what stops the playtime
+   * lease while you are elsewhere: see `useExperienceQuota`, which holds the
+   * player mounted through that pause rather than tearing it down.
+   */
+  cacheComponents: true,
+
   experimental: {
     /**
      * How long the router may reuse what it has already fetched.
