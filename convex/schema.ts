@@ -90,6 +90,12 @@ export default defineSchema({
     ceoCleared: v.optional(v.boolean()),
     issuedBy: v.string(),
     issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
+    /**
+     * Whether twenty geometry puzzles in a row lift this timeout early (see
+     * `timeoutPuzzles.ts`). Missing on rows from before the option, which
+     * read as on, the default.
+     */
+    mathBypass: v.optional(v.boolean()),
     updatedAt: v.number(),
   }).index("byClerkId", ["clerkId"])
     .index("byIssuedBy", ["issuedBy"])
