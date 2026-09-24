@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { publishedFields } from "./simulator/publishedModel";
 import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
+import { puzzleParams } from "./geometry";
 
 export default defineSchema({
   leaderboardScores: defineTable({
@@ -94,6 +95,16 @@ export default defineSchema({
     .index("byIssuedBy", ["issuedBy"])
     .index("byCeoClearedAndUpdatedAt", ["ceoCleared", "updatedAt"])
     .index("byEnabledAndUpdatedAt", ["enabled", "updatedAt"]),
+  /** One working-off streak per timed-out user; see `timeoutPuzzles.ts`. */
+  timeoutPuzzles: defineTable({
+    clerkId: v.string(),
+    timeoutId: v.id("userTimeouts"),
+    timeoutExpiresAt: v.number(),
+    session: v.string(),
+    streak: v.number(),
+    params: puzzleParams,
+    issuedAt: v.number(),
+  }).index("byClerkId", ["clerkId"]),
   timeoutAudit: defineTable({
     clerkId: v.string(),
     actor: v.string(),

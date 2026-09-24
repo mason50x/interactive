@@ -2,7 +2,9 @@ import { fetchQuery } from "convex/nextjs";
 import { api } from "@convex/_generated/api";
 import { TimeoutMessage } from "@/components/app/timeout-message";
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
+import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { notFound } from "next/navigation";
 import { MeteredActivity } from "@/components/activity/metered-activity";
 import { activityBundleUrl } from "@/lib/assets";
@@ -37,7 +39,14 @@ export default async function LearnPage({
   const token = await getToken({ template: "convex" });
   if (!token) throw new Error("Your session is not available.");
   const timeout = await fetchQuery(api.timeouts.mine, {}, { token });
-  if (timeout) return <TimeoutMessage {...timeout} />;
+  if (timeout)
+    return (
+      <ClerkProvider>
+        <ConvexClientProvider>
+          <TimeoutMessage {...timeout} />
+        </ConvexClientProvider>
+      </ClerkProvider>
+    );
   const { slug } = await params;
 
   const activity = findActivity(slug);

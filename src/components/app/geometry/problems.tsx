@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
+import type { PuzzleParams } from "@convex/geometry";
 import styles from "./geometry.module.css";
 
 /**
- * Geometry puzzles for the timeout screen. Each generator draws its own figure
- * from the same numbers it asks about, so the picture is always to scale.
+ * The timeout-screen puzzles, as the browser shows them. The server picks the
+ * givens and keeps the answer (see `convex/geometry.ts`); this draws the
+ * figure from those givens, to scale, and words the question.
  */
 
 export type Problem = {
@@ -12,17 +14,16 @@ export type Problem = {
   /** Read aloud in place of the figure. */
   description: string;
   figure: ReactNode;
-  answer: number;
-  /** How far off a guess may be and still count; defaults to 0.01. */
-  tolerance?: number;
   /** Shown after the input, e.g. "°" or "π". */
   unit?: string;
   hint: string;
-  solution: string;
 };
 
-type Rng = () => number;
 type Pt = readonly [number, number];
+type Params<Kind extends PuzzleParams["kind"]> = Extract<
+  PuzzleParams,
+  { kind: Kind }
+>;
 
 export const WIDTH = 400;
 export const HEIGHT = 300;
@@ -34,22 +35,6 @@ const ROSE = "#e11d48";
 const EMERALD = "#059669";
 const VIOLET = "#7c3aed";
 
-/** A small seeded generator, so a problem is reproducible from its seed. */
-function mulberry32(seed: number): Rng {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const int = (rng: Rng, min: number, max: number) =>
-  min + Math.floor(rng() * (max - min + 1));
-const pick = <T,>(rng: Rng, items: readonly T[]) =>
-  items[Math.floor(rng() * items.length)];
 const rad = (degrees: number) => (degrees * Math.PI) / 180;
 const fmt = (n: number) =>
   Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
@@ -267,9 +252,7 @@ export function FigureFrame({
   );
 }
 
-function triangleAngles(rng: Rng): Problem {
-  const a = int(rng, 40, 75);
-  const b = Math.min(int(rng, 40, 75), 150 - a);
+function triangleAngles({ a, b }: Params<"triangle">): Problem {
   const c = 180 - a - b;
   const apexReach = Math.sin(rad(b)) / Math.sin(rad(c));
   const map = fit([
@@ -312,25 +295,18 @@ function triangleAngles(rng: Rng): Problem {
         />
       </>
     ),
-    answer: c,
     unit: "°",
     hint: "The three angles of any triangle add up to 180°.",
-    solution: `180° − ${a}° − ${b}° = ${c}°`,
   };
 }
 
-function pythagoras(rng: Rng): Problem {
-  const triple = pick(rng, [
-    [3, 4, 5],
-    [6, 8, 10],
-    [5, 12, 13],
-    [8, 15, 17],
-    [9, 12, 15],
-    [12, 16, 20],
-  ] as const);
-  const [a, b] = rng() < 0.5 ? [triple[0], triple[1]] : [triple[1], triple[0]];
-  const c = triple[2];
-  const askHypotenuse = rng() < 0.6;
+function pythagoras(params: Params<"pythagoras">): Problem {
+  const askHypotenuse = params.mode === "hypotenuse";
+  // The figure needs all three sides to be to scale; the one not given is
+  // never printed.
+  const a = params.a;
+  const b = askHypotenuse ? params.b : Math.sqrt(params.c ** 2 - a * a);
+  const c = askHypotenuse ? Math.hypot(a, b) : params.c;
 
   // Right angle at the origin, legs along the axes, a square on every side.
   const r: Pt = [0, 0];
@@ -421,17 +397,12 @@ function pythagoras(rng: Rng): Problem {
         </Label>
       </>
     ),
-    answer: askHypotenuse ? c : b,
     hint: "The squares on the two legs add up to the square on the hypotenuse: a² + b² = c².",
-    solution: askHypotenuse
-      ? `√(${a}² + ${b}²) = √${a * a + b * b} = ${c}`
-      : `√(${c}² − ${a}²) = √${c * c - a * a} = ${b}`,
   };
 }
 
-function circle(rng: Rng): Problem {
-  const r = int(rng, 2, 9);
-  const askArea = rng() < 0.5;
+function circle({ mode, r }: Params<"circle">): Problem {
+  const askArea = mode === "area";
   const center: Pt = [WIDTH / 2, HEIGHT / 2];
   const R = 112;
   const edge = polar(center, R, -35);
@@ -501,24 +472,22 @@ function circle(rng: Rng): Problem {
         )}
       </>
     ),
-    answer: askArea ? r * r : 2 * r,
     unit: "π",
     hint: askArea
       ? "Area is π times the radius squared: A = πr²."
       : "Circumference is 2π times the radius: C = 2πr.",
-    solution: askArea ? `π × ${r}² = ${r * r}π` : `2 × π × ${r} = ${2 * r}π`,
   };
 }
 
-function inscribedAngle(rng: Rng): Problem {
-  const central = 2 * int(rng, 30, 80);
+function inscribedAngle(params: Params<"inscribed">): Problem {
+  const askInscribed = params.mode === "inscribed";
+  const central = askInscribed ? params.central : params.inscribed * 2;
   const inscribed = central / 2;
-  const askInscribed = rng() < 0.6;
   const center: Pt = [WIDTH / 2, HEIGHT / 2 + 6];
   const R = 118;
   const a = polar(center, R, 90 - central / 2);
   const b = polar(center, R, 90 + central / 2);
-  const p = polar(center, R, -90 + int(rng, -35, 35));
+  const p = polar(center, R, -90 + params.p);
   return {
     topic: "Inscribed angles",
     prompt: askInscribed ? (
@@ -602,12 +571,8 @@ function inscribedAngle(rng: Rng): Problem {
         <Label at={add(center, [0, -18])}>O</Label>
       </>
     ),
-    answer: askInscribed ? inscribed : central,
     unit: "°",
     hint: "An inscribed angle is half the central angle that stands on the same arc.",
-    solution: askInscribed
-      ? `${central}° ÷ 2 = ${inscribed}°`
-      : `${inscribed}° × 2 = ${central}°`,
   };
 }
 
@@ -620,9 +585,7 @@ const POLYGON_NAMES: Record<number, string> = {
   12: "dodecagon",
 };
 
-function polygonAngle(rng: Rng): Problem {
-  const n = pick(rng, [5, 6, 8, 9, 10, 12] as const);
-  const angle = (180 * (n - 2)) / n;
+function polygonAngle({ n }: Params<"polygon">): Problem {
   const center: Pt = [WIDTH / 2, HEIGHT / 2 + 4];
   const R = 126;
   const start = -90 + (n % 2 === 0 ? 180 / n : 0);
@@ -666,50 +629,50 @@ function polygonAngle(rng: Rng): Problem {
         <Dot at={corners[0]} color={VIOLET} />
       </>
     ),
-    answer: angle,
     unit: "°",
     hint: `From one corner, a ${POLYGON_NAMES[n]} splits into ${n} − 2 triangles, each worth 180°.`,
-    solution: `(${n} − 2) × 180° ÷ ${n} = ${angle}°`,
   };
 }
 
 type Corner = "upper right" | "upper left" | "lower left" | "lower right";
 
-const RELATIONSHIPS = [
-  {
+const RELATIONSHIPS = {
+  corresponding: {
     name: "Corresponding angles",
     rule: "Corresponding angles are equal",
     known: ["top", "upper right"],
     asked: ["bottom", "upper right"],
     supplementary: false,
   },
-  {
+  alternate: {
     name: "Alternate interior angles",
     rule: "Alternate interior angles are equal",
     known: ["top", "lower right"],
     asked: ["bottom", "upper left"],
     supplementary: false,
   },
-  {
+  "co-interior": {
     name: "Co-interior angles",
     rule: "Co-interior angles add up to 180°",
     known: ["top", "lower right"],
     asked: ["bottom", "upper right"],
     supplementary: true,
   },
-  {
+  vertical: {
     name: "Vertical angles",
     rule: "Vertically opposite angles are equal",
     known: ["top", "upper right"],
     asked: ["top", "lower left"],
     supplementary: false,
   },
-] as const;
+} as const;
 
-function parallelLines(rng: Rng): Problem {
-  let tilt = int(rng, 40, 140);
-  if (Math.abs(tilt - 90) < 12) tilt += tilt < 90 ? -12 : 12;
-  const relationship = pick(rng, RELATIONSHIPS);
+function parallelLines(params: Params<"parallel">): Problem {
+  const relationship = RELATIONSHIPS[params.relationship];
+  // The tilt is the upper-right angle; the known one is either it or its
+  // supplement, depending on which corner the relationship starts from.
+  const tilt =
+    relationship.known[1] === "upper right" ? params.known : 180 - params.known;
 
   const up: Pt = [Math.cos(rad(tilt)), -Math.sin(rad(tilt))];
   const directions: Record<Corner, [Pt, Pt]> = {
@@ -750,7 +713,6 @@ function parallelLines(rng: Rng): Problem {
     );
   };
   const known = value(relationship.known[1]);
-  const answer = value(relationship.asked[1]);
   const chevron = (y: number) => (
     <path
       d={`M${316} ${y - 7} L${326} ${y} L${316} ${y + 7}`}
@@ -816,22 +778,14 @@ function parallelLines(rng: Rng): Problem {
         <Dot at={crossings.bottom} />
       </>
     ),
-    answer,
     unit: "°",
     hint: `${relationship.name}: ${relationship.rule.toLowerCase()}.`,
-    solution: relationship.supplementary
-      ? `180° − ${known}° = ${answer}°`
-      : `${relationship.rule}, so ? = ${answer}°`,
   };
 }
 
-function trapezoid(rng: Rng): Problem {
-  const top = int(rng, 4, 10);
-  const base = top + int(rng, 2, 6);
-  let height = int(rng, 3, 8);
-  if (((top + base) * height) % 2 === 1) height += 1;
-  const area = ((top + base) * height) / 2;
-  const offset = (base - top) * (0.25 + rng() * 0.5);
+function trapezoid(params: Params<"trapezoid">): Problem {
+  const { top, base, height } = params;
+  const offset = (base - top) * params.offset;
 
   const raw: Pt[] = [
     [0, 0],
@@ -893,10 +847,8 @@ function trapezoid(rng: Rng): Problem {
         </Label>
       </>
     ),
-    answer: area,
     unit: "units²",
     hint: "Average the two parallel sides, then multiply by the height.",
-    solution: `(${top} + ${base}) ÷ 2 × ${height} = ${area}`,
   };
 }
 
@@ -910,15 +862,13 @@ function fromSides(base: number, left: number, right: number): Pt[] {
   ];
 }
 
-function similarTriangles(rng: Rng): Problem {
-  const [base, left, right] = pick(rng, [
-    [4, 6, 7],
-    [3, 5, 6],
-    [5, 6, 8],
-    [4, 5, 7],
-    [6, 4, 5],
-  ] as const);
-  const k = pick(rng, [1.5, 2, 2.5, 3] as const);
+function similarTriangles({
+  base,
+  left,
+  right,
+  bigBase,
+}: Params<"similar">): Problem {
+  const k = bigBase / base;
   const small = fromSides(base, left, right);
   const gap = base * 0.9;
   const big = small.map((p) => add(scale(p, k), [base + gap, 0]));
@@ -989,17 +939,11 @@ function similarTriangles(rng: Rng): Problem {
         {sides(g, [fmt(base * k), "?"])}
       </>
     ),
-    answer: left * k,
     hint: "Similar shapes grow by one scale factor. Compare the two blue bases to find it.",
-    solution: `${fmt(base * k)} ÷ ${base} = ${k}, and ${left} × ${k} = ${fmt(left * k)}`,
   };
 }
 
-function shadedCorners(rng: Rng): Problem {
-  const side = 2 * int(rng, 2, 7);
-  const r = side / 2;
-  const exact = side * side - Math.PI * r * r;
-  const answer = Math.round(exact * 10) / 10;
+function shadedCorners({ side }: Params<"shaded">): Problem {
   const size = 200;
   const [x, y] = [(WIDTH - size) / 2, (HEIGHT - size) / 2];
   const center: Pt = [WIDTH / 2, HEIGHT / 2];
@@ -1072,26 +1016,30 @@ function shadedCorners(rng: Rng): Problem {
         ))}
       </>
     ),
-    answer,
-    tolerance: Math.max(0.1, answer * 0.006),
     unit: "units²",
     hint: "Take the circle away from the square. The circle's radius is half the side.",
-    solution: `${side}² − π × ${fmt(r)}² ≈ ${side * side} − ${fmt(Math.PI * r * r)} ≈ ${answer}`,
   };
 }
 
-export const GENERATORS = [
-  triangleAngles,
-  pythagoras,
-  circle,
-  inscribedAngle,
-  polygonAngle,
-  parallelLines,
-  trapezoid,
-  similarTriangles,
-  shadedCorners,
-] as const;
-
-export function makeProblem(kind: number, seed: number): Problem {
-  return GENERATORS[kind % GENERATORS.length](mulberry32(seed));
+export function describePuzzle(params: PuzzleParams): Problem {
+  switch (params.kind) {
+    case "triangle":
+      return triangleAngles(params);
+    case "pythagoras":
+      return pythagoras(params);
+    case "circle":
+      return circle(params);
+    case "inscribed":
+      return inscribedAngle(params);
+    case "polygon":
+      return polygonAngle(params);
+    case "parallel":
+      return parallelLines(params);
+    case "trapezoid":
+      return trapezoid(params);
+    case "similar":
+      return similarTriangles(params);
+    case "shaded":
+      return shadedCorners(params);
+  }
 }

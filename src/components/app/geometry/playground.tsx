@@ -1,55 +1,160 @@
 "use client";
 
-import { useId, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import { useConvexAuth, useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "@convex/_generated/api";
 import {
   FigureFrame,
-  GENERATORS,
-  makeProblem,
-  type Problem,
+  describePuzzle,
 } from "@/components/app/geometry/problems";
 
-type Status = "open" | "wrong" | "right" | "revealed";
+type Started = Extract<
+  FunctionReturnType<typeof api.timeoutPuzzles.start>,
+  { status: "started" }
+>;
+type Puzzle = Started["puzzle"];
+type Solution = { display: string; working: string };
 
-function ProblemCard({
-  problem,
-  onSolved,
-  onGiveUp,
-  onNext,
+type Notice =
+  | { kind: "correct"; solution: Solution }
+  | { kind: "wrong"; solution: Solution }
+  | { kind: "late"; solution: Solution }
+  | { kind: "left" }
+  | { kind: "expired" };
+
+type Run =
+  | { phase: "loading" }
+  | { phase: "playing"; session: string; puzzle: Puzzle; notice?: Notice }
+  | { phase: "stale" }
+  | { phase: "passed"; solution: Solution }
+  | { phase: "clear" };
+
+function useSecondsLeft(deadline: number | undefined) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (deadline === undefined) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [deadline]);
+  return deadline === undefined
+    ? 0
+    : Math.max(0, Math.ceil((deadline - now) / 1000));
+}
+
+function NoticeBanner({ notice }: { notice: Notice }) {
+  switch (notice.kind) {
+    case "correct":
+      return (
+        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-800">
+          <span className="font-medium">Correct.</span> Last puzzle:{" "}
+          {notice.solution.working}
+        </p>
+      );
+    case "wrong":
+      return (
+        <p className="rounded-lg bg-rose-50 px-3 py-2 text-rose-800">
+          <span className="font-medium">
+            The last one was {notice.solution.display}, so your streak starts
+            over.
+          </span>{" "}
+          {notice.solution.working}
+        </p>
+      );
+    case "late":
+      return (
+        <p className="rounded-lg bg-rose-50 px-3 py-2 text-rose-800">
+          <span className="font-medium">
+            Too slow, it was {notice.solution.display}.
+          </span>{" "}
+          Your streak starts over.
+        </p>
+      );
+    case "left":
+      return (
+        <p className="rounded-lg bg-rose-50 px-3 py-2 text-rose-800">
+          <span className="font-medium">You left the tab.</span> Your streak
+          starts over with a new puzzle.
+        </p>
+      );
+    case "expired":
+      return (
+        <p className="rounded-lg bg-rose-50 px-3 py-2 text-rose-800">
+          <span className="font-medium">Time ran out.</span> Your streak starts
+          over with a new puzzle.
+        </p>
+      );
+  }
+}
+
+function Progress({ streak, goal }: { streak: number; goal: number }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="text-neutral-500">
+          Get {goal} right in a row to lift your timeout
+        </span>
+        <span className="font-semibold tabular-nums">
+          {streak}/{goal}
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Puzzles solved in a row"
+        aria-valuemin={0}
+        aria-valuemax={goal}
+        aria-valuenow={streak}
+        className="mt-2 grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${goal}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: goal }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 rounded-full transition-colors duration-300 ${
+              i < streak ? "bg-emerald-500" : "bg-neutral-200"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PuzzleCard({
+  puzzle,
+  pending,
+  onAnswer,
+  onExpire,
 }: {
-  problem: Problem;
-  onSolved: (firstTry: boolean) => void;
-  onGiveUp: () => void;
-  onNext: () => void;
+  puzzle: Puzzle;
+  pending: boolean;
+  onAnswer: (guess: number) => void;
+  onExpire: () => void;
 }) {
   const inputId = useId();
+  const problem = describePuzzle(puzzle.params);
   const [guess, setGuess] = useState("");
-  const [status, setStatus] = useState<Status>("open");
-  const [misses, setMisses] = useState(0);
   const [hinted, setHinted] = useState(false);
-  const done = status === "right" || status === "revealed";
+  const secondsLeft = useSecondsLeft(puzzle.deadline);
+  const expired = secondsLeft === 0;
 
-  const check = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (expired) onExpire();
+  }, [expired, onExpire]);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (done) return onNext();
-    const value = Number(guess.replace(/[^\d.\-]/g, ""));
-    if (guess.trim() === "" || Number.isNaN(value)) return;
-    if (Math.abs(value - problem.answer) <= (problem.tolerance ?? 0.01)) {
-      setStatus("right");
-      onSolved(misses === 0 && !hinted);
-    } else {
-      setStatus("wrong");
-      setMisses((count) => count + 1);
-    }
+    const value = Number(guess.trim().replace(/[^\d.\-]/g, ""));
+    if (pending || guess.trim() === "" || !Number.isFinite(value)) return;
+    onAnswer(value);
   };
-
-  const value = Number.isInteger(problem.answer)
-    ? String(problem.answer)
-    : problem.answer.toFixed(1);
-  const answer = !problem.unit
-    ? value
-    : problem.unit === "units²"
-      ? `${value} ${problem.unit}`
-      : `${value}${problem.unit}`;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
@@ -59,10 +164,18 @@ function ProblemCard({
         </FigureFrame>
       </div>
       <div className="p-5 sm:p-6">
-        <p className="text-sm font-medium text-blue-600">{problem.topic}</p>
+        <div className="flex items-baseline justify-between gap-4 text-sm">
+          <p className="font-medium text-blue-600">{problem.topic}</p>
+          <p
+            className={`tabular-nums ${secondsLeft <= 15 ? "font-medium text-rose-600" : "text-neutral-500"}`}
+          >
+            {Math.floor(secondsLeft / 60)}:
+            {String(secondsLeft % 60).padStart(2, "0")}
+          </p>
+        </div>
         <p className="mt-1.5 leading-relaxed">{problem.prompt}</p>
 
-        <form onSubmit={check} className="mt-4 flex items-stretch gap-2">
+        <form onSubmit={submit} className="mt-4 flex items-stretch gap-2">
           <label htmlFor={inputId} className="sr-only">
             Your answer
           </label>
@@ -70,13 +183,10 @@ function ProblemCard({
             <input
               id={inputId}
               value={guess}
-              onChange={(event) => {
-                setGuess(event.target.value);
-                if (status === "wrong") setStatus("open");
-              }}
-              readOnly={done}
+              onChange={(event) => setGuess(event.target.value)}
               inputMode="decimal"
               autoComplete="off"
+              autoFocus
               placeholder="Your answer"
               className="min-w-0 flex-1 bg-transparent px-3 py-2 tabular-nums outline-none placeholder:text-neutral-400"
             />
@@ -86,137 +196,224 @@ function ProblemCard({
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
+            disabled={pending}
+            className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-50"
           >
-            {done ? "Next" : "Check"}
+            Check
           </button>
         </form>
 
         <div aria-live="polite" className="text-sm">
-          {status === "wrong" && (
-            <p className="mt-3 text-rose-600">Not quite. Give it another go.</p>
-          )}
-          {status === "right" && (
-            <p className="mt-3 text-emerald-700">
-              <span className="font-medium">Correct!</span> {problem.solution}
-            </p>
-          )}
-          {status === "revealed" && (
-            <p className="mt-3 text-neutral-700">
-              <span className="font-medium">The answer is {answer}.</span>{" "}
-              {problem.solution}
-            </p>
-          )}
-          {hinted && !done && (
+          {hinted ? (
             <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
               {problem.hint}
             </p>
-          )}
-        </div>
-
-        {!done && (
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-500">
-            {!hinted && (
-              <button
-                type="button"
-                onClick={() => setHinted(true)}
-                className="underline-offset-4 hover:text-black hover:underline"
-              >
-                Hint
-              </button>
-            )}
-            {misses > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setStatus("revealed");
-                  onGiveUp();
-                }}
-                className="underline-offset-4 hover:text-black hover:underline"
-              >
-                Show answer
-              </button>
-            )}
+          ) : (
             <button
               type="button"
-              onClick={onNext}
-              className="underline-offset-4 hover:text-black hover:underline"
+              onClick={() => setHinted(true)}
+              className="mt-4 text-neutral-500 underline-offset-4 hover:text-black hover:underline"
             >
-              Skip
+              Hint
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </article>
   );
 }
 
 /**
- * Something to do while a timeout runs out: an endless deck of geometry
- * puzzles, each drawn to scale. Nothing here is saved or reported.
+ * Work the timeout off: twenty geometry puzzles right in a row lifts it.
+ *
+ * The server owns the streak, the timer and the answers
+ * (`convex/timeoutPuzzles.ts`); this page only shows them. Any page load
+ * starts a new run, and leaving the tab ends the current streak.
  */
 export function GeometryPlayground() {
-  // A fixed first problem keeps the server render and hydration in step;
-  // everything after it is random.
-  const [round, setRound] = useState({ kind: 0, seed: 1, count: 0 });
-  const [solved, setSolved] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const problem = useMemo(
-    () => makeProblem(round.kind, round.seed),
-    [round.kind, round.seed],
+  const { isAuthenticated } = useConvexAuth();
+  const start = useMutation(api.timeoutPuzzles.start);
+  const answer = useMutation(api.timeoutPuzzles.answer);
+  const forfeit = useMutation(api.timeoutPuzzles.forfeit);
+  const [run, setRun] = useState<Run>({ phase: "loading" });
+  const [pending, setPending] = useState(false);
+  const session = run.phase === "playing" ? run.session : null;
+  const away = useRef(false);
+
+  const begin = useCallback(async () => {
+    setRun({ phase: "loading" });
+    const result = await start({});
+    setRun(
+      result.status === "started"
+        ? { phase: "playing", session: result.session, puzzle: result.puzzle }
+        : { phase: "clear" },
+    );
+  }, [start]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    void start({}).then((result) => {
+      if (cancelled) return;
+      setRun(
+        result.status === "started"
+          ? { phase: "playing", session: result.session, puzzle: result.puzzle }
+          : { phase: "clear" },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, start]);
+
+  const reset = useCallback(
+    async (kind: "left" | "expired") => {
+      if (!session) return;
+      const result = await forfeit({ session });
+      setRun((current) =>
+        current.phase !== "playing" || current.session !== session
+          ? current
+          : result.status === "stale"
+            ? { phase: "stale" }
+            : { ...current, puzzle: result.puzzle, notice: { kind } },
+      );
+    },
+    [forfeit, session],
   );
 
-  const next = () =>
-    setRound((current) => ({
-      kind:
-        (current.kind +
-          1 +
-          Math.floor(Math.random() * (GENERATORS.length - 1))) %
-        GENERATORS.length,
-      seed: Math.floor(Math.random() * 2 ** 31),
-      count: current.count + 1,
-    }));
+  // Leaving the tab, the window or the page ends the streak. The server does
+  // the resetting; a reload or a second tab also restarts from `start`.
+  useEffect(() => {
+    if (!session) return;
+    const leave = () => {
+      if (away.current) return;
+      away.current = true;
+      void reset("left");
+    };
+    const back = () => {
+      if (document.visibilityState === "visible" && document.hasFocus())
+        away.current = false;
+    };
+    const onVisibility = () =>
+      document.visibilityState === "hidden" ? leave() : back();
+    if (!document.hasFocus() || document.visibilityState === "hidden") leave();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", leave);
+    window.addEventListener("pagehide", leave);
+    window.addEventListener("focus", back);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", leave);
+      window.removeEventListener("pagehide", leave);
+      window.removeEventListener("focus", back);
+    };
+  }, [session, reset]);
+
+  const submit = async (guess: number) => {
+    if (!session) return;
+    setPending(true);
+    try {
+      const result = await answer({ session, guess });
+      if (result.status === "stale") setRun({ phase: "stale" });
+      else if (result.status === "passed")
+        setRun({ phase: "passed", solution: result.solution });
+      else
+        setRun({
+          phase: "playing",
+          session,
+          puzzle: result.puzzle,
+          notice: { kind: result.status, solution: result.solution },
+        });
+    } finally {
+      setPending(false);
+    }
+  };
+
+  // Inside the app the timeout gate swaps this screen out on its own. Pages
+  // rendered on the server with the timeout baked in need a fresh load.
+  useEffect(() => {
+    if (run.phase !== "passed" && run.phase !== "clear") return;
+    const timer = window.setTimeout(() => window.location.reload(), 2500);
+    return () => window.clearTimeout(timer);
+  }, [run.phase]);
+
+  const onExpire = useCallback(() => void reset("expired"), [reset]);
 
   return (
     <section
       aria-labelledby="geometry-title"
       className="mx-auto w-full max-w-xl"
     >
-      <header className="flex items-end justify-between gap-4">
-        <div>
-          <h2 id="geometry-title" className="text-xl font-semibold">
-            Geometry break
-          </h2>
-          <p className="mt-1 text-sm text-neutral-500">
-            A few puzzles to pass the time.
-          </p>
-        </div>
-        <dl className="flex shrink-0 gap-4 text-right text-sm">
-          <div>
-            <dt className="text-neutral-500">Solved</dt>
-            <dd className="font-semibold tabular-nums">{solved}</dd>
-          </div>
-          <div>
-            <dt className="text-neutral-500">Streak</dt>
-            <dd className="font-semibold tabular-nums">
-              {streak}
-              {streak >= 3 && <span aria-hidden="true"> 🔥</span>}
-            </dd>
-          </div>
-        </dl>
+      <header>
+        <h2 id="geometry-title" className="text-xl font-semibold">
+          Geometry break
+        </h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Stay on this tab. Leaving it, a wrong answer or running out of time
+          restarts the streak.
+        </p>
       </header>
-      <div className="mt-5">
-        <ProblemCard
-          key={round.count}
-          problem={problem}
-          onSolved={(firstTry) => {
-            setSolved((count) => count + 1);
-            setStreak((count) => (firstTry ? count + 1 : 0));
-          }}
-          onGiveUp={() => setStreak(0)}
-          onNext={next}
-        />
-      </div>
+
+      {run.phase === "playing" && (
+        <>
+          <div className="mt-5">
+            <Progress streak={run.puzzle.streak} goal={run.puzzle.goal} />
+          </div>
+          {run.notice && (
+            <div aria-live="polite" className="mt-5 text-sm">
+              <NoticeBanner notice={run.notice} />
+            </div>
+          )}
+          <div className="mt-5">
+            <PuzzleCard
+              key={`${run.puzzle.deadline}-${run.puzzle.params.kind}`}
+              puzzle={run.puzzle}
+              pending={pending}
+              onAnswer={(guess) => void submit(guess)}
+              onExpire={onExpire}
+            />
+          </div>
+        </>
+      )}
+
+      {run.phase === "loading" && (
+        <div className="mt-5 grid aspect-[4/3] place-items-center rounded-2xl border border-neutral-200 bg-white text-sm text-neutral-500">
+          Setting up your first puzzle…
+        </div>
+      )}
+
+      {run.phase === "stale" && (
+        <div className="mt-5 rounded-2xl border border-neutral-200 bg-white p-6">
+          <p className="leading-relaxed">
+            This run was restarted in another tab or window, so it has ended
+            here.
+          </p>
+          <button
+            type="button"
+            onClick={() => void begin()}
+            className="mt-4 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          >
+            Start over here
+          </button>
+        </div>
+      )}
+
+      {(run.phase === "passed" || run.phase === "clear") && (
+        <div
+          role="status"
+          className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900"
+        >
+          <p className="text-lg font-semibold">
+            {run.phase === "passed"
+              ? "Streak complete. Your timeout is lifted."
+              : "Your timeout has ended."}
+          </p>
+          {run.phase === "passed" && (
+            <p className="mt-1 text-sm">Last one: {run.solution.working}</p>
+          )}
+          <p className="mt-2 text-sm">Taking you back…</p>
+        </div>
+      )}
     </section>
   );
 }
