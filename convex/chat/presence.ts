@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
-import { callerAccount, membership } from "./shared";
+import { accountFor, avatarAppearance, callerAccount, membership } from "./shared";
 
 /**
  * Who is in the room right now.
@@ -12,8 +12,8 @@ import { callerAccount, membership } from "./shared";
  *
  * ## The shape of it
  *
- * Three functions and no state machine. `here` refreshes the caller's own row,
- * `gone` deletes it, and `count` answers how many rows are inside the window.
+ * `here` refreshes the caller's own row, `gone` deletes it, and `count`
+ * answers how many rows are inside the window and names a few visible readers.
  * Nobody is ever marked away, because "away" is a message that has to arrive
  * from a browser that may have already closed — see the note on the `presence`
  * table in `convex/schema.ts` for why absence is derived from a stale timestamp
@@ -84,7 +84,18 @@ export type Presence = {
   present: number;
   /** `present` hit `MAX_PRESENT` and the true number is higher. */
   capped: boolean;
+  people: Array<{
+    clerkId: string;
+    handle: string;
+    displayName?: string;
+    avatarUrl?: string;
+    avatarHue?: number;
+    avatarEmoji?: string;
+    avatarInitials?: string;
+  }>;
 };
+
+const MAX_FACES = 5;
 
 /**
  * I am looking at this conversation.
@@ -94,9 +105,8 @@ export type Presence = {
  * removed — all of them simply write nothing. A presence beat is not a request
  * that needs to explain a refusal.
  *
- * Direct messages are skipped rather than tracked and ignored. There is no
- * count on screen for a conversation with two people in it, so a row would be a
- * write per fifteen seconds that nothing ever reads.
+ * Direct messages use the app-wide activity heartbeat instead, so a peer can
+ * appear online even while reading a different page.
  */
 export const here = mutation({
   args: { conversationId: v.id("conversations") },
@@ -202,9 +212,45 @@ export const count = query({
       )
       .take(MAX_PRESENT);
 
+    // A newly opened room has a reader before their first beat arrives.
+    // Include them in the visible faces just as the count already does.
+    const selfPresent = rows.some((row) => row.clerkId === profile.clerkId);
+    const faceIds = rows.slice(0, MAX_FACES).map((row) => row.clerkId);
+    if (!selfPresent) {
+      if (faceIds.length === MAX_FACES) faceIds.pop();
+      faceIds.unshift(profile.clerkId);
+    }
+    const people = await Promise.all(faceIds.map(async (clerkId) => {
+      const account = clerkId === profile.clerkId ? profile : await accountFor(ctx, clerkId);
+      if (account === null) return null;
+      return {
+        clerkId,
+        handle: account.handle,
+        displayName: account.displayName,
+        ...await avatarAppearance(ctx, account),
+      };
+    }));
+
     return {
-      present: Math.max(rows.length, 1),
+      present: rows.length + Number(!selfPresent),
       capped: rows.length === MAX_PRESENT,
+      people: people.filter((person) => person !== null),
     };
+  },
+});
+
+/** Whether the other person in a DM is active anywhere in the app. */
+export const peerStatus = query({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, { conversationId }): Promise<number | null> => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return null;
+    const member = await membership(ctx, conversationId, profile.clerkId);
+    if (member?.status !== "active" || member.kind !== "dm" || !member.dmPeer)
+      return null;
+    const activity = await ctx.db.query("userActivity")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", member.dmPeer!))
+      .unique();
+    return activity?.lastActiveAt ? activity.lastActiveAt + 60_000 : 0;
   },
 });

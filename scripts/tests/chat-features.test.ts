@@ -83,6 +83,46 @@ test("retry nonce is scoped to the authenticated author and never duplicates a c
   expect(sender?.messagesSent).toBe(101);
 });
 
+test("room faces name active readers and DM status follows app activity", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-24T12:00:00Z"));
+  const { room, alice, bob, eve } = await setup();
+  expect(
+    await alice.query(api.chat.presence.count, { conversationId: room }),
+  ).toMatchObject({
+    present: 1,
+    people: [{ clerkId: "alice", handle: "alice" }],
+  });
+  await bob.mutation(api.chat.presence.here, { conversationId: room });
+  const roomPresence = await alice.query(api.chat.presence.count, {
+    conversationId: room,
+  });
+  expect(roomPresence?.people.map((person) => person.handle)).toEqual([
+    "alice",
+    "bob",
+  ]);
+  expect(roomPresence?.present).toBe(2);
+  expect(
+    await eve.query(api.chat.presence.count, { conversationId: room }),
+  ).toBeNull();
+
+  const opened = await alice.mutation(api.chat.conversations.openDm, {
+    peerClerkId: "bob",
+  });
+  if (!opened.ok) throw new Error("DM did not open");
+  const args = { conversationId: opened.conversationId };
+  expect(await alice.query(api.chat.presence.peerStatus, args)).toBe(0);
+  await bob.mutation(api.users.heartbeat, { path: "/home" });
+  expect(await alice.query(api.chat.presence.peerStatus, args)).toBe(
+    Date.now() + 60_000,
+  );
+  expect(await eve.query(api.chat.presence.peerStatus, args)).toBeNull();
+  vi.setSystemTime(Date.now() + 60_001);
+  expect(
+    (await alice.query(api.chat.presence.peerStatus, args))! < Date.now(),
+  ).toBe(true);
+});
+
 test("offline send identity and immutable retry metadata reject changed requests", async () => {
   const { t, room, alice, bob } = await setup();
   const args = {
