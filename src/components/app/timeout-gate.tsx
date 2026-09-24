@@ -92,7 +92,14 @@ function AccessReveal({
 
 /** Unmount active frames and chat, rather than leaving them running under an overlay. */
 export function TimeoutGate({ children }: { children: ReactNode }) {
-  const timeout = useAuthedQuery(api.timeouts.mine, {});
+  const latest = useAuthedQuery(api.timeouts.mine, {});
+  // The query reads `undefined` again whenever Convex re-checks the session,
+  // which it does on coming back to the tab. Hold the last answer through
+  // that rather than dropping to the loader, which would unmount the whole
+  // app — the game, the chat, the open experience tabs — on every return.
+  const [settled, setSettled] = useState(latest);
+  if (latest !== undefined && latest !== settled) setSettled(latest);
+  const timeout = latest === undefined ? settled : latest;
   if (timeout) return <TimeoutMessage {...timeout} />;
   // Keep the same loader mounted as the query resolves so its ring and
   // constellation continue uninterrupted through the reveal.

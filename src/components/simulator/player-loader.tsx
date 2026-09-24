@@ -2,6 +2,7 @@
 
 import { PlaytimeGate } from "@/components/app/experience-quota";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
 import { CenteredSpinner } from "@/components/ui/spinner";
@@ -23,6 +24,11 @@ const Player = dynamic(() => import("./player"), {
  * failing. The `key` remounts the player when either the account or the
  * program changes, which is what makes the session below it a plain
  * component with an `owner` it can treat as fixed.
+ *
+ * Once the player is up it stays up for that account. Convex drops back to
+ * unauthenticated for a moment whenever it re-checks a token — as it does
+ * when you come back to the tab — and unmounting on that would throw away
+ * the running game.
  */
 export function PlayerLoader(props: {
   contentHash: string;
@@ -30,7 +36,9 @@ export function PlayerLoader(props: {
 }) {
   const { userId } = useAuth();
   const { isAuthenticated } = useConvexAuth();
-  if (!userId || !isAuthenticated) return <CenteredSpinner />;
+  const [readyFor, setReadyFor] = useState<string | null>(null);
+  if (userId && isAuthenticated && readyFor !== userId) setReadyFor(userId);
+  if (!userId || readyFor !== userId) return <CenteredSpinner />;
   return (
     <PlaytimeGate>
       <Player
