@@ -111,7 +111,7 @@ test("idle time is not charged; only short prepaid intervals are consumed", asyn
   expect(result.leaseUntil).toBe(start + 3_615_000);
 });
 
-test("7:35 Central clips the lease, restores quota, and deletes old limiter and lease records", async () => {
+test("7:30 Central clips the lease, restores quota, and deletes old limiter and lease records", async () => {
   const { t, user } = setup();
   const midnight = playtimeDay(start).resetsAt;
   vi.setSystemTime(midnight - 2_000);
@@ -305,11 +305,11 @@ test("bonus minutes expire at the reset even if yesterday's cleanup is delayed",
 });
 
 test.each([
-  ["2026-09-23T12:34:59Z", "2026-09-22T12:35:00Z", "2026-09-23T12:35:00Z"],
-  ["2026-09-23T12:35:00Z", "2026-09-23T12:35:00Z", "2026-09-24T12:35:00Z"],
-  ["2026-03-07T14:00:00Z", "2026-03-07T13:35:00Z", "2026-03-08T12:35:00Z"],
-  ["2026-10-31T14:00:00Z", "2026-10-31T12:35:00Z", "2026-11-01T13:35:00Z"],
-  ["2026-12-31T14:00:00Z", "2026-12-31T13:35:00Z", "2027-01-01T13:35:00Z"],
+  ["2026-09-23T12:29:59Z", "2026-09-22T12:30:00Z", "2026-09-23T12:30:00Z"],
+  ["2026-09-23T12:30:00Z", "2026-09-23T12:30:00Z", "2026-09-24T12:30:00Z"],
+  ["2026-03-07T14:00:00Z", "2026-03-07T13:30:00Z", "2026-03-08T12:30:00Z"],
+  ["2026-10-31T14:00:00Z", "2026-10-31T12:30:00Z", "2026-11-01T13:30:00Z"],
+  ["2026-12-31T14:00:00Z", "2026-12-31T13:30:00Z", "2027-01-01T13:30:00Z"],
 ])("calendar reset for %s", (now, from, to) => {
   expect(playtimeDay(Date.parse(now))).toEqual({
     day: Date.parse(from),

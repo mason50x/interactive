@@ -24,7 +24,7 @@ function boundary(date: number) {
   const offset =
     Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) -
     (date + 12 * 3_600_000);
-  return date + (7 * 60 + 35) * 60_000 - offset;
+  return date + (7 * 60 + 30) * 60_000 - offset;
 }
 export function playtimeDay(now: number) {
   const p = parts(now);
