@@ -298,10 +298,11 @@ test("bonus minutes expire at the reset even if yesterday's cleanup is delayed",
   expect(fresh.remainingSeconds).toBe(1800);
   expect(fresh.allowanceSeconds).toBe(1800);
   await exhaust(t, user);
+  // A day later the same message is conversation again, not a spam attempt.
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(0);
+  ).toBe(120);
 });
 
 test.each([
@@ -364,6 +365,26 @@ test("short overlapping replies are distinct while long near-copies stay blocked
       rewardText(detailed.replace("Today", "Yesterday"))!,
     ),
   ).toBe(true);
+});
+
+test("a repeat earns only after the spam window, in the same thread or not", async () => {
+  const { t, user } = setup();
+  await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
+  const remaining = async () =>
+    (await user.query(api.experience.status, { day: 0 })).remainingSeconds;
+  await t.run((ctx) => rewardChatPlaytime(ctx, "person", "thanks"));
+  expect(await remaining()).toBe(1920);
+  vi.setSystemTime(start + 60_000);
+  await t.run((ctx) => rewardChatPlaytime(ctx, "person", "Thanks!"));
+  await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
+  vi.setSystemTime(start + 29 * 60_000);
+  await t.run((ctx) =>
+    rewardChatPlaytime(ctx, "person", detailed.replace("Today", "Yesterday")),
+  );
+  expect(await remaining()).toBe(2040);
+  vi.setSystemTime(start + 31 * 60_000);
+  await t.run((ctx) => rewardChatPlaytime(ctx, "person", "thanks"));
+  expect(await remaining()).toBe(2160);
 });
 
 test("short chat sends grant credit atomically; retries and nonmembers cannot claim it", async () => {

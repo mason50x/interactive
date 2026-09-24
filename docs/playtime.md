@@ -41,13 +41,15 @@ link-only, mention-only, repeated-character spam, repeated single-word filler,
 and messages over 2,000 characters do not qualify. Text accompanying a link,
 mention, or emoji can qualify; ordinary chat moderation still applies.
 
-SHA-256 receipts prevent an account from reusing a message rewarded in the last 180 days,
-ignoring case, formatting characters, punctuation, and numeric suffixes. An 80%
-word overlap check against its last 50 rewards also rejects near-copies when
-both messages have at least eight words. Short replies only use exact normalized
-duplicate checks, so ordinary overlapping phrases are not mistaken for spam. Receipts
-survive chat deletion and daily resets; a daily job removes receipts after 180
-days, and account deletion removes them in bounded batches. Checks and credit share one Convex transaction, so concurrent
+SHA-256 receipts stop an account from earning twice for the same message sent
+again within 30 minutes, ignoring case, formatting characters, punctuation, and
+numeric suffixes. That window targets repeated spam attempts, not conversation:
+the same “ok” or “thanks” earns again once the window has passed, in the same
+thread or any other. An 80% word overlap check against its last 50 rewards also
+rejects near-copies inside the window when both messages have at least eight
+words. Short replies only use exact normalized duplicate checks, so ordinary
+overlapping phrases are not mistaken for spam. Receipts survive chat deletion
+and daily resets; a daily job removes receipts after a day, and account deletion removes them in bounded batches. Checks and credit share one Convex transaction, so concurrent
 sends cannot award twice for the same message.
 
 ## Rollout

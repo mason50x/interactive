@@ -290,8 +290,8 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
         {REWARD_REQUIREMENTS}
       </p>
       <p>
-        Chat stays available. Each message can earn time once; near-copies do
-        not count.
+        Chat stays available. Sending the same message again, or a near-copy,
+        within 30 minutes does not count.
       </p>
       <p className="text-muted-foreground">
         Resets to your daily limit every day at 7:30 a.m. Central
@@ -514,8 +514,7 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
           <h1 className="text-3xl font-semibold">Your playtime is used up</h1>
           <p>Send a new chat message to get 2 more minutes of playtime.</p>
           <p className="text-sm text-muted-foreground">
-            {REWARD_REQUIREMENTS} Previously rewarded messages and near-copies
-            do not earn more time.
+            {REWARD_REQUIREMENTS}
           </p>
           <ButtonLink href="/chat" target="_top">
             Go to chat

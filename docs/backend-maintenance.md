@@ -6,7 +6,7 @@ Convex is the database and job runner. The daily jobs in `convex/crons.ts` remov
 | --- | --- |
 | Timeout decisions and reasons | 7 days |
 | Finished timeout status rows | 7 days after the last change |
-| Chat reward receipts and normalized text | 180 days |
+| Chat reward receipts and normalized text | 1 day |
 | Inactive current-page snapshots | 30 days |
 | Expired chat presence and typing | Swept daily after 1 hour |
 | Unsent chat images | Swept hourly after 1 hour |
