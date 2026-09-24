@@ -1511,7 +1511,11 @@
   stroke-dasharray: 4 32;
   stroke-linecap: round;
   opacity: 0.6;
-  transform-origin: 80px 80px;
+  /* The circle's own box, not a pixel origin: Chrome scales a px
+     `transform-origin` on an SVG child by the page zoom, so on a Chromebook
+     (rarely at 100% display zoom) the ring swung around a point off the mark. */
+  transform-box: fill-box;
+  transform-origin: center;
   animation:
     packet-logo-spin 6s linear infinite,
     packet-logo-dashes 2.4s ease-in-out infinite;
