@@ -72,6 +72,8 @@ const REFUSALS: Record<string, string> = {
   duplicate: "You just sent that.",
   broadcast: "That has gone to enough places.",
   "too-fast": "Slow down a moment.",
+  locked: "Staff have locked this room for now.",
+  "slow-mode": "Slow mode is on. Wait a little before sending again.",
 
   "not-a-member": "You are not in this conversation.",
   "reply-unavailable": "That message is no longer available to reply to.",

@@ -21,6 +21,7 @@ import type * as chat_conversations from "../chat/conversations.js";
 import type * as chat_groups from "../chat/groups.js";
 import type * as chat_messages from "../chat/messages.js";
 import type * as chat_presence from "../chat/presence.js";
+import type * as chat_roomControls from "../chat/roomControls.js";
 import type * as chat_shared from "../chat/shared.js";
 import type * as chat_sweep from "../chat/sweep.js";
 import type * as chat_typing from "../chat/typing.js";
@@ -78,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   "chat/groups": typeof chat_groups;
   "chat/messages": typeof chat_messages;
   "chat/presence": typeof chat_presence;
+  "chat/roomControls": typeof chat_roomControls;
   "chat/shared": typeof chat_shared;
   "chat/sweep": typeof chat_sweep;
   "chat/typing": typeof chat_typing;

@@ -34,6 +34,9 @@ export type Refusal =
   | "duplicate"
   | "broadcast"
   | "too-fast"
+  // The Everyone room's staff controls. See `convex/chat/roomControls.ts`.
+  | "locked"
+  | "slow-mode"
   | "read-only"
   | "not-a-member"
   | "reply-unavailable"
