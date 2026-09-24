@@ -25,6 +25,11 @@ import { cn } from "@/lib/utils";
 export type ExperienceService = ExperienceApp & { src: string | null };
 type BrowserTab = { id: number; appId: string | null; run: number };
 
+/** Cloud gaming captures the pointer and reads controllers. */
+const CLOUD_GAMING = new Set(["xbox", "geforce-now"]);
+/** Voice and video calls. The browser still asks before either is used. */
+const CALLING = new Set(["discord", "snapchat"]);
+
 /** Each tab owns its frame. Switching tabs hides it without reloading it. */
 export function ExperienceChrome({
   services,
@@ -286,12 +291,14 @@ export function ExperienceChrome({
                   }
                   title={`${service.label} — tab ${tab.id + 1}`}
                   sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${
-                    service.id === "xbox" ? " allow-pointer-lock" : ""
+                    CLOUD_GAMING.has(service.id) ? " allow-pointer-lock" : ""
                   }`}
                   allow={`fullscreen; autoplay; encrypted-media${
-                    service.id === "xbox"
+                    CLOUD_GAMING.has(service.id)
                       ? "; gamepad; microphone; screen-wake-lock"
-                      : ""
+                      : CALLING.has(service.id)
+                        ? "; camera; microphone"
+                        : ""
                   }`}
                   referrerPolicy="no-referrer"
                   className="h-full w-full border-0 bg-white"

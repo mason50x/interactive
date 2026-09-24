@@ -10,6 +10,9 @@ owners and identify the linked services; their inclusion does not imply endorsem
 | `gemini.svg` | https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg (linked by Gemini) |
 | `xbox.png` | https://assets.play.xbox.com/playxbox/static/media/apple-icon-180.8db22303.png (official 180×180 Cloud Gaming icon linked by xbox.com/play; downloaded 2026-09-22) |
 | `apple-music.png` | https://music.apple.com/assets/favicon/favicon-180.png (linked by Apple Music) |
+| `discord.ico` | https://discord.com/assets/favicon.ico (linked by Discord's web app; downloaded 2026-09-24) |
+| `geforce-now.png` | https://play.geforcenow.com/mall/assets/img/GFN_logo1024_v2.png (the `rel="icon"` linked by play.geforcenow.com; downloaded 2026-09-24) |
+| `snapchat.png` | https://static.snapchat.com/images/apple-touch-icon/apple-touch-icon-yellow-180.png (linked by snapchat.com; downloaded 2026-09-24) |
 | `soccerrng.svg` | The inline SVG `rel="icon"` data URI on https://soccerrng.netlify.app/, URL-decoded and saved as a file (downloaded 2026-09-24) |
 
 `x.png` was downloaded on 2026-09-21 from
