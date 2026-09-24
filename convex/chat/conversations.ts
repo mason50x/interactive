@@ -14,6 +14,7 @@ import {
   dmKeyFor,
   membership,
   accountFor,
+  isStaff,
 } from "./shared";
 
 /**
@@ -40,7 +41,7 @@ const UNREAD_CAP = 100;
 
 export type ConversationSummary = {
   _id: Id<"conversations">;
-  kind: "global" | "announcements" | "dm" | "group";
+  kind: "global" | "announcements" | "admins" | "dm" | "group";
   /** The group's name. Absent for the other two, which the client names. */
   title?: string;
   lastMessageAt?: number;
@@ -175,6 +176,9 @@ export const list = query({
     for (const member of members) {
       const conversation = await ctx.db.get(member.conversationId);
       if (conversation === null) continue;
+      // Read from the live role, like `membership`, so a demotion the row
+      // has not caught up with already hides the room.
+      if (member.kind === "admins" && !(await isStaff(ctx, profile.clerkId))) continue;
 
       const exact = member.kind !== "global";
 
@@ -246,6 +250,8 @@ export const list = query({
       if (second.kind === "global") return 1;
       if (first.kind === "announcements") return -1;
       if (second.kind === "announcements") return 1;
+      if (first.kind === "admins") return -1;
+      if (second.kind === "admins") return 1;
       if (first.peerClerkId === BOT_ID) return -1;
       if (second.peerClerkId === BOT_ID) return 1;
       if (first.favorite !== second.favorite) return first.favorite ? -1 : 1;
@@ -336,7 +342,7 @@ export const createGroup = mutation({
 
 export type ConversationDetail = {
   _id: Id<"conversations">;
-  kind: "global" | "announcements" | "dm" | "group";
+  kind: "global" | "announcements" | "admins" | "dm" | "group";
   title?: string;
   joinPolicy?: "invite" | "request" | "open";
   role: "owner" | "admin" | "member";
@@ -450,7 +456,7 @@ export const members = query({
 
     const member = await membership(ctx, conversationId, profile.clerkId);
     if (member === null || member.status !== "active") return [];
-    if (member.kind !== "group") return [];
+    if (member.kind !== "group" && member.kind !== "admins") return [];
 
     const rows = await ctx.db
       .query("conversationMembers")
@@ -462,6 +468,7 @@ export const members = query({
     const people: ConversationMember[] = [];
     for (const row of rows) {
       if (row.status === "left" || row.status === "banned") continue;
+      if (member.kind === "admins" && (row.status !== "active" || !(await isStaff(ctx, row.clerkId)))) continue;
       const theirs = await accountFor(ctx, row.clerkId);
       if (theirs === null) continue;
       people.push({

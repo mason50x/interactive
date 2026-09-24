@@ -74,7 +74,7 @@ export function RichMessageInput({
   label: string;
   interim: string;
   conversationId: Id<"conversations">;
-  kind: "global" | "announcements" | "dm" | "group" | null;
+  kind: "global" | "announcements" | "admins" | "dm" | "group" | null;
   peer: MentionPerson | null;
   authors: MentionPerson[];
   me: string | null | undefined;

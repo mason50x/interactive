@@ -318,7 +318,7 @@ export const send = mutation({
     }
 
     const context: SendContext = {
-      surface: member.kind === "announcements" ? "global" : member.kind,
+      surface: member.kind === "announcements" ? "global" : member.kind === "admins" ? "group" : member.kind,
       conversationId,
       now,
       createdAt: profile.createdAt,
@@ -907,7 +907,7 @@ export const edit = mutation({
     const sender = await senderRow(ctx, profile.clerkId);
     const state = senderState(sender);
     const verdict = screen(body, {
-      surface: member.kind === "announcements" ? "global" : member.kind,
+      surface: member.kind === "announcements" ? "global" : member.kind === "admins" ? "group" : member.kind,
       conversationId: message.conversationId, now, createdAt: profile.createdAt,
       messagesSent: state.messagesSent, recent: state.recent,
       attachmentKey: message.images?.length ? message.images.map(image => image.attachmentId).join(",") : undefined,
@@ -1082,7 +1082,7 @@ export type MessageHit = {
   _id: Id<"messages">;
   _creationTime: number;
   conversationId: Id<"conversations">;
-  kind: "global" | "announcements" | "dm" | "group";
+  kind: "global" | "announcements" | "admins" | "dm" | "group";
   title?: string;
   peerHandle?: string;
   authorHandle: string;
@@ -1101,7 +1101,7 @@ export const search = query({
   },
   returns: v.array(v.object({
     _id: v.id("messages"), _creationTime: v.number(), conversationId: v.id("conversations"),
-    kind: v.union(v.literal("global"), v.literal("announcements"), v.literal("dm"), v.literal("group")),
+    kind: v.union(v.literal("global"), v.literal("announcements"), v.literal("admins"), v.literal("dm"), v.literal("group")),
     title: v.optional(v.string()), peerHandle: v.optional(v.string()),
     authorHandle: v.string(), authorClerkId: v.string(), hasImages: v.boolean(), body: v.string(),
   })),

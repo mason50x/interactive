@@ -1,4 +1,5 @@
 import { activeTimeout } from "../timeoutState";
+import { resolveRole } from "../roles";
 import { BOT_ID } from "./botConfig";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
@@ -212,12 +213,59 @@ export async function membership(
   conversationId: Id<"conversations">,
   clerkId: string,
 ): Promise<Doc<"conversationMembers"> | null> {
-  return await ctx.db
+  const row = await ctx.db
     .query("conversationMembers")
     .withIndex("byConversationUser", (q) =>
       q.eq("conversationId", conversationId).eq("clerkId", clerkId),
     )
     .unique();
+  // The Admins room follows the live role, not the row. A seat a demotion
+  // has not synced away yet — an env map edit, say — reads as already left.
+  if (row?.kind === "admins" && row.status === "active" && !(await isStaff(ctx, clerkId))) {
+    return { ...row, status: "left" };
+  }
+  return row;
+}
+
+/** Anyone above member: Builders, moderators, and the CEO. */
+export async function isStaff(ctx: QueryCtx, clerkId: string): Promise<boolean> {
+  return (await resolveRole(ctx, clerkId)) !== "member";
+}
+
+/**
+ * Seat or unseat somebody in the Admins room to match their role.
+ *
+ * Called on every chat load through `ensureGlobalMembership` and again the
+ * moment a CEO changes a role, so a promotion shows up without a refresh and
+ * a demotion takes the room out of the list straight away. The row is kept
+ * as `left` rather than deleted, so a return picks up where they had read.
+ */
+export async function syncAdminsMembership(
+  ctx: MutationCtx,
+  clerkId: string,
+): Promise<void> {
+  const staff = await isStaff(ctx, clerkId);
+  const room = await ctx.db.query("conversations")
+    .withIndex("byKind", q => q.eq("kind", "admins")).first();
+  if (room === null && !staff) return;
+  const roomId = room?._id ?? await ctx.db.insert("conversations", {
+    kind: "admins", createdBy: "", createdAt: Date.now(),
+  });
+  const seat = await ctx.db.query("conversationMembers")
+    .withIndex("byConversationUser", q => q.eq("conversationId", roomId).eq("clerkId", clerkId))
+    .unique();
+  if (staff) {
+    if (seat === null) {
+      await ctx.db.insert("conversationMembers", {
+        conversationId: roomId, clerkId, kind: "admins",
+        role: "member", status: "active", joinedAt: Date.now(), lastReadAt: 0,
+      });
+    } else if (seat.status !== "active") {
+      await ctx.db.patch(seat._id, { status: "active" });
+    }
+  } else if (seat?.status === "active") {
+    await ctx.db.patch(seat._id, { status: "left" });
+  }
 }
 
 /**
@@ -264,6 +312,7 @@ export async function ensureGlobalMembership(
   } else if (announcementMember.status !== "active") {
     await ctx.db.patch(announcementMember._id, { status: "active" });
   }
+  await syncAdminsMembership(ctx, clerkId);
   await ensureDm(ctx, clerkId, BOT_ID);
   const conversationId = await ensureGlobalRoom(ctx, clerkId);
   const existing = await membership(ctx, conversationId, clerkId);

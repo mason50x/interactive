@@ -8,6 +8,7 @@ import { components, internal } from "./_generated/api";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
+import { syncAdminsMembership } from "./chat/shared";
 import { changeActivityLimit } from "./experience";
 import { requireNotTimedOut } from "./timeoutState";
 
@@ -218,6 +219,8 @@ export const setRole = mutation({
         updatedBy: caller,
       });
     }
+    // Promotions join the Admins room now; demotions leave it now.
+    await syncAdminsMembership(ctx, clerkId);
     // A CEO role change also clears any old restriction on the account.
     const timeout = await timeoutRow(ctx, clerkId);
     if (timeout?.enabled) {

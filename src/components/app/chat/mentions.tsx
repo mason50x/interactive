@@ -69,7 +69,7 @@ export function useMentionPeople({
 }: {
   conversationId: Id<"conversations">;
   /** `null` until the conversation has answered about itself. */
-  kind: "global" | "announcements" | "dm" | "group" | null;
+  kind: "global" | "announcements" | "admins" | "dm" | "group" | null;
   /** A direct message's other person. */
   peer: MentionPerson | null;
   /** Whoever has spoken in the loaded thread, newest first. */
@@ -87,7 +87,7 @@ export function useMentionPeople({
   known: ReadonlyMap<string, MentionPerson>;
   loading: boolean;
 } {
-  const group = open && kind === "group";
+  const group = open && (kind === "group" || kind === "admins");
   const global = open && kind === "global";
 
   const members = useQuery(
