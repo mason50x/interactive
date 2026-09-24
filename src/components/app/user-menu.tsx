@@ -46,8 +46,9 @@ export function UserMenu() {
   const showAdminBadge = useCachedAdminBadge(
     user?.id,
     user && adminBadgesLoaded
-      ? (staffRoles.find((entry) => entry.clerkId === user.id)?.role ??
-          "member")
+      ? (staffRoles.find(
+          (entry) => entry.clerkId === user.id && !entry.hideBadge,
+        )?.role ?? "member")
       : undefined,
   );
   const { signOut } = useClerk();

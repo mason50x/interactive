@@ -233,6 +233,52 @@ function ActivityLimitControl({ user }: { user: DirectoryUser }) {
   );
 }
 
+/** Cosmetic: hides the staff badge in chat. The role's powers stay the same. */
+function BadgeToggle({
+  user,
+  onFeedback,
+}: {
+  user: DirectoryUser;
+  onFeedback: (value: Feedback) => void;
+}) {
+  const setBadgeVisible = useMutation(api.adminQuotas.setBadgeVisible);
+  const [busy, setBusy] = useState(false);
+  const visible = !user.badgeHidden;
+
+  async function toggle(next: boolean) {
+    if (busy) return;
+    setBusy(true);
+    onFeedback(null);
+    try {
+      await setBadgeVisible({ clerkId: user.clerkId, visible: next });
+      onFeedback({
+        message: next
+          ? `Badge shown for ${user.label}.`
+          : `Badge hidden for ${user.label}.`,
+      });
+    } catch {
+      onFeedback({
+        error: true,
+        message: "The badge could not be changed. Try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <label className="flex h-9 cursor-pointer items-center gap-2 text-sm has-disabled:cursor-not-allowed">
+      <Switch
+        aria-label={`Show badge for ${user.label}`}
+        checked={visible}
+        disabled={busy}
+        onCheckedChange={(next) => void toggle(next)}
+      />
+      Show badge
+    </label>
+  );
+}
+
 function RoleControl({ user }: { user: DirectoryUser }) {
   const setRole = useMutation(api.adminQuotas.setRole);
   const [draft, setDraft] = useState<SiteRole>(user.role);
@@ -299,6 +345,9 @@ function RoleControl({ user }: { user: DirectoryUser }) {
           >
             {busy ? "Saving…" : "Save role"}
           </Button>
+        )}
+        {user.role !== "member" && (
+          <BadgeToggle user={user} onFeedback={setFeedback} />
         )}
       </div>
       <FeedbackMessage value={feedback} />

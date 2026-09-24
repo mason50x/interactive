@@ -8,7 +8,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { resolveRole } from "./roles";
+import { badgeHidden, resolveRole } from "./roles";
 import {
   activeTimeout,
   CEO_CLEAR_MS,
@@ -115,6 +115,7 @@ const directoryUser = v.object({
     v.literal("member"),
   ),
   joinedAt: v.number(),
+  badgeHidden: v.boolean(),
   activityLimitMinutes: v.optional(v.number()),
   canChangeRole: v.boolean(),
   canManage: v.boolean(),
@@ -149,6 +150,7 @@ export const users = query({
           username: user.username,
           role,
           joinedAt: user.clerkCreatedAt ?? user._creationTime,
+          badgeHidden: await badgeHidden(ctx, user.clerkId),
           activityLimitMinutes: user.activityLimitMinutes,
           canChangeRole: caller.role === "ceo" && user.clerkId !== caller.clerkId,
           ceoCleared,
