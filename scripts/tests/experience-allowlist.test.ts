@@ -23,6 +23,7 @@ it("offers each service and allows its front door through the actual relay", asy
     "spotify",
     "gemini",
     "apple-music",
+    "soccerrng",
   ]) {
     const app = findExperienceApp(id);
     expect(app).not.toBeNull();
@@ -32,7 +33,7 @@ it("offers each service and allows its front door through the actual relay", asy
   expect(new Set(EXPERIENCE_APPS.map((app) => app.id)).size).toBe(
     EXPERIENCE_APPS.length,
   );
-  expect(upstream).toHaveBeenCalledTimes(7);
+  expect(upstream).toHaveBeenCalledTimes(8);
 });
 
 it.each([
@@ -47,6 +48,21 @@ it.each([
   "https://idmsa.apple.com/appleauth/auth/authorize/signin",
   "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js",
   "https://is1-ssl.mzstatic.com/image/example",
+  "https://assets.footylogos.com/logos/real-madrid/real-madrid-logo-footylogos.svg",
+  "https://publish.realmadrid.com/content/dam/portals/realmadrid-com/es-es/sports/football/example.png",
+  "https://assets.realmadrid.com/is/image/realmadrid/MBAPPE_POSE_1500X2000?%24Desktop%24=&fit=wrap&wid=420",
+  "https://www.fcbarcelona.com/photo-resources/2026/08/01/example/example.png",
+  "https://media.psg.fr/image/upload/w_1000/f_auto,q_auto/Dembele-Motion-2627_muowar",
+  "https://img.fcbayern.com/image/upload/example.png",
+  "https://dynamic-crop-cdn.scoreplay.io/472/4896325/media_102559861_102166984.jpg?f=center&fmt=webp&h=981&w=720",
+  "https://contentfulproxy.stadion.io/9ec6988xevcz/1WEMKAOOx0uqpP0TB6oavt/example.png",
+  "https://contentfulproxy.stadion.io/unzgbvss5tuy/3daUM6Old26XdT82zzizw1/example/Shea_Lacey.jpg",
+  "https://www.juventus.com/images/image/private/t_portrait_mobile/example",
+  "https://intermilan.bynder.com/transform/1122af81-078b-4318-9a47-952fe8a66148/Pio_Esposito_2x?format=webp",
+  "https://www.acmilan.com/_next/image?q=75&url=https%3A%2F%2Fassets-eu-01.kc-usercontent.com%2Fexample.png",
+  "https://media.asroma.com/prod/images/example.png",
+  "https://s7g10.scene7.com/is/image/BORUSSIADORTMUNDGMBHANDCOKGAA/example",
+  "https://images.mlssoccer.com/image/private/t_thumb_squared/f_png/mls-mia/g9tieb27bu41atzhhskt.png",
 ])("relays service authentication/assets: %s", async (url) => {
   const upstream = vi.fn(async () => new Response("ok"));
   vi.stubGlobal("fetch", upstream);
@@ -78,6 +94,13 @@ it.each([
   "https://www.google.com/search?q=test",
   "https://www.apple.com/shop/",
   "https://appleid.cdn-apple.com/unrelated/",
+  "https://www.realmadrid.com/en-US/football/first-team/players/kylian-mbappe",
+  "https://www.fcbarcelona.com/en/football/first-team/players/",
+  "https://www.acmilan.com/en/team/players/",
+  "https://s7g10.scene7.com/is/image/unrelated/example",
+  "https://contentfulproxy.stadion.io/otherspace/example.png",
+  "https://evilnetlify.app/",
+  "https://other-site.netlify.app/",
   "https://appleid.cdn-apple.com.evil.example/appleauth/",
   "https://127.0.0.1/",
 ])("rejects unrelated destinations before fetching: %s", async (url) => {

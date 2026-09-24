@@ -9,6 +9,7 @@ const SERVICE_ICONS: Record<string, string> = {
   spotify: "/experience/spotify.ico",
   gemini: "/experience/gemini.svg",
   "apple-music": "/experience/apple-music.png",
+  soccerrng: "/experience/soccerrng.svg",
 };
 
 /**

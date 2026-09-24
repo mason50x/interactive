@@ -38,3 +38,11 @@ it("offers Xbox Cloud Gaming with its official bundled logo", () => {
   expect(png.readUInt32BE(16)).toBe(180);
   expect(png.readUInt32BE(20)).toBe(180);
 });
+
+it("offers Soccer RNG with its own bundled logo", () => {
+  expect(findExperienceApp("soccerrng")).toEqual({ id: "soccerrng", label: "Soccer RNG", host: "soccerrng.netlify.app", start: "https://soccerrng.netlify.app/" });
+  expect(experienceAppHref("soccerrng")).toBe("/experience/soccerrng");
+  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: "soccerrng" }))).toContain('src="/experience/soccerrng.svg"');
+  const svg = readFileSync(new URL("../../public/experience/soccerrng.svg", import.meta.url), "utf8");
+  expect(svg).toMatch(/^<svg xmlns='http:\/\/www\.w3\.org\/2000\/svg' viewBox='0 0 64 64'>/);
+});

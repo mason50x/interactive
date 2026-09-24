@@ -283,3 +283,31 @@ account logins, Spotify licensed playback, or Xbox gameplay were verified.
 Deploy **both** the app and Experience Worker to release the tile, permissions,
 allowances, and engine changes together. This work was verified locally, not
 released to production.
+
+## Soccer RNG (2026-09-24)
+
+Soccer RNG (https://soccerrng.netlify.app/, branded "Touchline" in-page) is a
+catalog app with its own logo bundled locally: the site's inline SVG favicon,
+saved as `public/experience/soccerrng.svg`. Its `/api/*` calls and Netlify
+scripts are same-origin, so only the player portraits and club crests it
+hotlinks need dependency entries. Each is path-scoped to the image prefix the
+page actually uses, so the clubs' own websites stay outside the allowlist:
+
+- `assets.footylogos.com` `/logos/` (club crests)
+- `publish.realmadrid.com` `/content/dam/`, `assets.realmadrid.com` `/is/image/realmadrid/`
+- `www.fcbarcelona.com` `/photo-resources/`
+- `media.psg.fr` and `img.fcbayern.com` `/image/upload/`
+- `dynamic-crop-cdn.scoreplay.io` `/472/`
+- `contentfulproxy.stadion.io` `/9ec6988xevcz/` and `/unzgbvss5tuy/`
+- `www.juventus.com` `/images/image/`
+- `intermilan.bynder.com` `/transform/`
+- `www.acmilan.com` `/_next/image`
+- `media.asroma.com` `/prod/images/`
+- `s7g10.scene7.com` `/is/image/BORUSSIADORTMUNDGMBHANDCOKGAA/`
+- `images.mlssoccer.com` `/image/private/`
+
+All 220 portrait and crest URLs in the page on 2026-09-24 pass the relay. The
+"source" links to club player pages open outside the allowlist, and a
+moderator's custom portrait URL loads only when its host is already listed
+(uploads are data URLs and always work). If the site adds a club, add its
+image host here.
