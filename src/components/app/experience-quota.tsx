@@ -39,6 +39,12 @@ export function useExperienceQuota(active = false) {
   const [error, setError] = useState(false);
   const [lease, setLease] = useState({ until: 0, offset: 0 });
   const [lastDisplay, setLastDisplay] = useState<PlaytimeDisplay | null>(null);
+  // Leaving the tab stops the clock but must not unmount the player. While
+  // paused, whatever was open stays open; the first lease after coming back
+  // decides whether it may carry on.
+  const [paused, setPaused] = useState(false);
+  const wasAllowed = useRef(false);
+  if (!active && paused) setPaused(false);
   const nextCheck = useRef(0);
   const hadTime = useRef(false);
   const acquire = useMutation(api.experience.acquire);
@@ -80,6 +86,7 @@ export function useExperienceQuota(active = false) {
       }).catch(() => {});
     };
     const stop = () => {
+      if (wasAllowed.current) setPaused(true);
       nextCheck.current = 0;
       setLease({ until: 0, offset: 0 });
       releaseOnExit(sessionId);
@@ -103,6 +110,7 @@ export function useExperienceQuota(active = false) {
           until: result.leaseUntil,
           offset: result.serverNow - receivedAt,
         });
+        setPaused(false);
         setError(false);
         const delay =
           result.remainingSeconds <= 0
@@ -110,7 +118,10 @@ export function useExperienceQuota(active = false) {
             : result.leaseUntil - result.serverNow - 5_000;
         nextCheck.current = receivedAt + Math.max(1000, delay);
       } catch {
-        if (!cancelled) setError(true);
+        if (!cancelled) {
+          setPaused(false);
+          setError(true);
+        }
         nextCheck.current = Date.now() + 5000;
       } finally {
         pending = false;
@@ -125,6 +136,9 @@ export function useExperienceQuota(active = false) {
     document.addEventListener("visibilitychange", visibilityChanged);
     window.addEventListener("pagehide", unload);
     return () => {
+      // A session re-check drops `isAuthenticated` for a moment; hold the
+      // player through it until the next lease answers.
+      if (wasAllowed.current) setPaused(true);
       cancelled = true;
       unload();
       clearInterval(timer);
@@ -152,10 +166,14 @@ export function useExperienceQuota(active = false) {
   const serverNow = now + (active ? lease.offset : clockOffset);
   const allowed =
     active &&
-    isAuthenticated &&
-    visible &&
-    lease.until > serverNow &&
-    (status?.leaseUntil ?? 0) > serverNow;
+    (paused ||
+      (isAuthenticated &&
+        visible &&
+        lease.until > serverNow &&
+        (status?.leaseUntil ?? 0) > serverNow));
+  useEffect(() => {
+    wasAllowed.current = allowed;
+  });
   const rawRemaining = status
     ? availablePlaytimeSeconds(status, serverNow)
     : null;
