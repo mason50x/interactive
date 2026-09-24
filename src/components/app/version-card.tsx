@@ -3,7 +3,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { RailButton } from "@/components/app/rail/rail-button";
 import { RailConstellation } from "@/components/app/rail-constellation";
-import { Card } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
@@ -67,23 +66,36 @@ function forgetOldReleases() {
 }
 
 /**
- * The version, in the rail, as large as the rail will hold.
+ * The version, in the rail.
  *
  * This is what the announcements card became. That was a feed — posts,
  * receipts, a "Read" fold, a cron to keep it to three — for a product that
  * only ever had one thing to say at a time: what the latest release did.
- * So it is now the version number, big, and behind it is one post, the
- * release's notes, kept in `src/lib/releases.ts` beside the code they
- * describe. Pressing the card opens the post in a sheet.
+ * So it is now the version number, and behind it is one post, the release's
+ * notes, kept in `src/lib/releases.ts` beside the code they describe.
+ * Pressing the number opens the post in a sheet.
+ *
+ * It used to be a card of its own above the account row, as tall as the
+ * playtime card beside it. Two display-size cards stacked over the account
+ * row pushed the nav list into a scroll on any laptop-height window, so the
+ * number now rides in the account row itself: `inline` sits on the name's
+ * line in the wide rail, and `rail` is the narrow rail's square. Each is
+ * hidden at the other width, so the two are never on screen together.
  *
  * Nothing is tracked on the server. The release's shared read state is a
  * key in `localStorage`, read through `useSyncExternalStore` so the
  * server and the hydrating client agree on "opened" and the unread state is
  * only ever added after hydration, never taken away. Until it is opened, the
- * card wears the comet rim the announcements card used to. A different
- * browser will show it again, and that is fine: it is a nudge, not a record.
+ * number shimmers and carries a dot. A different browser will show it again,
+ * and that is fine: it is a nudge, not a record.
  */
-export function VersionCard({ compact = false }: { compact?: boolean }) {
+export function VersionCard({
+  variant,
+  className,
+}: {
+  variant: "inline" | "rail";
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const seen = useSyncExternalStore(subscribe, readSeen, () => true);
 
@@ -95,78 +107,51 @@ export function VersionCard({ compact = false }: { compact?: boolean }) {
   }
 
   const label = versionLabel(currentRelease.version);
+  const ariaLabel = `${label}: ${currentRelease.title}. See what's new`;
 
   return (
-    <div
-      className="relative min-w-0"
-      style={{ viewTransitionName: "rail-version" }}
-    >
-      {/* The narrow rail: the number alone, the same 44px hit as the icons
-          above it. Text rather than an icon because there is no glyph for
-          "version" that would not have to be learned, and the number is
-          shorter than any of them. */}
-      <RailButton
-        onClick={show}
-        aria-label={`${label}: ${currentRelease.title}. See what's new`}
-        className={cn(
-          "relative font-medium tabular-nums",
-          compact ? "text-[0.625rem]" : "text-[0.75rem]",
-        )}
-      >
-        {label}
-        {!seen && (
-          <span
-            className={cn(
-              "absolute rounded-full bg-primary",
-              compact ? "top-1 right-0 size-1" : "top-2.5 right-3 size-1.5",
-            )}
-          />
-        )}
-      </RailButton>
-
-      {/* The wide rail: the number, and nothing else. Unread, it shimmers
-          and wears the rim; read, it is a number sitting still. The shimmer
-          is the continuous one, faint to foreground and back, so the card is
-          alive without being coloured; the colour is the rim alone. */}
-      <Card
-        radius="sm"
-        className={cn(
-          "relative hidden h-full overflow-hidden rail-wide wide:block wide:w-full",
-          !seen && !compact && "release-unread-glow",
-        )}
-      >
+    <>
+      {variant === "rail" ? (
+        /* The narrow rail: the number alone, the same 44px hit as the icons
+           above it. Text rather than an icon because there is no glyph for
+           "version" that would not have to be learned, and the number is
+           shorter than any of them. */
+        <RailButton
+          onClick={show}
+          aria-label={ariaLabel}
+          className={cn(
+            "relative text-[0.75rem] font-medium tabular-nums",
+            className,
+          )}
+        >
+          {label}
+          {!seen && (
+            <span className="absolute top-2.5 right-3 size-1.5 rounded-full bg-primary" />
+          )}
+        </RailButton>
+      ) : (
+        /* The wide rail: a quiet label on the account name's line. Unread, it
+           shimmers and carries the brand dot in its corner — laid over it,
+           not beside it, so the label is the same width either way and the
+           name's padding in `UserMenu` holds for both. */
         <button
           type="button"
           onClick={show}
-          aria-label={`${label}: ${currentRelease.title}. See what's new`}
+          aria-label={ariaLabel}
           className={cn(
-            "flex w-full cursor-pointer items-center justify-center outline-none hover:bg-foreground/[0.03] focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
-            compact ? "h-full min-h-14 px-1 py-1" : "px-3 py-2",
+            "hidden cursor-pointer rounded-md px-1.5 py-1 text-[0.75rem] leading-none font-medium text-faint tabular-nums outline-none rail-wide hover:bg-foreground/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 wide:inline-flex",
+            className,
           )}
         >
-          <span className="flex flex-col items-center">
-            <span
-              className={cn(
-                "leading-none font-semibold tabular-nums transition-[font-size] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-                compact
-                  ? "text-[1.125rem] text-foreground"
-                  : seen
-                    ? "text-[1.5rem] text-foreground"
-                    : "text-shimmer text-[2.5rem]",
-              )}
-            >
-              {label}
+          <span className={cn(!seen && "text-shimmer")}>{label}</span>
+          {!seen && (
+            <span className="absolute top-0 right-0 flex size-1.5 text-primary">
+              <span className="absolute inset-0 animate-ping rounded-full bg-current opacity-70 [animation-duration:2.4s]" />
+              <span className="relative size-1.5 rounded-full bg-current" />
             </span>
-            {/* Only while unread: the card is asking to be pressed, and this
-                is the one line that says what pressing it does. */}
-            {!seen && !compact && (
-              <span className="mt-1.5 text-[0.75rem] text-muted-foreground">
-                View release
-              </span>
-            )}
-          </span>
+          )}
         </button>
-      </Card>
+      )}
 
       {/* One post, not a list: the notes for the release the card names. */}
       <Sheet open={open} onOpenChange={setOpen}>
@@ -177,14 +162,14 @@ export function VersionCard({ compact = false }: { compact?: boolean }) {
           {open && <ReleaseSheet release={currentRelease} />}
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }
 
 /**
  * The template every release is shown in.
  *
- * Top to bottom: the version, as big as it is on the card; the post's title
+ * Top to bottom: the version, at display size; the post's title
  * in a line under it; a squiggle drawn across the panel as the sheet
  * arrives; the post; and the mark, centred, after the last of it. The
  * constellation sits at the foot of the panel behind everything.

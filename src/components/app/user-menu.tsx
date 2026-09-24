@@ -8,6 +8,7 @@ import { useChat } from "@/components/app/chat/chat-provider";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
+import { VersionCard } from "@/components/app/version-card";
 import { GitHubIcon } from "@/components/ui/github-icon";
 import { StaffBadge } from "@/components/ui/staff-badge";
 import { useTheme } from "@/components/theme-provider";
@@ -113,7 +114,9 @@ export function UserMenu() {
             <span className="ml-1 flex shrink-0 transition-[margin] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] wide:ml-0">
               <Avatar src={user.imageUrl} name={name} size={36} />
             </span>
-            <span className="hidden min-w-0 flex-1 pb-5 text-left rail-wide wide:block">
+            {/* Right padding keeps a long name clear of the version, which is
+              laid over this line from outside the button. */}
+            <span className="hidden min-w-0 flex-1 pr-12 pb-5 text-left rail-wide wide:block">
               <span className="block truncate text-[0.9375rem] leading-tight">
                 {normalizePersonName(user.fullName) ?? name}
               </span>
@@ -129,6 +132,10 @@ export function UserMenu() {
               />
             </span>
           </MenuTrigger>
+          {/* The release notes' door, on the name's line and just short of
+            the chevron. Outside the menu button for the same reason as the
+            chips below: a button cannot hold another. */}
+          <VersionCard variant="inline" className="absolute top-2 right-8" />
           {/* Separate from the menu button so the source link stays a native link. */}
           <div
             className={cn(

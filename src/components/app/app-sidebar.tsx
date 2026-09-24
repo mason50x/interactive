@@ -234,21 +234,16 @@ export function AppSidebar() {
         })}
       </ul>
 
-      <div
-        className={cn(
-          "relative shrink-0 pb-2 pl-3",
-          compactPlaytime
-            ? "grid grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] items-stretch gap-1 wide:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] wide:gap-2"
-            : "flex flex-col gap-2",
-        )}
-      >
+      <div className="relative shrink-0 pb-2 pl-3">
         <SidebarPlaytime compact={compactPlaytime} />
-        <VersionCard compact={compactPlaytime} />
       </div>
 
       {/* Nothing links back to the marketing site: `/` bounces a live session
           straight back here, so it would be a round trip to nowhere. */}
+      {/* The version rides in the account row once the rail is wide; see
+          `VersionCard`. Narrow, it keeps its own square above the avatar. */}
       <div className="shrink-0 pb-3 pl-3">
+        <VersionCard variant="rail" />
         <UserMenu />
       </div>
     </nav>
