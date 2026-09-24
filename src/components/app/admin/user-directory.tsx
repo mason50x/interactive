@@ -100,7 +100,7 @@ function CurrentPage({
       key={path}
       className={cn(
         styles.pageStatus,
-        "inline-flex min-w-0 items-center gap-1.5 text-xs",
+        "flex max-w-full min-w-0 items-center gap-1.5 text-xs",
       )}
       title={path}
     >
@@ -340,7 +340,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                             <span className="text-xs text-muted-foreground sm:hidden">
                               {ROLE_LABEL[user.role]}
                             </span>
-                            <span className="md:hidden">
+                            <span className="max-w-full min-w-0 md:hidden">
                               <CurrentPage
                                 path={path}
                                 label={pageLabel}
