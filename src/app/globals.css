@@ -260,9 +260,9 @@
   --shadow-card: var(--elevation-card);
   --shadow-card-hover: var(--elevation-card-hover);
 
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-display-serif);
-  --font-heading: var(--font-inter);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-display-serif), Georgia, serif;
+  --font-heading: var(--font-inter), system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

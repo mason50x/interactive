@@ -17,6 +17,21 @@ const inter = Inter({
   // Keep the first rendered face on a slow connection instead of swapping
   // text after the reader has already started interacting with it.
   display: "optional",
+  // What the text falls back to when Inter misses that window — a cold
+  // reopen of a Chromebook, before the network is back. Next's own fallback
+  // face is `local("Arial")`, which ChromeOS does not ship (it has Arimo), so
+  // without a generic family here the stack ran out and the browser drew its
+  // default serif: Times New Roman across the chat and the sidebar.
+  fallback: [
+    "system-ui",
+    "-apple-system",
+    "Segoe UI",
+    "Roboto",
+    "Arimo",
+    "Helvetica Neue",
+    "Arial",
+    "sans-serif",
+  ],
 });
 
 // Both styles: the marketing headlines set one word in the italic, and the
@@ -27,6 +42,8 @@ const displaySerif = Instrument_Serif({
   style: ["normal", "italic"],
   subsets: ["latin"],
   display: "optional",
+  // Same gap as Inter's: keep a miss inside the serif family.
+  fallback: ["Georgia", "Tinos", "serif"],
 });
 
 export const metadata: Metadata = {
