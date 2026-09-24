@@ -1603,15 +1603,14 @@
   animation: playtime-digit-in-increase 190ms ease-out both;
 }
 
-/* The browser carries the same two rail cards between the stacked layout and
+/* The browser carries the rail's playtime card between its full layout and
    the compact playing layout. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
 }
 
-::view-transition-group(rail-playtime),
-::view-transition-group(rail-version) {
+::view-transition-group(rail-playtime) {
   animation-duration: 460ms;
   animation-timing-function: linear(
     0,
@@ -1625,9 +1624,7 @@
 }
 
 ::view-transition-old(rail-playtime),
-::view-transition-new(rail-playtime),
-::view-transition-old(rail-version),
-::view-transition-new(rail-version) {
+::view-transition-new(rail-playtime) {
   animation-duration: 220ms;
 }
 
@@ -1638,10 +1635,7 @@
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(rail-playtime),
   ::view-transition-old(rail-playtime),
-  ::view-transition-new(rail-playtime),
-  ::view-transition-group(rail-version),
-  ::view-transition-old(rail-version),
-  ::view-transition-new(rail-version) {
+  ::view-transition-new(rail-playtime) {
     animation-duration: 0.001ms !important;
   }
 
@@ -1651,8 +1645,8 @@
   }
 }
 
-/* A thin comet of light follows the outline of the version card while its
-   release has not been opened here. */
+/* A thin comet of light follows the outline of a chip — the staff badge in
+   the account row. */
 @property --release-rim-angle {
   syntax: "<angle>";
   initial-value: 0deg;
