@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +37,33 @@ export function EntertainmentSetup({
   const titleId = useId();
   const [saveFailed, setSaveFailed] = useState(false);
   const [whyOpen, setWhyOpen] = useState(false);
+  const [returnedToTab, setReturnedToTab] = useState(false);
+
+  useEffect(() => {
+    if (completed === true) return;
+    let leftTab = document.hidden || !document.hasFocus();
+    const checkFocus = () => {
+      if (document.hidden || !document.hasFocus()) {
+        leftTab = true;
+      } else if (leftTab) {
+        setReturnedToTab(true);
+      }
+    };
+    const onBlur = () => {
+      leftTab = true;
+    };
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", checkFocus);
+    document.addEventListener("visibilitychange", checkFocus);
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", checkFocus);
+      document.removeEventListener("visibilitychange", checkFocus);
+    };
+  }, [completed]);
+
   function finish() {
+    if (!returnedToTab) return;
     try {
       window.localStorage.setItem(KEY, "1");
     } catch {
@@ -105,7 +131,14 @@ export function EntertainmentSetup({
               </Tooltip>
             </TooltipProvider>
             <div className="mt-10">
-              <Button onClick={finish}>I’ve enabled it — continue</Button>
+              <Button onClick={finish} disabled={!returnedToTab}>
+                I’ve enabled it — continue
+              </Button>
+              {!returnedToTab && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  After changing the setting, return to this tab to continue.
+                </p>
+              )}
             </div>
           </div>
           <figure className="min-w-0">
