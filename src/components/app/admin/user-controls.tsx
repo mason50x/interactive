@@ -6,6 +6,7 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { BOT_NAME } from "@/lib/chat";
 import { PLAYTIME_SECONDS } from "@config/playtime";
 import { cn } from "@/lib/utils";
@@ -309,6 +310,9 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
   const setTimeout = useMutation(api.timeouts.set);
   const [reason, setReason] = useState(user.timeout?.reason ?? "");
   const [minutes, setMinutes] = useState("60");
+  const [mathBypass, setMathBypass] = useState(
+    user.timeout?.mathBypass ?? true,
+  );
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -320,6 +324,7 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
   if (savedRevision !== revision) {
     setSavedRevision(revision);
     setReason(user.timeout?.reason ?? "");
+    setMathBypass(user.timeout?.mathBypass ?? true);
     setFeedback(null);
   }
 
@@ -347,7 +352,7 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
         clerkId: user.clerkId,
         enabled,
         ...(enabled
-          ? { reason: reason.trim(), durationMinutes: duration }
+          ? { reason: reason.trim(), durationMinutes: duration, mathBypass }
           : {}),
       });
       setFeedback({
@@ -379,7 +384,14 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
               : "No active timeout."}
         </p>
         {user.timeout && (
-          <p className="mt-2 text-sm break-words">{user.timeout.reason}</p>
+          <>
+            <p className="mt-2 text-sm break-words">{user.timeout.reason}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {user.timeout.mathBypass
+                ? "Math bypass on: 20 puzzles right in a row ends it early."
+                : "Math bypass off: they wait it out."}
+            </p>
+          </>
         )}
       </div>
       {user.canManage ? (
@@ -445,6 +457,24 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
                     value={minutes}
                     disabled={busy}
                     onChange={(event) => setMinutes(event.target.value)}
+                  />
+                </label>
+                <label className="flex cursor-pointer items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block text-xs font-medium">
+                      Math bypass
+                    </span>
+                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      {mathBypass
+                        ? "They can end the timeout early by getting 20 geometry puzzles right in a row on the timeout screen. A wrong answer, taking over 2 minutes on one, or leaving the tab starts the streak over."
+                        : "They wait out the full duration. The puzzles on the timeout screen are just for fun and can't end it early."}
+                    </span>
+                  </span>
+                  <Switch
+                    className="mt-0.5"
+                    checked={mathBypass}
+                    disabled={busy}
+                    onCheckedChange={setMathBypass}
                   />
                 </label>
                 <Button

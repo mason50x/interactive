@@ -22,6 +22,7 @@ const timeoutView = v.object({
   rayId: v.id("userTimeouts"),
   reason: v.string(),
   expiresAt: v.number(),
+  mathBypass: v.boolean(),
 });
 
 async function manager(ctx: QueryCtx | MutationCtx) {
@@ -89,7 +90,12 @@ export const mine = query({
     if (!identity) throw new ConvexError("Sign in required.");
     const row = await activeTimeout(ctx, identity.subject);
     return row
-      ? { rayId: row._id, reason: row.reason, expiresAt: row.expiresAt }
+      ? {
+          rayId: row._id,
+          reason: row.reason,
+          expiresAt: row.expiresAt,
+          mathBypass: row.mathBypass !== false,
+        }
       : null;
   },
 });
@@ -151,7 +157,12 @@ export const users = query({
             (caller.role === "ceo" ||
               (!ceoCleared && !(active && row.issuedByRole === "ceo"))),
           timeout: active
-            ? { rayId: row._id, reason: row.reason, expiresAt: row.expiresAt }
+            ? {
+                rayId: row._id,
+                reason: row.reason,
+                expiresAt: row.expiresAt,
+                mathBypass: row.mathBypass !== false,
+              }
             : null,
         };
       }),
@@ -205,6 +216,8 @@ export const set = mutation({
     enabled: v.boolean(),
     reason: v.optional(v.string()),
     durationMinutes: v.optional(v.number()),
+    /** Let the user work the timeout off with puzzles. Defaults to on. */
+    mathBypass: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -273,6 +286,7 @@ export const set = mutation({
       ceoCleared: false,
       issuedBy: caller.clerkId,
       issuedByRole: caller.role,
+      mathBypass: args.mathBypass ?? true,
       updatedAt: now,
     };
     const id = existing?._id ?? (await ctx.db.insert("userTimeouts", data));

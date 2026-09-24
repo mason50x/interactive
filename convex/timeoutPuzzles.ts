@@ -7,6 +7,11 @@ import { activeTimeout } from "./timeoutState";
 /**
  * Working off a timeout: twenty geometry puzzles right in a row lifts it.
  *
+ * Only when the timeout was issued with `mathBypass` on, the default. With it
+ * off the puzzles are for fun: the streak still counts and answers are still
+ * graded, but there is no goal, no clock and no penalty for leaving, and no
+ * streak ever lifts anything.
+ *
  * The streak lives here, not in the browser. Every puzzle is issued, timed
  * and graded by the server, and the answer never leaves until the guess is
  * in. A wrong answer, a late one, leaving the tab (reported by the page
@@ -22,8 +27,9 @@ export const PUZZLE_TIME_MS = 2 * 60_000;
 const puzzleView = v.object({
   params: puzzleParams,
   streak: v.number(),
-  goal: v.number(),
-  deadline: v.number(),
+  /** Null when the timeout has no math bypass and this is only for fun. */
+  goal: v.union(v.number(), v.null()),
+  deadline: v.union(v.number(), v.null()),
 });
 const solutionView = v.object({ display: v.string(), working: v.string() });
 const stale = v.object({ status: v.literal("stale") });
@@ -57,18 +63,25 @@ async function liveRow(ctx: MutationCtx, session: string) {
   return { row, timeout };
 }
 
-function view(row: Pick<Doc<"timeoutPuzzles">, "params" | "streak" | "issuedAt">) {
+const bypassable = (timeout: Doc<"userTimeouts">) => timeout.mathBypass !== false;
+
+function view(
+  row: Pick<Doc<"timeoutPuzzles">, "params" | "streak" | "issuedAt">,
+  timeout: Doc<"userTimeouts">,
+) {
+  const counts = bypassable(timeout);
   return {
     params: row.params,
     streak: row.streak,
-    goal: PUZZLE_GOAL,
-    deadline: row.issuedAt + PUZZLE_TIME_MS,
+    goal: counts ? PUZZLE_GOAL : null,
+    deadline: counts ? row.issuedAt + PUZZLE_TIME_MS : null,
   };
 }
 
 async function reissue(
   ctx: MutationCtx,
   row: Doc<"timeoutPuzzles">,
+  timeout: Doc<"userTimeouts">,
   streak: number,
 ) {
   const next = {
@@ -77,7 +90,7 @@ async function reissue(
     issuedAt: Date.now(),
   };
   await ctx.db.patch(row._id, next);
-  return view(next);
+  return view(next, timeout);
 }
 
 export const start = mutation({
@@ -101,7 +114,7 @@ export const start = mutation({
     const existing = await puzzleRow(ctx, clerkId);
     if (existing) await ctx.db.replace(existing._id, data);
     else await ctx.db.insert("timeoutPuzzles", data);
-    return { status: "started" as const, session: data.session, puzzle: view(data) };
+    return { status: "started" as const, session: data.session, puzzle: view(data, timeout) };
   },
 });
 
@@ -124,14 +137,20 @@ export const answer = mutation({
     const solution = { display, working };
     const now = Date.now();
 
-    if (now > row.issuedAt + PUZZLE_TIME_MS)
-      return { status: "late" as const, solution, puzzle: await reissue(ctx, row, 0) };
+    const counts = bypassable(timeout);
+
+    if (counts && now > row.issuedAt + PUZZLE_TIME_MS)
+      return { status: "late" as const, solution, puzzle: await reissue(ctx, row, timeout, 0) };
     if (!isCorrect(row.params, guess))
-      return { status: "wrong" as const, solution, puzzle: await reissue(ctx, row, 0) };
+      return { status: "wrong" as const, solution, puzzle: await reissue(ctx, row, timeout, 0) };
 
     const streak = row.streak + 1;
-    if (streak < PUZZLE_GOAL)
-      return { status: "correct" as const, solution, puzzle: await reissue(ctx, row, streak) };
+    if (!counts || streak < PUZZLE_GOAL)
+      return {
+        status: "correct" as const,
+        solution,
+        puzzle: await reissue(ctx, row, timeout, streak),
+      };
 
     await ctx.db.delete(row._id);
     await ctx.db.patch(timeout._id, { enabled: false, updatedAt: now });
@@ -157,6 +176,12 @@ export const forfeit = mutation({
   handler: async (ctx, { session }) => {
     const live = await liveRow(ctx, session);
     if (!live) return { status: "stale" as const };
-    return { status: "reset" as const, puzzle: await reissue(ctx, live.row, 0) };
+    const { row, timeout } = live;
+    // Nothing rides on a for-fun streak, so there is nothing to forfeit.
+    const streak = bypassable(timeout) ? 0 : row.streak;
+    return {
+      status: "reset" as const,
+      puzzle: await reissue(ctx, row, timeout, streak),
+    };
   },
 });

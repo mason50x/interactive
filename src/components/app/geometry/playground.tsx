@@ -32,20 +32,27 @@ type Notice =
 
 type Run =
   | { phase: "loading" }
-  | { phase: "playing"; session: string; puzzle: Puzzle; notice?: Notice }
+  | {
+      phase: "playing";
+      session: string;
+      puzzle: Puzzle;
+      /** Counts puzzles shown, so each one mounts fresh. */
+      round: number;
+      notice?: Notice;
+    }
   | { phase: "stale" }
   | { phase: "passed"; solution: Solution }
   | { phase: "clear" };
 
-function useSecondsLeft(deadline: number | undefined) {
+function useSecondsLeft(deadline: number | null) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (deadline === undefined) return;
+    if (deadline === null) return;
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, [deadline]);
-  return deadline === undefined
-    ? 0
+  return deadline === null
+    ? null
     : Math.max(0, Math.ceil((deadline - now) / 1000));
 }
 
@@ -94,7 +101,19 @@ function NoticeBanner({ notice }: { notice: Notice }) {
   }
 }
 
-function Progress({ streak, goal }: { streak: number; goal: number }) {
+function Progress({ streak, goal }: { streak: number; goal: number | null }) {
+  if (goal === null)
+    return (
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="text-neutral-500">
+          Just for fun. Your timeout ends on its own.
+        </span>
+        <span className="font-semibold tabular-nums">
+          Streak {streak}
+          {streak >= 3 && <span aria-hidden="true"> 🔥</span>}
+        </span>
+      </div>
+    );
   return (
     <div>
       <div className="flex items-baseline justify-between text-sm">
@@ -132,11 +151,14 @@ function PuzzleCard({
   pending,
   onAnswer,
   onExpire,
+  onSkip,
 }: {
   puzzle: Puzzle;
   pending: boolean;
   onAnswer: (guess: number) => void;
   onExpire: () => void;
+  /** Only offered when nothing rides on the streak. */
+  onSkip?: () => void;
 }) {
   const inputId = useId();
   const problem = describePuzzle(puzzle.params);
@@ -166,12 +188,14 @@ function PuzzleCard({
       <div className="p-5 sm:p-6">
         <div className="flex items-baseline justify-between gap-4 text-sm">
           <p className="font-medium text-blue-600">{problem.topic}</p>
-          <p
-            className={`tabular-nums ${secondsLeft <= 15 ? "font-medium text-rose-600" : "text-neutral-500"}`}
-          >
-            {Math.floor(secondsLeft / 60)}:
-            {String(secondsLeft % 60).padStart(2, "0")}
-          </p>
+          {secondsLeft !== null && (
+            <p
+              className={`tabular-nums ${secondsLeft <= 15 ? "font-medium text-rose-600" : "text-neutral-500"}`}
+            >
+              {Math.floor(secondsLeft / 60)}:
+              {String(secondsLeft % 60).padStart(2, "0")}
+            </p>
+          )}
         </div>
         <p className="mt-1.5 leading-relaxed">{problem.prompt}</p>
 
@@ -204,33 +228,49 @@ function PuzzleCard({
         </form>
 
         <div aria-live="polite" className="text-sm">
-          {hinted ? (
+          {hinted && (
             <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
               {problem.hint}
             </p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setHinted(true)}
-              className="mt-4 text-neutral-500 underline-offset-4 hover:text-black hover:underline"
-            >
-              Hint
-            </button>
           )}
         </div>
+        {(!hinted || onSkip) && (
+          <div className="mt-4 flex gap-4 text-sm text-neutral-500">
+            {!hinted && (
+              <button
+                type="button"
+                onClick={() => setHinted(true)}
+                className="underline-offset-4 hover:text-black hover:underline"
+              >
+                Hint
+              </button>
+            )}
+            {onSkip && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={onSkip}
+                className="underline-offset-4 hover:text-black hover:underline"
+              >
+                Skip
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );
 }
 
 /**
- * Work the timeout off: twenty geometry puzzles right in a row lifts it.
+ * Work the timeout off: twenty geometry puzzles right in a row lifts it,
+ * when the timeout allows a math bypass. Otherwise the puzzles are for fun.
  *
- * The server owns the streak, the timer and the answers
- * (`convex/timeoutPuzzles.ts`); this page only shows them. Any page load
- * starts a new run, and leaving the tab ends the current streak.
+ * The server owns the streak, the timer, the answers and which mode applies
+ * (`convex/timeoutPuzzles.ts`); this page only shows them. With the bypass
+ * on, any page load starts a new run and leaving the tab ends the streak.
  */
-export function GeometryPlayground() {
+export function GeometryPlayground({ mathBypass }: { mathBypass: boolean }) {
   const { isAuthenticated } = useConvexAuth();
   const start = useMutation(api.timeoutPuzzles.start);
   const answer = useMutation(api.timeoutPuzzles.answer);
@@ -238,6 +278,9 @@ export function GeometryPlayground() {
   const [run, setRun] = useState<Run>({ phase: "loading" });
   const [pending, setPending] = useState(false);
   const session = run.phase === "playing" ? run.session : null;
+  // The server says which mode applies; the prop only covers loading.
+  const counts =
+    run.phase === "playing" ? run.puzzle.goal !== null : mathBypass;
   const away = useRef(false);
 
   const begin = useCallback(async () => {
@@ -245,7 +288,12 @@ export function GeometryPlayground() {
     const result = await start({});
     setRun(
       result.status === "started"
-        ? { phase: "playing", session: result.session, puzzle: result.puzzle }
+        ? {
+            phase: "playing",
+            session: result.session,
+            puzzle: result.puzzle,
+            round: 0,
+          }
         : { phase: "clear" },
     );
   }, [start]);
@@ -257,7 +305,12 @@ export function GeometryPlayground() {
       if (cancelled) return;
       setRun(
         result.status === "started"
-          ? { phase: "playing", session: result.session, puzzle: result.puzzle }
+          ? {
+              phase: "playing",
+              session: result.session,
+              puzzle: result.puzzle,
+              round: 0,
+            }
           : { phase: "clear" },
       );
     });
@@ -267,7 +320,7 @@ export function GeometryPlayground() {
   }, [isAuthenticated, start]);
 
   const reset = useCallback(
-    async (kind: "left" | "expired") => {
+    async (kind: "left" | "expired" | null) => {
       if (!session) return;
       const result = await forfeit({ session });
       setRun((current) =>
@@ -275,7 +328,12 @@ export function GeometryPlayground() {
           ? current
           : result.status === "stale"
             ? { phase: "stale" }
-            : { ...current, puzzle: result.puzzle, notice: { kind } },
+            : {
+                ...current,
+                puzzle: result.puzzle,
+                round: current.round + 1,
+                notice: kind ? { kind } : undefined,
+              },
       );
     },
     [forfeit, session],
@@ -284,7 +342,7 @@ export function GeometryPlayground() {
   // Leaving the tab, the window or the page ends the streak. The server does
   // the resetting; a reload or a second tab also restarts from `start`.
   useEffect(() => {
-    if (!session) return;
+    if (!session || !counts) return;
     const leave = () => {
       if (away.current) return;
       away.current = true;
@@ -307,7 +365,7 @@ export function GeometryPlayground() {
       window.removeEventListener("pagehide", leave);
       window.removeEventListener("focus", back);
     };
-  }, [session, reset]);
+  }, [session, counts, reset]);
 
   const submit = async (guess: number) => {
     if (!session) return;
@@ -318,12 +376,13 @@ export function GeometryPlayground() {
       else if (result.status === "passed")
         setRun({ phase: "passed", solution: result.solution });
       else
-        setRun({
+        setRun((current) => ({
           phase: "playing",
           session,
           puzzle: result.puzzle,
+          round: current.phase === "playing" ? current.round + 1 : 0,
           notice: { kind: result.status, solution: result.solution },
-        });
+        }));
     } finally {
       setPending(false);
     }
@@ -349,8 +408,9 @@ export function GeometryPlayground() {
           Geometry break
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
-          Stay on this tab. Leaving it, a wrong answer or running out of time
-          restarts the streak.
+          {counts
+            ? "Stay on this tab. Leaving it, a wrong answer or running out of time restarts the streak."
+            : "A few puzzles to pass the time."}
         </p>
       </header>
 
@@ -366,11 +426,12 @@ export function GeometryPlayground() {
           )}
           <div className="mt-5">
             <PuzzleCard
-              key={`${run.puzzle.deadline}-${run.puzzle.params.kind}`}
+              key={run.round}
               puzzle={run.puzzle}
               pending={pending}
               onAnswer={(guess) => void submit(guess)}
               onExpire={onExpire}
+              onSkip={counts ? undefined : () => void reset(null)}
             />
           </div>
         </>

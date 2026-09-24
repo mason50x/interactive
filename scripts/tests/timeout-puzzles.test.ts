@@ -23,7 +23,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-async function setup() {
+async function setup(mathBypass?: boolean) {
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
   await t.run(async (ctx) => {
@@ -36,6 +36,7 @@ async function setup() {
     enabled: true,
     reason: "Repeated disruption",
     durationMinutes: 60,
+    ...(mathBypass === undefined ? {} : { mathBypass }),
   });
   return { t, member: t.withIdentity({ subject: "member" }) };
 }
@@ -175,4 +176,42 @@ test("every kind of puzzle has an answer it accepts", () => {
     expect(display).not.toBe("");
   }
   expect(kinds.size).toBe(9);
+});
+
+test("the math bypass is on unless the timeout turns it off", async () => {
+  const { member } = await setup();
+  expect(await member.query(api.timeouts.mine, {})).toMatchObject({
+    mathBypass: true,
+  });
+  const off = await setup(false);
+  expect(await off.member.query(api.timeouts.mine, {})).toMatchObject({
+    mathBypass: false,
+  });
+});
+
+test("without the bypass, puzzles are for fun and never lift the timeout", async () => {
+  const { member } = await setup(false);
+  const started = await begin(member);
+  expect(started.puzzle).toMatchObject({ goal: null, deadline: null });
+  const { session } = started;
+  let { puzzle } = started;
+  for (let i = 1; i <= PUZZLE_GOAL + 2; i++) {
+    // No clock either: taking a long time is fine.
+    vi.advanceTimersByTime(PUZZLE_TIME_MS + 1000);
+    const result = await member.mutation(api.timeoutPuzzles.answer, {
+      session,
+      guess: right(puzzle.params),
+    });
+    if (result.status !== "correct") throw new Error(result.status);
+    expect(result.puzzle.streak).toBe(i);
+    puzzle = result.puzzle;
+  }
+  expect(await member.query(api.timeouts.mine, {})).not.toBeNull();
+
+  // Skipping or leaving costs nothing when nothing rides on the streak.
+  const skipped = await member.mutation(api.timeoutPuzzles.forfeit, {
+    session,
+  });
+  if (skipped.status !== "reset") throw new Error(skipped.status);
+  expect(skipped.puzzle.streak).toBe(PUZZLE_GOAL + 2);
 });
