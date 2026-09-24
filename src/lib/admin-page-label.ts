@@ -37,6 +37,8 @@ export function adminPageLabel(
 function friendlySegment(value: string): string {
   const names: Record<string, string> = {
     xbox: "Xbox Cloud Gaming",
+    soccerrng: "Soccer RNG",
+    "geforce-now": "GeForce NOW",
     youtube: "YouTube",
     tiktok: "TikTok",
     x: "X",

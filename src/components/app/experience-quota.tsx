@@ -294,7 +294,7 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
         not count.
       </p>
       <p className="text-muted-foreground">
-        Resets to your daily limit every day at 7:35 a.m. Central
+        Resets to your daily limit every day at 7:30 a.m. Central
         Time. Extra minutes do not carry over.
       </p>
       <ButtonLink href="/chat" size="sm">
@@ -487,7 +487,7 @@ export function PlaytimeSidebar({
                 open player or proxy app.
               </p>
               <p>
-                Resets at 7:35 a.m. CT. Qualifying chats add 2 minutes each.
+                Resets at 7:30 a.m. CT. Qualifying chats add 2 minutes each.
               </p>
               <Link
                 href="/chat"
@@ -522,7 +522,7 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
           </ButtonLink>
           <p className="text-sm text-muted-foreground">
             Your activity allowance resets at
-            7:35 a.m. Central Time. Chat stays fully available.
+            7:30 a.m. Central Time. Chat stays fully available.
           </p>
         </div>
       </section>

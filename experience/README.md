@@ -283,3 +283,68 @@ account logins, Spotify licensed playback, or Xbox gameplay were verified.
 Deploy **both** the app and Experience Worker to release the tile, permissions,
 allowances, and engine changes together. This work was verified locally, not
 released to production.
+
+## Soccer RNG (2026-09-24)
+
+Soccer RNG (https://soccerrng.netlify.app/, branded "Touchline" in-page) is a
+catalog app with its own logo bundled locally: the site's inline SVG favicon,
+saved as `public/experience/soccerrng.svg`. Its `/api/*` calls and Netlify
+scripts are same-origin, so only the player portraits and club crests it
+hotlinks need dependency entries. Each is path-scoped to the image prefix the
+page actually uses, so the clubs' own websites stay outside the allowlist:
+
+- `assets.footylogos.com` `/logos/` (club crests)
+- `publish.realmadrid.com` `/content/dam/`, `assets.realmadrid.com` `/is/image/realmadrid/`
+- `www.fcbarcelona.com` `/photo-resources/`
+- `media.psg.fr` and `img.fcbayern.com` `/image/upload/`
+- `dynamic-crop-cdn.scoreplay.io` `/472/`
+- `contentfulproxy.stadion.io` `/9ec6988xevcz/` and `/unzgbvss5tuy/`
+- `www.juventus.com` `/images/image/`
+- `intermilan.bynder.com` `/transform/`
+- `www.acmilan.com` `/_next/image`
+- `media.asroma.com` `/prod/images/`
+- `s7g10.scene7.com` `/is/image/BORUSSIADORTMUNDGMBHANDCOKGAA/`
+- `images.mlssoccer.com` `/image/private/`
+
+All 220 portrait and crest URLs in the page on 2026-09-24 pass the relay. The
+"source" links to club player pages open outside the allowlist, and a
+moderator's custom portrait URL loads only when its host is already listed
+(uploads are data URLs and always work). If the site adds a club, add its
+image host here.
+
+## Discord, GeForce NOW, and Snapchat (2026-09-24)
+
+Three catalog apps, each with its official icon bundled locally (sources in
+`public/experience/ASSETS.md`). Hosts come from a Chromium trace of each
+landing and sign-in page plus the hostnames in their shipped JavaScript.
+
+- **Discord** (`/experience/discord`, starts at `https://discord.com/app`):
+  `discord.com`, `discordapp.com`, `discordapp.net` (CDN, media proxy),
+  `discord.gg` (gateway and QR-login WebSockets), `discord.media` (voice
+  signalling), the `discord-attachments-uploads-prd.storage.googleapis.com`
+  upload bucket, and `hcaptcha.com` for login challenges. `hcaptcha.net`
+  stays denied.
+- **GeForce NOW** (`/experience/geforce-now`, starts at
+  `https://play.geforcenow.com/`): `geforcenow.com`, `nvidiagrid.net`
+  (artwork, regional `cloudmatchbeta` zones), `gx.nvidia.com`,
+  `gxn.nvidia.com`, `api.gdn.nvidia.com`, and sign-in through
+  `nvgs.nvidia.com`, `login.nvidia.com`, `static-login.nvidia.com`.
+  `www.nvidia.com` is limited to `/auth/` and `/assets/starfleet-auth/`,
+  `images.nvidia.com` to `/etc/designs/nvidiaGDC/`. Telemetry hosts are left
+  out. It gets Xbox's frame grants (pointer lock, gamepad, microphone, wake
+  lock); like Xbox, its WebRTC stream and STUN are browser-native and not
+  relayed.
+- **Snapchat** (`/experience/snapchat`, starts at
+  `https://www.snapchat.com/web`): `snapchat.com`, `sc-cdn.net`,
+  `images.bitmoji.com`, `sdk.bitmoji.com`, and the login page's Contentful
+  space (`graphql.contentful.com/content/v1/spaces/kp51zybwznx4/`). Its
+  design-system fonts on `storage.googleapis.com` are deliberately not
+  allowed: path-scoped entries also match subdomains, and anyone can create a
+  bucket subdomain there. Fonts fall back to system fonts.
+
+Discord and Snapchat frames may request camera and microphone for calls; the
+browser still prompts. Only the signed-out landing and sign-in pages were
+traced directly (not through the relay). No account login, messaging, calls,
+or gameplay were verified. Snapchat Web's `WebAttestationService` and
+Discord's hCaptcha are the most likely points of failure through the proxy.
+Deploy both the app and the Experience Worker to release these.
