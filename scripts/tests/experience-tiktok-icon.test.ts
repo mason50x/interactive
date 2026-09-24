@@ -46,3 +46,15 @@ it("offers Soccer RNG with its own bundled logo", () => {
   const svg = readFileSync(new URL("../../public/experience/soccerrng.svg", import.meta.url), "utf8");
   expect(svg).toMatch(/^<svg xmlns='http:\/\/www\.w3\.org\/2000\/svg' viewBox='0 0 64 64'>/);
 });
+
+it.each([
+  { id: "discord", label: "Discord", host: "discord.com", start: "https://discord.com/app", icon: "discord.ico" },
+  { id: "geforce-now", label: "GeForce NOW", host: "geforcenow.com", start: "https://play.geforcenow.com/", icon: "geforce-now.png" },
+  { id: "snapchat", label: "Snapchat", host: "snapchat.com", start: "https://www.snapchat.com/web", icon: "snapchat.png" },
+])("offers $label with its official bundled logo", ({ icon, ...app }) => {
+  expect(findExperienceApp(app.id)).toEqual(app);
+  expect(experienceAppHref(app.id)).toBe(`/experience/${app.id}`);
+  expect(renderToStaticMarkup(createElement(ExperienceAppIcon, { id: app.id }))).toContain(`src="/experience/${icon}"`);
+  const bytes = readFileSync(new URL(`../../public/experience/${icon}`, import.meta.url));
+  expect(bytes.subarray(0, 4).toString("hex")).toBe(icon.endsWith(".ico") ? "00000100" : "89504e47");
+});

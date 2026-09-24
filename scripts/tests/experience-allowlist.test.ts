@@ -24,6 +24,9 @@ it("offers each service and allows its front door through the actual relay", asy
     "gemini",
     "apple-music",
     "soccerrng",
+    "discord",
+    "geforce-now",
+    "snapchat",
   ]) {
     const app = findExperienceApp(id);
     expect(app).not.toBeNull();
@@ -33,7 +36,7 @@ it("offers each service and allows its front door through the actual relay", asy
   expect(new Set(EXPERIENCE_APPS.map((app) => app.id)).size).toBe(
     EXPERIENCE_APPS.length,
   );
-  expect(upstream).toHaveBeenCalledTimes(8);
+  expect(upstream).toHaveBeenCalledTimes(11);
 });
 
 it.each([
@@ -63,6 +66,35 @@ it.each([
   "https://media.asroma.com/prod/images/example.png",
   "https://s7g10.scene7.com/is/image/BORUSSIADORTMUNDGMBHANDCOKGAA/example",
   "https://images.mlssoccer.com/image/private/t_thumb_squared/f_png/mls-mia/g9tieb27bu41atzhhskt.png",
+  "https://discord.com/api/v9/auth/login",
+  "https://gateway.discord.gg/?encoding=json&v=9",
+  "https://remote-auth-gateway.discord.gg/?v=2",
+  "https://cdn.discordapp.com/avatars/example/example.webp",
+  "https://media.discordapp.net/attachments/example/example.png",
+  "https://latency.discord.media/rtc",
+  "https://discord-attachments-uploads-prd.storage.googleapis.com/example",
+  "https://js.hcaptcha.com/1/api.js",
+  "https://newassets.hcaptcha.com/captcha/v1/example/static/hcaptcha.html",
+  "https://play.geforcenow.com/mall/",
+  "https://pcs.geforcenow.com/v1/serviceUrls",
+  "https://img.nvidiagrid.net/apps/example/ZZ/example.jpg",
+  "https://prod.cloudmatchbeta.nvidiagrid.net/v2/serverInfo",
+  "https://us-texas.cloudmatchbeta.nvidiagrid.net/v2/session",
+  "https://apps.gxn.nvidia.com/graphql",
+  "https://gx-target-rconfig-frontend-api.gx.nvidia.com/rconfig/v2",
+  "https://login.nvgs.nvidia.com/v1/login/identifier",
+  "https://accounts.nvgs.nvidia.com/api/1/oauth/example",
+  "https://login.nvidia.com/authorize",
+  "https://www.nvidia.com/auth/hints/",
+  "https://www.nvidia.com/assets/starfleet-auth/starfleet.js",
+  "https://images.nvidia.com/etc/designs/nvidiaGDC/clientlibs_base/images/example.svg",
+  "https://accounts.snapchat.com/v2/login",
+  "https://web.snapchat.com/graphene/web",
+  "https://session.snapchat.com/snap.security.WebAttestationService/BootstrapAttestationSession",
+  "https://cf-st.sc-cdn.net/dw/example.js",
+  "https://bolt-gcdn.sc-cdn.net/example",
+  "https://images.bitmoji.com/3d/avatar/example.webp",
+  "https://graphql.contentful.com/content/v1/spaces/kp51zybwznx4/environments/master",
 ])("relays service authentication/assets: %s", async (url) => {
   const upstream = vi.fn(async () => new Response("ok"));
   vi.stubGlobal("fetch", upstream);
@@ -86,8 +118,20 @@ it.each([
   "https://forwarder.workos.com/",
   "https://workos.imgix.net/",
   "https://assets-proxy.anthropic.com/",
-  "https://hcaptcha.com/",
   "https://hcaptcha.net/",
+  "https://www.nvidia.com/en-us/",
+  "https://www.nvidia.com/en-us/geforce/graphics-cards/",
+  "https://images.nvidia.com/content/example.png",
+  "https://developer.nvidia.com/",
+  "https://nvidia.com/",
+  "https://graphql.contentful.com/content/v1/spaces/otherspace/",
+  "https://storage.googleapis.com/snap-design-system/fonts/example.woff2",
+  "https://example-bucket.storage.googleapis.com/",
+  "https://www.bitmoji.com/",
+  "https://evildiscord.com/",
+  "https://discord.com.evil.example/",
+  "https://evilsnapchat.com/",
+  "https://geforcenow.com.evil.example/",
   "https://example.com/",
   "https://accounts.google.com.evil.example/",
   "https://evilspotify.com/",

@@ -118,8 +118,11 @@
       const frame = document.createElement("iframe");
       frame.title = "Experience";
       const targetHost = new URL(target).hostname;
-      const xbox = targetHost === "xbox.com" || targetHost.endsWith(".xbox.com");
-      frame.allow = "fullscreen; autoplay; encrypted-media" + (xbox ? "; gamepad; microphone; screen-wake-lock" : "");
+      const under = (domain) => targetHost === domain || targetHost.endsWith("." + domain);
+      const cloudGaming = under("xbox.com") || under("geforcenow.com");
+      const calling = under("discord.com") || under("snapchat.com");
+      frame.allow = "fullscreen; autoplay; encrypted-media" +
+        (cloudGaming ? "; gamepad; microphone; screen-wake-lock" : calling ? "; camera; microphone" : "");
       frame.src = experienceConfig.prefix + experienceConfig.encodeUrl(target);
       document.body.replaceChildren(frame);
     } catch (error) {
