@@ -240,6 +240,24 @@ function injectEarly(html, snippet) {
   return snippet + html;
 }
 
+/**
+ * Paper.io 2 starts on its `form.play` submit event. The activity sandbox
+ * deliberately omits `allow-forms`, so the browser never fires `submit` and
+ * PLAY does nothing. Dispatching the event ourselves runs the game's handler
+ * without the navigation the sandbox is there to block.
+ */
+const FORM_SUBMIT_SHIM = `<script id="il-form-submit">(function(){function s(f){f.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}))}document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("form.play button");if(b){e.preventDefault();s(b.form)}},true);document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.form&&e.target.form.matches("form.play")){e.preventDefault();s(e.target.form)}},true)})();</script>`;
+
+/**
+ * Hole.io is steered by holding the mouse and dragging away from the press
+ * point, which is awkward on a trackpad. Arrow keys (and WASD once a round has
+ * started, so they still type into the name field) hold a virtual drag from
+ * the canvas centre instead. Unity 2018 also reads the button against the last
+ * pointer position it saw, so a press with no preceding move — a tap — gets a
+ * move sent first.
+ */
+const HOLE_KEYBOARD_SHIM = `<script id="il-hole-keys">(function(){var K={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],KeyW:[0,-1],KeyS:[0,1],KeyA:[-1,0],KeyD:[1,0]},held={},down=false,started=false,loop=0,ax=0,ay=0,x=0,y=0,px=-1,py=-1;function c(){return document.getElementById("#canvas")||document.querySelector("canvas")}function m(t,g,X,Y,b){g.dispatchEvent(new MouseEvent(t,{bubbles:true,cancelable:true,view:window,clientX:X,clientY:Y,screenX:X,screenY:Y,button:0,buttons:b}))}function release(){if(down){down=false;m("mouseup",window,x,y,0)}}function press(v){var r=v.getBoundingClientRect();ax=x=r.left+r.width/2;ay=y=r.top+r.height/2;m("mousemove",window,x,y,0);down=true;m("mousedown",v,x,y,1)}function step(){var v=c(),dx=0,dy=0;for(var k in held){dx+=K[k][0];dy+=K[k][1]}if(!v||(!dx&&!dy)){loop=0;release();return}loop=requestAnimationFrame(step);if(!down){press(v);return}var r=v.getBoundingClientRect(),n=Math.sqrt(dx*dx+dy*dy),s=Math.min(r.width,r.height)*.012;if(Math.abs(x-ax)>r.width*.35||Math.abs(y-ay)>r.height*.35){release();return}x+=dx/n*s;y+=dy/n*s;m("mousemove",window,x,y,1)}addEventListener("mousemove",function(e){if(e.isTrusted){px=e.clientX;py=e.clientY}},true);addEventListener("mousedown",function(e){if(e.isTrusted&&(e.clientX!==px||e.clientY!==py))m("mousemove",window,e.clientX,e.clientY,0)},true);addEventListener("keydown",function(e){if(!K[e.code]||(!started&&e.code.indexOf("Key")===0))return;e.preventDefault();held[e.code]=1;if(!loop)loop=requestAnimationFrame(step)},true);addEventListener("keyup",function(e){delete held[e.code]},true);addEventListener("blur",function(){held={}});var t=setInterval(function(){var s=window.sdk;if(s&&s.showBanner){clearInterval(t);var o=s.showBanner;s.showBanner=function(){started=true;return o.apply(this,arguments)}}},500)})();</script>`;
+
 export function patchGameHtml(html) {
   // Tracked separately from the other rewrites: the shim is only warranted
   // when a `gtag` definition was actually removed. A page that merely lost its
@@ -283,6 +301,22 @@ export function patchGameHtml(html) {
     patched = patched.replace(/<body\b[^>]*>/i, '$&<div id="content"></div>');
   }
 
+  if (
+    /<title>\s*Paper\.io 2\s*<\/title>/i.test(patched) &&
+    /js\/app-new-gm\.js/.test(patched) &&
+    !patched.includes('id="il-form-submit"')
+  ) {
+    patched = injectEarly(patched, FORM_SUBMIT_SHIM);
+  }
+
+  if (
+    /<title>\s*Hole\.io\s*<\/title>/i.test(patched) &&
+    /Build\/UnityLoader\.js/.test(patched) &&
+    !patched.includes('id="il-hole-keys"')
+  ) {
+    patched = injectEarly(patched, HOLE_KEYBOARD_SHIM);
+  }
+
   // Removing the definitions can strand a call. `basketbrosio` carries two
   // analytics blocks — Seraph's and the game author's original — and its own
   // game code calls `gtag(...)` on a scored basket, hundreds of lines away
@@ -290,6 +324,25 @@ export function patchGameHtml(html) {
   // ReferenceError partway through play, which is a worse outcome than the
   // tracking was.
   return removedAnalytics ? injectEarly(patched, GTAG_SHIM) : patched;
+}
+
+/**
+ * Monkey Mart's Poki loader fetches the SDK core from `tbg95.github.io`, which
+ * now 404s, and the game stays on a black screen waiting for it. The same
+ * core ships beside the loader, so point it there.
+ *
+ * The game also calls `isAdBlocked`, `captureError`, and `shareableURL` on
+ * startup, which the loader's placeholder lacks. If the core has not finished
+ * loading by then, the engine crashes to the same black screen, so stub them.
+ */
+export function patchGameScript(file, source) {
+  if (!file.endsWith("poki-sdk.js")) return source;
+  return source
+    .replace(/(["'])\/\/tbg95\.github\.io\/(poki-sdk-)/g, "$1$2")
+    .replace(
+      /(rewardedBreak: t\.rewardedBreak,)(?!\s*isAdBlocked)/,
+      "$1 isAdBlocked: function() { return false }, captureError: function() {}, shareableURL: function() { return Promise.reject() },",
+    );
 }
 
 /**
@@ -457,11 +510,15 @@ async function main() {
     for (const game of upstreamGames) {
       const directory = join(staging, UPSTREAM_PREFIX, game.slug);
       for (const file of await readdir(directory, { recursive: true })) {
-        if (!file.endsWith(".html")) continue;
+        const html = file.endsWith(".html");
+        if (!html && !file.endsWith("poki-sdk.js")) continue;
         const path = join(directory, file);
         const original = await readFile(path, "utf8");
-        const rewritten = patchGameHtml(original);
-        assertPatched(join(UPSTREAM_PREFIX, game.slug, file), rewritten);
+        const rewritten = html
+          ? patchGameHtml(original)
+          : patchGameScript(file, original);
+        if (html)
+          assertPatched(join(UPSTREAM_PREFIX, game.slug, file), rewritten);
         if (rewritten !== original) {
           await writeFile(path, rewritten);
           patched += 1;
