@@ -7,6 +7,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -139,7 +140,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       : null;
 
   // The cursor is authoritative, including optimistic writes.
-  const served = conversations ?? [];
+  const served = useMemo(() => conversations ?? [], [conversations]);
   const notifications = useBrowserNotifications({
     accountId: isAuthenticated ? profile?.clerkId : undefined,
     conversations: served,
@@ -149,7 +150,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const open =
     reading === null ? undefined : served.find((row) => row._id === reading);
   const behind = reading !== null && (open === undefined || open.unread > 0);
-  const list = served;
+  // The open thread is read by definition. Without this, every message that
+  // arrives in it lands in the list as unread first — bold name, dot or count
+  // — and only clears once the thread's `markRead` has made the round trip,
+  // so the row flashes. That is widest in a new thread, where the cursor waits
+  // on the thread's first load, and in a new account's welcome DM. `Thread`
+  // reads `serverConversations`, so it still sees what it has to acknowledge.
+  const list = useMemo(
+    () =>
+      reading === null
+        ? served
+        : served.map((row) =>
+            row._id === reading && (row.unread > 0 || row.mentioned)
+              ? { ...row, unread: 0, mentioned: false }
+              : row,
+          ),
+    [served, reading],
+  );
 
   // The room contributes a dot and never a number — see `unreadExact` in
   // `convex/chat/conversations.ts` for why counting it would be the one query
