@@ -58,9 +58,11 @@ export type Preferences = {
  * bottom-left corner of the board, so it is a one-handed reach rather than a
  * shape to find under pressure.
  *
- * The tab mask ships off for a quieter reason: a product whose tab lies about
- * what it is by default is one nobody can recommend out loud. It is a thing to
- * reach for, not a thing to wake up inside of.
+ * The tab mask is off here, which is what signed-out visitors and accounts
+ * from before the default changed see. New accounts are given the Classroom
+ * mask when their user row is created — see `disguiseNewAccount` in
+ * `convex/users.ts` — so it is a stored choice they can turn off, not a
+ * fallback.
  */
 export const defaultPreferences: Preferences = {
   accent: DEFAULT_ACCENT,

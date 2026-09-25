@@ -56,11 +56,27 @@ async function upsertUser(
   const id = existing === null
     ? await ctx.db.insert("users", { clerkId, onboardingComplete: false, ...fields })
     : existing._id;
+  if (existing === null) await disguiseNewAccount(ctx, clerkId);
   if (existing !== null && Object.entries(fields).some(([key, value]) => existing[key as keyof UserFields] !== value)) {
     await ctx.db.patch(id, fields);
   }
   if (fields.username) await ensureGlobalMembership(ctx, clerkId);
   return id;
+}
+
+/**
+ * New accounts start with their tab dressed as Google Classroom. Only on the
+ * insert that creates the user, and only when there is no preferences row
+ * yet, so nobody who already chose — including choosing "Off" — is overridden.
+ */
+async function disguiseNewAccount(ctx: MutationCtx, clerkId: string) {
+  const preferences = await ctx.db
+    .query("preferences")
+    .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+    .unique();
+  if (preferences === null) {
+    await ctx.db.insert("preferences", { clerkId, tabMask: "classroom" });
+  }
 }
 
 async function userByClerkId(ctx: QueryCtx, clerkId: string) {
