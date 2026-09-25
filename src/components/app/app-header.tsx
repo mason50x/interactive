@@ -9,7 +9,6 @@ import { isPlaytimeRoute } from "@config/playtime";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useRef } from "react";
-import { TrophyIcon } from "@heroicons/react/24/solid";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { NavUnderline } from "@/components/app/rail/nav-underline";
 import { useActiveNav } from "@/components/app/rail/use-active-nav";
@@ -21,7 +20,7 @@ import { SchoolDayButton } from "@/components/app/school-day-button";
 import { UserMenu } from "@/components/app/user-menu";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
-import { HOME_HREF, LEADERBOARD_HREF, navItems } from "@/lib/nav";
+import { HOME_HREF, navItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
 import { usePlaytimeActivity } from "@/components/app/playtime-activity";
@@ -41,7 +40,7 @@ import { usePlaytimeActivity } from "@/components/app/playtime-activity";
  * edge between them.
  *
  * The row is budgeted by breakpoint, because every item in it wants width:
- * destinations are words, set tighter below `lg`; the brand's name
+ * destinations are words, set tighter below `xl`; the brand's name
  * arrives at `2xl`.
  *
  * `z-30` keeps what the bar
@@ -52,21 +51,13 @@ export function AppHeader() {
   const pathname = usePathname();
   const exhausted = usePlaytimeExhausted();
   const { hasUnread, mentioned, conversations } = useChat();
-  // Leaderboard sits beside the account controls, and Admin lives in the
-  // account menu; the centre links are the places you spend time in.
-  const destinations = navItems.filter(
-    (item) => item.href !== LEADERBOARD_HREF,
-  );
   const hasNewAnnouncement = conversations.some(
     (conversation) =>
       conversation.kind === "announcements" && conversation.unread > 0,
   );
 
   const { pendingHref, report } = useNavPending();
-  const { activeHref, litHref } = useActiveNav(pathname, pendingHref, [
-    ...destinations,
-    { href: LEADERBOARD_HREF },
-  ]);
+  const { activeHref, litHref } = useActiveNav(pathname, pendingHref, navItems);
 
   const compactPlaytime = usePlaytimeActivity();
 
@@ -99,12 +90,13 @@ export function AppHeader() {
       {/* The middle of three columns, weighted 1:3:1. The outer two are
           equal while each can hold what it carries (the controls are the
           wider side), so the links sit on the page's centre line and spread
-          across everything between. Capped so a very wide screen doesn't
-          scatter them. The underline measures against the list, so the cap
+          across everything between. Every destination lives here, Leaderboard
+          last on the far right; Admin is in the account menu. Capped so a
+          very wide screen doesn't scatter them. The underline measures against the list, so the cap
           lives here on the nav and the list fills it. */}
-      <nav aria-label="Dashboard" className="relative mx-auto w-full max-w-4xl">
+      <nav aria-label="Dashboard" className="relative mx-auto w-full max-w-5xl">
         <ul ref={list} className="flex items-center justify-between gap-1">
-          {destinations.map((item) => {
+          {navItems.map((item) => {
             const disabled = exhausted && isPlaytimeRoute(item.href);
             const active = item.href === activeHref;
             const lit = item.href === litHref;
@@ -119,7 +111,7 @@ export function AppHeader() {
                   data-lit={lit ? "true" : undefined}
                   {...(disabled ? {} : warm(item.href))}
                   className={cn(
-                    "group relative flex h-11 items-center rounded-lg border border-transparent px-2 text-[0.875rem] font-medium whitespace-nowrap backdrop-blur-[3px] lg:px-3 lg:text-[0.9375rem]",
+                    "group relative flex h-11 items-center rounded-lg border border-transparent px-2 text-[0.875rem] font-medium whitespace-nowrap backdrop-blur-[3px] lg:text-[0.9375rem] xl:px-3",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
                     disabled
                       ? "cursor-not-allowed opacity-40"
@@ -216,23 +208,6 @@ export function AppHeader() {
         >
           <SchoolDayButton />
         </div>
-        <Link
-          href={LEADERBOARD_HREF}
-          aria-label="Leaderboard"
-          title="Leaderboard"
-          aria-current={activeHref === LEADERBOARD_HREF ? "page" : undefined}
-          {...warm(LEADERBOARD_HREF)}
-          className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-lg backdrop-blur-[3px] outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
-            litHref === LEADERBOARD_HREF
-              ? "text-foreground"
-              : "text-muted-foreground transition-colors hover:text-foreground",
-          )}
-        >
-          <TrophyIcon className="size-5" />
-          <NavPending href={LEADERBOARD_HREF} report={report} />
-        </Link>
-
         <SidebarPlaytime compact={compactPlaytime} />
 
         {/* Nothing links back to the marketing site: `/` bounces a live
