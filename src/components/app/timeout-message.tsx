@@ -61,19 +61,9 @@ export function TimeoutMessage({
           <h1 role="alert" className="text-3xl font-semibold">
             You&apos;ve been timed out
           </h1>
-          <p className="mt-5 leading-relaxed">
-            Your access has been temporarily paused. Contact an admin for help
-            or to discuss this timeout.
-          </p>
           <p className="mt-5 break-words whitespace-pre-wrap">
             <strong>Reason:</strong> {reason}
           </p>
-          {mathBypass && (
-            <p className="mt-5 leading-relaxed">
-              Or work it off: get 20 geometry puzzles right in a row and your
-              access comes back straight away.
-            </p>
-          )}
         </div>
       </div>
       <div className="border-t border-neutral-200 bg-neutral-50 px-6 pt-10 pb-24 lg:h-svh lg:overflow-y-auto lg:border-t-0 lg:border-l lg:py-12">

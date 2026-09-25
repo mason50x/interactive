@@ -409,7 +409,7 @@ export function GeometryPlayground({ mathBypass }: { mathBypass: boolean }) {
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
           {counts
-            ? "Stay on this tab. Leaving it, a wrong answer or running out of time restarts the streak."
+            ? "Leaving this tab, a miss or the timer resets the streak."
             : "A few puzzles to pass the time."}
         </p>
       </header>

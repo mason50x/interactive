@@ -18,9 +18,23 @@ const THEME_ATTRIBUTE = "data-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
-/** A temporary viewing theme; it never changes the saved appearance choice. */
-export function isEntertainmentPlayer(pathname: string): boolean {
-  return /^\/tv\/[^/]+\/?$/.test(pathname);
+/** Player routes use dark temporarily without changing the saved appearance. */
+export function isDarkPlayerRoute(pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 2) {
+    return (
+      segments[0] === "tv" ||
+      segments[0] === "activities" ||
+      (segments[0] === "emulate" &&
+        segments[1] !== "html" &&
+        segments[1] !== "published")
+    );
+  }
+  return (
+    segments.length === 3 &&
+    segments[0] === "emulate" &&
+    (segments[1] === "html" || segments[1] === "published")
+  );
 }
 
 function isThemePreference(value: unknown): value is ThemePreference {
@@ -146,7 +160,7 @@ export const themeScript = `(function(){try{var p="dark";try{p=localStorage.getI
   THEME_STORAGE_KEY,
 )});}catch(_){}if(p!=="system"&&p!=="light"&&p!=="dark")p="dark";var t=p==="light"||p==="dark"?p:(matchMedia(${JSON.stringify(
   DARK_QUERY,
-)}).matches?"dark":"light");if((${isEntertainmentPlayer.toString()})(location.pathname))t="dark";var e=document.documentElement;e.setAttribute(${JSON.stringify(
+)}).matches?"dark":"light");if((${isDarkPlayerRoute.toString()})(location.pathname))t="dark";var e=document.documentElement;e.setAttribute(${JSON.stringify(
   THEME_ATTRIBUTE,
 )},t);e.style.colorScheme=t;var m=document.createElement("meta");m.name="theme-color";m.content=t==="dark"?${JSON.stringify(
   brand.colors.themeDark,

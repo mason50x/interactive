@@ -1653,8 +1653,7 @@
     stroke-dashoffset: 4;
   }
 }
-/* The disclosure settles with a small spring overshoot. Each changed clock
-   digit rolls on its own; the stable digits never move. */
+/* The disclosure settles with a small spring overshoot. */
 .playtime-spring {
   transition-timing-function: linear(
     0,
@@ -1667,71 +1666,13 @@
   );
 }
 
-@keyframes playtime-digit-in {
-  from {
-    opacity: 0.55;
-    transform: translateY(20%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes playtime-digit-in-increase {
-  from {
-    opacity: 0.55;
-    transform: translateY(-20%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.playtime-digit-in {
-  animation: playtime-digit-in 190ms ease-out both;
-}
-
-.playtime-digit-in-increase {
-  animation: playtime-digit-in-increase 190ms ease-out both;
-}
-
-/* The browser carries the rail's playtime card between its full layout and
-   the compact playing layout. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
 }
 
-::view-transition-group(rail-playtime) {
-  animation-duration: 460ms;
-  animation-timing-function: linear(
-    0,
-    0.08 10%,
-    0.36 25%,
-    0.74 42%,
-    1.025 65%,
-    0.995 85%,
-    1
-  );
-}
-
-::view-transition-old(rail-playtime),
-::view-transition-new(rail-playtime) {
-  animation-duration: 220ms;
-}
-
 ::view-transition {
   pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(rail-playtime),
-  ::view-transition-old(rail-playtime),
-  ::view-transition-new(rail-playtime) {
-    animation-duration: 0.001ms !important;
-  }
 }
 
 /* A thin comet of light follows the outline of a chip — the staff badge in

@@ -321,85 +321,6 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
   );
 }
 
-function RollingDigit({
-  value,
-  increasing,
-}: {
-  value: string;
-  increasing: boolean;
-}) {
-  const [shown, setShown] = useState({
-    current: value,
-    change: 0,
-  });
-  if (shown.current !== value) {
-    setShown({
-      current: value,
-      change: shown.change + 1,
-    });
-  }
-  return (
-    <span className="relative inline-block h-[1.125em] w-[0.64em] overflow-hidden text-center leading-[1.125]">
-      <span
-        key={shown.change}
-        className={cn(
-          "absolute inset-0",
-          shown.change > 0 &&
-            (increasing ? "playtime-digit-in-increase" : "playtime-digit-in"),
-        )}
-      >
-        {shown.current}
-      </span>
-    </span>
-  );
-}
-
-function RollingTime({
-  label,
-  seconds,
-  minutesOnly = false,
-}: {
-  label: string;
-  seconds: number | null;
-  minutesOnly?: boolean;
-}) {
-  const [motion, setMotion] = useState({ value: seconds, increasing: false });
-  if (motion.value !== seconds) {
-    setMotion({
-      value: seconds,
-      increasing:
-        motion.value !== null && seconds !== null && seconds > motion.value,
-    });
-  }
-  const [minutes, remainder] = label.split(":");
-  return (
-    <span aria-hidden="true" className="inline-flex items-center leading-none">
-      {Array.from(minutes).map((character, index) => (
-        <RollingDigit
-          key={index}
-          value={character}
-          increasing={motion.increasing}
-        />
-      ))}
-      <span
-        className={cn(
-          "inline-flex shrink-0 items-center overflow-hidden transition-[width,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-          minutesOnly ? "w-0 opacity-0" : "w-[1.56em] opacity-100",
-        )}
-      >
-        <span className="inline-block w-[0.28em] shrink-0 text-center">:</span>
-        {Array.from(remainder).map((character, index) => (
-          <RollingDigit
-            key={index}
-            value={character}
-            increasing={motion.increasing}
-          />
-        ))}
-      </span>
-    </span>
-  );
-}
-
 /** The time left, as text in the header; its details drop open over the page. */
 export function PlaytimeSidebar({
   quota,
@@ -410,30 +331,17 @@ export function PlaytimeSidebar({
 }) {
   const [open, setOpen] = useState(false);
   if (compact && open) setOpen(false);
-  const [showMinutes, setShowMinutes] = useState(false);
-  if (!compact && showMinutes) setShowMinutes(false);
-  useEffect(() => {
-    if (!compact) return;
-    const timer = window.setTimeout(() => setShowMinutes(true), 3500);
-    return () => window.clearTimeout(timer);
-  }, [compact]);
   const root = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
   useClickOutside(root, close, open);
   const detailsId = useId();
   const seconds = quota.remaining;
-  const minutesOnly =
-    compact && showMinutes && seconds !== null && seconds >= 60;
   const label =
     seconds === null
       ? "—:—"
       : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   return (
-    <div
-      ref={root}
-      className="relative shrink-0"
-      style={{ viewTransitionName: "rail-playtime" }}
-    >
+    <div ref={root} className="relative shrink-0">
       <button
         type="button"
         disabled={compact}
@@ -452,12 +360,11 @@ export function PlaytimeSidebar({
             : "cursor-pointer transition-colors hover:text-foreground",
         )}
       >
-        <span className="flex items-center" style={{ lineHeight: 1 }}>
-          <RollingTime
-            label={label}
-            seconds={seconds}
-            minutesOnly={minutesOnly}
-          />
+        <span
+          className="inline-block min-w-[5ch] text-right leading-none"
+          aria-hidden="true"
+        >
+          {label}
         </span>
         {!compact && (
           <ChevronDownIcon
