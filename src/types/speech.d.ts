@@ -40,6 +40,8 @@ interface SpeechRecognition extends EventTarget {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
+  /** Chrome's on-device recogniser, where it has one. Absent elsewhere. */
+  processLocally?: boolean;
   start(): void;
   stop(): void;
   abort(): void;
@@ -51,8 +53,22 @@ interface SpeechRecognition extends EventTarget {
     ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
 }
 
+type SpeechRecognitionAvailability =
+  "unavailable" | "downloadable" | "downloading" | "available";
+
+interface SpeechRecognitionOptions {
+  langs: string[];
+  processLocally: boolean;
+}
+
 interface SpeechRecognitionConstructor {
   new (): SpeechRecognition;
+  /** Chrome only, for now: whether a language can be recognised on-device. */
+  available?(
+    options: SpeechRecognitionOptions,
+  ): Promise<SpeechRecognitionAvailability>;
+  /** Chrome only: fetches the on-device model. Needs a user gesture. */
+  install?(options: SpeechRecognitionOptions): Promise<boolean>;
 }
 
 interface Window {
