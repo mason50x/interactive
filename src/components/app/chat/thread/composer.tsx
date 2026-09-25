@@ -442,7 +442,11 @@ export function Composer({
 
   return (
     <div className="px-3 pb-3 sm:px-8 lg:px-14 xl:px-20">
-      {/* Refusals, and the few dictation failures worth a sentence.
+      {/* Same side padding as the messages, so the two share edges until
+          the screen is wide enough that a full-width field is a long way
+          to read across. Past that it stops growing and sits centered. */}
+      <div className="mx-auto max-w-3xl">
+        {/* Refusals, and the few dictation failures worth a sentence.
 
           For refusals: the category and never the rule. See `refusalMessage`
           in `src/lib/chat.ts` — telling somebody exactly which word tripped is
@@ -450,240 +454,241 @@ export function Composer({
 
           Over the composer rather than under it, so it reads as the message
           coming back rather than as a line of small print. */}
-      {notice === null ? null : (
-        <div className="flex justify-center pb-2">
-          <p
-            role="alert"
-            className="animate-notice-in max-w-full rounded-full border border-destructive/30 bg-surface px-3.5 py-1.5 text-center text-[0.8125rem] text-destructive shadow-[0_2px_8px_rgba(15,15,15,0.06)]"
+        {notice === null ? null : (
+          <div className="flex justify-center pb-2">
+            <p
+              role="alert"
+              className="animate-notice-in max-w-full rounded-full border border-destructive/30 bg-surface px-3.5 py-1.5 text-center text-[0.8125rem] text-destructive shadow-[0_2px_8px_rgba(15,15,15,0.06)]"
+            >
+              {notice}
+            </p>
+          </div>
+        )}
+        {draft.hadAttachments &&
+        tray.attached.length === 0 &&
+        editing === null ? (
+          <div
+            role="status"
+            className="mb-2 flex items-center justify-center gap-2 text-xs text-muted-foreground"
           >
-            {notice}
-          </p>
-        </div>
-      )}
-      {draft.hadAttachments &&
-      tray.attached.length === 0 &&
-      editing === null ? (
-        <div
-          role="status"
-          className="mb-2 flex items-center justify-center gap-2 text-xs text-muted-foreground"
-        >
-          Your text draft is saved. Add its pictures again before sending.
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            aria-label="Dismiss picture reminder"
-            onClick={() =>
-              updateDraft((previous) => ({
-                ...previous,
-                hadAttachments: false,
-              }))
-            }
-          >
-            <XMarkIcon />
-          </Button>
-        </div>
-      ) : null}
+            Your text draft is saved. Add its pictures again before sending.
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              aria-label="Dismiss picture reminder"
+              onClick={() =>
+                updateDraft((previous) => ({
+                  ...previous,
+                  hadAttachments: false,
+                }))
+              }
+            >
+              <XMarkIcon />
+            </Button>
+          </div>
+        ) : null}
 
-      {/* One radius whatever is in it. At a single line the box is fifty
+        {/* One radius whatever is in it. At a single line the box is fifty
           pixels tall, so a 25px corner *is* the pill; with a tray above or a
           paragraph in it, the same corner is a card. It used to switch
           between `rounded-full` and this, and animating a radius from nine
           thousand pixels to twenty-five is a shape doing something strange
           on the way. */}
-      <div className="composer flex flex-col rounded-[25px] border border-border/70 bg-surface/80 shadow-[0_8px_30px_-12px_rgba(15,15,15,0.22)] backdrop-blur-xl">
-        {editing !== null ? (
-          <div className="mx-3 mt-3 flex items-center gap-2 rounded-2xl bg-primary/[0.06] px-3 py-2 text-sm text-primary">
-            <PencilSquareIcon className="size-4" />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold">Editing message</p>
-              <p className="text-xs text-muted-foreground">
-                Your unsent draft will be here when you finish.
-              </p>
+        <div className="composer flex flex-col rounded-[25px] border border-border/70 bg-surface/80 shadow-[0_8px_30px_-12px_rgba(15,15,15,0.22)] backdrop-blur-xl">
+          {editing !== null ? (
+            <div className="mx-3 mt-3 flex items-center gap-2 rounded-2xl bg-primary/[0.06] px-3 py-2 text-sm text-primary">
+              <PencilSquareIcon className="size-4" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Editing message</p>
+                <p className="text-xs text-muted-foreground">
+                  Your unsent draft will be here when you finish.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelEdit}
+                disabled={savingEdit}
+              >
+                Cancel
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onCancelEdit}
-              disabled={savingEdit}
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : null}
-        {reply === null ? null : (
-          <div className="mx-4 mt-3 flex items-center gap-2.5 border-b border-border/60 pb-2.5">
-            <ArrowUturnLeftIcon className="size-4 shrink-0 text-faint" />
-            <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
-              Replying to{" "}
-              <span className="font-semibold text-foreground">
-                {personName({
-                  handle: reply.authorHandle,
-                  displayName: reply.authorName,
-                })}
-              </span>
-              <span className="text-faint">
-                {" "}
-                · {replyFromMessage(reply).preview}
-              </span>
-            </p>
-            <button
-              type="button"
-              onClick={cancelReply}
-              disabled={sending}
-              aria-label="Cancel reply"
-              className="flex size-6 shrink-0 items-center justify-center rounded-full text-faint outline-none hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-            >
-              <XMarkIcon className="size-4" />
-            </button>
-          </div>
-        )}
-
-        {poll !== null ? (
-          <PollComposer
-            value={poll}
-            onChange={(value) =>
-              updateDraft((previous) => ({ ...previous, poll: value }))
-            }
-            onCancel={() =>
-              updateDraft((previous) => ({ ...previous, poll: null }))
-            }
-            disabled={sending}
-          />
-        ) : null}
-
-        {editing === null ? (
-          <AttachmentTray
-            attached={tray.attached}
-            ghost={tray.ghost}
-            onRemove={tray.remove}
-            onSettled={tray.settle}
-          />
-        ) : null}
-
-        <div
-          className={cn(
-            "flex items-end gap-2 py-1.5 pr-1.5",
-            editing === null ? "pl-1.5" : "pl-4",
-          )}
-        >
-          {/* The plus on the left, where every chat puts it. It opens a
-              small menu: how many `@bot` tags are left today, then the
-              picker. Pasting and dropping reach the same `addFiles`. */}
-          {editing === null ? (
-            <>
-              <PlusMenu
-                quota={quota}
-                pictures={pictures && poll === null}
-                full={tray.attached.length >= MAX_IMAGES_PER_MESSAGE}
+          ) : null}
+          {reply === null ? null : (
+            <div className="mx-4 mt-3 flex items-center gap-2.5 border-b border-border/60 pb-2.5">
+              <ArrowUturnLeftIcon className="size-4 shrink-0 text-faint" />
+              <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
+                Replying to{" "}
+                <span className="font-semibold text-foreground">
+                  {personName({
+                    handle: reply.authorHandle,
+                    displayName: reply.authorName,
+                  })}
+                </span>
+                <span className="text-faint">
+                  {" "}
+                  · {replyFromMessage(reply).preview}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={cancelReply}
                 disabled={sending}
-                canPoll={poll === null && tray.attached.length === 0}
-                onPoll={() => {
-                  updateDraft((previous) => ({
-                    ...previous,
-                    poll: { options: ["", ""] },
-                  }));
-                  inputRef.current?.focus();
-                }}
-                onUpload={() => fileInput.current?.click()}
-                onEmoji={(emoji) => inputRef.current?.insertEmoji(emoji)}
-              />
-              <input
-                ref={fileInput}
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-                onChange={tray.onPick}
-              />
-            </>
+                aria-label="Cancel reply"
+                className="flex size-6 shrink-0 items-center justify-center rounded-full text-faint outline-none hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+              >
+                <XMarkIcon className="size-4" />
+              </button>
+            </div>
+          )}
+
+          {poll !== null ? (
+            <PollComposer
+              value={poll}
+              onChange={(value) =>
+                updateDraft((previous) => ({ ...previous, poll: value }))
+              }
+              onCancel={() =>
+                updateDraft((previous) => ({ ...previous, poll: null }))
+              }
+              disabled={sending}
+            />
           ) : null}
 
-          <RichMessageInput
-            ref={inputRef}
-            key={editing?._id ?? "draft"}
-            value={body}
-            onChange={(next) => {
-              setBody(next);
-              setNotice(null);
-            }}
-            onSubmit={() => void submit()}
-            onEscape={
-              editing !== null && !savingEdit ? onCancelEdit : undefined
-            }
-            onFiles={tray.addFiles}
-            onLimit={setNotice}
-            disabled={savingEdit || sending || !me}
-            placeholder={
-              live
-                ? "Listening…"
-                : poll !== null
-                  ? "Ask a question"
-                  : tray.attached.length > 0 && editing === null
-                    ? "Add a caption, or just send"
-                    : "Say something"
-            }
-            label={
-              editing !== null
-                ? "Edit message"
-                : poll !== null
-                  ? "Poll question"
-                  : "Message"
-            }
-            interim={dictation.interim}
-            conversationId={conversationId}
-            kind={kind}
-            peer={peer}
-            authors={authors}
-            me={me}
-            canMentionEveryone={canMentionEveryone}
-            onKnownPeople={rememberPeople}
-          />
-          {/* Absent where the browser has no recogniser (Firefox) and on the
+          {editing === null ? (
+            <AttachmentTray
+              attached={tray.attached}
+              ghost={tray.ghost}
+              onRemove={tray.remove}
+              onSettled={tray.settle}
+            />
+          ) : null}
+
+          <div
+            className={cn(
+              "flex items-end gap-2 py-1.5 pr-1.5",
+              editing === null ? "pl-1.5" : "pl-4",
+            )}
+          >
+            {/* The plus on the left, where every chat puts it. It opens a
+              small menu: how many `@bot` tags are left today, then the
+              picker. Pasting and dropping reach the same `addFiles`. */}
+            {editing === null ? (
+              <>
+                <PlusMenu
+                  quota={quota}
+                  pictures={pictures && poll === null}
+                  full={tray.attached.length >= MAX_IMAGES_PER_MESSAGE}
+                  disabled={sending}
+                  canPoll={poll === null && tray.attached.length === 0}
+                  onPoll={() => {
+                    updateDraft((previous) => ({
+                      ...previous,
+                      poll: { options: ["", ""] },
+                    }));
+                    inputRef.current?.focus();
+                  }}
+                  onUpload={() => fileInput.current?.click()}
+                  onEmoji={(emoji) => inputRef.current?.insertEmoji(emoji)}
+                />
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                  onChange={tray.onPick}
+                />
+              </>
+            ) : null}
+
+            <RichMessageInput
+              ref={inputRef}
+              key={editing?._id ?? "draft"}
+              value={body}
+              onChange={(next) => {
+                setBody(next);
+                setNotice(null);
+              }}
+              onSubmit={() => void submit()}
+              onEscape={
+                editing !== null && !savingEdit ? onCancelEdit : undefined
+              }
+              onFiles={tray.addFiles}
+              onLimit={setNotice}
+              disabled={savingEdit || sending || !me}
+              placeholder={
+                live
+                  ? "Listening…"
+                  : poll !== null
+                    ? "Ask a question"
+                    : tray.attached.length > 0 && editing === null
+                      ? "Add a caption, or just send"
+                      : "Say something"
+              }
+              label={
+                editing !== null
+                  ? "Edit message"
+                  : poll !== null
+                    ? "Poll question"
+                    : "Message"
+              }
+              interim={dictation.interim}
+              conversationId={conversationId}
+              kind={kind}
+              peer={peer}
+              authors={authors}
+              me={me}
+              canMentionEveryone={canMentionEveryone}
+              onKnownPeople={rememberPeople}
+            />
+            {/* Absent where the browser has no recogniser (Firefox) and on the
               server, so it appears after hydration without a mismatch. The
               waveform mounts only once the recogniser has actually started,
               which is after the microphone was granted in this same tap. */}
-          {dictation.supported ? (
+            {dictation.supported ? (
+              <Button
+                variant="ghost"
+                size="icon-lg"
+                shape="circle"
+                onClick={toggleDictation}
+                aria-pressed={live}
+                aria-label={live ? "Stop dictation" : "Start dictation"}
+                disabled={savingEdit || sending}
+                className={cn(
+                  live
+                    ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    : "text-faint hover:text-foreground dark:text-muted-foreground",
+                )}
+              >
+                {dictation.state === "listening" ? (
+                  <Waveform />
+                ) : (
+                  // Pulsing while arming or winding down: on, but not yet a signal.
+                  <MicrophoneIcon
+                    className={cn("size-5", live && "animate-pulse")}
+                  />
+                )}
+              </Button>
+            ) : null}
             <Button
-              variant="ghost"
               size="icon-lg"
               shape="circle"
-              onClick={toggleDictation}
-              aria-pressed={live}
-              aria-label={live ? "Stop dictation" : "Start dictation"}
-              disabled={savingEdit || sending}
-              className={cn(
-                live
-                  ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  : "text-faint hover:text-foreground dark:text-muted-foreground",
-              )}
+              className="shrink-0"
+              aria-label={editing !== null ? "Save message" : "Send message"}
+              onClick={() => void submit()}
+              disabled={!canSend}
             >
-              {dictation.state === "listening" ? (
-                <Waveform />
+              {editing !== null ? (
+                <CheckIcon className="size-4" />
               ) : (
-                // Pulsing while arming or winding down: on, but not yet a signal.
-                <MicrophoneIcon
-                  className={cn("size-5", live && "animate-pulse")}
+                <ArrowUpIcon
+                  strokeWidth={2.5}
+                  className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
                 />
               )}
             </Button>
-          ) : null}
-          <Button
-            size="icon-lg"
-            shape="circle"
-            className="shrink-0"
-            aria-label={editing !== null ? "Save message" : "Send message"}
-            onClick={() => void submit()}
-            disabled={!canSend}
-          >
-            {editing !== null ? (
-              <CheckIcon className="size-4" />
-            ) : (
-              <ArrowUpIcon
-                strokeWidth={2.5}
-                className="size-4 transition-transform duration-200 ease-out group-hover/button:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0"
-              />
-            )}
-          </Button>
+          </div>
         </div>
       </div>
     </div>
