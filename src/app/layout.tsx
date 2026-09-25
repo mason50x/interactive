@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { PageCursor } from "@/components/page-cursor";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
@@ -190,7 +189,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <ThemeProvider />
         </Suspense>
         {children}
-        <PageCursor />
       </body>
     </html>
   );
