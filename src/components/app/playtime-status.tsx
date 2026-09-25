@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useState,
   type ReactNode,
   type ComponentProps,
 } from "react";
@@ -41,12 +42,26 @@ export function SidebarPlaytime({ compact = false }: { compact?: boolean }) {
 }
 
 /** Direct links and browser Back cannot keep a spent player mounted. Chat,
- * home, settings, and admin remain available throughout the quota pause. */
+ * home, settings, and admin remain available throughout the quota pause.
+ *
+ * Running out on a player page keeps you there: the player's own gate swaps
+ * in the used-up screen, rather than a jump to chat that reads as lost
+ * progress. Only arriving on a player route with no time left redirects. */
 export function PlaytimeRouteGate({ children }: { children: ReactNode }) {
-  const exhausted = usePlaytimeExhausted();
+  const remaining = usePlaytimeQuota()?.remaining ?? null;
+  const exhausted = remaining === 0;
   const pathname = usePathname();
   const router = useRouter();
-  const blocked = exhausted && isPlaytimeRoute(pathname);
+  const [ranOutOn, setRanOutOn] = useState<string | null>(null);
+  const [had, setHad] = useState(remaining);
+  if (had !== remaining) {
+    setHad(remaining);
+    // `null` is still loading, so a first answer of zero is not running out.
+    if (exhausted && had !== null && had > 0) setRanOutOn(pathname);
+    if (!exhausted) setRanOutOn(null);
+  }
+  const blocked =
+    exhausted && isPlaytimeRoute(pathname) && ranOutOn !== pathname;
   useEffect(() => {
     if (blocked) router.replace("/chat");
   }, [blocked, router]);
@@ -64,7 +79,7 @@ export function PlaytimeNavLink({
         role="link"
         aria-disabled="true"
         className={props.className}
-        title="Playtime is used up. Send a real chat message for 30 more seconds."
+        title="Playtime is used up. Send a real chat message for more playtime."
       >
         {children}
       </span>

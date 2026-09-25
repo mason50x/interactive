@@ -19,7 +19,7 @@ test("an exhausted sidebar destination has no navigable URL", () => {
   }, "Activities"));
   expect(html).toContain('aria-disabled="true"');
   expect(html).not.toContain('href=');
-  expect(html).toContain("30 more seconds");
+  expect(html).toContain("for more playtime");
 });
 
 test("chat stays a real link while playtime destinations are disabled", () => {

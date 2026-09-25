@@ -8,7 +8,9 @@ import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import Link from "next/link";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useId,
   useRef,
@@ -303,7 +305,7 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
         visible tab; browsing is free.
       </p>
       <p>
-        Qualifying chat messages add 30 seconds each, even while time remains.{" "}
+        Qualifying chat messages add time, even while time remains.{" "}
         {REWARD_REQUIREMENTS}
       </p>
       <p>
@@ -392,10 +394,13 @@ export function PlaytimeSidebar({
           className="space-y-1.5 px-3 py-2.5 text-xs leading-snug text-foreground/85"
         >
           {seconds === 0 && (
-            <p className="font-medium">Chat for 30 more seconds.</p>
+            <p className="font-medium">Chat for more playtime.</p>
           )}
           <p>Your daily time counts only in an open player or proxy app.</p>
-          <p>Resets at 7:30 a.m. CT. Qualifying chats add 30 seconds each.</p>
+          <p>
+            Resets at 7:30 a.m. CT. Room messages add 1.5 minutes, direct
+            messages 45 seconds.
+          </p>
           <Link
             href="/chat"
             className="inline-block font-medium text-primary hover:underline"
@@ -417,15 +422,13 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
       >
         <div className="w-full max-w-lg space-y-5">
           <h1 className="text-3xl font-semibold">Your playtime is used up</h1>
-          <p>Send a real chat message to get 30 more seconds of playtime.</p>
-          <p className="text-sm text-muted-foreground">{REWARD_REQUIREMENTS}</p>
+          <p>
+            Send a real chat message to get 1.5 more minutes of playtime, or 45
+            seconds in a direct message.
+          </p>
           <ButtonLink href="/chat" target="_top">
             Go to chat
           </ButtonLink>
-          <p className="text-sm text-muted-foreground">
-            Your activity allowance resets at 7:30 a.m. Central Time. Chat stays
-            fully available.
-          </p>
         </div>
       </section>
     );
@@ -445,8 +448,69 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
   );
 }
 
-/** Unmount the actual player on expiry: an overlay would leave it running. */
-export function PlaytimeGate({ children }: { children: ReactNode }) {
+/** How long before the cutoff a running player warns to save. */
+const WARNING_SECONDS = 60;
+
+/**
+ * The last minute, shown over the player. Activities are cross-origin, so the
+ * app cannot save for them; the warning is what gives players the chance to
+ * save before the gate unmounts the game. Clicks pass through to the game.
+ */
+export function PlaytimeWarning({
+  quota,
+  fixed = false,
+}: {
+  quota: Quota | null;
+  fixed?: boolean;
+}) {
+  const seconds = quota?.remaining;
+  if (!quota?.allowed || seconds == null || seconds <= 0) return null;
+  if (seconds > WARNING_SECONDS) return null;
+  return (
+    <div
+      className={cn(
+        "pointer-events-none inset-x-0 bottom-4 z-30 flex justify-center px-4",
+        fixed ? "fixed" : "absolute",
+      )}
+    >
+      <p
+        role="status"
+        className="flex items-center gap-2 rounded-full border border-white/15 bg-black/70 px-4 py-2 text-sm text-white shadow-lg backdrop-blur-md"
+      >
+        <span>Playtime is almost up. Save your progress now.</span>
+        <span aria-hidden="true" className="font-medium tabular-nums">
+          0:{String(seconds).padStart(2, "0")}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+const GateQuotaContext = createContext<Quota | null>(null);
+
+/** The gate's own clock, for a player that places the warning itself. */
+export function usePlaytimeGateQuota() {
+  return useContext(GateQuotaContext);
+}
+
+/**
+ * Unmount the actual player on expiry: an overlay would leave it running.
+ * The warning shows fixed to the viewport unless `placesWarning` says the
+ * player renders `PlaytimeWarning` itself, as a fullscreen stage must.
+ */
+export function PlaytimeGate({
+  children,
+  placesWarning = false,
+}: {
+  children: ReactNode;
+  placesWarning?: boolean;
+}) {
   const quota = useExperienceQuota(true);
-  return quota.allowed ? children : <PlaytimeBlocked quota={quota} />;
+  if (!quota.allowed) return <PlaytimeBlocked quota={quota} />;
+  return (
+    <GateQuotaContext.Provider value={quota}>
+      {children}
+      {!placesWarning && <PlaytimeWarning quota={quota} fixed />}
+    </GateQuotaContext.Provider>
+  );
 }

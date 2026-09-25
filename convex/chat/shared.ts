@@ -217,7 +217,7 @@ export async function membership(
       q.eq("conversationId", conversationId).eq("clerkId", clerkId),
     )
     .unique();
-  // The Admins room follows the live role, not the row. A seat a demotion
+  // The Admin room follows the live role, not the row. A seat a demotion
   // has not synced away yet — an env map edit, say — reads as already left.
   if (row?.kind === "admins" && row.status === "active" && !(await isStaff(ctx, clerkId))) {
     return { ...row, status: "left" };
@@ -231,7 +231,7 @@ export async function isStaff(ctx: QueryCtx, clerkId: string): Promise<boolean> 
 }
 
 /**
- * Seat or unseat somebody in the Admins room to match their role.
+ * Seat or unseat somebody in the Admin room to match their role.
  *
  * Called on every chat load through `ensureGlobalMembership` and again the
  * moment a CEO changes a role, so a promotion shows up without a refresh and

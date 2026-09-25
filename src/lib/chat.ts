@@ -265,7 +265,7 @@ export function conversationName(conversation: {
 }): string {
   if (conversation.kind === "global") return "Everyone";
   if (conversation.kind === "announcements") return "Announcements";
-  if (conversation.kind === "admins") return "Admins";
+  if (conversation.kind === "admins") return "Admin";
   if (conversation.kind === "dm") {
     return conversation.peerName ?? conversation.peerHandle ?? "Direct message";
   }

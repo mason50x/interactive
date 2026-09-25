@@ -219,7 +219,7 @@ export const setRole = mutation({
         updatedBy: caller,
       });
     }
-    // Promotions join the Admins room now; demotions leave it now.
+    // Promotions join the Admin room now; demotions leave it now.
     await syncAdminsMembership(ctx, clerkId);
     // A CEO role change also clears any old restriction on the account.
     const timeout = await timeoutRow(ctx, clerkId);

@@ -1,6 +1,8 @@
 /** All accounts share this policy. Reset uses the school's Central timezone. */
 export const PLAYTIME_SECONDS = 30 * 60;
-export const CHAT_REWARD_SECONDS = 30;
+export const CHAT_REWARD_SECONDS = 90;
+/** Direct messages earn less: two people could farm them together. */
+export const DM_REWARD_SECONDS = 45;
 export const PLAYTIME_TIMEZONE = "America/Chicago";
 const DAY = 86_400_000;
 const calendar = new Intl.DateTimeFormat("en-US", {
@@ -36,7 +38,7 @@ export function playtimeDay(now: number) {
 }
 
 export const REWARD_REQUIREMENTS =
-  "Only messages in Everyone, Announcements and Admins count, not direct messages, group chats or messages to the bot. Real short replies like “hi” or “thanks” count. A single letter, punctuation, numbers alone, repeated filler, and a third similar message in a row do not earn time.";
+  "Messages in Everyone, Announcements and Admin add 1.5 minutes, and direct messages add 45 seconds. Group chats and messages to the bot don’t count. Real short replies like “hi” or “thanks” count. A single letter, punctuation, numbers alone, repeated filler, and a third similar message in a row do not earn time.";
 
 /** Normal conversation counts, even a single short word. Strip links/mentions
  * before comparing so changing a tag or numeric suffix cannot farm credit.

@@ -69,7 +69,7 @@ async function quota(ctx: QueryCtx) {
  * Qualifying messages add time immediately; distinct rewards stack.
  * Receipts survive message deletion and daily resets. The third similar
  * qualifying message in a row does not earn time. */
-export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string) {
+export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string, seconds = CHAT_REWARD_SECONDS) {
   const normalized = rewardText(body);
   if (!normalized) return;
   const recent = await ctx.db.query("playtimeRewards")
@@ -80,18 +80,18 @@ export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body
   const hash = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("");
   await limiter.limit(ctx, "experienceSeconds", {
     key: q.key, config: q.config,
-    count: -CHAT_REWARD_SECONDS,
+    count: -seconds,
   });
-  const allowanceSeconds = q.status.allowanceSeconds + CHAT_REWARD_SECONDS;
+  const allowanceSeconds = q.status.allowanceSeconds + seconds;
   if (q.lease) {
     await ctx.db.patch(q.lease._id, {
-      bonusSeconds: (q.lease.bonusSeconds ?? 0) + CHAT_REWARD_SECONDS,
+      bonusSeconds: (q.lease.bonusSeconds ?? 0) + seconds,
       allowanceSeconds,
     });
   } else {
     const leaseId = await ctx.db.insert("experienceLeases", {
       clerkId, day: q.day, until: q.now,
-      bonusSeconds: CHAT_REWARD_SECONDS, allowanceSeconds,
+      bonusSeconds: seconds, allowanceSeconds,
     });
     await ctx.scheduler.runAt(q.status.resetsAt, internal.experience.prune, { leaseId, key: q.key });
   }

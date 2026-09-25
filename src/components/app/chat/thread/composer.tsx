@@ -17,6 +17,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { useQuery } from "convex/react";
 import {
+  Component,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -26,6 +27,7 @@ import {
   Suspense,
   useState,
   type Ref,
+  type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,6 +72,30 @@ const MAX_BODY = 2000;
 const EmojiPicker = lazy(
   () => import("@/components/app/chat/thread/emoji-picker"),
 );
+
+/** A tab left open across a deploy may request an emoji chunk that is gone. */
+class EmojiPickerBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="flex flex-col gap-2 p-3 text-sm">
+          <p>Emojis couldn’t load. Refresh the page to try again.</p>
+          <Button onClick={() => window.location.reload()}>Refresh page</Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * A spoken segment after whatever is already in the box. A space between
@@ -826,22 +852,24 @@ function PlusMenu({
               </div>
             ) : (
               <div className="plus-menu-emojis flex min-h-0 flex-1 flex-col">
-                <Suspense
-                  fallback={
-                    <p className="p-3 text-sm text-muted-foreground">
-                      Loading emojis…
-                    </p>
-                  }
-                >
-                  <EmojiPicker
-                    onBack={() => showView("actions")}
-                    onPick={(emoji) => {
-                      returnToEditor.current = true;
-                      onEmoji(emoji);
-                      setOpen(false);
-                    }}
-                  />
-                </Suspense>
+                <EmojiPickerBoundary>
+                  <Suspense
+                    fallback={
+                      <p className="p-3 text-sm text-muted-foreground">
+                        Loading emojis…
+                      </p>
+                    }
+                  >
+                    <EmojiPicker
+                      onBack={() => showView("actions")}
+                      onPick={(emoji) => {
+                        returnToEditor.current = true;
+                        onEmoji(emoji);
+                        setOpen(false);
+                      }}
+                    />
+                  </Suspense>
+                </EmojiPickerBoundary>
               </div>
             )}
           </MenuPrimitive.Popup>

@@ -17,7 +17,8 @@ export function MeteredActivity(props: { title: string; src: string }) {
         <OnboardingGate>
           <ActivityPresence />
           <TimeoutGate>
-            <PlaytimeGate>
+            {/* The app's frame around this page shows the warning. */}
+            <PlaytimeGate placesWarning>
               <HostedActivity {...props} />
             </PlaytimeGate>
           </TimeoutGate>

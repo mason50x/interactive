@@ -28,7 +28,7 @@ const kinds = async (t: Awaited<ReturnType<typeof setup>>, subject: string) =>
     await t.withIdentity({ subject }).query(api.chat.conversations.list, {})
   ).map((row) => row.kind);
 
-test("Everyone above member sits in Admins, just below Announcements", async () => {
+test("Everyone above member sits in Admin, just below Announcements", async () => {
   const t = await setup();
   for (const id of ["ceo", "mod", "builder"]) {
     expect(await kinds(t, id)).toEqual([
@@ -41,7 +41,7 @@ test("Everyone above member sits in Admins, just below Announcements", async () 
   expect(await kinds(t, "member")).toEqual(["global", "announcements", "dm"]);
 });
 
-test("Members cannot read or post in Admins", async () => {
+test("Members cannot read or post in Admin", async () => {
   const t = await setup();
   const admins = (
     await t
@@ -79,7 +79,7 @@ test("Members cannot read or post in Admins", async () => {
   ).toMatchObject({ ok: false });
 });
 
-test("Role changes add and remove the Admins seat straight away", async () => {
+test("Role changes add and remove the Admin seat straight away", async () => {
   const t = await setup();
   const ceo = t.withIdentity({ subject: "ceo" });
 

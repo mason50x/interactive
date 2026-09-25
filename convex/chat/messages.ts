@@ -3,6 +3,7 @@ import { rewardChatPlaytime } from "../experience";
 import type { ChatAccount } from "./shared";
 import { announcementPublisherId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
+import { DM_REWARD_SECONDS } from "../../config/playtime";
 import { botQuotaName } from "./botConfig";
 import { lockedFor, roomControlRefusal } from "./roomControls";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
@@ -371,10 +372,14 @@ export const send = mutation({
             })),
     });
 
-    // Playtime is earned only in the shared rooms. Private and group chats,
+    // Shared rooms earn full playtime and direct messages half. Group chats,
     // and anything addressed to the bot, would let one person farm time alone.
-    if (REWARDED_ROOMS.has(member.kind) && !named.bot) {
-      await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
+    if (!named.bot) {
+      if (REWARDED_ROOMS.has(member.kind)) {
+        await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
+      } else if (member.kind === "dm") {
+        await rewardChatPlaytime(ctx, profile.clerkId, verdict.body, DM_REWARD_SECONDS);
+      }
     }
     await addScore(ctx, profile.clerkId, "chat", 1, now);
 

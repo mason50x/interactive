@@ -1,7 +1,11 @@
 "use client";
 
-import { PlaytimeGate } from "./experience-quota";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import {
+  PlaytimeGate,
+  PlaytimeWarning,
+  usePlaytimeGateQuota,
+} from "./experience-quota";
+import { useRef, useState, type ReactNode } from "react";
 import { ActivityControls } from "@/components/app/activity-controls";
 import styles from "@/components/app/activity-frame.module.css";
 import {
@@ -11,8 +15,7 @@ import {
 } from "@/components/app/activity-sandbox";
 import { PacketCover } from "@/components/app/packet-cover";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
-import { usePreferences } from "@/components/preferences-provider";
-import { safePanicUrl } from "@/lib/panic-key";
+import { cn } from "@/lib/utils";
 
 /**
  * The app's side of the origin boundary.
@@ -50,7 +53,7 @@ export function ActivityFrame(
   props: Parameters<typeof ActivityFrameContent>[0],
 ) {
   return (
-    <PlaytimeGate>
+    <PlaytimeGate placesWarning>
       <ActivityFrameContent {...props} />
     </PlaytimeGate>
   );
@@ -84,33 +87,15 @@ function ActivityFrameContent({
 
   const [open, setOpen] = useState(false);
 
-  /**
-   * The panic key's way in, for the one place the key itself cannot reach.
-   *
-   * Keystrokes inside an activity belong to the bundle's document, which is
-   * cross-origin two frames down — `usePanicKey` listens on this window and
-   * will never be told about them. Outside fullscreen that is survivable,
-   * because any click on the app around the frame hands focus back. In
-   * fullscreen there is no app around the frame, so once someone is playing
-   * the key is gone until they leave, which is exactly the stretch they were
-   * most likely thinking of when they set one.
-   *
-   * So the control pill carries the same destination as a button. It is inside
-   * `stage`, which is the element that goes fullscreen, so it survives the one
-   * case it exists for.
-   */
-  const { preferences } = usePreferences();
-  const panicUrl = preferences.panicEnabled
-    ? safePanicUrl(preferences.panicUrl)
-    : null;
-
-  // `replace`, matching the key: the page you were on should not be one Back
-  // press away. The browser drops fullscreen on its own as the document goes.
-  const onPanic = useCallback(() => {
-    if (panicUrl) window.location.replace(panicUrl);
-  }, [panicUrl]);
-
   const { full, canFull, toggleFull } = useStageFullscreen(stage);
+
+  // The controls wait out the loading cover and fade in as it lifts. Tracked
+  // by the cover's key rather than a boolean, so a restart or a new `src`
+  // hides them again without anything having to reset it.
+  const coverKey = `cover-${src}-${run}`;
+  const [liftedKey, setLiftedKey] = useState<string | null>(null);
+  const ready = liftedKey === coverKey;
+  const quota = usePlaytimeGateQuota();
 
   return (
     <div
@@ -159,12 +144,24 @@ function ActivityFrameContent({
           already black on the first frame of the new load rather than
           arriving an effect later. */}
       <PacketCover
-        key={`cover-${src}-${run}`}
+        key={coverKey}
+        onLift={() => setLiftedKey(coverKey)}
         detail={variant === "tv" ? "Getting your episode ready." : undefined}
         label={variant === "tv" ? "Entertainment" : undefined}
       />
 
-      <div className="pointer-events-none absolute top-3 right-3 left-3 z-20 flex flex-wrap items-start gap-2">
+      <div
+        inert={!ready}
+        className={cn(
+          "pointer-events-none absolute top-3 right-3 left-3 z-20 flex flex-wrap items-start justify-end gap-2 transition-opacity duration-500 ease-out",
+          ready ? "opacity-100" : "invisible opacity-0",
+        )}
+      >
+        {controls && (
+          <div className="pointer-events-auto flex items-center rounded-full border border-white/15 bg-black/55 p-1 text-white shadow-lg backdrop-blur-md">
+            {controls}
+          </div>
+        )}
         <ActivityControls
           positioned={false}
           title={title}
@@ -177,14 +174,11 @@ function ActivityFrameContent({
           full={full}
           canFull={canFull}
           onToggleFull={toggleFull}
-          onPanic={panicUrl ? onPanic : null}
         />
-        {controls && (
-          <div className="pointer-events-auto flex items-center rounded-full border border-white/15 bg-black/55 p-1 text-white shadow-lg backdrop-blur-md">
-            {controls}
-          </div>
-        )}
       </div>
+
+      {/* Inside the stage, so it stays visible in fullscreen. */}
+      <PlaytimeWarning quota={quota} />
     </div>
   );
 }

@@ -78,7 +78,7 @@ test("reloads and concurrent tabs reuse one lease; regular accounts stop at thir
   );
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(30);
+  ).toBe(90);
 });
 
 test("staff receive the same thirty minutes, independently of other accounts", async () => {
@@ -253,25 +253,33 @@ async function exhaust(
   });
 }
 
-test("qualifying messages stack 30 seconds; filler and a third similar message do not", async () => {
+test("a direct message reward adds 45 seconds", async () => {
+  const { t, user } = setup();
+  await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed, 45));
+  const status = await user.query(api.experience.status, { day: 0 });
+  expect(status.remainingSeconds).toBe(1845);
+  expect(status.allowanceSeconds).toBe(1845);
+});
+
+test("qualifying messages stack 90 seconds; filler and a third similar message do not", async () => {
   const { t, user } = setup();
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   let status = await user.query(api.experience.status, { day: 0 });
-  expect(status.remainingSeconds).toBe(1830);
-  expect(status.allowanceSeconds).toBe(1830);
+  expect(status.remainingSeconds).toBe(1890);
+  expect(status.allowanceSeconds).toBe(1890);
   expect(
     await t.run((ctx) => ctx.db.query("experienceLeases").take(10)),
   ).toHaveLength(1);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", different));
   status = await user.query(api.experience.status, { day: 0 });
-  expect(status.remainingSeconds).toBe(1860);
-  expect(status.allowanceSeconds).toBe(1860);
+  expect(status.remainingSeconds).toBe(1980);
+  expect(status.allowanceSeconds).toBe(1980);
   const playing = await user.mutation(api.experience.acquire, {});
-  expect(playing.remainingSeconds).toBe(1845);
+  expect(playing.remainingSeconds).toBe(1965);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "hi"));
   status = await user.query(api.experience.status, { day: 0 });
-  expect(status.remainingSeconds).toBe(1875);
-  expect(status.allowanceSeconds).toBe(1890);
+  expect(status.remainingSeconds).toBe(2055);
+  expect(status.allowanceSeconds).toBe(2070);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "123456789"));
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   await t.run((ctx) =>
@@ -283,7 +291,7 @@ test("qualifying messages stack 30 seconds; filler and a third similar message d
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", different));
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1965);
+  ).toBe(2325);
   expect(
     await t.run((ctx) => ctx.db.query("playtimeRewards").take(10)),
   ).toHaveLength(6);
@@ -302,7 +310,7 @@ test("bonus minutes expire at the reset even if yesterday's cleanup is delayed",
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(30);
+  ).toBe(90);
 });
 
 test.each([
@@ -379,21 +387,21 @@ test("two similar messages earn immediately; a third waits for different convers
   const remaining = async () =>
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds;
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "thanks"));
-  expect(await remaining()).toBe(1830);
+  expect(await remaining()).toBe(1890);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "Thanks!"));
-  expect(await remaining()).toBe(1860);
+  expect(await remaining()).toBe(1980);
   vi.setSystemTime(start + 60_000);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "thanks"));
-  expect(await remaining()).toBe(1860);
+  expect(await remaining()).toBe(1980);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   await t.run((ctx) =>
     rewardChatPlaytime(ctx, "person", detailed.replace("Today", "Yesterday")),
   );
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
-  expect(await remaining()).toBe(1920);
+  expect(await remaining()).toBe(2160);
   vi.setSystemTime(start + 31 * 60_000);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "thanks"));
-  expect(await remaining()).toBe(1950);
+  expect(await remaining()).toBe(2250);
 });
 
 test("short chat sends grant credit atomically; retries and nonmembers cannot claim it", async () => {
@@ -444,13 +452,13 @@ test("short chat sends grant credit atomically; retries and nonmembers cannot cl
   });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1830);
+  ).toBe(1890);
   expect(await user.mutation(api.chat.messages.send, args)).toEqual({
     ok: true,
   });
   expect(
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds,
-  ).toBe(1830);
+  ).toBe(1890);
   expect(
     await t.run((ctx) => ctx.db.query("playtimeRewards").take(10)),
   ).toHaveLength(1);
@@ -514,11 +522,11 @@ test("lowering a spent allowance does not give back time or erase chat rewards",
   await head.mutation(api.adminQuotas.setActivityLimit, { clerkId: "person", minutes: 20 });
   expect(await user.query(api.experience.status, { day: 0 })).toMatchObject({
     remainingSeconds: 0,
-    allowanceSeconds: 1230,
+    allowanceSeconds: 1290,
   });
   await head.mutation(api.adminQuotas.setActivityLimit, { clerkId: "person", minutes: 60 });
   expect(await user.query(api.experience.status, { day: 0 })).toMatchObject({
-    remainingSeconds: 1830,
-    allowanceSeconds: 3630,
+    remainingSeconds: 1890,
+    allowanceSeconds: 3690,
   });
 });

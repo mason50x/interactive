@@ -8,23 +8,32 @@ import { cn } from "@/lib/utils";
 export function PacketCover({
   label = "Activity",
   holdMs = HOLD,
+  onLift,
 }: {
   detail?: string;
   label?: string;
   /** null keeps the cover visible until its parent finishes checking access. */
   holdMs?: number | null;
+  /** Called as the cover starts lifting, when the embed is about to show. */
+  onLift?: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>("held");
   const [queueMessage, setQueueMessage] = useState(QUEUE_MESSAGES[0]);
 
   useEffect(() => {
     if (holdMs === null) return;
-    const lift = window.setTimeout(() => setPhase("lifting"), holdMs);
+    const lift = window.setTimeout(() => {
+      setPhase("lifting");
+      onLift?.();
+    }, holdMs);
     const gone = window.setTimeout(() => setPhase("gone"), holdMs + LIFT);
     return () => {
       window.clearTimeout(lift);
       window.clearTimeout(gone);
     };
+    // `onLift` is left out on purpose: a new callback identity each render
+    // must not restart the hold.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdMs]);
 
   useEffect(() => {
@@ -41,10 +50,8 @@ export function PacketCover({
 
   return (
     <div
-      // Under the control pill on purpose (it sits at `z-20`): the way back to
-      // the activities list and the panic key's button both have to stay
-      // reachable during a wait, and 3.5 seconds is long enough for someone
-      // to want out of one.
+      // Under the control pill (it sits at `z-20`), which the activity frame
+      // holds back until `onLift` and then fades in over the reveal.
       className={cn(
         "packet-cover absolute inset-0 z-10 flex flex-col items-center justify-center gap-3",
         // `pointer-events-none` only while it is going: until then the cover

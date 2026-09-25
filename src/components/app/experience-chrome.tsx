@@ -15,6 +15,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   PlaytimeBlocked,
+  PlaytimeWarning,
   useExperienceQuota,
 } from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
@@ -135,7 +136,7 @@ export function ExperienceChrome({
   }
 
   return (
-    <div ref={stage} className="flex h-full min-h-0 flex-col bg-sidebar">
+    <div ref={stage} className="relative flex h-full min-h-0 flex-col bg-sidebar">
       <div className="flex shrink-0 items-center gap-1 px-2 pt-2">
         <div
           className="flex min-w-0 items-end overflow-x-auto"
@@ -340,6 +341,7 @@ export function ExperienceChrome({
           );
         })}
       </div>
+      <PlaytimeWarning quota={quota} />
     </div>
   );
 }
