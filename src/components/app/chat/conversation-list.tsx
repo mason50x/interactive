@@ -1,11 +1,9 @@
 "use client";
 
 import { AtSymbolIcon } from "@heroicons/react/24/outline";
-import { StarIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ConversationActions } from "@/components/app/chat/conversation-actions";
 import { NotificationControl } from "@/components/app/chat/notification-control";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { GlideList } from "@/components/app/chat/glide-list";
@@ -23,13 +21,11 @@ export function ConversationList() {
   const { conversations } = useChat();
   const pathname = usePathname();
   const warm = useWarmRoutes(pathname);
-  const [filter, setFilter] = useState<"all" | "unread" | "favorites">("all");
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
 
   const shown = useMemo(() => {
     return conversations.filter((conversation) => {
       if (filter === "unread" && conversation.unread === 0) return false;
-      if (filter === "favorites" && !conversation.favorite) return false;
       return true;
     });
   }, [conversations, filter]);
@@ -50,15 +46,15 @@ export function ConversationList() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 px-3 pt-3 pb-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="chat-list-filter sticky top-0 z-10 shrink-0 px-3 pt-3 pb-2">
           <div className="flex items-end justify-center gap-2">
             <div
               className="flex shrink-0 items-center gap-0.5"
               role="group"
               aria-label="Filter conversations"
             >
-              {(["all", "unread", "favorites"] as const).map((value) => (
+              {(["all", "unread"] as const).map((value) => (
                 <Button
                   key={value}
                   size="xs"
@@ -66,26 +62,14 @@ export function ConversationList() {
                   aria-pressed={filter === value}
                   onClick={() => setFilter(value)}
                 >
-                  {value === "all"
-                    ? "All"
-                    : value === "unread"
-                      ? "Unread"
-                      : "Favorites"}
+                  {value === "all" ? "All" : "Unread"}
                 </Button>
               ))}
             </div>
           </div>
-          {actionError ? (
-            <p
-              role="alert"
-              className="mt-2 text-xs leading-relaxed text-destructive"
-            >
-              {actionError}
-            </p>
-          ) : null}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-3">
+        <div className="flex flex-col pb-16">
           {/* One highlight glides between the rows rather than each row
                 lighting up on its own — see `GlideList`. */}
           <GlideList listClassName="flex flex-col gap-0.5 px-2">
@@ -96,17 +80,12 @@ export function ConversationList() {
               const unread = conversation.unread > 0;
 
               return (
-                // The row is a link with buttons *beside* it rather than
-                // inside it: a button is interactive content and an anchor
-                // may not contain any. So the link fills the row, the
-                // controls sit over its right end, and only one of them is
-                // ever under the pointer.
                 <li key={conversation._id} data-glide-row className="relative">
                   <Link
                     href={href}
                     {...warm(href)}
                     aria-current={active ? "page" : undefined}
-                    className="flex items-center gap-3 rounded-lg px-2 py-2 pr-11 transition-colors"
+                    className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors"
                   >
                     <Monogram
                       handle={
@@ -142,12 +121,6 @@ export function ConversationList() {
                           unread ? "font-semibold" : "font-medium",
                         )}
                       >
-                        {conversation.favorite ? (
-                          <StarIcon
-                            className="mr-1 inline size-3 text-amber-500"
-                            aria-label="Favorite"
-                          />
-                        ) : null}
                         {name}
                       </span>
                       {conversation.mentioned ? (
@@ -189,12 +162,6 @@ export function ConversationList() {
                       )
                     ) : null}
                   </Link>
-
-                  <ConversationActions
-                    conversation={conversation}
-                    active={active}
-                    onError={setActionError}
-                  />
                 </li>
               );
             })}
@@ -206,17 +173,15 @@ export function ConversationList() {
             ) : null}
             {conversations.length > 0 && shown.length === 0 ? (
               <li className="px-2 py-6 text-sm leading-relaxed text-muted-foreground">
-                {filter === "unread"
-                  ? "You’re all caught up."
-                  : "Add a favorite from a conversation’s options menu."}
+                You’re all caught up.
               </li>
             ) : null}
           </GlideList>
 
           {filter === "all" ? <AccountDirectory exclude={known} /> : null}
         </div>
-        <NotificationControl />
       </div>
+      <NotificationControl />
     </div>
   );
 }

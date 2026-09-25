@@ -66,9 +66,6 @@ export type Chat = {
    */
   reading: Id<"conversations"> | null;
   setReading: Dispatch<SetStateAction<Id<"conversations"> | null>>;
-  suspendReading: (conversationId: Id<"conversations">) => void;
-  clearReadSuppression: (conversationId: Id<"conversations">) => void;
-  isReadSuppressed: (conversationId: Id<"conversations">) => boolean;
   /**
    * Whether the server still has something unread in `reading` — or has not
    * answered about it yet, which the thread treats the same way.
@@ -91,9 +88,6 @@ const EMPTY: Chat = {
   adminBadgesLoaded: false,
   reading: null,
   setReading: () => {},
-  suspendReading: () => {},
-  clearReadSuppression: () => {},
-  isReadSuppressed: () => false,
   behind: false,
   notifications: {
     enabled: false,
@@ -135,66 +129,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const [registeredReading, setRegisteredReading] =
     useState<Id<"conversations"> | null>(null);
-  const suppressedReading = useRef<Id<"conversations"> | null>(null);
-  const wasReadingBeforeSuppression = useRef(false);
   const setReading = useCallback<
     Dispatch<SetStateAction<Id<"conversations"> | null>>
-  >((next) => {
-    setRegisteredReading((current) => {
-      const value = typeof next === "function" ? next(current) : next;
-      return value !== null && value === suppressedReading.current
-        ? null
-        : value;
-    });
-  }, []);
-  const suspendReading = useCallback(
-    (conversationId: Id<"conversations">) => {
-      // The ref also guards an already-scheduled thread effect before React has
-      // committed this state update or the navigation away from the thread.
-      suppressedReading.current = conversationId;
-      wasReadingBeforeSuppression.current =
-        registeredReading === conversationId;
-      setRegisteredReading((current) =>
-        current === conversationId ? null : current,
-      );
-    },
-    [registeredReading],
-  );
-  const clearReadSuppression = useCallback(
-    (conversationId: Id<"conversations">) => {
-      if (suppressedReading.current !== conversationId) return;
-      suppressedReading.current = null;
-      if (wasReadingBeforeSuppression.current) {
-        setRegisteredReading((current) =>
-          current === null ? conversationId : current,
-        );
-      }
-      wasReadingBeforeSuppression.current = false;
-    },
-    [],
-  );
-  const isReadSuppressed = useCallback(
-    (conversationId: Id<"conversations">) =>
-      suppressedReading.current === conversationId,
-    [],
-  );
-  useEffect(() => {
-    if (
-      suppressedReading.current !== null &&
-      pathname !== `${CHAT_HREF}/${suppressedReading.current}`
-    ) {
-      suppressedReading.current = null;
-      wasReadingBeforeSuppression.current = false;
-    }
-  }, [pathname]);
+  >((next) => setRegisteredReading(next), []);
   const reading =
     registeredReading !== null &&
     pathname === `${CHAT_HREF}/${registeredReading}`
       ? registeredReading
       : null;
 
-  // The cursor is authoritative, including optimistic writes. Merely having a
-  // thread mounted cannot hide a manual unread action made in another tab.
+  // The cursor is authoritative, including optimistic writes.
   const served = conversations ?? [];
   const notifications = useBrowserNotifications({
     accountId: isAuthenticated ? profile?.clerkId : undefined,
@@ -236,9 +180,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     adminBadgesLoaded: isAuthenticated && staffRoles !== undefined,
     reading,
     setReading,
-    suspendReading,
-    clearReadSuppression,
-    isReadSuppressed,
     behind,
     notifications,
   };

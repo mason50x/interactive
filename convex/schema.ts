@@ -67,6 +67,7 @@ export default defineSchema({
     lastName: v.optional(v.string()),
     clerkUpdatedAt: v.optional(v.number()),
     activityLimitMinutes: v.optional(v.number()),
+    onboardingComplete: v.optional(v.boolean()),
 
   }).index("byClerkId", ["clerkId"])
     .index("byUsernameKey", ["usernameKey"])
@@ -329,15 +330,12 @@ export default defineSchema({
     joinedAt: v.number(),
     /** Everything after this is unread. Written only by its own owner. */
     lastReadAt: v.number(),
-    /** A private preference; system conversations keep their fixed positions. */
-    favorite: v.optional(v.boolean()),
     invitedBy: v.optional(v.string()),
     /** Direct messages only: the Clerk id of the other person. */
     dmPeer: v.optional(v.string()),
   })
     .index("byConversation", ["conversationId", "status"])
     .index("byUser", ["clerkId", "status"])
-    .index("byUserFavorite", ["clerkId", "status", "favorite"])
     .index("byConversationUser", ["conversationId", "clerkId"]),
 
   /**

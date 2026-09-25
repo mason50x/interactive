@@ -54,7 +54,7 @@ async function upsertUser(
   const existing = await userByClerkId(ctx, clerkId);
   if (existing?.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt < existing.clerkUpdatedAt) return existing._id;
   const id = existing === null
-    ? await ctx.db.insert("users", { clerkId, ...fields })
+    ? await ctx.db.insert("users", { clerkId, onboardingComplete: false, ...fields })
     : existing._id;
   if (existing !== null && Object.entries(fields).some(([key, value]) => existing[key as keyof UserFields] !== value)) {
     await ctx.db.patch(id, fields);
@@ -111,6 +111,44 @@ export const store = mutation({
       name: identity.name,
       imageUrl: identity.pictureUrl,
     });
+  },
+});
+
+/** The final button is the only client path that completes the introduction. */
+export const completeOnboarding = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not signed in");
+    const user = await userByClerkId(ctx, identity.subject);
+    if (!user) throw new Error("Account is still being created");
+    if (user.onboardingComplete !== true) {
+      await ctx.db.patch(user._id, { onboardingComplete: true });
+    }
+    return null;
+  },
+});
+
+/** Run once after deployment. Only legacy rows have an absent flag. */
+export const backfillOnboarding = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  returns: v.object({ updated: v.number(), done: v.boolean() }),
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db.query("users").paginate({ cursor, numItems: 100 });
+    let updated = 0;
+    for (const user of page.page) {
+      if (user.onboardingComplete === undefined) {
+        await ctx.db.patch(user._id, { onboardingComplete: true });
+        updated++;
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.users.backfillOnboarding, {
+        cursor: page.continueCursor,
+      });
+    }
+    return { updated, done: page.isDone };
   },
 });
 

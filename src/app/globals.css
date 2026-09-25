@@ -588,6 +588,63 @@
     mask-image: linear-gradient(to bottom, transparent, #000 40%);
   }
 
+  .thread-header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 -1.25rem;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--background),
+      color-mix(in oklab, var(--background) 90%, transparent) 55%,
+      transparent
+    );
+    backdrop-filter: blur(24px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+    mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  }
+
+  /* Conversations pass behind the pinned filters and notification control. */
+  .chat-list-filter,
+  .chat-list-notifications {
+    isolation: isolate;
+  }
+
+  .chat-list-filter::before,
+  .chat-list-notifications::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    z-index: -1;
+    pointer-events: none;
+    backdrop-filter: blur(24px);
+  }
+
+  .chat-list-filter::before {
+    inset-block: 0 -1.5rem;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--background) 90%, transparent),
+      color-mix(in oklab, var(--background) 80%, transparent) 55%,
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent);
+    mask-image: linear-gradient(to bottom, #000 45%, transparent);
+  }
+
+  .chat-list-notifications::before {
+    inset-block: -4rem 0;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in oklab, var(--background) 90%, transparent) 55%,
+      var(--background)
+    );
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+    mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  }
+
   :root[data-theme="dark"] .composer,
   :root[data-theme="dark"] .composer-skin {
     background-color: var(--surface-muted);

@@ -40,7 +40,7 @@ export function ThreadHeader({
   const name = detail === undefined ? "" : conversationName(detail);
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
+    <header className="thread-header relative isolate z-10 flex h-14 shrink-0 items-center gap-3 px-4">
       {/* Below `md` the conversation list is not on screen, so this is the
           only way back to it. Above `md` it is already there in the left
           pane and a second one would be clutter. */}

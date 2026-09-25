@@ -2,34 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usePreferences } from "@/components/preferences-provider";
-import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import {
   formatClockTime,
   isLunchNumber,
   LUNCHES,
   type LunchNumber,
-  schoolClock,
   schoolStatus,
-  type NextDay,
   type Period,
   type SchoolStatus,
 } from "@/lib/school-schedule";
 import { cn } from "@/lib/utils";
 
-// TEMP for UI work: pretend it is 7:45 am today (Central), ticking from there.
-// Set to null to use the real clock.
-const DEBUG_START: string | null = "07:45";
-
 /** Ticks every second once mounted, so the server and client agree first. */
 function useSecondClock() {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    const offset = DEBUG_START
-      ? Date.parse(`${schoolClock(Date.now()).date}T${DEBUG_START}:00-05:00`) -
-        Date.now()
-      : 0;
-    const update = () => setNow(Date.now() + offset);
+    const update = () => setNow(Date.now());
     const initial = setTimeout(update, 0);
     const timer = setInterval(update, 1000);
     return () => {
@@ -40,16 +36,14 @@ function useSecondClock() {
   return now;
 }
 
+export type SchoolDay = ReturnType<typeof useSchoolDay>;
+
 /**
- * The River Falls High School bell schedule, where "Recently played" used to
- * sit: every period with a ring that fills as it runs, or a beach when there
- * is no class to count.
- *
- * The first time through it asks which lunch you have, so Block 3 can be
- * split around it; the answer is saved to the account and changed from the
- * dropdown in the header.
+ * Everything the bell schedule needs, for the home card and the header
+ * button alike: the clock, today's status, and the lunch — saved to the
+ * account, so picking it in one place answers the other.
  */
-export function SchoolSchedule() {
+export function useSchoolDay() {
   const now = useSecondClock();
   const { preferences, update, loaded } = usePreferences();
   // Signed-out visitors have nowhere to save to, so their pick lives here.
@@ -59,12 +53,39 @@ export function SchoolSchedule() {
     setLocalLunch(next);
     update({ lunch: next });
   };
-
   const status = now === null ? null : schoolStatus(now, lunch);
-  const late = status?.state === "in-session" && status.schedule === "late";
+  return { status, lunch, choose, needsLunch: loaded && lunch === null };
+}
 
+/**
+ * The River Falls High School bell schedule, where "Recently played" used to
+ * sit: every period with a ring that fills as it runs, or a beach when there
+ * is no class to count.
+ *
+ * The first time through it asks which lunch you have, so Block 3 can be
+ * split around it; the answer is saved to the account and changed from the
+ * dropdown at the top.
+ */
+export function SchoolSchedule() {
+  const day = useSchoolDay();
   return (
     <Card radius="xl" className="flex flex-col p-6">
+      <SchoolDayContent day={day} />
+    </Card>
+  );
+}
+
+/** The schedule's contents, shared by the home card and the header popover. */
+export function SchoolDayContent({
+  day: { status, lunch, choose, needsLunch },
+  compact = false,
+}: {
+  day: SchoolDay;
+  compact?: boolean;
+}) {
+  const late = status?.state === "in-session" && status.schedule === "late";
+  return (
+    <>
       {(lunch !== null || late) && (
         <div className="-mt-2 flex items-center justify-center gap-1 text-[0.8125rem] text-muted-foreground">
           {late && <h2>Late start</h2>}
@@ -77,14 +98,14 @@ export function SchoolSchedule() {
         <p className="text-[0.875rem] text-muted-foreground">
           Checking the bell schedule…
         </p>
-      ) : loaded && lunch === null ? (
+      ) : needsLunch ? (
         <LunchPicker onChoose={choose} />
       ) : status.state === "off" ? (
-        <OffHours status={status} />
+        <OffHours status={status} compact={compact} />
       ) : (
         <InSession status={status} />
       )}
-    </Card>
+    </>
   );
 }
 
@@ -115,8 +136,10 @@ function LunchPicker({ onChoose }: { onChoose: (lunch: LunchNumber) => void }) {
   );
 }
 
-/** Native, so the list is the platform's own and never fights the page's
- *  layering; styled down to a line of text. */
+/**
+ * A line of text that opens into the three lunches. Its list sits above the
+ * header popover (`z-[60]`), which it also opens from.
+ */
 function LunchSelect({
   value,
   onChange,
@@ -125,29 +148,34 @@ function LunchSelect({
   onChange: (lunch: LunchNumber) => void;
 }) {
   return (
-    <label className="relative flex cursor-pointer items-center gap-0.5 transition-colors hover:text-foreground">
-      <select
+    <Select
+      value={String(value)}
+      onValueChange={(next) => {
+        const lunch = Number(next);
+        if (isLunchNumber(lunch)) onChange(lunch);
+      }}
+    >
+      <SelectTrigger
         aria-label="Your lunch"
-        value={value}
-        onChange={(event) => {
-          const next = Number(event.target.value);
-          if (isLunchNumber(next)) onChange(next);
-        }}
-        className="cursor-pointer appearance-none bg-transparent pr-0.5 font-medium outline-none focus-visible:underline"
+        className="h-auto w-auto gap-0.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-[0.8125rem] font-medium text-muted-foreground hover:bg-transparent hover:text-foreground data-popup-open:bg-transparent data-popup-open:text-foreground"
       >
+        <SelectValue>
+          {(current: string | null) => `Lunch ${current ?? value}`}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent positionerClassName="z-[70]">
         {LUNCHES.map((lunch) => (
-          <option key={lunch} value={lunch}>
+          <SelectItem key={lunch} value={String(lunch)}>
             Lunch {lunch}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-      <ChevronDownIcon aria-hidden className="pointer-events-none size-3" />
-    </label>
+      </SelectContent>
+    </Select>
   );
 }
 
 /** A ring that fills clockwise from the top as time passes. */
-function Donut({
+export function Donut({
   filled,
   size,
   stroke,
@@ -197,20 +225,15 @@ function Donut({
   );
 }
 
-function formatSpan(seconds: number) {
-  const minutes = Math.ceil(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  return minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours}h`;
-}
-
-function formatCountdown(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-function range(period: Period) {
-  return `${formatClockTime(period.start)} – ${formatClockTime(period.end)}`;
+/** `1h 16m 5s`, dropping the leading units that are zero. */
+function formatDuration(total: number) {
+  const seconds = Math.max(0, Math.round(total));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h) return `${h}h ${m}m ${s}s`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 function InSession({
@@ -219,89 +242,67 @@ function InSession({
   status: Extract<SchoolStatus, { state: "in-session" }>;
 }) {
   const { periods, seconds, index, passing } = status;
+  // Between classes the gap gets a row of its own, so something is always
+  // the one counting down.
+  const rows: readonly Period[] = passing
+    ? [
+        ...periods.slice(0, index),
+        {
+          name: "Passing time",
+          kind: "break",
+          start: periods[index - 1].end,
+          end: periods[index].start,
+        },
+        ...periods.slice(index),
+      ]
+    : periods;
 
   return (
-    <ol className="mt-4 flex flex-1 flex-col gap-0.5">
-      {periods.map((period, i) => {
-        const current = i === index && !passing;
-        const next = i === index && passing;
-        const done = i < index;
+    <ol className="mt-3 flex flex-1 flex-col divide-y divide-border">
+      {rows.map((period) => {
+        const done = seconds >= period.end * 60;
+        const current = !done && seconds >= period.start * 60;
         const length = (period.end - period.start) * 60;
-        const elapsed = current
-          ? seconds - period.start * 60
-          : done
-            ? length
-            : 0;
+        const elapsed = seconds - period.start * 60;
         return (
           <li
             key={`${period.name}-${period.start}`}
             aria-current={current ? "step" : undefined}
-            className={cn(
-              "-mx-2 rounded-2xl px-2 py-1.5",
-              current && "bg-primary/[0.07]",
-              done && "opacity-45",
-            )}
+            className="flex min-h-11 items-center gap-3 py-1.5"
           >
-            <div className="flex items-center gap-3">
-              <Donut
-                filled={elapsed / length}
-                size={30}
-                stroke={4}
-                active={current}
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[0.9375rem] font-semibold">
-                  {period.name}
-                </span>
-                <span className="block truncate text-[0.8125rem] text-muted-foreground tabular-nums">
-                  {range(period)}
-                </span>
-              </span>
+            {done ? (
+              <DoneMark />
+            ) : current ? (
+              <Donut filled={elapsed / length} size={24} stroke={3.5} active />
+            ) : (
+              <UpcomingMark />
+            )}
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-[0.9375rem]",
+                current
+                  ? "font-semibold text-foreground"
+                  : done
+                    ? "font-medium text-faint"
+                    : "font-medium text-muted-foreground",
+              )}
+            >
+              {period.name}
+              {period.lunches && (
+                <LunchChips lunches={period.lunches} seconds={seconds} />
+              )}
+            </span>
+            {!done && (
               <span
                 className={cn(
                   "shrink-0 text-[0.8125rem] tabular-nums",
-                  current || next
-                    ? "font-semibold text-primary"
-                    : "text-muted-foreground",
+                  current ? "font-semibold text-primary" : "text-faint",
                 )}
               >
                 {current
-                  ? `${formatCountdown(length - elapsed)} left`
-                  : done
-                    ? "Done"
-                    : next
-                      ? `in ${formatCountdown(period.start * 60 - seconds)}`
-                      : `in ${formatSpan(period.start * 60 - seconds)}`}
+                  ? `${formatDuration(length - elapsed)} left`
+                  : formatClockTime(period.start)}
               </span>
-            </div>
-            {period.lunches && (
-              <ul className="mt-1.5 ml-[2.625rem] flex flex-wrap gap-1.5">
-                {period.lunches.map((lunch) => {
-                  const eating =
-                    seconds >= lunch.start * 60 && seconds < lunch.end * 60;
-                  const over = seconds >= lunch.end * 60;
-                  return (
-                    <li
-                      key={lunch.name}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.75rem] tabular-nums",
-                        eating
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-foreground/[0.05] text-muted-foreground",
-                        over && !done && "opacity-50",
-                      )}
-                      title={range(lunch)}
-                    >
-                      {lunch.name.replace("Lunch ", "L")}
-                      <span className="opacity-80">
-                        {eating
-                          ? `${formatSpan(lunch.end * 60 - seconds)} left`
-                          : formatClockTime(lunch.start).replace(/ [ap]m$/, "")}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
             )}
           </li>
         );
@@ -310,16 +311,71 @@ function InSession({
   );
 }
 
-function nextLine(next: NextDay | null) {
-  if (!next) return "Enjoy the summer.";
-  const late = next.schedule === "late" ? "late start, " : "";
-  return `Back ${next.label} · ${late}Block 1 at ${formatClockTime(next.start)}`;
+/** Before a lunch is picked, Block 3 names all three and lights the one on. */
+function LunchChips({
+  lunches,
+  seconds,
+}: {
+  lunches: readonly Period[];
+  seconds: number;
+}) {
+  return (
+    <span className="ml-2 inline-flex gap-1 align-middle">
+      {lunches.map((lunch, i) => (
+        <span
+          key={lunch.name}
+          className={cn(
+            "rounded-full px-1.5 text-[0.6875rem] font-semibold",
+            seconds >= lunch.start * 60 && seconds < lunch.end * 60
+              ? "bg-primary text-primary-foreground"
+              : "bg-foreground/[0.06] text-muted-foreground",
+          )}
+        >
+          L{i + 1}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** A finished period: a filled green circle with a white tick. */
+function DoneMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6 shrink-0" aria-hidden>
+      <circle cx="12" cy="12" r="12" className="fill-emerald-500" />
+      <path
+        d="M7.5 12.5l3 3 6-6.5"
+        fill="none"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-white"
+      />
+    </svg>
+  );
+}
+
+/** A period still to come: the ring's track colour, filled, with a dash. */
+function UpcomingMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6 shrink-0" aria-hidden>
+      <circle cx="12" cy="12" r="12" className="fill-foreground/[0.08]" />
+      <path
+        d="M8 12h8"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        className="stroke-foreground/35"
+      />
+    </svg>
+  );
 }
 
 function OffHours({
   status,
+  compact,
 }: {
   status: Extract<SchoolStatus, { state: "off" }>;
+  compact: boolean;
 }) {
   const { reason, occasion, next } = status;
   const headline =
@@ -328,23 +384,27 @@ function OffHours({
       : reason === "after"
         ? "School’s out"
         : (occasion ?? "It’s the weekend");
+  // Only before the bell is there anything worth adding to the headline.
   const message =
     reason === "before"
       ? `${status.schedule === "late" ? "Late start today · " : ""}Block 1 starts at ${formatClockTime(next!.start)}.`
-      : occasion === "Summer break"
-        ? next
-          ? `First day is ${next.label}.`
-          : "Enjoy the summer."
-        : `${nextLine(next)}.`;
+      : null;
 
   return (
     <>
-      <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
-        <BeachIcon className="size-24" />
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center text-center",
+          compact ? "py-3" : "py-8",
+        )}
+      >
+        <BeachIcon className={compact ? "size-16" : "size-24"} />
         <p className="mt-5 text-[1.25rem] font-semibold">{headline}</p>
-        <p className="mt-1.5 max-w-64 text-[0.875rem] text-balance text-muted-foreground">
-          {message}
-        </p>
+        {message && (
+          <p className="mt-1.5 max-w-64 text-[0.875rem] text-balance text-muted-foreground">
+            {message}
+          </p>
+        )}
       </div>
     </>
   );

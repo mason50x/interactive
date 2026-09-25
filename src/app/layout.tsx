@@ -144,6 +144,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
+      // Keep a sans face on the document even while a route stylesheet loads.
+      // Otherwise the browser briefly falls back to its default serif.
+      style={{ fontFamily: `${inter.style.fontFamily}, system-ui, sans-serif` }}
       className={cn(
         "h-full scroll-smooth font-sans antialiased",
         inter.variable,

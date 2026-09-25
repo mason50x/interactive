@@ -108,10 +108,15 @@ function ConversationThread({
     staffRoles,
     serverConversations,
     setReading,
-    isReadSuppressed,
     images: pictures,
   } = useChat();
   const detail = useQuery(api.chat.conversations.get, { conversationId });
+  const peerReadAt = useQuery(
+    api.chat.conversations.peerReadAt,
+    detail?.kind === "dm" && detail.peerClerkId !== "bot"
+      ? { conversationId }
+      : "skip",
+  );
   const daily = detail?.kind === "global" || detail?.kind === "announcements";
 
   /**
@@ -323,8 +328,7 @@ function ConversationThread({
     if (!visible || !detail || initialRead === undefined) return;
     if (!unread || !latestMessageId) return;
     const acknowledge = () => {
-      // A manual reminder suspends reading until navigation leaves this thread.
-      if (!isVisible() || isReadSuppressed(conversationId)) return;
+      if (!isVisible()) return;
       void markRead({
         conversationId,
         throughMessageId: latestMessageId,
@@ -345,7 +349,6 @@ function ConversationThread({
     latestMessageId,
     readRetry,
     markRead,
-    isReadSuppressed,
   ]);
 
   useLayoutEffect(() => {
@@ -526,7 +529,7 @@ function ConversationThread({
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3 pb-20 sm:px-8 lg:px-14 xl:px-20"
+        className="-mt-14 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[4.25rem] pb-20 sm:px-8 lg:px-14 xl:px-20"
       >
         {daily ? (
           <DayPager
@@ -594,6 +597,13 @@ function ConversationThread({
                 : undefined)
             }
             mine={message.authorClerkId === userId}
+            seen={
+              message._id === results[0]?._id &&
+              message.authorClerkId === userId &&
+              peerReadAt != null &&
+              peerReadAt >= message._creationTime &&
+              !outbox.entries.some((entry) => entry.status !== "failed")
+            }
             me={userId}
             canAct={profile !== null && !readOnly}
             plainMentions={plainMentions}

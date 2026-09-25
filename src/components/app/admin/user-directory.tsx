@@ -97,7 +97,11 @@ function CurrentPage({
 }) {
   return path && label ? (
     <span
-      className="inline-flex min-w-0 items-center gap-1.5 text-xs"
+      key={path}
+      className={cn(
+        styles.pageStatus,
+        "inline-flex min-w-0 items-center gap-1.5 text-xs",
+      )}
       title={path}
     >
       <span
@@ -107,7 +111,13 @@ function CurrentPage({
       <span className="truncate">{label}</span>
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+    <span
+      key={loading ? "checking" : "offline"}
+      className={cn(
+        styles.pageStatus,
+        "inline-flex items-center gap-1.5 text-xs text-muted-foreground",
+      )}
+    >
       {!loading && (
         <span
           aria-hidden="true"

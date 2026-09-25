@@ -6,6 +6,7 @@ import { PlaytimeGate } from "@/components/app/experience-quota";
 import { TimeoutGate } from "@/components/app/timeout-gate";
 import { ActivityPresence } from "@/components/app/activity-presence";
 import { HostedActivity } from "./hosted-activity";
+import { OnboardingGate } from "@/components/app/onboarding-gate";
 
 /** Gate the /learn document itself, so opening its URL directly is metered too.
  * The third-party bundle remains sandboxed on its separate asset origin. */
@@ -13,12 +14,14 @@ export function MeteredActivity(props: { title: string; src: string }) {
   return (
     <ClerkProvider>
       <ConvexClientProvider>
-        <ActivityPresence />
-        <TimeoutGate>
-          <PlaytimeGate>
-            <HostedActivity {...props} />
-          </PlaytimeGate>
-        </TimeoutGate>
+        <OnboardingGate>
+          <ActivityPresence />
+          <TimeoutGate>
+            <PlaytimeGate>
+              <HostedActivity {...props} />
+            </PlaytimeGate>
+          </TimeoutGate>
+        </OnboardingGate>
       </ConvexClientProvider>
     </ClerkProvider>
   );

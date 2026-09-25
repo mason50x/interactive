@@ -355,73 +355,6 @@ test("exact context reaches old messages without leaking inaccessible rooms", as
   ).toBeNull();
 });
 
-test("favorites are private; marking unread restores the actual first unread position", async () => {
-  vi.useFakeTimers();
-  const { t, room, alice, bob, eve } = await setup();
-  expect(
-    await alice.mutation(api.chat.conversations.setFavorite, {
-      conversationId: room,
-      favorite: true,
-    }),
-  ).toBe(true);
-  expect((await alice.query(api.chat.conversations.list, {}))[0].favorite).toBe(
-    true,
-  );
-  expect((await bob.query(api.chat.conversations.list, {}))[0].favorite).toBe(
-    false,
-  );
-  expect(
-    await eve.mutation(api.chat.conversations.setFavorite, {
-      conversationId: room,
-      favorite: true,
-    }),
-  ).toBe(false);
-  const id = await t.run((ctx) =>
-    ctx.db.insert("messages", {
-      conversationId: room,
-      authorClerkId: "bob",
-      authorHandle: "bob",
-      body: "See you tomorrow",
-      status: "visible",
-      flags: [],
-    }),
-  );
-  await alice.mutation(api.chat.conversations.markRead, {
-    conversationId: room,
-  });
-  expect(
-    (
-      await alice.query(api.chat.conversations.readPosition, {
-        conversationId: room,
-      })
-    )?.firstUnreadId,
-  ).toBeNull();
-  expect(
-    await alice.mutation(api.chat.conversations.markUnread, {
-      conversationId: room,
-    }),
-  ).toBe(true);
-  expect(
-    (
-      await alice.query(api.chat.conversations.readPosition, {
-        conversationId: room,
-      })
-    )?.firstUnreadId,
-  ).toBe(id);
-  expect((await alice.query(api.chat.conversations.list, {}))[0]).toMatchObject(
-    {
-      unread: 1,
-      firstUnreadMessageId: id,
-      latestMessage: { _id: id, authorClerkId: "bob" },
-    },
-  );
-  expect(
-    await eve.query(api.chat.conversations.readPosition, {
-      conversationId: room,
-    }),
-  ).toBeNull();
-});
-
 test("historical context never reveals a hidden or deleted target or hidden neighbor contents", async () => {
   const { t, room, alice } = await setup();
   const ids = await t.run(async (ctx) => {
@@ -458,7 +391,7 @@ test("historical context never reveals a hidden or deleted target or hidden neig
   ).toBeNull();
 });
 
-test("same-millisecond sends can be marked read, unread and read again using the exact message timestamp", async () => {
+test("same-millisecond sends can be marked read using the exact message timestamp", async () => {
   vi.useFakeTimers();
   const { t, room, alice, bob } = await setup();
   expect(
@@ -472,35 +405,19 @@ test("same-millisecond sends can be marked read, unread and read again using the
   expect((await t.run((ctx) => ctx.db.get(room)))?.lastMessageAt).toBe(
     Date.now(),
   );
-  expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
-    1,
-  );
-  await alice.mutation(api.chat.conversations.markRead, {
-    conversationId: room,
-  });
-  expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
-    0,
-  );
   expect(
     (
       await alice.query(api.chat.conversations.readPosition, {
         conversationId: room,
       })
     )?.firstUnreadId,
-  ).toBeNull();
-  await alice.mutation(api.chat.conversations.markUnread, {
-    conversationId: room,
-  });
-  const unread = (await alice.query(api.chat.conversations.list, {}))[0];
-  expect(unread.lastReadAt).toBeGreaterThan(Date.now());
-  expect(unread).toMatchObject({
-    unread: 1,
-    firstUnreadMessageId: message._id,
-  });
+  ).toBe(message._id);
   await alice.mutation(api.chat.conversations.markRead, {
     conversationId: room,
   });
-  expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
-    0,
-  );
+  const position = await alice.query(api.chat.conversations.readPosition, {
+    conversationId: room,
+  });
+  expect(position?.firstUnreadId).toBeNull();
+  expect(position?.lastReadAt).toBeGreaterThanOrEqual(message._creationTime);
 });

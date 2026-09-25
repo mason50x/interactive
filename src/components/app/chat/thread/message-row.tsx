@@ -47,6 +47,7 @@ export function MessageRow({
   onReply,
   onEdit,
   highlighted = false,
+  seen = false,
   onJumpToMessage,
 }: {
   message: ChatMessage;
@@ -61,6 +62,8 @@ export function MessageRow({
   onReply: () => void;
   onEdit?: () => void;
   highlighted?: boolean;
+  /** The other participant has read this newest outgoing DM message. */
+  seen?: boolean;
   onJumpToMessage: (messageId: Id<"messages">) => void;
 }) {
   const react = useMutation(api.chat.messages.react);
@@ -412,6 +415,12 @@ export function MessageRow({
             ) : null}
           </div>
         </div>
+
+        {seen ? (
+          <span className="mt-1 px-1 text-[0.6875rem] leading-none text-muted-foreground">
+            Seen
+          </span>
+        ) : null}
 
         {adminError ? (
           <p role="alert" className="mt-1 text-xs text-destructive">

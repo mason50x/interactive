@@ -44,7 +44,6 @@ export type ConversationSummary = {
   title?: string;
   lastMessageAt?: number;
   unread: number;
-  favorite: boolean;
   lastReadAt: number;
   firstUnreadMessageId?: Id<"messages">;
   latestMessage?: {
@@ -152,14 +151,6 @@ export const list = query({
       )
       .take(MAX_CONVERSATIONS);
 
-    // A favorite remains reachable even when it was created past the normal
-    // inbox cap. Keep both indexed scans bounded and merge by membership id.
-    const favorites = await ctx.db.query("conversationMembers")
-      .withIndex("byUserFavorite", q => q.eq("clerkId", profile.clerkId).eq("status", "active").eq("favorite", true))
-      .take(MAX_CONVERSATIONS);
-    const seenMembers = new Set(members.map(member => member._id));
-    for (const member of favorites) if (!seenMembers.has(member._id)) members.push(member);
-
     // Always include the pinned bot even when the regular inbox hits its cap.
     const botDm = await ctx.db.query("conversations")
       .withIndex("byDmKey", q => q.eq("dmKey", dmKeyFor(profile.clerkId, BOT_ID)))
@@ -183,7 +174,7 @@ export const list = query({
 
       // The message timestamp is authoritative. lastMessageAt is the send
       // mutation's integer clock, while _creationTime may be fractional; a
-      // manual unread cursor can sit between those two values.
+      // the read cursor can sit between those two values.
       const latest = await ctx.db.query("messages")
         .withIndex("byConversationStatus", q => q.eq("conversationId", member.conversationId).eq("status", "visible"))
         .order("desc").first();
@@ -219,7 +210,6 @@ export const list = query({
         title: conversation.title,
         lastMessageAt: conversation.lastMessageAt,
         unread,
-        favorite: member.favorite ?? false,
         lastReadAt: member.lastReadAt,
         firstUnreadMessageId: firstUnread?._id,
         latestMessage: latest === null ? undefined : {
@@ -253,7 +243,6 @@ export const list = query({
       if (second.kind === "admins") return 1;
       if (first.peerClerkId === BOT_ID) return -1;
       if (second.peerClerkId === BOT_ID) return 1;
-      if (first.favorite !== second.favorite) return first.favorite ? -1 : 1;
       return (second.lastMessageAt ?? 0) - (first.lastMessageAt ?? 0);
     });
   },
@@ -549,38 +538,6 @@ export const markRead = mutation({
   },
 });
 
-/** Favorites are private and do not change anybody else's conversation order. */
-export const setFavorite = mutation({
-  args: { conversationId: v.id("conversations"), favorite: v.boolean() },
-  returns: v.boolean(),
-  handler: async (ctx, { conversationId, favorite }) => {
-    const profile = await callerAccount(ctx);
-    if (profile === null) return false;
-    const member = await membership(ctx, conversationId, profile.clerkId);
-    if (member?.status !== "active") return false;
-    await ctx.db.patch(member._id, { favorite });
-    return true;
-  },
-});
-
-/** Put the latest visible message back behind the caller's reading position. */
-export const markUnread = mutation({
-  args: { conversationId: v.id("conversations") },
-  returns: v.boolean(),
-  handler: async (ctx, { conversationId }) => {
-    const profile = await callerAccount(ctx);
-    if (profile === null) return false;
-    const member = await membership(ctx, conversationId, profile.clerkId);
-    if (member?.status !== "active") return false;
-    const latest = await ctx.db.query("messages")
-      .withIndex("byConversationStatus", q => q.eq("conversationId", conversationId).eq("status", "visible"))
-      .order("desc").first();
-    if (latest === null) return false;
-    await ctx.db.patch(member._id, { lastReadAt: Math.min(member.lastReadAt, latest._creationTime - 0.001) });
-    return true;
-  },
-});
-
 /** Read once when entering a thread, before advancing its reading position. */
 export const readPosition = query({
   args: { conversationId: v.id("conversations") },
@@ -596,5 +553,22 @@ export const readPosition = query({
       .withIndex("byConversationStatus", q => q.eq("conversationId", conversationId).eq("status", "visible").gt("_creationTime", member.lastReadAt))
       .first();
     return { lastReadAt: member.lastReadAt, firstUnreadId: first?._id ?? null, firstUnreadAt: first?._creationTime ?? null };
+  },
+});
+
+/** The other participant's reading position, visible only inside a human DM. */
+export const peerReadAt = query({
+  args: { conversationId: v.id("conversations") },
+  returns: v.union(v.number(), v.null()),
+  handler: async (ctx, { conversationId }) => {
+    const profile = await callerAccount(ctx);
+    if (profile === null) return null;
+    const mine = await membership(ctx, conversationId, profile.clerkId);
+    if (mine?.status !== "active" || mine.kind !== "dm" ||
+        !mine.dmPeer || mine.dmPeer === BOT_ID) return null;
+    const peer = await membership(ctx, conversationId, mine.dmPeer);
+    return peer?.status === "active" && peer.kind === "dm"
+      ? peer.lastReadAt
+      : null;
   },
 });

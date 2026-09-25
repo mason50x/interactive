@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { MeteredActivity } from "@/components/activity/metered-activity";
 import { activityBundleUrl } from "@/lib/assets";
 import { findActivity } from "@/lib/activities";
+import { OnboardingGate } from "@/components/app/onboarding-gate";
 
 /**
  * The framed activity, at `/learn/<slug>`.
@@ -43,7 +44,9 @@ export default async function LearnPage({
     return (
       <ClerkProvider>
         <ConvexClientProvider>
-          <TimeoutMessage {...timeout} />
+          <OnboardingGate>
+            <TimeoutMessage {...timeout} />
+          </OnboardingGate>
         </ConvexClientProvider>
       </ClerkProvider>
     );

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export function NotificationControl() {
   const { notifications } = useChat();
   return (
-    <div className="shrink-0 border-t border-border px-3 py-2">
+    <div className="chat-list-notifications relative isolate z-10 shrink-0 px-3 py-2">
       <Button
         variant="ghost"
         size="sm"

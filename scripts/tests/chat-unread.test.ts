@@ -86,7 +86,7 @@ test("sending does not leave the sender's own message unread", async () => {
   }
 });
 
-test("automatic reading covers only the displayed message, including after a manual reminder", async () => {
+test("automatic reading covers only the displayed message", async () => {
   const { t, alice, bob, global } = await setup();
   await bob.mutation(api.chat.messages.send, {
     conversationId: global,
@@ -124,16 +124,6 @@ test("automatic reading covers only the displayed message, including after a man
   expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
     0,
   );
-  await alice.mutation(api.chat.conversations.markUnread, {
-    conversationId: global,
-  });
-  await alice.mutation(api.chat.conversations.markRead, {
-    conversationId: global,
-    throughMessageId: latest!._id,
-  });
-  expect((await alice.query(api.chat.conversations.list, {}))[0].unread).toBe(
-    0,
-  );
 });
 
 test("automatic reading rejects a cursor from another conversation", async () => {
@@ -159,6 +149,101 @@ test("automatic reading rejects a cursor from another conversation", async () =>
   expect(
     (await alice.query(api.chat.conversations.list, {}))[0].unread,
   ).toBeGreaterThan(0);
+});
+
+test("read receipts follow each human DM participant's read position", async () => {
+  const { t, alice, bob, global, dm: botDm } = await setup();
+  const opened = await alice.mutation(api.chat.conversations.openDm, {
+    peerClerkId: "bob",
+  });
+  expect(opened.ok).toBe(true);
+  if (!opened.ok) return;
+  const conversationId = opened.conversationId;
+
+  expect(
+    await alice.query(api.chat.conversations.peerReadAt, { conversationId }),
+  ).toBe(0);
+  expect(
+    await bob.query(api.chat.conversations.peerReadAt, { conversationId }),
+  ).toBe(0);
+
+  await alice.mutation(api.chat.messages.send, {
+    conversationId,
+    body: "First",
+  });
+  const first = await t.run((ctx) =>
+    ctx.db
+      .query("messages")
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
+      .order("desc")
+      .first(),
+  );
+  await bob.mutation(api.chat.conversations.markRead, {
+    conversationId,
+    throughMessageId: first!._id,
+  });
+  expect(
+    await alice.query(api.chat.conversations.peerReadAt, { conversationId }),
+  ).toBeGreaterThanOrEqual(first!._creationTime);
+
+  await bob.mutation(api.chat.messages.send, { conversationId, body: "Reply" });
+  const reply = await t.run((ctx) =>
+    ctx.db
+      .query("messages")
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
+      .order("desc")
+      .first(),
+  );
+  await alice.mutation(api.chat.conversations.markRead, {
+    conversationId,
+    throughMessageId: reply!._id,
+  });
+  expect(
+    await bob.query(api.chat.conversations.peerReadAt, { conversationId }),
+  ).toBeGreaterThanOrEqual(reply!._creationTime);
+
+  expect(
+    await alice.query(api.chat.conversations.peerReadAt, {
+      conversationId: global,
+    }),
+  ).toBeNull();
+  expect(
+    await alice.query(api.chat.conversations.peerReadAt, {
+      conversationId: botDm,
+    }),
+  ).toBeNull();
+  const group = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("conversations", {
+      kind: "group",
+      createdBy: "alice",
+      createdAt: Date.now(),
+      title: "Group",
+    });
+    await ctx.db.insert("conversationMembers", {
+      conversationId: id,
+      clerkId: "alice",
+      kind: "group",
+      role: "member",
+      status: "active",
+      joinedAt: Date.now(),
+      lastReadAt: 0,
+    });
+    return id;
+  });
+  expect(
+    await alice.query(api.chat.conversations.peerReadAt, {
+      conversationId: group,
+    }),
+  ).toBeNull();
+  expect(
+    await t
+      .withIdentity({ subject: "eve" })
+      .query(api.chat.conversations.peerReadAt, { conversationId }),
+  ).toBeNull();
 });
 
 test("message links locate only visible messages in an accessible conversation", async () => {

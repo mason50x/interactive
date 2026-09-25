@@ -11,6 +11,7 @@ import { PlaytimeActivityProvider } from "@/components/app/playtime-activity";
 import { ActivitiesProvider } from "@/components/app/activities-provider";
 import { AppProviders } from "@/components/app-providers";
 import { CLIENT_ACTIVITIES } from "@/lib/activities";
+import { OnboardingGate } from "@/components/app/onboarding-gate";
 
 export const metadata: Metadata = {
   // Nothing behind a session is indexable. This is now the same answer the
@@ -58,34 +59,36 @@ export default async function DashboardLayout({
 
   return (
     <AppProviders>
-      {/* Wraps both the header and shell: the
+      <OnboardingGate>
+        {/* Wraps both the header and shell: the
             unread dot is on a row in the header, and the conversations it counts
             are read on a page in the shell. Mounted here rather than inside
             `/chat` so the dot is right while you are looking at an
             activity, which is the only time it is worth having. */}
-      <TimeoutGate>
-        <ChatProvider>
-          {/* The catalogue for the activities grid. This is the *only* way it reaches a
+        <TimeoutGate>
+          <ChatProvider>
+            {/* The catalogue for the activities grid. This is the *only* way it reaches a
               browser — as data in this layout's RSC payload, behind the
               `auth.protect()` above — because `@/lib/activities` is
               `server-only` and a client module importing it would publish
               every entry to a static chunk with no session in front of it.
               Here rather than on each page so it is serialised once per full
               load and never on a navigation. See `ActivitiesProvider`. */}
-          <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
-            <PlaytimeActivityProvider>
-              <PlaytimeStatusProvider>
-                <div className="flex h-svh flex-col overflow-hidden bg-sidebar">
-                  <AppHeader />
-                  <main className="mx-3 mb-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
-                    <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
-                  </main>
-                </div>
-              </PlaytimeStatusProvider>
-            </PlaytimeActivityProvider>
-          </ActivitiesProvider>
-        </ChatProvider>
-      </TimeoutGate>
+            <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
+              <PlaytimeActivityProvider>
+                <PlaytimeStatusProvider>
+                  <div className="flex h-svh flex-col overflow-hidden bg-sidebar">
+                    <AppHeader />
+                    <main className="mx-3 mb-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
+                      <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
+                    </main>
+                  </div>
+                </PlaytimeStatusProvider>
+              </PlaytimeActivityProvider>
+            </ActivitiesProvider>
+          </ChatProvider>
+        </TimeoutGate>
+      </OnboardingGate>
     </AppProviders>
   );
 }

@@ -17,6 +17,7 @@ import {
   NavPending,
   useNavPending,
 } from "@/components/app/rail/use-nav-pending";
+import { SchoolDayButton } from "@/components/app/school-day-button";
 import { UserMenu } from "@/components/app/user-menu";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
@@ -105,6 +106,7 @@ export function AppHeader() {
             const active = item.href === activeHref;
             const lit = item.href === litHref;
             const showUnread = item.unread && hasUnread && !lit;
+            const Icon = item.icon.solid;
             return (
               <li key={item.href} className="shrink-0">
                 <PlaytimeNavLink
@@ -126,13 +128,17 @@ export function AppHeader() {
                   {/* What the underline measures. See `NavUnderline`. */}
                   <span
                     data-underline={item.href}
-                    className="inline-flex h-full items-center"
+                    className="inline-flex h-full items-center gap-2"
                   >
+                    <Icon aria-hidden className="size-5 shrink-0" />
                     {/* An unread row's label glints now and then in the brand
                         colour — a pass, not a loop. Not on the lit row, which
                         is already where it points. */}
                     <span
                       className={cn(
+                        // Icons only below `lg`, as the old rail did; the
+                        // label stays for screen readers.
+                        "sr-only lg:not-sr-only",
                         showUnread &&
                           "text-shimmer-periodic [--shimmer-base:var(--muted-foreground)] group-hover:[--shimmer-base:var(--foreground)]",
                       )}
@@ -193,6 +199,20 @@ export function AppHeader() {
       </nav>
 
       <div className="flex min-w-0 items-center justify-end gap-1">
+        {/* Home already shows the schedule as a card, so the button tucks
+            away there and slides back in everywhere else. */}
+        <div
+          aria-hidden={pathname === HOME_HREF || undefined}
+          inert={pathname === HOME_HREF}
+          className={cn(
+            "flex shrink-0 justify-center overflow-hidden transition-[width,opacity,margin,scale] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            pathname === HOME_HREF
+              ? "-mr-1 w-0 scale-75 opacity-0"
+              : "w-11 opacity-100",
+          )}
+        >
+          <SchoolDayButton />
+        </div>
         <Link
           href={LEADERBOARD_HREF}
           aria-label="Leaderboard"

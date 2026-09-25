@@ -78,17 +78,22 @@ function SelectContent({
   className,
   children,
   sideOffset = 6,
+  positionerClassName,
   ...props
 }: SelectPrimitive.Popup.Props & {
   sideOffset?: SelectPrimitive.Positioner.Props["sideOffset"];
+  /** For a select that opens from inside another popup, which sits higher. */
+  positionerClassName?: string;
 }) {
   const container = useContext(SelectPortalContainer);
 
   return (
-    <SelectPrimitive.Portal container={container}>
+    // `undefined`, not `null`, outside a container: Base UI reads `null` as
+    // "not mounted yet" and renders nothing at all.
+    <SelectPrimitive.Portal container={container ?? undefined}>
       <SelectPrimitive.Positioner
         data-slot="select-positioner"
-        className="z-50 outline-none select-none"
+        className={cn("z-50 outline-none select-none", positionerClassName)}
         alignItemWithTrigger={false}
         positionMethod="fixed"
         sideOffset={sideOffset}
