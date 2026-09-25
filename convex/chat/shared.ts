@@ -22,14 +22,32 @@ export type ChatAccount = Doc<"users"> & {
   createdAt: number;
 };
 
-export function chatAccount(user: Doc<"users"> | null): ChatAccount | null {
+/** Mason Singel's username; keeps the bare first name even when someone else shares it. */
+const PLAIN_NAME_HANDLE = "mason";
+
+/**
+ * The name chat shows: the first name, plus a last initial ("Mason D") when
+ * another chat account has the same first name.
+ */
+async function chatName(ctx: QueryCtx, user: Doc<"users">): Promise<string | undefined> {
+  const { firstName, lastName } = user;
+  if (!firstName) return user.username;
+  const initial = lastName?.trim().charAt(0).toUpperCase();
+  if (!initial || user.usernameKey === PLAIN_NAME_HANDLE) return firstName;
+  for await (const other of ctx.db.query("users").withIndex("byFirstName", q => q.eq("firstName", firstName))) {
+    if (other._id !== user._id && other.username) return `${firstName} ${initial}`;
+  }
+  return firstName;
+}
+
+export async function chatAccount(ctx: QueryCtx, user: Doc<"users"> | null): Promise<ChatAccount | null> {
   if (!user?.username) return null;
-  return { ...user, handle: user.username, displayName: user.firstName || user.username,
+  return { ...user, handle: user.username, displayName: await chatName(ctx, user),
     createdAt: user.clerkCreatedAt ?? user._creationTime };
 }
 
 export async function accountFor(ctx: QueryCtx, clerkId: string): Promise<ChatAccount | null> {
-  return chatAccount(await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique());
+  return chatAccount(ctx, await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique());
 }
 
 export type AvatarAppearance = {
@@ -44,7 +62,7 @@ export async function avatarAppearance(_ctx: QueryCtx, account: ChatAccount): Pr
 }
 
 export async function accountByHandle(ctx: QueryCtx, handle: string): Promise<ChatAccount | null> {
-  return chatAccount(await ctx.db.query("users").withIndex("byUsernameKey", q => q.eq("usernameKey", handle.toLowerCase())).unique());
+  return chatAccount(ctx, await ctx.db.query("users").withIndex("byUsernameKey", q => q.eq("usernameKey", handle.toLowerCase())).unique());
 }
 
 export async function callerAccount(ctx: QueryCtx): Promise<ChatAccount | null> {
