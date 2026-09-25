@@ -22,8 +22,8 @@ export type ChatAccount = Doc<"users"> & {
   createdAt: number;
 };
 
-/** Keeps the bare first name even when someone else shares it. */
-const PLAIN_NAME_HANDLE = "masonsingel";
+/** Mason Singel's username; keeps the bare first name even when someone else shares it. */
+const PLAIN_NAME_HANDLE = "mason";
 
 /**
  * The name chat shows: the first name, plus a last initial ("Mason D") when

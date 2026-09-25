@@ -91,10 +91,10 @@ test("same first names use app casing and keep distinct usernames; any account c
   );
 });
 
-test("repeat first names add a last initial, except for masonsingel", async () => {
+test("repeat first names add a last initial, except for Mason Singel (@mason)", async () => {
   const t = convexTest(schema, modules);
   for (const [id, username, last_name] of [
-    ["singel", "masonsingel", "Singel"],
+    ["singel", "mason", "Singel"],
     ["d", "masond", "Doe"],
     ["j", "masonj", "jones"],
     ["solo", "greyson", "King"],
@@ -108,7 +108,7 @@ test("repeat first names add a last initial, except for masonsingel", async () =
     (await t.withIdentity({ subject: "solo" }).query(api.chat.accounts.search, { term: "mason" }))
       .map((account: PublicAccount) => [account.handle, account.displayName]),
   );
-  expect(names).toEqual({ masonsingel: "Mason", masond: "Mason D", masonj: "Mason J" });
+  expect(names).toEqual({ mason: "Mason", masond: "Mason D", masonj: "Mason J" });
   expect(
     await t.withIdentity({ subject: "solo" }).query(api.chat.accounts.mine, {}),
   ).toMatchObject({ displayName: "Greyson" });
