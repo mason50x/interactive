@@ -96,6 +96,10 @@ export function MessageRow({
   }, [hasReactions]);
 
   const grouped = messagesConnect(previous, message);
+  const showAuthor =
+    previous?.authorClerkId !== message.authorClerkId ||
+    new Date(previous._creationTime).toDateString() !==
+      new Date(message._creationTime).toDateString();
   const joinsNext = messagesConnect(message, next);
   const showTail = !joinsNext && (mine || message.replyTo !== undefined);
   const corners = cn(
@@ -206,7 +210,7 @@ export function MessageRow({
         setChoosing(true);
       }}
     >
-      {mine ? null : grouped ? (
+      {mine ? null : !showAuthor ? (
         <span className="w-8 shrink-0" />
       ) : bot ? (
         <span className="shrink-0 self-start">
@@ -242,9 +246,9 @@ export function MessageRow({
             "rounded-3xl ring-2 ring-primary ring-offset-2 ring-offset-background",
         )}
       >
-        {!mine ? (
+        {!mine && showAuthor ? (
           <div className="mb-1 flex min-h-6 max-w-full items-center gap-1 px-1">
-            {!grouped && staffRole ? (
+            {staffRole ? (
               <TooltipProvider delay={250}>
                 <AdminTooltip>
                   <TooltipTrigger
@@ -286,7 +290,6 @@ export function MessageRow({
                 {personName(author)}
               </PersonCard>
             )}
-            {actions}
           </div>
         ) : null}
 
@@ -428,6 +431,9 @@ export function MessageRow({
           </p>
         ) : null}
       </div>
+      {!mine && actions ? (
+        <div className="flex shrink-0 items-center self-start">{actions}</div>
+      ) : null}
       {mine && actions ? (
         <div className="flex w-[3.25rem] shrink-0 items-center self-center">
           {actions}
