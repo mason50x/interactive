@@ -45,7 +45,6 @@ export const CHAT_HREF = "/chat";
 /** Where a signed-in session lands: the logo, sign-in and `/` all go here. */
 export const HOME_HREF = "/home";
 
-/** Shown as an icon in the header rather than in the centre links. */
 export const LEADERBOARD_HREF = "/leaderboard";
 
 /**
@@ -82,11 +81,6 @@ export const navItems: NavItem[] = [
     unread: true,
   },
   {
-    label: "Leaderboard",
-    href: LEADERBOARD_HREF,
-    icon: { outline: TrophyIcon, solid: TrophyIconSolid },
-  },
-  {
     label: "Browse",
     href: "/browse",
     icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
@@ -95,5 +89,10 @@ export const navItems: NavItem[] = [
     label: "Emulate",
     href: SIMULATOR_HREF,
     icon: { outline: CpuChipIcon, solid: ChipIconSolid },
+  },
+  {
+    label: "Leaderboard",
+    href: LEADERBOARD_HREF,
+    icon: { outline: TrophyIcon, solid: TrophyIconSolid },
   },
 ];
