@@ -67,11 +67,6 @@ export const navItems: NavItem[] = [
     icon: { outline: FilmIcon, solid: FilmIconSolid },
   },
   {
-    label: "Home",
-    href: HOME_HREF,
-    icon: { outline: HomeIcon, solid: HomeIconSolid },
-  },
-  {
     label: "Chat",
     href: CHAT_HREF,
     icon: {
@@ -79,6 +74,11 @@ export const navItems: NavItem[] = [
       solid: ChatIconSolid,
     },
     unread: true,
+  },
+  {
+    label: "Home",
+    href: HOME_HREF,
+    icon: { outline: HomeIcon, solid: HomeIconSolid },
   },
   {
     label: "Browse",
