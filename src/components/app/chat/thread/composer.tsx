@@ -511,20 +511,21 @@ export function Composer({
           </div>
         ) : null}
         {reply === null ? null : (
-          <div className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/[0.06] px-3 py-2.5">
-            <ArrowUturnLeftIcon className="mt-0.5 size-4 shrink-0 text-primary" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[0.75rem] font-semibold text-primary">
-                Replying to{" "}
+          <div className="mx-4 mt-3 flex items-center gap-2.5 border-b border-border/60 pb-2.5">
+            <ArrowUturnLeftIcon className="size-4 shrink-0 text-faint" />
+            <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
+              Replying to{" "}
+              <span className="font-semibold text-foreground">
                 {personName({
                   handle: reply.authorHandle,
                   displayName: reply.authorName,
                 })}
-              </p>
-              <p className="line-clamp-2 text-[0.8125rem] break-words text-muted-foreground">
-                {replyFromMessage(reply).preview}
-              </p>
-            </div>
+              </span>
+              <span className="text-faint">
+                {" "}
+                · {replyFromMessage(reply).preview}
+              </span>
+            </p>
             <button
               type="button"
               onClick={cancelReply}

@@ -50,11 +50,12 @@ export function ReplyPreview({
     return (
       <div
         className={cn(
-          "mb-1 w-full rounded-xl border border-border bg-surface-muted/70 px-3 py-2 text-left",
-          mine && "text-right",
+          "mb-1 flex max-w-full gap-2 px-1",
+          mine && "flex-row-reverse text-right",
         )}
       >
-        <span className="block text-[0.75rem] font-semibold text-faint">
+        <span aria-hidden className="w-0.5 shrink-0 rounded-full bg-border" />
+        <span className="py-0.5 text-[0.8125rem] text-faint italic">
           Original message unavailable
         </span>
       </div>
@@ -69,19 +70,25 @@ export function ReplyPreview({
       type="button"
       onClick={() => onJumpToMessage(reply.messageId)}
       className={cn(
-        "mb-1 w-full rounded-xl border border-border bg-surface-muted/70 px-3 py-2 text-left transition-colors outline-none hover:bg-foreground/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60",
-        mine && "text-right",
+        "group/reply mb-1 flex max-w-full gap-2 rounded-md px-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+        mine && "flex-row-reverse text-right",
       )}
       aria-label={`Go to message from ${name}`}
     >
-      <span className="block truncate text-[0.75rem] font-semibold text-primary">
-        {name}
-      </span>
+      <span
+        aria-hidden
+        className="w-0.5 shrink-0 rounded-full bg-border transition-colors group-hover/reply:bg-primary/60"
+      />
       {/* Two lines and then a cut, rather than one line and an ellipsis: a
           long message quoted in one unbreakable line was what set the
           bubble's width, and long messages are the ones worth quoting. */}
-      <span className="line-clamp-2 text-[0.8125rem] break-words text-muted-foreground">
-        {reply.preview}
+      <span className="min-w-0 py-0.5 text-[0.8125rem] leading-snug">
+        <span className="block truncate font-semibold text-muted-foreground transition-colors group-hover/reply:text-foreground">
+          {name}
+        </span>
+        <span className="line-clamp-2 break-words text-faint">
+          {reply.preview}
+        </span>
       </span>
     </button>
   );
