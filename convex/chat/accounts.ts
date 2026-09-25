@@ -33,10 +33,10 @@ export const directory = query({
     const clerkId = await callerId(ctx);
     if (!clerkId) return { page: [], isDone: true, continueCursor: "" };
     const result = await ctx.db.query("users").withIndex("byUsernameKey").paginate({ ...paginationOpts, numItems: Math.min(50, Math.max(1, paginationOpts.numItems)) });
-    return { page: result.page.flatMap(user => {
-      const account = chatAccount(user);
-      return account && account.clerkId !== clerkId ? [publicAccount(account)] : [];
-    }), isDone: result.isDone, continueCursor: result.continueCursor };
+    const accounts = await Promise.all(result.page.map(user => chatAccount(ctx, user)));
+    return { page: accounts.flatMap(account =>
+      account && account.clerkId !== clerkId ? [publicAccount(account)] : [],
+    ), isDone: result.isDone, continueCursor: result.continueCursor };
   },
 });
 
@@ -47,10 +47,10 @@ export const search = query({
     const clerkId = await callerId(ctx);
     if (!clerkId || term.trim().length < 2) return [];
     const users = await ctx.db.query("users").withSearchIndex("searchUsername", q => q.search("username", term.trim())).take(20);
-    return users.flatMap(user => {
-      const account = chatAccount(user);
-      return account && account.clerkId !== clerkId ? [publicAccount(account)] : [];
-    });
+    const accounts = await Promise.all(users.map(user => chatAccount(ctx, user)));
+    return accounts.flatMap(account =>
+      account && account.clerkId !== clerkId ? [publicAccount(account)] : [],
+    );
   },
 });
 

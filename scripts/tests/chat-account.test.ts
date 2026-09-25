@@ -91,6 +91,29 @@ test("same first names use app casing and keep distinct usernames; any account c
   );
 });
 
+test("repeat first names add a last initial, except for masonsingel", async () => {
+  const t = convexTest(schema, modules);
+  for (const [id, username, last_name] of [
+    ["singel", "masonsingel", "Singel"],
+    ["d", "masond", "Doe"],
+    ["j", "masonj", "jones"],
+    ["solo", "greyson", "King"],
+  ]) {
+    const first_name = id === "solo" ? "Greyson" : "Mason";
+    await t.mutation(internal.users.upsertFromClerk, {
+      data: { id, username, first_name, last_name, updated_at: 1 },
+    });
+  }
+  const names = Object.fromEntries(
+    (await t.withIdentity({ subject: "solo" }).query(api.chat.accounts.search, { term: "mason" }))
+      .map((account: PublicAccount) => [account.handle, account.displayName]),
+  );
+  expect(names).toEqual({ masonsingel: "Mason", masond: "Mason D", masonj: "Mason J" });
+  expect(
+    await t.withIdentity({ subject: "solo" }).query(api.chat.accounts.mine, {}),
+  ).toMatchObject({ displayName: "Greyson" });
+});
+
 test("messages keep their ids and show the current Clerk identity after rename", async () => {
   const t = convexTest(schema, modules);
   rateLimiter.register(t);

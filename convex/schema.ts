@@ -71,6 +71,7 @@ export default defineSchema({
 
   }).index("byClerkId", ["clerkId"])
     .index("byUsernameKey", ["usernameKey"])
+    .index("byFirstName", ["firstName"])
     .searchIndex("searchUsername", { searchField: "username" }),
 
   // One replaceable snapshot per account, not a page-view or heartbeat log.
