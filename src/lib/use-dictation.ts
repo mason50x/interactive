@@ -51,15 +51,50 @@ import {
  * ## Errors
  *
  * Only the failures worth a sentence become one: a blocked or missing
- * microphone, no network, an unsupported language. Hearing nothing, being
- * aborted, and a grammar complaint are silent, because there is nothing the
- * reader can do about them and the button simply going back to idle says
- * enough.
+ * microphone, an unreachable service, an unsupported language. Hearing
+ * nothing, being aborted, and a grammar complaint are silent, because there
+ * is nothing the reader can do about them and the button simply going back
+ * to idle says enough.
+ *
+ * ## When the service is out of reach
+ *
+ * Chrome's recogniser is a Google server, and `network` is what comes back
+ * when the browser cannot reach it — a filtered school or office network, or
+ * a Chromium fork (Brave, Electron) that ships the API without the service.
+ * It fails the same way on every tap, so retrying teaches nothing. Chrome
+ * can also recognise on the device, though: after one `network` failure the
+ * next tap installs that model (the install needs the gesture, which is why
+ * it waits for a tap rather than following the error) and listens locally,
+ * and this browser keeps doing so from then on. Where there is no on-device
+ * recogniser the sentence says so plainly instead of blaming the connection.
  */
 
 export type DictationState = "idle" | "starting" | "listening" | "stopping";
 
 const subscribeNever = () => () => {};
+
+/**
+ * Set once the service has failed here and on-device recognition is on offer.
+ * A per-browser convenience: losing it costs one more failed tap.
+ */
+const LOCAL_KEY = "dictation:on-device";
+
+function prefersLocal() {
+  try {
+    return localStorage.getItem(LOCAL_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setPrefersLocal(on: boolean) {
+  try {
+    if (on) localStorage.setItem(LOCAL_KEY, "1");
+    else localStorage.removeItem(LOCAL_KEY);
+  } catch {
+    // Private windows and blocked storage: the fallback is simply not kept.
+  }
+}
 
 function recogniser() {
   return window.SpeechRecognition ?? window.webkitSpeechRecognition;
@@ -72,9 +107,16 @@ const FAILURES: Partial<Record<SpeechRecognitionErrorCode, string>> = {
   "service-not-allowed":
     "Microphone access is blocked. Allow it in your browser's site settings to dictate.",
   "audio-capture": "No microphone was found.",
-  network: "Dictation needs a network connection.",
   "language-not-supported": "Dictation is not available for this language.",
 };
+
+/** `network`, which is handled apart from the rest; see the module notes. */
+const UNREACHABLE_RETRY =
+  "Couldn't reach the speech service. Tap the mic again to dictate on this device instead.";
+const UNREACHABLE =
+  "Dictation can't reach its speech service from this browser or network.";
+const NO_LOCAL_MODEL =
+  "On-device dictation is not available for this language.";
 
 export function useDictation({
   onFinal,
@@ -104,94 +146,155 @@ export function useDictation({
   const pending = useRef("");
   /** Set by `abort()`, so `onend` drops the tail instead of keeping it. */
   const discarding = useRef(false);
+  /** Bumped to disown an on-device install still in flight. */
+  const installs = useRef(0);
+  const installing = useRef(false);
   const callbacks = useRef({ onFinal, onError });
   useEffect(() => {
     callbacks.current = { onFinal, onError };
   });
 
+  const listen = useCallback(
+    (
+      Recogniser: SpeechRecognitionConstructor,
+      language: string,
+      local: boolean,
+    ) => {
+      const rec = new Recogniser();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = language;
+      if (local) rec.processLocally = true;
+      committed.current = 0;
+      pending.current = "";
+      discarding.current = false;
+
+      // Every handler checks it still belongs to the live instance, so a
+      // superseded recogniser's last words land nowhere.
+      rec.onstart = () => {
+        if (current.current === rec) setState("listening");
+      };
+
+      rec.onresult = (event) => {
+        if (current.current !== rec) return;
+        let guess = "";
+        // From what has been committed rather than from `resultIndex`, which
+        // some Android builds rewind. Each final goes out once either way.
+        for (let i = committed.current; i < event.results.length; i++) {
+          const result = event.results[i];
+          const text = result[0].transcript.trim();
+          if (result.isFinal) {
+            committed.current = i + 1;
+            if (text !== "") callbacks.current.onFinal(text);
+          } else if (text !== "") {
+            guess = guess === "" ? text : `${guess} ${text}`;
+          }
+        }
+        pending.current = guess;
+        setInterim(guess);
+      };
+
+      rec.onerror = (event) => {
+        if (current.current !== rec) return;
+        if (event.error === "network") {
+          const canGoLocal = !local && recogniser()?.install !== undefined;
+          setPrefersLocal(canGoLocal);
+          callbacks.current.onError(
+            canGoLocal ? UNREACHABLE_RETRY : UNREACHABLE,
+          );
+          return;
+        }
+        const message = FAILURES[event.error];
+        if (message !== undefined) callbacks.current.onError(message);
+      };
+
+      rec.onend = () => {
+        if (current.current !== rec) return;
+        current.current = null;
+        setState("idle");
+        // Chrome finalises before ending, whether asked to stop or stopping on
+        // its own, so this is usually empty. When it is not, the words were
+        // said and are kept — unless `abort()` asked otherwise.
+        const tail = pending.current;
+        pending.current = "";
+        setInterim("");
+        if (tail !== "" && !discarding.current) callbacks.current.onFinal(tail);
+      };
+
+      current.current = rec;
+      setState("starting");
+      try {
+        rec.start();
+      } catch {
+        current.current = null;
+        setState("idle");
+      }
+    },
+    [],
+  );
+
   const start = useCallback(() => {
-    if (current.current !== null) return;
+    if (current.current !== null || installing.current) return;
     const Recogniser = recogniser();
     if (!Recogniser) return;
+    const language = lang ?? navigator.language;
 
-    const rec = new Recogniser();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = lang ?? navigator.language;
-    committed.current = 0;
-    pending.current = "";
-    discarding.current = false;
-
-    // Every handler checks it still belongs to the live instance, so a
-    // superseded recogniser's last words land nowhere.
-    rec.onstart = () => {
-      if (current.current === rec) setState("listening");
-    };
-
-    rec.onresult = (event) => {
-      if (current.current !== rec) return;
-      let guess = "";
-      // From what has been committed rather than from `resultIndex`, which
-      // some Android builds rewind. Each final goes out once either way.
-      for (let i = committed.current; i < event.results.length; i++) {
-        const result = event.results[i];
-        const text = result[0].transcript.trim();
-        if (result.isFinal) {
-          committed.current = i + 1;
-          if (text !== "") callbacks.current.onFinal(text);
-        } else if (text !== "") {
-          guess = guess === "" ? text : `${guess} ${text}`;
-        }
-      }
-      pending.current = guess;
-      setInterim(guess);
-    };
-
-    rec.onerror = (event) => {
-      if (current.current !== rec) return;
-      const message = FAILURES[event.error];
-      if (message !== undefined) callbacks.current.onError(message);
-    };
-
-    rec.onend = () => {
-      if (current.current !== rec) return;
-      current.current = null;
-      setState("idle");
-      // Chrome finalises before ending, whether asked to stop or stopping on
-      // its own, so this is usually empty. When it is not, the words were
-      // said and are kept — unless `abort()` asked otherwise.
-      const tail = pending.current;
-      pending.current = "";
-      setInterim("");
-      if (tail !== "" && !discarding.current) callbacks.current.onFinal(tail);
-    };
-
-    current.current = rec;
-    setState("starting");
-    try {
-      rec.start();
-    } catch {
-      current.current = null;
-      setState("idle");
+    if (!(prefersLocal() && Recogniser.install)) {
+      listen(Recogniser, language, false);
+      return;
     }
-  }, [lang]);
+
+    // Inside the tap, because fetching the model needs the gesture. When it
+    // is already installed this resolves at once.
+    const install = ++installs.current;
+    installing.current = true;
+    setState("starting");
+    const settle = (ok: boolean) => {
+      if (installs.current !== install) return;
+      installing.current = false;
+      if (ok) {
+        listen(Recogniser, language, true);
+        return;
+      }
+      // Next tap tries the service again; the network may have come back.
+      setPrefersLocal(false);
+      setState("idle");
+      callbacks.current.onError(NO_LOCAL_MODEL);
+    };
+    Recogniser.install({ langs: [language], processLocally: true }).then(
+      settle,
+      () => settle(false),
+    );
+  }, [lang, listen]);
+
+  /** Drops an on-device install still in flight. True if there was one. */
+  const cancelInstall = useCallback(() => {
+    if (!installing.current) return false;
+    installing.current = false;
+    installs.current++;
+    setState("idle");
+    return true;
+  }, []);
 
   const stop = useCallback(() => {
+    if (cancelInstall()) return;
     const rec = current.current;
     if (rec === null) return;
     setState("stopping");
     rec.stop();
-  }, []);
+  }, [cancelInstall]);
 
   const abort = useCallback(() => {
+    if (cancelInstall()) return;
     const rec = current.current;
     if (rec === null) return;
     discarding.current = true;
     rec.abort();
-  }, []);
+  }, [cancelInstall]);
 
   useEffect(
     () => () => {
+      installs.current++;
       current.current?.abort();
       current.current = null;
     },
