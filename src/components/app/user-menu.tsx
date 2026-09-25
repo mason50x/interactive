@@ -73,6 +73,8 @@ export function UserMenu() {
     return <div className="size-11 shrink-0" aria-hidden />;
   }
 
+  const staffRole =
+    showAdminBadge && showAdminBadge !== "member" ? showAdminBadge : undefined;
   const name =
     normalizePersonName(user.firstName) ?? user.username ?? "Account";
   const chipClassName =
@@ -95,7 +97,10 @@ export function UserMenu() {
           aria-label={`Account: ${name}`}
           className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full backdrop-blur-[3px] transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          <Avatar src={user.imageUrl} name={name} size={36} />
+          {/* Staff wear the same ring round their face here as in chat. */}
+          <span data-role={staffRole} className={cn(staffRole && "staff-ring")}>
+            <Avatar src={user.imageUrl} name={name} size={36} />
+          </span>
         </MenuTrigger>
 
         <MenuContent side="bottom" align="end" sideOffset={8} className="w-60">
@@ -104,7 +109,12 @@ export function UserMenu() {
             the name in the rail. */}
           <div className="flex min-w-0 items-center gap-2 px-2.5 pt-1.5 pb-2">
             <span className="min-w-0 truncate text-[0.875rem] font-medium">
-              {normalizePersonName(user.fullName) ?? name}
+              <span
+                data-role={staffRole}
+                className={cn(staffRole && "staff-name")}
+              >
+                {normalizePersonName(user.fullName) ?? name}
+              </span>
             </span>
             {showAdminBadge && showAdminBadge !== "member" ? (
               <span

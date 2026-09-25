@@ -4,15 +4,7 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * The app's card surface: a lighter face than the chrome around it, held off
- * it by a hairline and a shadow.
- *
- * The shadow is `--elevation-card` in `globals.css` and not a Tailwind
- * `shadow-*` step, because the stock steps are one blur each and one blur
- * reads as a glow. See the token for what the three layers are each doing and
- * why the dark theme needs a fourth. Every card gets it at rest — the whole
- * point is that a card is an object on the page rather than a fenced-off area
- * of it — and `hover` only deepens it.
+ * The app's card surface: a light grey face defined by a visible border.
  *
  * One radius scale for every card in the app. The marketing pages set theirs
  * at `lg`, the dashboard tiles at `xl`, and anything that sits inside the
@@ -20,7 +12,7 @@ import { cn } from "@/lib/utils";
  * caller that needs something else can still pass a `rounded-*` class:
  * `className` is merged rather than appended, so it actually wins.
  */
-const cardVariants = cva("border shadow-card", {
+const cardVariants = cva("border", {
   variants: {
     radius: {
       sm: "rounded-xl",
@@ -29,17 +21,17 @@ const cardVariants = cva("border shadow-card", {
       xl: "rounded-[1.5rem]",
     },
     surface: {
-      surface: "border-border bg-surface",
+      surface: "border-card-outline bg-card-surface",
       background: "border-border bg-background",
       /** For the inverted panel, which is dark in both themes. */
       panel: "border-panel-border bg-panel-elevated",
     },
     hover: {
       none: "",
-      /** Rises a step and deepens its shadow, for a card that is a link. */
-      lift: "transition-all duration-300 hover:-translate-y-1 hover:border-border-strong hover:shadow-card-hover",
-      /** The same deepening without the movement, for a card with controls in it. */
-      glow: "transition-[border-color,box-shadow] duration-300 hover:border-border-strong hover:shadow-card-hover",
+      /** Moves a step and strengthens the border, for a card that is a link. */
+      lift: "transition-[transform,border-color] duration-300 hover:-translate-y-1 hover:border-card-outline-hover",
+      /** Strengthens the border without movement, for a card with controls in it. */
+      glow: "transition-colors duration-300 hover:border-card-outline-hover",
     },
   },
   defaultVariants: {

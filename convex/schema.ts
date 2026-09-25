@@ -330,6 +330,8 @@ export default defineSchema({
     joinedAt: v.number(),
     /** Everything after this is unread. Written only by its own owner. */
     lastReadAt: v.number(),
+    /** Legacy preference retained for existing membership rows. */
+    favorite: v.optional(v.boolean()),
     invitedBy: v.optional(v.string()),
     /** Direct messages only: the Clerk id of the other person. */
     dmPeer: v.optional(v.string()),

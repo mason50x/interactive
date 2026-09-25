@@ -1,7 +1,5 @@
 "use client";
 
-import { StaffBadge } from "@/components/ui/staff-badge";
-
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useMutation } from "convex/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -34,6 +32,18 @@ import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type { ChatMessage } from "@convex/chat/messages";
+import { brand } from "@/lib/brand";
+
+/** What a staff name's colour means, for its tooltip. */
+const STAFF_TITLES = {
+  ceo: { title: "CEO", blurb: `Runs ${brand.name}` },
+  head_moderator: {
+    title: "Head Moderator",
+    blurb: "Leads the moderation team",
+  },
+  moderator: { title: "Moderator", blurb: "Keeps chat friendly and safe" },
+  builder: { title: "Builder", blurb: `Helps build ${brand.name}` },
+} as const;
 
 /** Consecutive text messages share their near-side corners and a 2px gap. */
 export function MessageRow({
@@ -227,13 +237,15 @@ export function MessageRow({
           person={author}
           className="shrink-0 cursor-pointer self-start rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <Monogram
-            handle={message.authorHandle}
-            imageUrl={message.authorAvatarUrl}
-            hue={message.authorAvatarHue}
-            emoji={message.authorAvatarEmoji}
-            initials={message.authorAvatarInitials}
-          />
+          <span data-role={staffRole} className={cn(staffRole && "staff-ring")}>
+            <Monogram
+              handle={message.authorHandle}
+              imageUrl={message.authorAvatarUrl}
+              hue={message.authorAvatarHue}
+              emoji={message.authorAvatarEmoji}
+              initials={message.authorAvatarInitials}
+            />
+          </span>
         </PersonCard>
       )}
 
@@ -248,36 +260,6 @@ export function MessageRow({
       >
         {!mine && showAuthor ? (
           <div className="mb-1 flex min-h-6 max-w-full items-center gap-1 px-1">
-            {staffRole ? (
-              <TooltipProvider delay={250}>
-                <AdminTooltip>
-                  <TooltipTrigger
-                    aria-label={
-                      staffRole === "ceo"
-                        ? "CEO"
-                        : staffRole === "head_moderator"
-                          ? "Head Moderator"
-                          : staffRole === "builder"
-                            ? "Builder"
-                            : "Moderator"
-                    }
-                    className="-mr-1 inline-flex shrink-0 items-center rounded-sm text-orange-600 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-                  >
-                    <StaffBadge role={staffRole} />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {staffRole === "ceo"
-                      ? "CEO"
-                      : staffRole === "head_moderator"
-                        ? "Head Moderator"
-                        : staffRole === "builder"
-                          ? "Builder"
-                          : "Moderator"}
-                  </TooltipContent>
-                </AdminTooltip>
-              </TooltipProvider>
-            ) : null}
-
             {bot ? (
               <span className="min-w-0 truncate text-[0.75rem] font-normal text-muted-foreground">
                 {personName(author)}
@@ -285,9 +267,38 @@ export function MessageRow({
             ) : (
               <PersonCard
                 person={author}
-                className="min-w-0 cursor-pointer truncate rounded text-[0.75rem] font-normal text-muted-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+                className={cn(
+                  "min-w-0 cursor-pointer truncate rounded text-[0.75rem] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60",
+                  staffRole
+                    ? "font-medium"
+                    : "font-normal text-muted-foreground",
+                )}
               >
-                {personName(author)}
+                {staffRole ? (
+                  // Staff wear their role as the colour of their name; the
+                  // tooltip says what the colour means.
+                  <TooltipProvider delay={250}>
+                    <AdminTooltip>
+                      <TooltipTrigger
+                        render={<span />}
+                        data-role={staffRole}
+                        className="staff-name"
+                      >
+                        {personName(author)}
+                      </TooltipTrigger>
+                      <TooltipContent className="flex-col items-start gap-0.5">
+                        <span className="font-semibold">
+                          {STAFF_TITLES[staffRole].title}
+                        </span>
+                        <span className="opacity-70">
+                          {STAFF_TITLES[staffRole].blurb}
+                        </span>
+                      </TooltipContent>
+                    </AdminTooltip>
+                  </TooltipProvider>
+                ) : (
+                  personName(author)
+                )}
               </PersonCard>
             )}
           </div>

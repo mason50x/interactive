@@ -461,6 +461,136 @@
     }
   }
 
+  /* A staff member's name in chat, set in their role's colour with a glint
+     passing through it now and then, in place of a badge beside it. Each
+     role names its ink and a crest a few steps brighter in the same family,
+     so the pass reads as the colour catching light rather than a second
+     colour. Dark mode lifts both, since the light-mode inks go muddy on a
+     dark surface. The underline on hover takes the ink too: the text itself
+     is transparent, and an underline in `currentColor` would vanish. */
+  @keyframes staff-name {
+    0% {
+      background-position: 150% 0;
+    }
+    42%,
+    100% {
+      background-position: -50% 0;
+    }
+  }
+
+  .staff-name {
+    background-image: linear-gradient(
+      100deg,
+      var(--staff-ink) 0%,
+      var(--staff-ink) 32%,
+      var(--staff-crest) 47%,
+      var(--staff-crest) 53%,
+      var(--staff-ink) 68%,
+      var(--staff-ink) 100%
+    );
+    background-size: 220% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-decoration-color: var(--staff-ink);
+    animation: staff-name 4.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  }
+
+  :is(.staff-name, .staff-ring)[data-role="ceo"] {
+    --staff-ink: oklch(64.6% 0.222 41.116);
+    --staff-crest: oklch(82.8% 0.189 84.429);
+  }
+  :is(.staff-name, .staff-ring)[data-role="head_moderator"] {
+    --staff-ink: oklch(54.6% 0.245 262.881);
+    --staff-crest: oklch(74.6% 0.16 232.661);
+  }
+  :is(.staff-name, .staff-ring)[data-role="moderator"] {
+    --staff-ink: oklch(68.5% 0.169 237.323);
+    --staff-crest: oklch(86.5% 0.127 207.078);
+  }
+  :is(.staff-name, .staff-ring)[data-role="builder"] {
+    --staff-ink: oklch(37% 0.013 285.805);
+    --staff-crest: oklch(70.5% 0.015 286.067);
+  }
+
+  :root[data-theme="dark"] :is(.staff-name, .staff-ring)[data-role="ceo"] {
+    --staff-ink: oklch(70.5% 0.213 47.604);
+    --staff-crest: oklch(92.4% 0.12 95.746);
+  }
+  :root[data-theme="dark"]
+    :is(.staff-name, .staff-ring)[data-role="head_moderator"] {
+    --staff-ink: oklch(62.3% 0.214 259.815);
+    --staff-crest: oklch(82.8% 0.111 230.318);
+  }
+  :root[data-theme="dark"]
+    :is(.staff-name, .staff-ring)[data-role="moderator"] {
+    --staff-ink: oklch(82.8% 0.111 230.318);
+    --staff-crest: oklch(95.1% 0.026 236.824);
+  }
+  :root[data-theme="dark"] :is(.staff-name, .staff-ring)[data-role="builder"] {
+    --staff-ink: oklch(70.5% 0.015 286.067);
+    --staff-crest: oklch(96.7% 0.001 286.375);
+  }
+
+  /* The same colours as a ring round the staff member's picture: a faint
+     track in the role's ink, and a brighter segment snaking round it, its
+     tail fading into the track and its head at the crest. The ring is a
+     conic gradient masked down to its padding box, standing a hair off the
+     picture so the two don't read as one disc. The angle is registered so
+     it can be animated at all. */
+  @property --staff-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+  }
+
+  @keyframes staff-snake {
+    to {
+      --staff-angle: 360deg;
+    }
+  }
+
+  .staff-ring {
+    position: relative;
+    display: block;
+    border-radius: 9999px;
+  }
+
+  .staff-ring::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    padding: 2px;
+    border-radius: inherit;
+    pointer-events: none;
+    --staff-track: color-mix(in oklch, var(--staff-ink) 22%, transparent);
+    background: conic-gradient(
+      from var(--staff-angle),
+      var(--staff-track) 0deg 190deg,
+      color-mix(in oklch, var(--staff-ink) 55%, transparent) 260deg,
+      var(--staff-ink) 320deg,
+      var(--staff-crest) 352deg,
+      var(--staff-track) 360deg
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+    animation: staff-snake 3.2s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .staff-name {
+      animation: none;
+      background-image: none;
+      color: var(--staff-ink);
+    }
+
+    .staff-ring::before {
+      animation: none;
+      background: var(--staff-ink);
+    }
+  }
+
   /* A person, as a letter on a colour. The hue is set inline from the handle
      (see `handleHue` in `src/lib/chat.ts`); the lightness and chroma live here
      because an inline style cannot carry a dark variant, and a monogram that

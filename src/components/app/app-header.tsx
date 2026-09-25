@@ -81,7 +81,7 @@ export function AppHeader() {
   const list = useRef<HTMLUListElement>(null);
 
   return (
-    <header className="relative z-30 grid h-16 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-3">
+    <header className="relative z-30 grid h-16 shrink-0 grid-cols-[minmax(max-content,1fr)_minmax(max-content,3fr)_minmax(max-content,1fr)] items-center gap-3 px-3">
       {/* Returns to Home, the default app page. */}
       <Link
         href={HOME_HREF}
@@ -96,11 +96,14 @@ export function AppHeader() {
         />
       </Link>
 
-      {/* The middle of three columns whose outer two share the leftover
-          width equally, so the links sit on the page's centre line whatever
-          the brand and the controls on either side measure. */}
-      <nav aria-label="Dashboard" className="relative">
-        <ul ref={list} className="flex items-center gap-1">
+      {/* The middle of three columns, weighted 1:3:1. The outer two are
+          equal while each can hold what it carries (the controls are the
+          wider side), so the links sit on the page's centre line and spread
+          across everything between. Capped so a very wide screen doesn't
+          scatter them. The underline measures against the list, so the cap
+          lives here on the nav and the list fills it. */}
+      <nav aria-label="Dashboard" className="relative mx-auto w-full max-w-4xl">
+        <ul ref={list} className="flex items-center justify-between gap-1">
           {destinations.map((item) => {
             const disabled = exhausted && isPlaytimeRoute(item.href);
             const active = item.href === activeHref;
