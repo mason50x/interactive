@@ -532,7 +532,7 @@
     --staff-crest: oklch(96.7% 0.001 286.375);
   }
 
-  /* The same colours as a ring round the staff member's picture: a faint
+  /* The same colours as a ring round a staff member's face in the header: a faint
      track in the role's ink, and a brighter segment snaking round it, its
      tail fading into the track and its head at the crest. The ring is a
      conic gradient masked down to its padding box, standing a hair off the

@@ -237,15 +237,13 @@ export function MessageRow({
           person={author}
           className="shrink-0 cursor-pointer self-start rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
-          <span data-role={staffRole} className={cn(staffRole && "staff-ring")}>
-            <Monogram
-              handle={message.authorHandle}
-              imageUrl={message.authorAvatarUrl}
-              hue={message.authorAvatarHue}
-              emoji={message.authorAvatarEmoji}
-              initials={message.authorAvatarInitials}
-            />
-          </span>
+          <Monogram
+            handle={message.authorHandle}
+            imageUrl={message.authorAvatarUrl}
+            hue={message.authorAvatarHue}
+            emoji={message.authorAvatarEmoji}
+            initials={message.authorAvatarInitials}
+          />
         </PersonCard>
       )}
 

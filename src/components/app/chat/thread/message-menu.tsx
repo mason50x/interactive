@@ -3,7 +3,6 @@
 import {
   ArrowUturnLeftIcon,
   EllipsisHorizontalIcon,
-  TrashIcon as OutlineTrashIcon,
 } from "@heroicons/react/24/outline";
 import {
   FaceSmileIcon,
@@ -132,7 +131,7 @@ export function MessageMenu({
               }
             }}
           >
-            <OutlineTrashIcon className="size-4" />
+            <SolidTrashIcon className="size-4" />
             Mod Delete
           </MenuItem>
         ) : null}
