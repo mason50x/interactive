@@ -1721,41 +1721,32 @@
 }
 
 /*
- * The cursor. A small rounded arrow in place of the system one, and a round
- * dot over anything clickable. The shapes are drawn as data-URI SVGs, which
- * cannot read custom properties, so each theme carries its own pair: ink on
+ * The cursor. A small, soft-cornered arrow in place of the system one, and
+ * the same arrow over links and buttons rather than the system hand. The
+ * corners come from stroking the shape in its own colour with a round join,
+ * over a wider stroke in the outline colour. The shape is a data-URI SVG,
+ * which cannot read custom properties, so each theme carries its own: ink on
  * a pale outline in the light theme, the reverse in the dark. Text fields keep
  * the system I-beam, and the whole thing is limited to fine pointers — a
  * touch screen has no cursor to dress.
  */
 :root {
-  --cursor-default:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 3.5 19 10.6l-6.9 1.9L9.9 19.5Z' fill='%230f0f0f' stroke='%23ffffff' stroke-width='1.75' stroke-linejoin='round' paint-order='stroke'/%3E%3C/svg%3E")
-      5 3.5,
+  --cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M6 5 17 13l-5.5 1-3 5Z' fill='%230f0f0f' stroke='%23ffffff' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5 17 13l-5.5 1-3 5Z' fill='%230f0f0f' stroke='%230f0f0f' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E")
+      5 4,
     auto;
-  --cursor-pointer:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='6' fill='%230f0f0f' stroke='%23ffffff' stroke-width='1.75'/%3E%3C/svg%3E")
-      12 12,
-    pointer;
 }
 
 :root[data-theme="dark"] {
-  --cursor-default:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 3.5 19 10.6l-6.9 1.9L9.9 19.5Z' fill='%23f2f2f2' stroke='%230f0f0f' stroke-width='1.75' stroke-linejoin='round' paint-order='stroke'/%3E%3C/svg%3E")
-      5 3.5,
+  --cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M6 5 17 13l-5.5 1-3 5Z' fill='%23f2f2f2' stroke='%230f0f0f' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M6 5 17 13l-5.5 1-3 5Z' fill='%23f2f2f2' stroke='%23f2f2f2' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E")
+      5 4,
     auto;
-  --cursor-pointer:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='6' fill='%23f2f2f2' stroke='%230f0f0f' stroke-width='1.75'/%3E%3C/svg%3E")
-      12 12,
-    pointer;
 }
 
 @media (pointer: fine) {
   @layer base {
-    html {
-      cursor: var(--cursor-default);
-    }
-
+    html,
     a[href],
     button:not(:disabled),
     [role="button"],
@@ -1766,7 +1757,7 @@
     summary,
     label[for],
     select {
-      cursor: var(--cursor-pointer);
+      cursor: var(--cursor);
     }
 
     input:not(
@@ -1785,12 +1776,9 @@
   /* Tailwind's own classes name the system cursors; these point them at ours
      instead. Declared after the import, so they win on source order. */
   @layer utilities {
-    .cursor-default {
-      cursor: var(--cursor-default);
-    }
-
+    .cursor-default,
     .cursor-pointer {
-      cursor: var(--cursor-pointer);
+      cursor: var(--cursor);
     }
   }
 }
