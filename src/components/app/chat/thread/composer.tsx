@@ -441,7 +441,7 @@ export function Composer({
   }
 
   return (
-    <div className="px-3 pb-3 sm:px-8 lg:px-14 xl:px-20">
+    <div className="mx-auto w-full max-w-3xl px-3 pb-3 sm:px-6">
       {/* Refusals, and the few dictation failures worth a sentence.
 
           For refusals: the category and never the rule. See `refusalMessage`
