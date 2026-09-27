@@ -68,6 +68,12 @@ export default defineSchema({
     clerkUpdatedAt: v.optional(v.number()),
     activityLimitMinutes: v.optional(v.number()),
     onboardingComplete: v.optional(v.boolean()),
+    /**
+     * Whether the account has got past the invite gate. New rows start
+     * `false`; absent means a row from before invites, which reads as in.
+     */
+    invited: v.optional(v.boolean()),
+    inviteCodeId: v.optional(v.id("inviteCodes")),
 
   }).index("byClerkId", ["clerkId"])
     .index("byUsernameKey", ["usernameKey"])
@@ -131,6 +137,19 @@ export default defineSchema({
    * including an explicit `member`, which is how a CEO demotes somebody the
    * env map still names.
    */
+  /** CEO-made invite codes. See `convex/invites.ts`. */
+  inviteCodes: defineTable({
+    code: v.string(),
+    note: v.optional(v.string()),
+    /** Absent means unlimited. */
+    maxUses: v.optional(v.number()),
+    uses: v.number(),
+    /** Absent means it never expires. */
+    expiresAt: v.optional(v.number()),
+    disabled: v.boolean(),
+    createdBy: v.string(),
+  }).index("byCode", ["code"]),
+
   staffRoles: defineTable({
     clerkId: v.string(),
     role: v.union(

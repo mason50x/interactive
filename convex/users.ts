@@ -1,5 +1,6 @@
 import { recordPage, pageKey } from "./leaderboard";
 import { ensureGlobalMembership } from "./chat/shared";
+import { resolveRole } from "./roles";
 import { normalizePersonName } from "../src/lib/person-name";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -54,7 +55,13 @@ async function upsertUser(
   const existing = await userByClerkId(ctx, clerkId);
   if (existing?.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt !== undefined && fields.clerkUpdatedAt < existing.clerkUpdatedAt) return existing._id;
   const id = existing === null
-    ? await ctx.db.insert("users", { clerkId, onboardingComplete: false, ...fields })
+    ? await ctx.db.insert("users", {
+      clerkId,
+      onboardingComplete: false,
+      // Staff never wait at the gate, so nobody can lock the site's owners out.
+      invited: (await resolveRole(ctx, clerkId)) !== "member",
+      ...fields,
+    })
     : existing._id;
   if (existing === null) await disguiseNewAccount(ctx, clerkId);
   if (existing !== null && Object.entries(fields).some(([key, value]) => existing[key as keyof UserFields] !== value)) {
@@ -161,6 +168,28 @@ export const backfillOnboarding = internalMutation({
     }
     if (!page.isDone) {
       await ctx.scheduler.runAfter(0, internal.users.backfillOnboarding, {
+        cursor: page.continueCursor,
+      });
+    }
+    return { updated, done: page.isDone };
+  },
+});
+
+/** Run once after deployment: every account that exists before invites is in. */
+export const backfillInvited = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  returns: v.object({ updated: v.number(), done: v.boolean() }),
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db.query("users").paginate({ cursor, numItems: 100 });
+    let updated = 0;
+    for (const user of page.page) {
+      if (user.invited === undefined) {
+        await ctx.db.patch(user._id, { invited: true });
+        updated++;
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.users.backfillInvited, {
         cursor: page.continueCursor,
       });
     }

@@ -4,9 +4,10 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect } from "react";
 import { api } from "@convex/_generated/api";
 import { CenteredSpinner } from "@/components/ui/spinner";
+import { InviteGate } from "./invite-gate";
 import { OnboardingExperience } from "./onboarding-experience";
 
-/** Covers the app shell until the account's introduction has finished. */
+/** Covers the app shell until the account is invited and its introduction has finished. */
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
   const user = useQuery(api.users.current, isAuthenticated ? {} : "skip");
@@ -41,6 +42,8 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Absent on rows from before invites, which are already in.
+  if (user.invited === false) return <InviteGate />;
   // Rows written before this flag was introduced are already experienced users.
   if (user.onboardingComplete !== false) return children;
   return <OnboardingExperience />;

@@ -32,6 +32,7 @@ import type * as features from "../features.js";
 import type * as gameViews from "../gameViews.js";
 import type * as geometry from "../geometry.js";
 import type * as http from "../http.js";
+import type * as invites from "../invites.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as moderation_confusables from "../moderation/confusables.js";
 import type * as moderation_images from "../moderation/images.js";
@@ -91,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   gameViews: typeof gameViews;
   geometry: typeof geometry;
   http: typeof http;
+  invites: typeof invites;
   leaderboard: typeof leaderboard;
   "moderation/confusables": typeof moderation_confusables;
   "moderation/images": typeof moderation_images;
