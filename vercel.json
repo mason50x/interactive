@@ -1,4 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
   "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then npm run build:production; else npm run build; fi"
 }
