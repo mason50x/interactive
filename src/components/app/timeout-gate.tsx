@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
   type Ref,
 } from "react";
@@ -24,6 +26,29 @@ function AccessLoader({ loaderRef }: { loaderRef?: Ref<HTMLDivElement> }) {
   );
 }
 
+/**
+ * Whether this document has already opened the app once. The reveal is the
+ * arrival, not something to replay: anything that remounts the gate after
+ * that — leaving the signed-in app and coming back, a gate further up
+ * re-rendering — should land straight on the app.
+ */
+let arrived = false;
+/** The last answer this document heard, so a remount opens on it. */
+let lastTimeout: Timeout | undefined;
+
+type Timeout = ReturnType<typeof useAuthedQuery<typeof api.timeouts.mine>>;
+
+const noop = () => () => {};
+
+/** Framed by the app, which has already played the reveal around it. */
+function isFramed() {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
 function AccessReveal({
   children,
   ready,
@@ -31,16 +56,23 @@ function AccessReveal({
   children: ReactNode;
   ready: boolean;
 }) {
+  // Read once, on mount: a reveal that starts here finishes even though it
+  // flips `arrived` for every mount after it.
+  const [arrivedOnMount] = useState(() => arrived);
+  // Snapshotted, with `false` on the server, so hydration still matches.
+  const framed = useSyncExternalStore(noop, isFramed, () => false);
   const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (ready) arrived = true;
+  }, [ready]);
+  const skip = arrivedOnMount || framed;
   const loaderRef = useRef<HTMLDivElement>(null);
   const revealRef = useRef<HTMLDivElement>(null);
-
-  if (!ready && revealed) setRevealed(false);
 
   useLayoutEffect(() => {
     const loader = loaderRef.current;
     const reveal = revealRef.current;
-    if (revealed || !loader || !reveal) return;
+    if (skip || revealed || !loader || !reveal) return;
 
     // The logo itself rather than the loader around it, so the circle opens
     // from the mark even if the cover ever stops centring it.
@@ -70,7 +102,9 @@ function AccessReveal({
     };
     follow();
     return () => cancelAnimationFrame(frame);
-  }, [ready, revealed]);
+  }, [ready, revealed, skip]);
+
+  if (skip) return ready ? children : null;
 
   return (
     <>
@@ -97,9 +131,12 @@ export function TimeoutGate({ children }: { children: ReactNode }) {
   // which it does on coming back to the tab. Hold the last answer through
   // that rather than dropping to the loader, which would unmount the whole
   // app — the game, the chat, the open experience tabs — on every return.
-  const [settled, setSettled] = useState(latest);
+  const [settled, setSettled] = useState(latest ?? lastTimeout);
   if (latest !== undefined && latest !== settled) setSettled(latest);
   const timeout = latest === undefined ? settled : latest;
+  useEffect(() => {
+    if (timeout !== undefined) lastTimeout = timeout;
+  }, [timeout]);
   if (timeout) return <TimeoutMessage {...timeout} />;
   // Keep the same loader mounted as the query resolves so its ring and
   // constellation continue uninterrupted through the reveal.

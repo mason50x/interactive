@@ -1,7 +1,7 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@convex/_generated/api";
 import { CenteredSpinner } from "@/components/ui/spinner";
 import { InviteGate } from "./invite-gate";
@@ -10,7 +10,15 @@ import { OnboardingExperience } from "./onboarding-experience";
 /** Covers the app shell until the account is invited and its introduction has finished. */
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.current, isAuthenticated ? {} : "skip");
+  const latest = useQuery(api.users.current, isAuthenticated ? {} : "skip");
+  // The query reads `undefined` again whenever Convex re-checks the session —
+  // coming back to the tab, a token refresh — because it is skipped while
+  // `isAuthenticated` is briefly false. Dropping to the spinner then would
+  // unmount the whole app beneath it and replay the access reveal, so the
+  // last real answer holds until the next one lands, as `TimeoutGate` does.
+  const [settled, setSettled] = useState(latest);
+  if (latest !== undefined && latest !== settled) setSettled(latest);
+  const user = latest === undefined ? settled : latest;
   const store = useMutation(api.users.store);
 
   useEffect(() => {
