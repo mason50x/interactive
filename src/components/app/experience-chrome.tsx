@@ -4,16 +4,25 @@ import {
   ArrowPathIcon,
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
-  HomeIcon,
-  LockClosedIcon,
+  ArrowsRightLeftIcon,
   MagnifyingGlassIcon,
-  EllipsisVerticalIcon,
-  Cog6ToothIcon,
-  PlusIcon,
+  Squares2X2Icon,
+  StarIcon as StarOutlineIcon,
+  ViewColumnsIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { StarIcon } from "@heroicons/react/24/solid";
 import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import {
+  ExperienceQuotaDonut,
   PlaytimeBlocked,
   PlaytimeWarning,
   useExperienceQuota,
@@ -21,19 +30,64 @@ import {
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
 import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
+import { Kbd } from "@/components/ui/kbd";
 import type { ExperienceApp } from "@/lib/experience";
+import { readStoredJson, writeStoredJson } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 export type ExperienceService = ExperienceApp & { src: string | null };
-type BrowserTab = { id: number; appId: string | null; run: number };
+
+/** One running app. Its frame lives as long as the session does. */
+type Session = { appId: string; run: number };
+
+/** The second pane is open but has no app in it yet. */
+const PICK = "__pick";
 
 /** Cloud gaming captures the pointer and reads controllers. */
 const CLOUD_GAMING = new Set(["xbox", "geforce-now"]);
 /** Voice and video calls. The browser still asks before either is used. */
 const CALLING = new Set(["discord", "snapchat"]);
 
-/** Each tab owns its frame. Switching tabs hides it without reloading it. */
+/** Each app's own colour, for the wash behind its tile and its running dot. */
+const BRAND: Record<string, string> = {
+  xbox: "#107c10",
+  x: "#71767b",
+  youtube: "#ff0033",
+  tiktok: "#fe2c55",
+  netflix: "#e50914",
+  spotify: "#1db954",
+  gemini: "#4285f4",
+  "apple-music": "#fa2d48",
+  soccerrng: "#16a34a",
+  discord: "#5865f2",
+  "geforce-now": "#76b900",
+  snapchat: "#f7d900",
+};
+
+/** The shelves on the launcher, in order. An app not named here goes on the last. */
+const SHELVES: { label: string; ids: string[] }[] = [
+  { label: "Watch", ids: ["youtube", "netflix", "tiktok"] },
+  { label: "Listen", ids: ["spotify", "apple-music"] },
+  { label: "Play", ids: ["xbox", "geforce-now", "soccerrng"] },
+  { label: "Talk", ids: ["discord", "snapchat", "x"] },
+  { label: "Ask", ids: ["gemini"] },
+];
+
+/**
+ * Browse: a launcher over a workspace.
+ *
+ * The launcher is the page with nothing open — every app on a shelf by what
+ * it is for, the ones you starred and the ones you opened last above them.
+ * Opening an app starts a session: its frame is mounted once and kept, so
+ * going back to the launcher or over to another app never reloads it. The
+ * dock in the bar is the list of sessions; closing one is the only thing
+ * that tears a frame down.
+ *
+ * Two apps can share the stage. The second pane sits beside the first at a
+ * ratio the divider sets, and either side can be swapped or closed without
+ * touching the other's frame — every frame is rendered in the same order at
+ * all times and only its CSS `order`, size and visibility change.
+ */
 export function ExperienceChrome({
   services,
   initialAppId,
@@ -43,23 +97,23 @@ export function ExperienceChrome({
   initialAppId?: string;
   accessToken?: string | null;
 }) {
-  const [tabs, setTabs] = useState<BrowserTab[]>([
-    { id: 0, appId: initialAppId ?? null, run: 0 },
-  ]);
-  const [activeId, setActiveId] = useState(0);
-  const nextId = useRef(1);
+  const [sessions, setSessions] = useState<Session[]>(
+    initialAppId ? [{ appId: initialAppId, run: 0 }] : [],
+  );
+  const [focus, setFocus] = useState<string | null>(initialAppId ?? null);
+  const [split, setSplit] = useState<string | null>(null);
+  const [ratio, setRatio] = useState(0.5);
+  const [dragging, setDragging] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
-  // One lease for the entire browser, including services in background tabs.
+  const panes = useRef<HTMLDivElement>(null);
+  // One lease for the whole workspace, including apps running out of sight.
   const quota = useExperienceQuota(
-    tabs.some((tab) =>
-      services.some((service) => service.id === tab.appId && service.src),
-    ),
+    sessions.some((session) => serviceFor(services, session.appId)?.src),
   );
   const { full, canFull, toggleFull } = useStageFullscreen(stage);
-  const active = tabs.find((tab) => tab.id === activeId)!;
-  const app = services.find((service) => service.id === active.appId);
   const latestAccess = useRef(accessToken ?? null);
-  const frames = useRef(new Map<number, HTMLIFrameElement>());
+  const frames = useRef(new Map<string, HTMLIFrameElement>());
+  const splitApp = split && split !== PICK ? split : null;
 
   useEffect(() => {
     if (!accessToken) return;
@@ -108,407 +162,809 @@ export function ExperienceChrome({
     };
   }, [accessToken]);
 
-  function newTab() {
-    const id = nextId.current++;
-    setTabs((current) => [...current, { id, appId: null, run: 0 }]);
-    setActiveId(id);
-  }
+  // The address follows the app in front, without a navigation, so a reload
+  // or a shared link lands on it. Replaced rather than pushed: Back leaves
+  // Browse instead of stepping through every app you looked at.
+  useEffect(() => {
+    const path = focus ? `/browse/${encodeURIComponent(focus)}` : "/browse";
+    if (window.location.pathname !== path)
+      window.history.replaceState(null, "", path);
+    if (focus) rememberRecent(focus);
+  }, [focus]);
 
-  function closeTab(id: number) {
-    const index = tabs.findIndex((tab) => tab.id === id);
-    const remaining = tabs.filter((tab) => tab.id !== id);
-    if (!remaining.length) {
-      const freshId = nextId.current++;
-      setTabs([{ id: freshId, appId: null, run: 0 }]);
-      setActiveId(freshId);
-    } else {
-      setTabs(remaining);
-      if (activeId === id) {
-        setActiveId(remaining[Math.min(index, remaining.length - 1)].id);
-      }
-    }
-  }
-
-  function openService(appId: string) {
-    setTabs((current) =>
-      current.map((tab) => (tab.id === activeId ? { ...tab, appId } : tab)),
+  function launch(appId: string) {
+    setSessions((current) =>
+      current.some((session) => session.appId === appId)
+        ? current
+        : [...current, { appId, run: 0 }],
     );
   }
 
+  function open(appId: string) {
+    launch(appId);
+    // Bringing the side pane's app to the front trades places with it.
+    if (split === appId) setSplit(focus);
+    setFocus(appId);
+  }
+
+  function openBeside(appId: string) {
+    if (appId === focus) return;
+    launch(appId);
+    setSplit(appId);
+  }
+
+  function close(appId: string) {
+    setSessions((current) =>
+      current.filter((session) => session.appId !== appId),
+    );
+    if (focus === appId) {
+      setFocus(splitApp);
+      setSplit(null);
+    } else if (split === appId) {
+      setSplit(null);
+    }
+  }
+
+  function goHome() {
+    setFocus(null);
+    if (split === PICK) setSplit(null);
+  }
+
+  function reload(appId: string) {
+    setSessions((current) =>
+      current.map((session) =>
+        session.appId === appId
+          ? { ...session, run: session.run + 1 }
+          : session,
+      ),
+    );
+  }
+
+  function resizeTo(clientX: number) {
+    const box = panes.current?.getBoundingClientRect();
+    if (!box) return;
+    setRatio(clamp((clientX - box.left) / box.width));
+  }
+
+  const focusService = focus ? serviceFor(services, focus) : undefined;
+
   return (
-    <div ref={stage} className="relative flex h-full min-h-0 flex-col bg-sidebar">
-      <div className="flex shrink-0 items-center gap-1 px-2 pt-2">
-        <div
-          className="flex min-w-0 items-end overflow-x-auto"
-          role="tablist"
-          aria-label="Experience tabs"
+    <div
+      ref={stage}
+      className="relative flex h-full min-h-0 flex-col bg-sidebar"
+    >
+      <header className="flex h-14 shrink-0 items-center gap-2 px-3">
+        <button
+          onClick={goHome}
+          aria-pressed={focus === null}
+          className={cn(
+            "flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+            focus === null
+              ? "bg-foreground text-background"
+              : "text-foreground hover:bg-foreground/[0.06]",
+          )}
         >
-          {tabs.map((tab, index) => {
-            const service = services.find((item) => item.id === tab.appId);
-            const selected = tab.id === activeId;
-            const label =
-              tab.appId === "__settings"
-                ? "Settings"
-                : (service?.label ?? "Start");
+          <Squares2X2Icon className="size-4" />
+          <span className="max-sm:sr-only">Apps</span>
+        </button>
+
+        {sessions.length > 0 && (
+          <span aria-hidden="true" className="h-5 w-px shrink-0 bg-border" />
+        )}
+
+        <ul
+          aria-label="Open apps"
+          className="flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-1 overflow-x-auto py-1"
+        >
+          {sessions.map((session) => {
+            const service = serviceFor(services, session.appId);
+            if (!service) return null;
+            const front = session.appId === focus;
+            const beside = session.appId === splitApp && focus !== null;
             return (
-              <div
-                key={tab.id}
+              <li
+                key={session.appId}
                 className={cn(
-                  "flex h-10 w-56 min-w-28 items-center rounded-t-xl pr-1",
-                  selected ? "bg-surface" : "hover:bg-surface/50",
+                  "group/chip flex h-9 shrink-0 items-center rounded-full pr-1 pl-1 transition-colors",
+                  front
+                    ? "bg-surface shadow-[0_0_0_1px_var(--border)]"
+                    : beside
+                      ? "bg-surface/60 shadow-[0_0_0_1px_var(--border)]"
+                      : "hover:bg-foreground/[0.06]",
                 )}
               >
                 <button
-                  id={`experience-tab-${tab.id}`}
-                  role="tab"
-                  aria-selected={selected}
-                  aria-controls={`experience-panel-${tab.id}`}
-                  tabIndex={selected ? 0 : -1}
-                  onClick={() => setActiveId(tab.id)}
-                  onKeyDown={(event) => {
-                    let target: BrowserTab | undefined;
-                    if (event.key === "ArrowRight")
-                      target = tabs[(index + 1) % tabs.length];
-                    if (event.key === "ArrowLeft")
-                      target = tabs[(index - 1 + tabs.length) % tabs.length];
-                    if (event.key === "Home") target = tabs[0];
-                    if (event.key === "End") target = tabs[tabs.length - 1];
-                    if (target) {
-                      event.preventDefault();
-                      setActiveId(target.id);
-                      document
-                        .getElementById(`experience-tab-${target.id}`)
-                        ?.focus();
-                    }
-                  }}
-                  className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-t-xl px-3 text-sm outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-ring"
+                  onClick={() => open(session.appId)}
+                  aria-current={front ? "page" : undefined}
+                  title={service.label}
+                  className="flex h-full min-w-0 items-center gap-2 rounded-full pr-1 pl-1 text-sm focus-visible:outline-2 focus-visible:outline-ring"
                 >
-                  {tab.appId === "__settings" ? (
-                    <Cog6ToothIcon className="size-4 shrink-0" />
-                  ) : service ? (
-                    <ExperienceAppIcon
-                      id={service.id}
-                      className="size-4 shrink-0"
+                  <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-background">
+                    <ExperienceAppIcon id={service.id} className="size-4" />
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-sidebar"
+                      style={{ background: brandOf(service.id) }}
                     />
-                  ) : (
-                    <HomeIcon className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="truncate">{label}</span>
+                  </span>
+                  <span
+                    className={cn(
+                      "max-w-32 truncate",
+                      front || beside ? "font-medium" : "max-md:sr-only",
+                    )}
+                  >
+                    {service.label}
+                  </span>
                 </button>
                 <button
-                  onClick={() => closeTab(tab.id)}
-                  aria-label={`Close ${label} tab`}
-                  className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                  onClick={() => close(session.appId)}
+                  aria-label={`Close ${service.label}`}
+                  className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground opacity-0 transition-opacity group-focus-within/chip:opacity-100 group-hover/chip:opacity-100 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:opacity-100"
                 >
                   <XMarkIcon className="size-3.5" />
                 </button>
-              </div>
+              </li>
             );
           })}
-        </div>
-        <ChromeButton label="New tab" onClick={newTab}>
-          <PlusIcon className="size-4" />
-        </ChromeButton>
-      </div>
+        </ul>
 
-      <div className="flex shrink-0 items-center gap-1 border-b border-border bg-surface px-2 py-1.5">
-        <ChromeButton
-          label="Start page"
-          onClick={() => {
-            const start = tabs.find((tab) => tab.appId === null);
-            if (start) setActiveId(start.id);
-            else newTab();
-          }}
-        >
-          <HomeIcon className="size-4" />
-        </ChromeButton>
-        <ChromeButton
-          label="Reload"
-          disabled={!app}
-          onClick={() =>
-            setTabs((current) =>
-              current.map((tab) =>
-                tab.id === activeId ? { ...tab, run: tab.run + 1 } : tab,
-              ),
-            )
-          }
-        >
-          <ArrowPathIcon className="size-4" />
-        </ChromeButton>
-        <div
-          className="mx-1 flex h-8 min-w-0 flex-1 items-center gap-2 rounded-full bg-muted px-3 text-sm"
-          title={
-            app?.start ??
-            (active.appId === "__settings"
-              ? "Interoogle Settings"
-              : "Interoogle Start")
-          }
-        >
-          {app ? (
-            <LockClosedIcon className="size-3.5 shrink-0 text-muted-foreground" />
-          ) : (
-            <MagnifyingGlassIcon className="size-3.5 shrink-0 text-muted-foreground" />
-          )}
-          <span className="truncate text-muted-foreground">
-            {app
-              ? new URL(app.start).host
-              : active.appId === "__settings"
-                ? "interoogle://settings"
-                : "Interoogle / Start"}
-          </span>
-        </div>
-        <Menu>
-          <MenuTrigger
-            aria-label="Browser menu"
-            className="grid size-9 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            <EllipsisVerticalIcon className="size-5" />
-          </MenuTrigger>
-          <MenuContent side="bottom" align="end" className="w-48">
-            <MenuItem onClick={() => openService("__settings")}>
-              <Cog6ToothIcon className="size-4" /> Settings
-            </MenuItem>
-          </MenuContent>
-        </Menu>
-        {canFull && (
-          <ChromeButton
-            label={full ? "Exit fullscreen" : "Fullscreen"}
-            onClick={toggleFull}
-          >
-            {full ? (
-              <ArrowsPointingInIcon className="size-4" />
-            ) : (
-              <ArrowsPointingOutIcon className="size-4" />
-            )}
-          </ChromeButton>
-        )}
-      </div>
-
-      <div className="relative min-h-0 flex-1 bg-surface">
-        {tabs.map((tab) => {
-          const service = services.find((item) => item.id === tab.appId);
-          return (
-            <div
-              key={tab.id}
-              id={`experience-panel-${tab.id}`}
-              role="tabpanel"
-              aria-labelledby={`experience-tab-${tab.id}`}
-              hidden={tab.id !== activeId}
-              className="h-full"
-            >
-              {tab.appId === "__settings" ? (
-                <BrowserSettings />
-              ) : !service ? (
-                <StartPage services={services} onOpen={openService} />
-              ) : !service.src ? (
-                <div
-                  role="status"
-                  className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground"
+        {focusService && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {split ? (
+              <>
+                {splitApp && (
+                  <BarButton
+                    label="Swap sides"
+                    onClick={() => {
+                      setSplit(focus);
+                      setFocus(splitApp);
+                    }}
+                    className="max-md:hidden"
+                  >
+                    <ArrowsRightLeftIcon className="size-4" />
+                  </BarButton>
+                )}
+                <BarButton
+                  label="Close side pane"
+                  pressed
+                  onClick={() => setSplit(null)}
+                  className="max-md:hidden"
                 >
-                  This service is currently unavailable. Try another service
-                  from a new tab.
-                </div>
-              ) : quota.allowed ? (
-                <iframe
-                  key={tab.run}
-                  ref={(frame) => {
-                    if (frame) frames.current.set(tab.id, frame);
-                    else frames.current.delete(tab.id);
-                  }}
-                  src={
-                    accessToken
-                      ? `${service.src}#${new URLSearchParams({ access: "1", appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
-                      : service.src
-                  }
-                  title={`${service.label} — tab ${tab.id + 1}`}
-                  sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${
-                    CLOUD_GAMING.has(service.id) ? " allow-pointer-lock" : ""
-                  }`}
-                  allow={`fullscreen; autoplay; encrypted-media${
-                    CLOUD_GAMING.has(service.id)
-                      ? "; gamepad; microphone; screen-wake-lock"
-                      : CALLING.has(service.id)
-                        ? "; camera; microphone"
-                        : ""
-                  }`}
-                  referrerPolicy="no-referrer"
-                  className="h-full w-full border-0 bg-white"
-                />
+                  <ViewColumnsIcon className="size-4" />
+                </BarButton>
+              </>
+            ) : (
+              <BarButton
+                label="Open an app beside this one"
+                onClick={() => setSplit(PICK)}
+                className="max-md:hidden"
+              >
+                <ViewColumnsIcon className="size-4" />
+              </BarButton>
+            )}
+            <BarButton
+              label={`Reload ${focusService.label}`}
+              onClick={() => {
+                reload(focusService.id);
+                if (splitApp) reload(splitApp);
+              }}
+            >
+              <ArrowPathIcon className="size-4" />
+            </BarButton>
+          </div>
+        )}
+
+        <div className="flex shrink-0 items-center gap-0.5">
+          <ExperienceQuotaDonut quota={quota} container={stage} />
+          {canFull && (
+            <BarButton
+              label={full ? "Exit fullscreen" : "Fullscreen"}
+              onClick={toggleFull}
+            >
+              {full ? (
+                <ArrowsPointingInIcon className="size-4" />
               ) : (
-                <PlaytimeBlocked quota={quota} />
+                <ArrowsPointingOutIcon className="size-4" />
               )}
-            </div>
-          );
-        })}
+            </BarButton>
+          )}
+        </div>
+      </header>
+
+      {focus === null && (
+        <Launcher
+          services={services}
+          running={sessions.map((session) => session.appId)}
+          onOpen={open}
+        />
+      )}
+
+      <div
+        ref={panes}
+        hidden={focus === null}
+        className={cn(
+          "relative min-h-0 flex-1 gap-0 px-2 pb-2",
+          focus !== null && "flex",
+        )}
+      >
+        {!quota.allowed && sessions.length > 0 ? (
+          <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface">
+            <PlaytimeBlocked quota={quota} />
+          </div>
+        ) : (
+          sessions.map((session) => {
+            const service = serviceFor(services, session.appId);
+            if (!service) return null;
+            const side =
+              session.appId === focus
+                ? "front"
+                : session.appId === splitApp
+                  ? "beside"
+                  : null;
+            return (
+              <Pane
+                key={session.appId}
+                side={side}
+                grow={split ? (side === "front" ? ratio : 1 - ratio) : 1}
+              >
+                {!service.src ? (
+                  <div
+                    role="status"
+                    className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"
+                  >
+                    <ExperienceAppIcon id={service.id} className="size-10" />
+                    <p className="font-medium">
+                      {service.label} is unavailable
+                    </p>
+                    <p className="max-w-xs text-sm text-muted-foreground">
+                      It can’t be opened right now. Everything else still works.
+                    </p>
+                  </div>
+                ) : (
+                  <iframe
+                    key={session.run}
+                    ref={(frame) => {
+                      if (frame) frames.current.set(session.appId, frame);
+                      else frames.current.delete(session.appId);
+                    }}
+                    src={
+                      accessToken
+                        ? `${service.src}#${new URLSearchParams({ access: "1", appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
+                        : service.src
+                    }
+                    title={service.label}
+                    sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${
+                      CLOUD_GAMING.has(service.id) ? " allow-pointer-lock" : ""
+                    }`}
+                    allow={`fullscreen; autoplay; encrypted-media${
+                      CLOUD_GAMING.has(service.id)
+                        ? "; gamepad; microphone; screen-wake-lock"
+                        : CALLING.has(service.id)
+                          ? "; camera; microphone"
+                          : ""
+                    }`}
+                    referrerPolicy="no-referrer"
+                    className={cn(
+                      "h-full w-full border-0 bg-white",
+                      // A frame under the pointer swallows the drag.
+                      dragging && "pointer-events-none",
+                    )}
+                  />
+                )}
+              </Pane>
+            );
+          })
+        )}
+
+        {split && quota.allowed && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize panes"
+            aria-valuemin={25}
+            aria-valuemax={75}
+            aria-valuenow={Math.round(ratio * 100)}
+            tabIndex={0}
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragging(true);
+            }}
+            onPointerMove={(event) => {
+              if (dragging) resizeTo(event.clientX);
+            }}
+            onPointerUp={() => setDragging(false)}
+            onPointerCancel={() => setDragging(false)}
+            onDoubleClick={() => setRatio(0.5)}
+            onKeyDown={(event) => {
+              const step = event.shiftKey ? 0.1 : 0.025;
+              if (event.key === "ArrowLeft") setRatio((r) => clamp(r - step));
+              else if (event.key === "ArrowRight")
+                setRatio((r) => clamp(r + step));
+              else if (event.key === "Home") setRatio(0.25);
+              else if (event.key === "End") setRatio(0.75);
+              else return;
+              event.preventDefault();
+            }}
+            style={{ order: 1 }}
+            className="group/divider flex w-3 shrink-0 cursor-col-resize touch-none items-center justify-center outline-none max-md:hidden"
+          >
+            <span
+              className={cn(
+                "h-10 w-1 rounded-full bg-border-strong transition-[height,background-color] group-hover/divider:h-16 group-hover/divider:bg-primary group-focus-visible/divider:h-16 group-focus-visible/divider:bg-primary",
+                dragging && "h-16 bg-primary",
+              )}
+            />
+          </div>
+        )}
+
+        {split === PICK && quota.allowed && (
+          <Pane side="beside" grow={1 - ratio}>
+            <SidePicker
+              services={services.filter((service) => service.id !== focus)}
+              running={sessions.map((session) => session.appId)}
+              onPick={openBeside}
+              onCancel={() => setSplit(null)}
+            />
+          </Pane>
+        )}
       </div>
       <PlaytimeWarning quota={quota} />
     </div>
   );
 }
 
-function StartPage({
-  services,
-  onOpen,
+/** One side of the stage. Not on the stage at all when `side` is null. */
+function Pane({
+  side,
+  grow,
+  children,
 }: {
-  services: ExperienceService[];
-  onOpen: (id: string) => void;
+  side: "front" | "beside" | null;
+  grow: number;
+  children: ReactNode;
 }) {
-  const [query, setQuery] = useState("");
-  const shown = services.filter((service) =>
-    `${service.label} ${service.host}`
-      .toLowerCase()
-      .includes(query.trim().toLowerCase()),
-  );
   return (
-    <div className="flex h-full flex-col items-center overflow-y-auto px-5 pt-[clamp(3rem,12vh,8rem)] pb-10">
-      <h1
-        aria-label="Interoogle"
-        className="mb-8 text-[clamp(2.75rem,6vw,4.5rem)] leading-tight font-medium tracking-[-0.055em]"
-      >
-        {Array.from("Interoogle").map((letter, index) => (
-          <span
-            key={index}
-            style={{
-              color: [
-                "#4285f4",
-                "#ea4335",
-                "#fbbc05",
-                "#4285f4",
-                "#34a853",
-                "#ea4335",
-              ][index % 6],
-            }}
-          >
-            {letter}
-          </span>
-        ))}
-      </h1>
-      <form
-        className="mb-8 flex w-full max-w-lg items-center gap-3 rounded-full border border-border bg-background px-5 py-3 shadow-sm focus-within:ring-2 focus-within:ring-ring/30"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (shown.length === 1) onOpen(shown[0].id);
-        }}
-        role="search"
-      >
-        <MagnifyingGlassIcon className="size-5 shrink-0 text-muted-foreground" />
-        <input
-          aria-label="Find a service"
-          placeholder="Find a service"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-      </form>
-      <ul className="flex w-full max-w-xl flex-wrap justify-center gap-x-2 gap-y-3">
-        {shown.map((service) => (
-          <li key={service.id}>
-            <button
-              onClick={() => onOpen(service.id)}
-              className="flex w-24 flex-col items-center gap-3 rounded-2xl px-2 py-3 text-xs transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring sm:w-28"
-            >
-              <span className="flex size-14 items-center justify-center rounded-full bg-muted">
-                <ExperienceAppIcon id={service.id} className="size-7" />
-              </span>
-              <span>{service.label}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      {!shown.length && (
-        <p className="text-sm text-muted-foreground">
-          No services match “{query}”.
-        </p>
+    <div
+      hidden={side === null}
+      style={
+        {
+          order: side === "beside" ? 2 : 0,
+          flex: `${grow} 1 0%`,
+        } as CSSProperties
+      }
+      className={cn(
+        "min-w-0 overflow-hidden rounded-2xl border border-border bg-surface",
+        side === "beside" && "max-md:hidden",
       )}
+    >
+      {children}
     </div>
   );
 }
 
-function BrowserSettings() {
-  const [appearance, setAppearance] = useState("System default");
-  const [search, setSearch] = useState("Interoogle");
+function Launcher({
+  services,
+  running,
+  onOpen,
+}: {
+  services: ExperienceService[];
+  running: string[];
+  onOpen: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const search = useRef<HTMLInputElement>(null);
+  const starred = useStoredList(STARRED_KEY);
+  const recent = useStoredList(RECENT_KEY);
+
+  // `/` jumps to the search from anywhere on the launcher that isn't a field.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      event.preventDefault();
+      search.current?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const term = query.trim().toLowerCase();
+  const matches = term
+    ? services.filter((service) =>
+        `${service.label} ${service.host} ${shelfOf(service.id)}`
+          .toLowerCase()
+          .includes(term),
+      )
+    : [];
+
+  const pick = (ids: string[]) =>
+    ids.flatMap((id) => {
+      const service = serviceFor(services, id);
+      return service ? [service] : [];
+    });
+
+  const shelves = useMemo(() => {
+    const placed = new Set(SHELVES.flatMap((shelf) => shelf.ids));
+    const rest = services
+      .filter((service) => !placed.has(service.id))
+      .map((service) => service.id);
+    return [...SHELVES, { label: "More", ids: rest }]
+      .map((shelf) => ({
+        label: shelf.label,
+        items: shelf.ids.flatMap((id) => {
+          const service = serviceFor(services, id);
+          return service ? [service] : [];
+        }),
+      }))
+      .filter((shelf) => shelf.items.length > 0);
+  }, [services]);
+
+  const tile = (service: ExperienceService, size?: "wide") => (
+    <AppTile
+      key={service.id}
+      service={service}
+      running={running.includes(service.id)}
+      starred={starred.includes(service.id)}
+      onOpen={() => onOpen(service.id)}
+      onStar={() => toggleStarred(service.id)}
+      size={size}
+    />
+  );
+
+  const recentApps = pick(recent)
+    .filter((service) => !starred.includes(service.id))
+    .slice(0, 4);
+
   return (
-    <div className="h-full overflow-y-auto bg-background px-6 py-10 text-foreground sm:px-12">
-      <div className="mx-auto max-w-2xl">
-        <div className="flex items-center gap-3 border-b border-border pb-6">
-          <Cog6ToothIcon className="size-7 text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl font-semibold">Settings</h1>
-            <p className="text-sm text-muted-foreground">
-              Your Interoogle browser experience
-            </p>
+    <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+      <div className="min-h-full rounded-2xl border border-border bg-surface">
+        <div className="mx-auto w-full max-w-5xl px-5 pt-10 pb-16 sm:px-8 sm:pt-14">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold sm:text-4xl">Browse</h1>
+              <p className="mt-2 max-w-md text-muted-foreground">
+                Apps keep running while you switch between them. Open two side
+                by side from the bar.
+              </p>
+            </div>
+            <form
+              role="search"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (matches[0]) onOpen(matches[0].id);
+              }}
+              className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-border bg-background px-3.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20 sm:w-72"
+            >
+              <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
+              <input
+                ref={search}
+                type="search"
+                aria-label="Find an app"
+                placeholder="Find an app"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setQuery("");
+                }}
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+              />
+              {!query && <Kbd className="max-sm:hidden">/</Kbd>}
+            </form>
           </div>
+
+          {term ? (
+            <Shelf
+              label={`${matches.length} ${matches.length === 1 ? "match" : "matches"}`}
+            >
+              {matches.length ? (
+                matches.map((service) => tile(service))
+              ) : (
+                <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
+                  Nothing called “{query.trim()}”.
+                </p>
+              )}
+            </Shelf>
+          ) : (
+            <>
+              {starred.length > 0 && (
+                <Shelf label="Starred" wide>
+                  {pick(starred).map((service) => tile(service, "wide"))}
+                </Shelf>
+              )}
+              {recentApps.length > 0 && (
+                <Shelf label="Jump back in">
+                  {recentApps.map((service) => tile(service))}
+                </Shelf>
+              )}
+              {shelves.map((shelf) => (
+                <Shelf key={shelf.label} label={shelf.label}>
+                  {shelf.items.map((service) => tile(service))}
+                </Shelf>
+              ))}
+            </>
+          )}
         </div>
-        <section className="py-7">
-          <h2 className="mb-4 text-sm font-semibold">Appearance</h2>
-          <label className="flex items-center justify-between gap-4 rounded-xl border border-border p-4 text-sm">
-            Theme
-            <select
-              value={appearance}
-              onChange={(event) => setAppearance(event.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option>System default</option>
-              <option>Light</option>
-              <option>Dark</option>
-            </select>
-          </label>
-        </section>
-        <section className="border-t border-border py-7">
-          <h2 className="mb-4 text-sm font-semibold">Search engine</h2>
-          <label className="flex items-center justify-between gap-4 rounded-xl border border-border p-4 text-sm">
-            Search used in the address bar
-            <select
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option>Interoogle</option>
-              <option>Google</option>
-              <option>Bing</option>
-            </select>
-          </label>
-        </section>
-        <section className="border-t border-border py-7">
-          <h2 className="mb-4 text-sm font-semibold">Privacy and security</h2>
-          <div className="rounded-xl border border-border p-4 text-sm">
-            <p className="font-medium">Safe browsing</p>
-            <p className="mt-1 text-muted-foreground">
-              Standard protection is on for this experience.
-            </p>
-          </div>
-        </section>
-        <p className="text-xs text-muted-foreground">
-          These controls preview a browser settings page for the experience.
-        </p>
       </div>
     </div>
   );
 }
 
-function ChromeButton({
+function Shelf({
+  label,
+  wide,
+  children,
+}: {
+  label: string;
+  wide?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mt-10">
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+        {label}
+      </h2>
+      <div
+        className={cn(
+          "grid gap-3",
+          wide
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+        )}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function AppTile({
+  service,
+  running,
+  starred,
+  onOpen,
+  onStar,
+  size,
+}: {
+  service: ExperienceService;
+  running: boolean;
+  starred: boolean;
+  onOpen: () => void;
+  onStar: () => void;
+  size?: "wide";
+}) {
+  const brand = brandOf(service.id);
+  return (
+    <div
+      className={cn(
+        "group/tile relative isolate overflow-hidden rounded-2xl border border-border bg-background transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--elevation-card-hover)] motion-reduce:hover:translate-y-0",
+        size === "wide" ? "h-28" : "h-36",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute -top-16 -right-16 -z-10 size-44 rounded-full opacity-[0.18] blur-2xl transition-opacity duration-300 group-hover/tile:opacity-30"
+        style={{ background: brand }}
+      />
+      <button
+        onClick={onOpen}
+        className={cn(
+          "flex h-full w-full rounded-2xl p-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+          size === "wide" ? "items-center gap-4" : "flex-col justify-between",
+        )}
+      >
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-surface shadow-[0_0_0_1px_var(--border)]">
+          <ExperienceAppIcon id={service.id} className="size-7" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate font-medium">{service.label}</span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {running ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="size-1.5 rounded-full"
+                  style={{ background: brand }}
+                />
+                Running
+              </>
+            ) : (
+              <span className="truncate">{displayHost(service.start)}</span>
+            )}
+          </span>
+        </span>
+      </button>
+      <button
+        onClick={onStar}
+        aria-label={
+          starred ? `Unstar ${service.label}` : `Star ${service.label}`
+        }
+        aria-pressed={starred}
+        className={cn(
+          "absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-full transition-opacity hover:bg-foreground/[0.06] focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring",
+          starred
+            ? "text-amber-500"
+            : "text-muted-foreground opacity-0 group-hover/tile:opacity-100 max-md:opacity-100",
+        )}
+      >
+        {starred ? (
+          <StarIcon className="size-4" />
+        ) : (
+          <StarOutlineIcon className="size-4" />
+        )}
+      </button>
+    </div>
+  );
+}
+
+/** The empty side of a split: every other app, one click from filling it. */
+function SidePicker({
+  services,
+  running,
+  onPick,
+  onCancel,
+}: {
+  services: ExperienceService[];
+  running: string[];
+  onPick: (id: string) => void;
+  onCancel: () => void;
+}) {
+  const ordered = [
+    ...services.filter((service) => running.includes(service.id)),
+    ...services.filter((service) => !running.includes(service.id)),
+  ];
+  return (
+    <div className="flex h-full flex-col overflow-y-auto p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Open beside</h2>
+          <p className="text-sm text-muted-foreground">
+            Pick an app for this side.
+          </p>
+        </div>
+        <BarButton label="Cancel" onClick={onCancel}>
+          <XMarkIcon className="size-4" />
+        </BarButton>
+      </div>
+      <ul className="grid gap-1">
+        {ordered.map((service) => (
+          <li key={service.id}>
+            <button
+              onClick={() => onPick(service.id)}
+              className="flex w-full items-center gap-3 rounded-xl p-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-background shadow-[0_0_0_1px_var(--border)]">
+                <ExperienceAppIcon id={service.id} className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {service.label}
+              </span>
+              {running.includes(service.id) && (
+                <span className="text-xs text-muted-foreground">Running</span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BarButton({
   label,
   onClick,
   children,
-  disabled,
+  pressed,
+  className,
 }: {
   label: string;
   onClick: () => void;
   children: ReactNode;
-  disabled?: boolean;
+  pressed?: boolean;
+  className?: string;
 }) {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size="icon-lg"
       shape="circle"
       onClick={onClick}
-      disabled={disabled}
       aria-label={label}
+      aria-pressed={pressed}
       title={label}
-      className="shrink-0 text-foreground"
+      className={cn(
+        "text-foreground",
+        pressed && "bg-foreground/[0.08]",
+        className,
+      )}
     >
       {children}
     </Button>
+  );
+}
+
+function serviceFor(services: ExperienceService[], id: string) {
+  return services.find((service) => service.id === id);
+}
+
+function brandOf(id: string) {
+  return BRAND[id] ?? "var(--primary)";
+}
+
+function shelfOf(id: string) {
+  return SHELVES.find((shelf) => shelf.ids.includes(id))?.label ?? "";
+}
+
+function displayHost(url: string) {
+  return new URL(url).host.replace(/^www\./, "");
+}
+
+/** Neither pane narrower than a quarter of the stage. */
+function clamp(ratio: number) {
+  return Math.min(0.75, Math.max(0.25, ratio));
+}
+
+/*
+ * Starred and recent apps, per device. Kept in storage rather than on the
+ * account: they are a convenience, and a browser that blocks storage just
+ * shows the shelves without them.
+ */
+
+const STARRED_KEY = "browse:starred";
+const RECENT_KEY = "browse:recent";
+const RECENT_LIMIT = 8;
+const STORED_LIST_EVENT = "browse:stored-list";
+const EMPTY: string[] = [];
+const listCache = new Map<string, { raw: string | null; list: string[] }>();
+
+function readList(key: string): string[] {
+  const value = readStoredJson<unknown>(key);
+  const raw = JSON.stringify(value);
+  const cached = listCache.get(key);
+  // `useSyncExternalStore` needs the same array back until the data changes.
+  if (cached && cached.raw === raw) return cached.list;
+  const list = Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : EMPTY;
+  listCache.set(key, { raw, list });
+  return list;
+}
+
+function writeList(key: string, list: string[]) {
+  writeStoredJson(key, list);
+  window.dispatchEvent(new Event(STORED_LIST_EVENT));
+}
+
+function subscribeLists(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(STORED_LIST_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(STORED_LIST_EVENT, onChange);
+  };
+}
+
+function useStoredList(key: string): string[] {
+  return useSyncExternalStore(
+    subscribeLists,
+    () => readList(key),
+    () => EMPTY,
+  );
+}
+
+function toggleStarred(id: string) {
+  const list = readList(STARRED_KEY);
+  writeList(
+    STARRED_KEY,
+    list.includes(id) ? list.filter((item) => item !== id) : [...list, id],
+  );
+}
+
+function rememberRecent(id: string) {
+  const list = readList(RECENT_KEY);
+  if (list[0] === id) return;
+  writeList(
+    RECENT_KEY,
+    [id, ...list.filter((item) => item !== id)].slice(0, RECENT_LIMIT),
   );
 }
