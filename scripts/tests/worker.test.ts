@@ -188,10 +188,13 @@ describe("asset browser caching", () => {
   });
 
   it.each([
-    ["/_next/static/chunks/app-abc123.js", 3600],
-    ["/thumbnails/flappybird.jpg", 300],
-    ["/favicon.ico", 300],
-  ])("gives %s a bounded browser cache", async (path, seconds) => {
+    [
+      "/_next/static/chunks/app-abc123.js",
+      "public, max-age=31536000, immutable",
+    ],
+    ["/thumbnails/flappybird.jpg", "private, max-age=300, must-revalidate"],
+    ["/favicon.ico", "private, max-age=300, must-revalidate"],
+  ])("gives %s a bounded browser cache", async (path, policy) => {
     fetchAsset.mockResolvedValue(
       new Response("asset", {
         headers: {
@@ -205,9 +208,7 @@ describe("asset browser caching", () => {
       env,
       {} as ExecutionContext,
     );
-    expect(response.headers.get("cache-control")).toBe(
-      `private, max-age=${seconds}, must-revalidate`,
-    );
+    expect(response.headers.get("cache-control")).toBe(policy);
     expect(response.headers.has("age")).toBe(false);
     expect(response.headers.get("date")).toBe(new Date().toUTCString());
     expect(fetchApp).not.toHaveBeenCalled();
@@ -224,7 +225,7 @@ describe("asset browser caching", () => {
         {} as ExecutionContext,
       );
       expect(response.headers.get("cache-control")).toBe(
-        "private, max-age=3600, must-revalidate",
+        "public, max-age=31536000, immutable",
       );
     },
   );

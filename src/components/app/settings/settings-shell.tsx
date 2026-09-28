@@ -3,12 +3,13 @@
 import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SettingsSearch } from "@/components/app/settings/primitives";
 import { settingsSections } from "@/components/app/settings/sections";
 import { Kbd } from "@/components/ui/kbd";
 import { SETTINGS_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { useWarmRoutes } from "@/lib/warm";
 import styles from "./settings.module.css";
 
 /**
@@ -35,6 +36,17 @@ export function SettingsShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
+
+  // Every tab is a small page — the section components are already in this
+  // bundle, so a tab's payload is little more than its title — and someone
+  // on Settings is there to look through them. They are warmed in order once
+  // the page is idle, and on hover before that, so moving between tabs does
+  // not wait on the server. See `useWarmRoutes`.
+  const tabHrefs = useMemo(
+    () => settingsSections.map((section) => `${SETTINGS_HREF}/${section.id}`),
+    [],
+  );
+  const warm = useWarmRoutes(pathname, tabHrefs);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -100,6 +112,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
                     href={href}
                     scroll={false}
                     aria-current={current ? "page" : undefined}
+                    {...warm(href)}
                     onClick={() => setQuery("")}
                     className={cn(
                       "flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[0.875rem] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",

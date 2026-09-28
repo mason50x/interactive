@@ -31,6 +31,9 @@ import { useWorkspace } from "@/components/app/workspace/workspace-provider";
 import { WORKSPACE_DRAG_TYPE } from "@/lib/workspace";
 import { ViewColumnsIcon } from "@heroicons/react/24/outline";
 
+/** How many rail destinations are warmed without being asked for. */
+const HOT_ROUTE_COUNT = 2;
+
 /**
  * The signed-in app's chrome: a vertical rail down the left of the page.
  *
@@ -84,12 +87,20 @@ export function AppSidebar() {
 
   const compactPlaytime = usePlaytimeActivity();
 
+  // The top of the rail, as this account arranged it, is what they reach for
+  // most: those few are warmed once the page is idle. The rest warm on
+  // hover. See `useWarmRoutes` for why not all of them.
   const hotRoutes = useMemo(
     () =>
       navItems
-        .filter((item) => !exhausted || !isPlaytimeRoute(item.href))
+        .filter(
+          (item) =>
+            item.href !== pathname &&
+            (!exhausted || !isPlaytimeRoute(item.href)),
+        )
+        .slice(0, HOT_ROUTE_COUNT)
         .map((item) => item.href),
-    [exhausted, navItems],
+    [exhausted, navItems, pathname],
   );
   const warm = useWarmRoutes(pathname, hotRoutes);
   const list = useRef<HTMLUListElement>(null);

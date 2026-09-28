@@ -3,7 +3,7 @@ import {
   PlaytimeRouteGate,
 } from "@/components/app/playtime-status";
 import { TimeoutGate } from "@/components/app/timeout-gate";
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
@@ -59,7 +59,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await auth.protect();
+  await protectPage();
 
   return (
     <AppProviders>

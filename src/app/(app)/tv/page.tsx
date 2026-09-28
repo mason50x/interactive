@@ -1,11 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { Page } from "@/components/ui/page";
 import { TvBrowser } from "@/components/app/tv/tv-browser";
 import { TV_SHOWS } from "@/lib/tv";
 export const metadata: Metadata = { title: "TV" };
 export default async function EntertainmentPage() {
-  await auth.protect();
+  await protectPage();
   const shows = TV_SHOWS.map((show) => ({
     slug: show.slug,
     title: show.displayName ?? show.title,

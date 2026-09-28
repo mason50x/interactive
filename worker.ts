@@ -99,13 +99,18 @@ export default {
     // `src/lib/workspace.ts`). Every other origin is refused.
     headers.set("Content-Security-Policy", "frame-ancestors 'self'");
     // Cloudflare assets default to max-age=0: every revisit otherwise asks
-    // this Worker to revalidate unchanged files. Cache only actual successful
-    // assets privately for a fixed lifetime.
+    // this Worker to revalidate unchanged files. In production the hashed
+    // chunks and the public artwork never reach this code — the asset layer
+    // serves them with `public/_headers` (see `assets.run_worker_first` in
+    // `wrangler.jsonc`) — so this covers what is left: the few files under
+    // route prefixes, and development servers. The policy is the same one
+    // `_headers` states, so a file answers alike whichever path it took.
     if (assetResponse && (response.status === 200 || response.status === 304)) {
-      const maxAge = path.startsWith("/_next/static/") ? 3600 : 300;
       headers.set(
         "Cache-Control",
-        `private, max-age=${maxAge}, must-revalidate`,
+        path.startsWith("/_next/static/")
+          ? "public, max-age=31536000, immutable"
+          : "private, max-age=300, must-revalidate",
       );
       // The asset's upstream Age/Date must not shorten or extend this policy.
       headers.delete("Age");

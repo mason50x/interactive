@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { homeSections } from "@/components/app/home/home";
+import { homeSections } from "@/components/app/home/sections";
 import { Group, Row, Section } from "@/components/app/settings/primitives";
 import { usePreferences } from "@/components/preferences-provider";
 import { Input } from "@/components/ui/input";

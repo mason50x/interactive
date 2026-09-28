@@ -88,8 +88,6 @@ export const settingsSections: {
   },
 ];
 
-export const SETTINGS_DEFAULT_SECTION = "appearance";
-
 export function findSettingsSection(id: string) {
   return settingsSections.find((section) => section.id === id);
 }

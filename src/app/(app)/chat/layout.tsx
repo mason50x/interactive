@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { ChatFrame } from "@/components/app/chat/chat-frame";
 
@@ -14,6 +14,6 @@ export const metadata: Metadata = {
  * between sibling navigations, so a check that lives only here is a floor.
  */
 export default async function ChatLayout({ children }: LayoutProps<"/chat">) {
-  await auth.protect();
+  await protectPage();
   return <ChatFrame>{children}</ChatFrame>;
 }

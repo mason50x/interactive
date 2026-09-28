@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { ActivitiesBrowser } from "@/components/app/activities-browser";
 import { Page } from "@/components/ui/page";
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Activities" };
 export default async function ActivitiesPage() {
   // The layout guards the shell, but the router does not re-render a shared
   // layout between sibling pages, so every page in the signed-in app guards itself.
-  await auth.protect();
+  await protectPage();
 
   return (
     <Page>
