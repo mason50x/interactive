@@ -1,10 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { readdir } from "node:fs/promises";
 
-test("generated scripts, styles and fonts are served by the Worker", async ({
-  request,
-}) => {
-  const files = await readdir("dist/client/_next/static", { recursive: true });
+test("generated scripts, styles and fonts are served", async ({ request }) => {
+  const files = await readdir(".next/static", { recursive: true });
   for (const extension of [".js", ".css", ".woff2"]) {
     const paths = files.filter((file) => file.endsWith(extension));
     expect(paths.length, extension).toBeGreaterThan(0);
@@ -40,7 +38,7 @@ test("public routes and static assets retain the response policy", async ({
     expect(response.status(), path).toBe(200);
     expect(response.headers()["x-robots-tag"], path).toContain("noindex");
     // Split view frames the app inside itself, so every response permits
-    // this origin and no other (see `worker.ts`).
+    // this origin and no other (see `next.config.ts`).
     expect(response.headers()["content-security-policy"], path).toBe(
       "frame-ancestors 'self'",
     );

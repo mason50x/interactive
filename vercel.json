@@ -1,6 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": {
-    "deploymentEnabled": false
-  }
+  "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then npm run build:production; else npm run build; fi"
 }

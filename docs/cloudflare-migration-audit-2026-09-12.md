@@ -1,6 +1,6 @@
 # Vercel → Cloudflare migration audit
 
-Historical pre-migration audit. Implementation update: vinext builds and runs on Workers; production domains and Clerk DNS are configured, production/development environments are backed up, unit and workerd tests pass, and development sign-in/out plus production sign-in rendering were verified. Invitation email delivery, production account mutations, and multi-region performance remain outside the smoke-test scope. See `deployment.md` for current operations.
+Historical pre-migration audit. The app has since moved back to Vercel; see `deployment.md`. Implementation update: vinext builds and runs on Workers; production domains and Clerk DNS are configured, production/development environments are backed up, unit and workerd tests pass, and development sign-in/out plus production sign-in rendering were verified. Invitation email delivery, production account mutations, and multi-region performance remain outside the smoke-test scope. See `deployment.md` for current operations.
 
 Audited 2026-09-12 at commit `d387754`. Recommendation: proceed with a compatibility prototype, but do not cut production over yet. This is a moderate frontend/runtime migration; it does not require migrating the database or rewriting the backend.
 
