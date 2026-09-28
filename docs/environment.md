@@ -134,5 +134,11 @@ has no fallback; without it every hosted activity is hidden. Use the same
 Clerk instance for each environment's public and secret keys, and give
 Preview a development Clerk instance and Convex deployment.
 
+Production also sets `CLERK_DISABLE_AUTO_PROXY=1`. Clerk proxies itself
+through `/__clerk` whenever the project's production URL is a `*.vercel.app`
+host, and that proxy only answers on `*.vercel.app` — on the custom domain
+every page then points at a path that 404s and sign-in never loads. The live
+instance is served from `clerk.interactivelearningresources.org` directly.
+
 Do not copy `VERCEL_*` system values, OIDC tokens, or maintenance credentials
 into project settings. Convex-only secrets stay in Convex.
