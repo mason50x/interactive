@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RailConstellation } from "@/components/app/rail-constellation";
+import { mark } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 /** A softly lit loading interlude, remounted with each activity run. */
@@ -76,8 +77,10 @@ export function PacketCover({
         />
         <path
           className="packet-logo-mark"
-          d={LOGO_PATH}
-          transform="translate(34 28)"
+          fillRule="evenodd"
+          d={mark.path}
+          // The mark's 100x100 canvas, centred inside the ring.
+          transform="translate(30 30)"
         />
       </svg>
 
@@ -99,9 +102,6 @@ export function PacketCover({
 
 type Phase = "held" | "lifting" | "gone";
 
-// The hosted games have no shared ready event; retain the existing timed hold.
-const LOGO_PATH = "M18 21H33.77V74.5H42.73V21H58.5V66.33H82V79H18Z";
-
 const QUEUE_MESSAGES = [
   "You're 2nd in line…",
   "You're up next…",
@@ -109,5 +109,6 @@ const QUEUE_MESSAGES = [
   "Getting your seat ready…",
 ];
 
+// The hosted games have no shared ready event; retain the existing timed hold.
 const HOLD = 3500;
 const LIFT = 400;
