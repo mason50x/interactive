@@ -30,3 +30,11 @@ On September 23, 2026, both deployments were checked and migrated: development
 had three obsolete agreement fields; production had four old-format playtime
 leases; each deployment had one obsolete conversation greeting field. The
 obsolete fields were removed from the schema after verifying both databases.
+
+On September 28, 2026, the timeout screen's puzzles changed from geometry to
+AP Calculus. `timeoutPuzzles.params` still accepts the old geometry shapes so
+that rows written before the switch keep validating; `timeoutPuzzles.liveRow`
+treats such a row as stale and the next `start` replaces it. Run
+`dataMaintenance.pruneLegacyPuzzles` once on each deployment (it walks the
+table in pages of 100 and deletes only geometry rows), then drop
+`legacyPuzzleParams` from `convex/calculus.ts` and the schema.

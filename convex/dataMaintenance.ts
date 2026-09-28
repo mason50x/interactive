@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
+import { isCurrentPuzzle } from "./calculus";
 
 const BATCH = 100;
 const DAY = 24 * 60 * 60_000;
@@ -58,5 +59,26 @@ export const pruneUserActivity = internalMutation({
     for (const row of rows) await ctx.db.delete(row._id);
     if (rows.length === BATCH) await ctx.scheduler.runAfter(0, internal.dataMaintenance.pruneUserActivity, {});
     return rows.length;
+  },
+});
+
+/**
+ * One-off: rows still holding a geometry puzzle from before the switch to
+ * calculus. Run it once on each deployment; once both are clean the legacy
+ * half of the `timeoutPuzzles.params` union can go (see `convex/calculus.ts`).
+ */
+export const pruneLegacyPuzzles = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  returns: v.number(),
+  handler: async (ctx, { cursor }) => {
+    const page = await ctx.db.query("timeoutPuzzles").paginate({ cursor: cursor ?? null, numItems: BATCH });
+    let pruned = 0;
+    for (const row of page.page) {
+      if (isCurrentPuzzle(row.params)) continue;
+      await ctx.db.delete(row._id);
+      pruned++;
+    }
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.dataMaintenance.pruneLegacyPuzzles, { cursor: page.continueCursor });
+    return pruned;
   },
 });

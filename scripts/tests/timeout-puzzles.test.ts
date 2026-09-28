@@ -5,10 +5,11 @@ import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
 import {
+  PUZZLE_KINDS,
   generatePuzzle,
   solve,
   type PuzzleParams,
-} from "../../convex/geometry";
+} from "../../convex/calculus";
 import { PUZZLE_GOAL, PUZZLE_TIME_MS } from "../../convex/timeoutPuzzles";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
@@ -35,7 +36,8 @@ async function setup(mathBypass?: boolean) {
     clerkId: "member",
     enabled: true,
     reason: "Repeated disruption",
-    durationMinutes: 60,
+    // Long enough for the for-fun run below, which idles a clock per problem.
+    durationMinutes: 180,
     ...(mathBypass === undefined ? {} : { mathBypass }),
   });
   return { t, member: t.withIdentity({ subject: "member" }) };
@@ -172,10 +174,32 @@ test("every kind of puzzle has an answer it accepts", () => {
     kinds.add(params.kind);
     const { answer, display } = solve(params);
     expect(Number.isFinite(answer)).toBe(true);
-    expect(answer).toBeGreaterThan(0);
     expect(display).not.toBe("");
   }
-  expect(kinds.size).toBe(9);
+  expect(kinds.size).toBe(PUZZLE_KINDS.length);
+});
+
+test("a row left over from the geometry puzzles is stale, and start replaces it", async () => {
+  const { t, member } = await setup();
+  const { session } = await begin(member);
+  await t.run(async (ctx) => {
+    const row = await ctx.db
+      .query("timeoutPuzzles")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", "member"))
+      .unique();
+    if (!row) throw new Error("expected a row");
+    await ctx.db.patch(row._id, { params: { kind: "triangle", a: 40, b: 60 } });
+  });
+  expect(
+    await member.mutation(api.timeoutPuzzles.answer, { session, guess: 80 }),
+  ).toEqual({ status: "stale" });
+  const fresh = await begin(member);
+  expect(fresh.puzzle.params.kind).not.toBe("triangle");
+  const ok = await member.mutation(api.timeoutPuzzles.answer, {
+    session: fresh.session,
+    guess: right(fresh.puzzle.params),
+  });
+  expect(ok.status).toBe("correct");
 });
 
 test("the math bypass is on unless the timeout turns it off", async () => {

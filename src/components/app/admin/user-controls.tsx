@@ -437,7 +437,7 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
             <p className="mt-2 text-sm break-words">{user.timeout.reason}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {user.timeout.mathBypass
-                ? "Math bypass on: 20 puzzles right in a row ends it early."
+                ? "Math bypass on: 20 calculus problems right in a row ends it early."
                 : "Math bypass off: they wait it out."}
             </p>
           </>
@@ -517,7 +517,7 @@ function TimeoutControl({ user }: { user: DirectoryUser }) {
                     </span>
                     <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                       {mathBypass
-                        ? "They can end the timeout early by getting 20 geometry puzzles right in a row on the timeout screen. A wrong answer, taking over 2 minutes on one, or leaving the tab starts the streak over."
+                        ? "They can end the timeout early by getting 20 AP Calculus problems right in a row on the timeout screen. A wrong answer, taking over 4 minutes on one, or leaving the tab starts the streak over."
                         : "They wait out the full duration. The puzzles on the timeout screen are just for fun and can't end it early."}
                     </span>
                   </span>
