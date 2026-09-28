@@ -56,6 +56,7 @@ function MenuContent({
   align = "start",
   sideOffset = 6,
   alignOffset = 0,
+  anchor,
   motion,
   padding,
   positionerClassName,
@@ -64,7 +65,7 @@ function MenuContent({
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
-    "side" | "align" | "sideOffset" | "alignOffset"
+    "side" | "align" | "sideOffset" | "alignOffset" | "anchor"
   > &
   VariantProps<typeof popupVariants> & {
     /** For a menu that has to clear a sheet or a lightbox: the z-index goes
@@ -80,6 +81,7 @@ function MenuContent({
         align={align}
         sideOffset={sideOffset}
         alignOffset={alignOffset}
+        anchor={anchor}
       >
         <MenuPrimitive.Popup
           data-slot="menu-content"

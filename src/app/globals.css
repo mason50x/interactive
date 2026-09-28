@@ -870,6 +870,20 @@
     transform: scale(0.12);
   }
 
+  /* The account menu rises out of the foot of the rail from further down and
+     over a longer beat: it is the one popup that opens up the whole height of
+     the rail, and the short travel read as a flicker there. */
+  .account-popup.popup-slide {
+    transition:
+      transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .account-popup.popup-slide[data-starting-style],
+  .account-popup.popup-slide[data-ending-style] {
+    transform: translateY(1.75rem);
+  }
+
   /* The same thing for a popup that hangs below its trigger instead of above
      it: it starts a little higher and settles downward, so it still reads as
      having come out of the thing that was pressed rather than up off the page.

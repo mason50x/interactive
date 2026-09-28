@@ -70,6 +70,7 @@ export function AppSidebar() {
   );
   const warm = useWarmRoutes(pathname, hotRoutes);
   const list = useRef<HTMLUListElement>(null);
+  const foot = useRef<HTMLDivElement>(null);
   const onHome = pathname === HOME_HREF;
 
   return (
@@ -211,8 +212,14 @@ export function AppSidebar() {
 
       {/* A column under the icons, account last; one row once the rail is
           wide, account first, so the schedule and playtime sit on the rail's
-          right edge and open beside it rather than over the avatar. */}
-      <div className="flex shrink-0 flex-col items-center gap-1 pb-3 pl-3 wide:flex-row">
+          right edge and open beside it rather than over the avatar. Inset
+          by margin, not padding, so its box is exactly the rail's content
+          column: the account menu is anchored to it, and matching its width
+          is what centres the menu in the rail. */}
+      <div
+        ref={foot}
+        className="mb-3 ml-3 flex shrink-0 flex-col items-center gap-1 wide:flex-row"
+      >
         {/* Home already shows the schedule as a card, so the button tucks
             away there and slides back in everywhere else — out of the column
             by its height, out of the row by its width. */}
@@ -234,7 +241,7 @@ export function AppSidebar() {
             session straight back here, so it would be a round trip to
             nowhere. */}
         <div className="wide:order-first wide:mr-auto">
-          <UserMenu />
+          <UserMenu anchor={foot} />
         </div>
       </div>
     </nav>

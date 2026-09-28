@@ -4,7 +4,7 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ShieldCheckIcon } from "@heroicons/react/16/solid";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type RefObject } from "react";
 import { useAccountModal } from "@/components/app/account-modal";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { Avatar } from "@/components/app/user-menu/avatar";
@@ -35,8 +35,16 @@ import { normalizePersonName } from "@/lib/person-name";
  * layout for it to go. What is left of Clerk here is the data (`useUser`),
  * the modal behind the Settings row (`useAccountModal`) and the one action it
  * owns (`signOut`).
+ *
+ * `anchor` is what the popup is placed against and takes its width from, so
+ * the rail can hand over its whole foot rather than the avatar alone and
+ * have the menu sit centred across the rail.
  */
-export function UserMenu() {
+export function UserMenu({
+  anchor,
+}: {
+  anchor?: RefObject<HTMLElement | null>;
+}) {
   const { isLoaded, user } = useUser();
   const { staffRoles, adminBadgesLoaded } = useChat();
   const showAdminBadge = useCachedAdminBadge(
@@ -103,7 +111,13 @@ export function UserMenu() {
           </span>
         </MenuTrigger>
 
-        <MenuContent side="top" align="start" sideOffset={8} className="w-60">
+        <MenuContent
+          side="top"
+          align="start"
+          sideOffset={16}
+          anchor={anchor}
+          className="account-popup w-60 wide:w-[var(--anchor-width)]"
+        >
           {/* The trigger is only a face, so the popup opens by saying whose
             account it is — and wears the staff chip that used to sit under
             the name in the rail. */}
