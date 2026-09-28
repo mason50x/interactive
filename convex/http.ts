@@ -76,7 +76,10 @@ async function validateRequest(request: Request): Promise<WebhookEvent | null> {
   };
 
   try {
-    return new Webhook(secret).verify(payload, headers) as WebhookEvent;
+    // `verify` throws on a bad signature and, since svix 2.5, returns nothing
+    // on a good one; the body is parsed here.
+    new Webhook(secret).verify(payload, headers);
+    return JSON.parse(payload) as WebhookEvent;
   } catch (error) {
     console.error("Could not verify Clerk webhook:", error);
     return null;

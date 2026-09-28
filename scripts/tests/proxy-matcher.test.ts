@@ -1,27 +1,20 @@
-import { readFileSync } from "node:fs";
-import vm from "node:vm";
-import ts from "typescript";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 
-const output = ts.transpileModule(readFileSync("src/proxy.ts", "utf8"), {
-  compilerOptions: { module: ts.ModuleKind.CommonJS },
-}).outputText;
-const moduleExports = { config: { matcher: [] as string[] } };
-vm.runInNewContext(output, {
-  exports: moduleExports,
-  require(name: string) {
-    if (name === "@clerk/nextjs/server")
-      return {
-        clerkMiddleware: (handler: unknown) => handler,
-        createRouteMatcher: () => () => false,
-      };
-    if (name === "next/server") return {};
-    if (name === "@/lib/learn") return { LEARN_PATH_PREFIX: "/learn" };
-    if (name === "@/lib/access-hours") return {};
-    throw new Error(name);
-  },
-});
+/**
+ * Only `config.matcher` is under test. The modules `src/proxy.ts` imports for
+ * the handler itself are stubbed so nothing here needs a Clerk key or a Next
+ * request context.
+ */
+vi.mock("@clerk/nextjs/server", () => ({
+  clerkMiddleware: (handler: unknown) => handler,
+  createRouteMatcher: () => () => false,
+}));
+vi.mock("next/server", () => ({}));
+vi.mock("@/lib/learn", () => ({ LEARN_PATH_PREFIX: "/learn" }));
+vi.mock("@/lib/access-hours", () => ({}));
+
+const { config } = await import("@/proxy");
 
 for (const path of [
   "/home",
@@ -44,11 +37,7 @@ for (const path of [
 ]) {
   test(`Clerk runs for ${path}`, () => {
     expect(
-      unstable_doesMiddlewareMatch({
-        config: moduleExports.config,
-        nextConfig: {},
-        url: path,
-      }),
+      unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: path }),
     ).toBe(true);
   });
 }
@@ -60,11 +49,7 @@ for (const path of [
 ]) {
   test(`static asset avoids Clerk for ${path}`, () => {
     expect(
-      unstable_doesMiddlewareMatch({
-        config: moduleExports.config,
-        nextConfig: {},
-        url: path,
-      }),
+      unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: path }),
     ).toBe(false);
   });
 }
