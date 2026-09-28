@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
+import { roleChangeRefusal } from "../config/roles";
 import { badgeHidden, resolveRole } from "./roles";
 import {
   activeTimeout,
@@ -113,6 +114,8 @@ const directoryUser = v.object({
   badgeHidden: v.boolean(),
   activityLimitMinutes: v.optional(v.number()),
   canChangeRole: v.boolean(),
+  /** Why a CEO caller can't change this role; absent when they can. */
+  roleLock: v.optional(v.string()),
   canManage: v.boolean(),
   ceoCleared: v.boolean(),
   timeout: v.union(timeoutView, v.null()),
@@ -134,6 +137,10 @@ export const users = query({
         const row = await timeoutRow(ctx, user.clerkId);
         const active = row?.enabled && row.expiresAt > now;
         const ceoCleared = isCeoClearActive(row, now);
+        const roleLock =
+          caller.role === "ceo"
+            ? roleChangeRefusal(caller.clerkId, user.clerkId, role)
+            : null;
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
@@ -147,7 +154,8 @@ export const users = query({
           joinedAt: user.clerkCreatedAt ?? user._creationTime,
           badgeHidden: await badgeHidden(ctx, user.clerkId),
           activityLimitMinutes: user.activityLimitMinutes,
-          canChangeRole: caller.role === "ceo" && user.clerkId !== caller.clerkId,
+          canChangeRole: caller.role === "ceo" && roleLock === null,
+          ...(roleLock ? { roleLock } : {}),
           ceoCleared,
           canManage:
             ranks[role] < ranks[caller.role] &&

@@ -92,6 +92,13 @@ CEO client: env vars are deployment config with no runtime write API. A CEO
 cannot change their own role, and the change cannot leave zero CEOs, so the
 site cannot be locked out of the Admin page.
 
+CEOs are equals except over each other: a CEO cannot change another CEO's
+role, up or down, so no CEO can demote a peer. Promoting anybody below CEO
+to CEO remains any CEO's call. The one exception is the founder — Mason's
+exact Clerk account, `FOUNDER_CLERK_ID` in `config/roles.ts`, bound the same
+way X access is — who can change any CEO's role, while nobody can change the
+founder's. The directory shows the reason under a locked role selector.
+
 After deploying the `staffRoles` table, copy the existing env staff into it
 once per deployment so nobody loses access in between — the migration skips
 anyone who already has a row, so CEO edits are never overwritten:
