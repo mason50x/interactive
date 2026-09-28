@@ -1798,16 +1798,25 @@
     background-size: 24px 24px;
   }
 
-  /* The app rail's version: a tighter pitch, and inked off the foreground
-     rather than the border so it reads as a texture on the chrome instead of
-     vanishing into it — in both themes, since the mix follows the ink. */
+  /* The app rail's version: a tighter pitch, inked off the foreground so it
+     follows the theme. Quiet on purpose — it is a texture on the chrome, and
+     any stronger it starts competing with the labels on top of it.
+
+     It rises out of the foot of the rail, where the empty space is, and
+     thins out on the way up, so the upper rows get a trace of it rather than
+     a pattern behind them. It also fades before the rail's right edge, where
+     the shell's border takes over. */
   .rail-dots {
     background-image: radial-gradient(
-      circle at 1.5px 1.5px,
-      color-mix(in oklab, var(--foreground) 20%, transparent) 1.2px,
+      circle at 1px 1px,
+      color-mix(in oklab, var(--foreground) 12%, transparent) 1px,
       transparent 0
     );
-    background-size: 12px 12px;
+    background-size: 14px 14px;
+    mask-image:
+      linear-gradient(to top, #000, rgb(0 0 0 / 0.5) 50%, transparent 95%),
+      linear-gradient(to right, #000 55%, transparent);
+    mask-composite: intersect;
   }
 
   .bg-glow {

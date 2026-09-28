@@ -81,12 +81,11 @@ export function AppSidebar() {
       aria-label="Dashboard"
       className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col wide:w-60"
     >
-      {/* A dot lattice behind the whole rail, rows included, faded out at
-          its edges so it melts into the chrome rather than stopping at a
-          line. See `.rail-dots`. */}
+      {/* A faint dot lattice rising from the foot of the rail and thinning
+          out behind the rows above. See `.rail-dots`. */}
       <div
         aria-hidden
-        className="rail-dots pointer-events-none absolute inset-0 -z-10 mask-t-from-85% mask-r-from-80% mask-b-from-80%"
+        className="rail-dots pointer-events-none absolute inset-0 -z-10"
       />
 
       {/* Returns to Home, the default app page. The narrow padding centres
