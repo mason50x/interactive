@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import { Thread } from "@/components/app/chat/thread";
 import type { Id } from "@convex/_generated/dataModel";
 
@@ -16,7 +16,7 @@ import type { Id } from "@convex/_generated/dataModel";
 export default async function ConversationPage({
   params,
 }: PageProps<"/chat/[conversationId]">) {
-  await auth.protect();
+  await protectPage();
   const { conversationId } = await params;
 
   return <Thread conversationId={conversationId as Id<"conversations">} />;

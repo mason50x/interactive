@@ -1,5 +1,5 @@
 /** One HTML simulation, addressed by the hash of its bytes. */
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { HtmlPlayerLoader } from "@/components/simulator/html-player-loader";
@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "HTML — Simulators" };
 export default async function Page({
   params,
 }: PageProps<"/emulate/html/[contentHash]">) {
-  await auth.protect();
+  await protectPage();
   const { contentHash } = await params;
   if (!isContentHash(contentHash)) notFound();
   return <HtmlPlayerLoader contentHash={contentHash} />;

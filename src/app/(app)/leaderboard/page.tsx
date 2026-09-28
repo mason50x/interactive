@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { Leaderboard } from "@/components/app/leaderboard/leaderboard";
 import { Page } from "@/components/ui/page";
@@ -6,7 +6,7 @@ import { Page } from "@/components/ui/page";
 export const metadata: Metadata = { title: "Leaderboard" };
 
 export default async function LeaderboardPage() {
-  await auth.protect();
+  await protectPage();
   return (
     <Page>
       <Leaderboard />

@@ -4,7 +4,7 @@ import { TimeoutMessage } from "@/components/app/timeout-message";
 import { RestrictionScreen } from "@/components/app/restriction-screen";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { notFound } from "next/navigation";
 import { MeteredActivity } from "@/components/activity/metered-activity";
@@ -36,8 +36,7 @@ export async function generateMetadata({
 export default async function LearnPage({
   params,
 }: PageProps<"/learn/[slug]">) {
-  await auth.protect();
-  const { getToken } = await auth();
+  const { getToken } = await protectPage();
   const token = await getToken({ template: "convex" });
   if (!token) throw new Error("Your session is not available.");
   // First: every other function refuses a restricted account outright.

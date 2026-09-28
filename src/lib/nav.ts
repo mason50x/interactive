@@ -100,6 +100,14 @@ export const navItems: NavItem[] = [
 export const SETTINGS_HREF = "/settings";
 
 /**
+ * The first tab, which is where `/settings` on its own redirects. Links go
+ * straight here instead: pointing them at the bare route would cost every
+ * click a round trip to the server just to be told where to go next.
+ */
+export const SETTINGS_DEFAULT_SECTION = "appearance";
+export const SETTINGS_DEFAULT_HREF = `${SETTINGS_HREF}/${SETTINGS_DEFAULT_SECTION}`;
+
+/**
  * The rail as the account arranged it: `order` first, in its order, then
  * anything it does not mention in the default order — so a destination added
  * after someone rearranged still shows up — less whatever they hid. Home is

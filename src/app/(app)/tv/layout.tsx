@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import { EntertainmentSetup } from "@/components/app/tv/entertainment-setup";
 
 export default async function EntertainmentLayout({
@@ -6,6 +6,6 @@ export default async function EntertainmentLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await auth.protect();
+  await protectPage();
   return <EntertainmentSetup>{children}</EntertainmentSetup>;
 }

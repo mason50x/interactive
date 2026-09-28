@@ -49,6 +49,34 @@ and traces, with query strings redacted so authentication parameters do not ente
 `worker.ts` sets framing/crawler policy and prevents shared caching on auth,
 dashboard and learn routes. `public/_headers` covers static responses.
 
+### What runs through the Worker
+
+`assets.run_worker_first` in `wrangler.jsonc` routes rendered pages, RSC
+requests, route handlers and Server Actions through `worker.ts`. Hashed
+build output under `/_next/static/` and the public artwork and media
+directories (`/thumbnails/`, `/app-icons/`, `/logos/`, `/brand/`, `/images/`,
+`/fonts/`, `/audio/`, `/avatars/`, `/onboarding/`, `/entertainment-setup/`,
+`/simulator/`) are negated from that list: the asset layer serves them
+directly, from Cloudflare's cache, and the Worker is not invoked. Their
+headers come from `public/_headers`: the crawler and framing policy on every
+file, a one-year immutable lifetime for hashed output, and a one-day public
+lifetime for artwork. A request under one of those prefixes with no matching
+file falls through to the Worker as before.
+
+Two consequences follow. A page load is one Worker invocation plus its RSC
+requests, not one per script, font and thumbnail; the activities grid alone
+used to cost a couple of hundred. And those files are outside the
+working-hours gate in `worker.ts`: a hashed chunk or a game thumbnail is a
+public file with no session behind it, and the gate still covers every page,
+payload and action. Files under route prefixes, such as the chat avatars in
+`public/chat/`, still pass through the Worker.
+
+Smart Placement is off. A rendered page makes no back-end round trips of its
+own — Clerk verifies the session against a cached key set and Convex is a
+browser subscription — so the default placement, nearest the visitor, is the
+fastest. Cloudflare also notes that placement decisions are unreliable in
+combination with `run_worker_first`.
+
 ## CPU time
 
 Workers Free allows 10 ms of CPU per request. Workers Paid allows 30 seconds
@@ -70,6 +98,26 @@ Production must therefore run on Workers Paid. The default 30 s limit is
 ample; do not set `limits.cpu_ms` on the Free plan, where the API rejects it.
 Workers & Pages → the Worker → Metrics reports CPU time per invocation, and
 Observability lists each overrun with its URL.
+
+What keeps a render's CPU down, and where to look before adding to it:
+
+- **Module evaluation counts.** A client component referenced anywhere in a
+  route's tree is imported on the server to render the HTML, whether or not
+  it draws anything there, and the first request to touch a module on a
+  fresh isolate pays to evaluate it. Anything heavy that only works in a
+  browser — WebGL, WASM, an editor — goes behind `next/dynamic` with
+  `ssr: false` (see `src/components/pixel-blast.tsx`), and a page that only
+  needs a constant from another page imports a small shared module, not the
+  page (see `src/components/app/home/sections.ts`). Compare
+  `dist/server/ssr/_next/static/*.js` sizes after a build to see what a
+  route pulls in.
+- **One session check per request.** Layouts and pages guard themselves
+  through `protectPage` in `src/lib/session.ts`, which memoises
+  `auth.protect()` for the request, rather than each re-verifying the
+  middleware token.
+- **Prefetches are renders.** `src/lib/warm.ts` warms a couple of likely
+  destinations once a page is idle and the rest on hover. Warming every
+  route on mount multiplies each page load's CPU by the size of the rail.
 
 ## Preview environments
 

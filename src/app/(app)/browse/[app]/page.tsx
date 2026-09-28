@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExperienceChrome } from "@/components/app/experience-chrome";
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * the frame under it fill the dashboard's main column edge to edge.
  */
 export default async function ExperienceAppPage({ params }: Props) {
-  const { userId } = await auth.protect();
+  const { userId } = await protectPage();
 
   const { app: id } = await params;
   const app = findExperienceApp(id, userId);

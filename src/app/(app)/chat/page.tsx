@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import { EmptyPane } from "@/components/app/chat/empty-pane";
 
 /**
@@ -10,7 +10,7 @@ import { EmptyPane } from "@/components/app/chat/empty-pane";
  * `ChatFrame`.
  */
 export default async function ChatIndexPage() {
-  await auth.protect();
+  await protectPage();
 
   return <EmptyPane />;
 }

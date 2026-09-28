@@ -22,7 +22,8 @@ import { useClickOutside } from "@/lib/use-click-outside";
 import { useCachedAdminBadge } from "@/lib/use-cached-admin-badge";
 import { cn } from "@/lib/utils";
 import { normalizePersonName } from "@/lib/person-name";
-import { SETTINGS_HREF } from "@/lib/nav";
+import { SETTINGS_DEFAULT_HREF } from "@/lib/nav";
+import { usePrefetch } from "@/lib/warm";
 
 /**
  * The account control at the foot of the rail: who you are, and the two
@@ -63,6 +64,9 @@ export function UserMenu({
   const { preference, setPreference } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  // Opening the menu is most of the way to clicking Settings, and the page
+  // is small: fetch it now, so the row opens on something already here.
+  const prefetch = usePrefetch();
   const signOutRef = useRef<HTMLDivElement>(null);
 
   // A press on anything but the sign-out row puts it back. This listens on the
@@ -94,7 +98,10 @@ export function UserMenu({
         be gone, so the row is simply back the next time it is opened. */}
       <Menu
         open={menuOpen}
-        onOpenChange={setMenuOpen}
+        onOpenChange={(open) => {
+          setMenuOpen(open);
+          if (open) prefetch(SETTINGS_DEFAULT_HREF);
+        }}
         onOpenChangeComplete={(open) => {
           if (!open) setConfirmingSignOut(false);
         }}
@@ -144,14 +151,16 @@ export function UserMenu({
 
           {/* One door: the Settings page, which ends in an Account section
             with Clerk's own modal — profile, email, password, devices —
-            one button further in.
+            one button further in. It opens on the first tab directly;
+            `/settings` alone would answer with a redirect there, which is
+            a round trip for nothing.
 
             The avatar leads the row rather than a gear: the row is the
             door to your account as much as to the site's settings, and
             the face is what says so. */}
           <MenuLinkItem
             closeOnClick
-            render={<Link href={SETTINGS_HREF} />}
+            render={<Link href={SETTINGS_DEFAULT_HREF} />}
             tone="muted"
             size="tall"
             className="justify-between"

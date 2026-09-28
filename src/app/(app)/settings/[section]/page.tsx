@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -16,7 +16,7 @@ export async function generateMetadata({
 export default async function SettingsSection({
   params,
 }: PageProps<"/settings/[section]">) {
-  await auth.protect();
+  await protectPage();
   const { section } = await params;
   const entry = findSettingsSection(section);
   if (!entry) notFound();

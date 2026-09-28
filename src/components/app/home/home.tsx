@@ -25,21 +25,13 @@ import { rankGames } from "@/lib/game-popularity";
 import { dailyLearningQuote, nextQuoteDelay } from "@/lib/learning-quotes";
 import { CHAT_HREF, LEADERBOARD_HREF } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import PixelBlast from "@/components/PixelBlast";
+import { PixelBlast } from "@/components/pixel-blast";
 
 const DAY = 86_400_000;
 
-/** The parts of Home an account can hide, in the order they appear. */
-export const homeSections = [
-  { id: "greeting", label: "Greeting" },
-  { id: "featured", label: "Top pick" },
-  { id: "schedule", label: "Bell schedule" },
-  { id: "chat", label: "Chat" },
-  { id: "leaders", label: "Leaderboard" },
-  { id: "quote", label: "Quote of the day" },
-] as const;
-
-export type HomeSectionId = (typeof homeSections)[number]["id"];
+// The list of cards lives in `./sections` so Settings can read it without
+// importing this page; see that module for why.
+import type { HomeSectionId } from "@/components/app/home/sections";
 
 /**
  * Home: the page a session lands on.

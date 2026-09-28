@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { PublishedHtmlPlayer } from "@/components/simulator/published-html-player";
 
@@ -8,7 +8,7 @@ export default async function Page({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await auth.protect();
+  await protectPage();
   const { id } = await params;
   return <PublishedHtmlPlayer id={id} />;
 }

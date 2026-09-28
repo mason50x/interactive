@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 
 import { SettingsShell } from "@/components/app/settings/settings-shell";
 import { Page } from "@/components/ui/page";
@@ -9,7 +9,7 @@ export default async function SettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await auth.protect();
+  await protectPage();
   return (
     <Page className="max-w-5xl pt-10 page-sm:pt-12">
       <SettingsShell>{children}</SettingsShell>

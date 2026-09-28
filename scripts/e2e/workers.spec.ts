@@ -39,8 +39,10 @@ test("public routes and static assets retain the response policy", async ({
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
     expect(response.headers()["x-robots-tag"], path).toContain("noindex");
+    // Split view frames the app inside itself, so every response permits
+    // this origin and no other (see `worker.ts`).
     expect(response.headers()["content-security-policy"], path).toBe(
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     );
   }
 });

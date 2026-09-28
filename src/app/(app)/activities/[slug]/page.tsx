@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { protectPage } from "@/lib/session";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GameViewRecorder } from "@/components/app/game-views";
@@ -28,7 +28,7 @@ export async function generateMetadata({
 export default async function ActivityPage({
   params,
 }: PageProps<"/activities/[slug]">) {
-  await auth.protect();
+  await protectPage();
   const { slug } = await params;
 
   const activity = findActivity(slug);
