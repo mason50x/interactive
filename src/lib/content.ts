@@ -80,7 +80,7 @@ export const features: readonly Feature[] = [
   {
     id: "maps",
     title: "Concept maps, built from your material",
-    body: "Upload a reading and Interactive Learning extracts the ideas and the relationships between them. Expand a node to go deeper; collapse it when it clicks.",
+    body: "Upload a reading and Rift extracts the ideas and the relationships between them. Expand a node to go deeper; collapse it when it clicks.",
     visual: "map",
     span: true,
   },
@@ -105,7 +105,7 @@ export const features: readonly Feature[] = [
   {
     id: "sketch",
     title: "Sketch a question, get a diagram",
-    body: "Draw a rough version of what you think is happening. Interactive Learning corrects it and shows you where the model breaks.",
+    body: "Draw a rough version of what you think is happening. Rift corrects it and shows you where the model breaks.",
     visual: "sketch",
   },
 ];
@@ -118,7 +118,7 @@ export const howItWorks = {
     {
       number: "01",
       title: "Bring your material",
-      body: "PDFs, slide decks, lecture recordings, or a pasted set of notes. Interactive Learning reads all of it.",
+      body: "PDFs, slide decks, lecture recordings, or a pasted set of notes. Rift reads all of it.",
     },
     {
       number: "02",
@@ -148,7 +148,7 @@ export const practice = {
 export const educators = {
   eyebrow: "For educators",
   heading: "See where a class is actually stuck",
-  body: "Assign a map instead of a reading. Interactive Learning shows you, at a glance, which concepts a cohort has connected and which ones are still isolated, before the exam tells you.",
+  body: "Assign a map instead of a reading. Rift shows you, at a glance, which concepts a cohort has connected and which ones are still isolated, before the exam tells you.",
   bullets: [
     "Cohort-level heatmaps across every concept",
     "Assignments that hand back structure, not just a score",
@@ -254,9 +254,9 @@ export const faqSection = {
 
 export const faqs = [
   {
-    question: "Does Interactive Learning just summarise my readings?",
+    question: "Does Rift just summarise my readings?",
     answer:
-      "No. A summary hands you a shorter wall of text. Interactive Learning produces a structure, the ideas and the relationships between them, that you move through, question, and get tested on. Every node stays linked to the passage it came from.",
+      "No. A summary hands you a shorter wall of text. Rift produces a structure, the ideas and the relationships between them, that you move through, question, and get tested on. Every node stays linked to the passage it came from.",
   },
   {
     question: "What can I upload?",
@@ -266,7 +266,7 @@ export const faqs = [
   {
     question: "Will this work for my subject?",
     answer:
-      "Interactive Learning covers 41 subjects end to end, and handles anything with structure, which is most things. Notation-heavy fields like organic chemistry and formal logic have purpose-built renderers.",
+      "Rift covers 41 subjects end to end, and handles anything with structure, which is most things. Notation-heavy fields like organic chemistry and formal logic have purpose-built renderers.",
   },
   {
     question: "Is my coursework private?",
@@ -276,7 +276,7 @@ export const faqs = [
   {
     question: "How is this different from flashcards?",
     answer:
-      "Flashcards test facts in isolation. Interactive Learning tests whether you can connect them, then generates recall practice from the connections you keep missing.",
+      "Flashcards test facts in isolation. Rift tests whether you can connect them, then generates recall practice from the connections you keep missing.",
   },
   {
     question: "How do I get started?",
@@ -327,7 +327,7 @@ export const footer = {
 export const about = {
   eyebrow: "About",
   heading: "We build for understanding, not memorising.",
-  lede: "Interactive Learning started with a stubborn observation: students who re-read a chapter four times still cannot explain it. Structure is what makes an idea stick, so we build the structure.",
+  lede: "Rift started with a stubborn observation: students who re-read a chapter four times still cannot explain it. Structure is what makes an idea stick, so we build the structure.",
   facts: [
     { value: "2024", label: "Founded" },
     { value: "240k", label: "Maps built this term" },

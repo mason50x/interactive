@@ -3,8 +3,8 @@
   "foundation": {
     "strategy": "preserve",
     "existingAssets": [
-      "src/lib/brand.ts: Interactive Learning identity and IL monogram.",
-      "public/brand/: existing monochrome logos and app icons.",
+      "src/lib/brand.ts: Rift identity and airplane mark.",
+      "public/brand/: monochrome airplane logos and app icons.",
       "src/app/globals.css: established light and dark themes.",
       "src/app/layout.tsx: shared Inter typography and current font-loading configuration.",
       "src/components/ui/page.tsx, card.tsx, button.tsx, input.tsx: shared interface primitives.",
@@ -12,7 +12,7 @@
     ],
     "assetActions": [
       {
-        "asset": "Interactive Learning name and existing IL logo assets",
+        "asset": "Rift name and airplane logo assets",
         "action": "protect",
         "reason": "The user requested a revert, with no identity changes."
       },
@@ -36,7 +36,7 @@
       "No new design. Preserve the restored admin appearance.",
       "Keep unrelated changes and existing uncommitted work.",
       "Keep current authentication, permissions, timeout behavior, validation, submission guards and account-specific feedback.",
-      "Keep Inter, the monochrome IL identity, shared light and dark themes, native role selects and responsive behavior.",
+      "Keep Inter, the monochrome Rift airplane identity, shared light and dark themes, native role selects and responsive behavior.",
       "The historical admin implementation takes priority over the supplied marketing references.",
       "Do not introduce imagery, sections, dependencies, decorative treatments or new admin capabilities.",
       "Do not reintroduce admin entrance or scroll-reveal animations."
@@ -48,7 +48,7 @@
     ]
   },
   "creativeDirection": {
-    "summary": "Preserve the familiar Interactive Learning admin interface exactly within the requested restoration scope.",
+    "summary": "Preserve the familiar Rift admin interface exactly within the requested restoration scope.",
     "traits": [
       {
         "quality": "Familiar shared controls",
@@ -217,20 +217,14 @@
         "Controls",
         "Account metadata"
       ],
-      "weights": [
-        400,
-        500,
-        550,
-        600,
-        700
-      ]
+      "weights": [400, 500, 550, 600, 700]
     }
   ],
   "interfaceDirection": "Keep the restored shared Page wrapper: 1400px maximum width, responsive 24/32/40px horizontal gutters and 32px major spacing. Preserve shared PageTitle sizing at 36px and 44px, 20px card headings, and compact body and metadata sizes. Use existing Card surfaces, 24px outer corner radius, shared elevation, 24/28px card padding and 24px layout gaps. Retain smaller rounded field and selection boundaries, original list dividers and native role selects. Keep existing loading, disabled, focus, saving, success and error states. Preserve established theme and accent preferences. Any necessary accessibility correction must remain local, retain identity colors and avoid global token changes.",
   "imageDirection": {
     "summary": "No new imagery is needed for this restoration.",
     "subjects": [
-      "Existing IL identity in the unchanged application shell",
+      "Existing Rift airplane identity in the unchanged application shell",
       "Existing Heroicons shield and functional control icons"
     ],
     "treatment": "Retain existing assets and icon sizing. The supplied marketing photographs and compositions are outside the requested revert.",

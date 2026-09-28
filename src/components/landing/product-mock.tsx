@@ -50,7 +50,7 @@ export function ProductMock({ className }: { className?: string }) {
     <Card
       radius="lg"
       role="img"
-      aria-label="The Interactive Learning app with a concept map of cellular respiration open, a library of courses on the left, and a recall question on the right."
+      aria-label="The Rift app with a concept map of cellular respiration open, a library of courses on the left, and a recall question on the right."
       className={cn("overflow-hidden text-left sm:rounded-[1.5rem]", className)}
     >
       {/* Title bar */}

@@ -8,7 +8,7 @@ const { document, sibling } = legalDocuments.tos;
 export const metadata: Metadata = {
   title: document.title,
   description:
-    "The agreement between you and Interactive Learning for your use of the site and everything on it.",
+    "The agreement between you and Rift for your use of the site and everything on it.",
 };
 
 export default function TermsPage() {

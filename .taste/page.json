@@ -6,7 +6,7 @@
     "description": "Find accounts and complete permitted account-management actions with clear scope, restrictions, and feedback."
   },
   "architecture": {
-    "contract": "This page helps Interactive Learning CEOs and Head Moderators complete a permitted account-management change for the intended account or explicitly selected global scope. The business outcome is controlled platform access. The primary conversion is a successful, clearly acknowledged administrative action.",
+    "contract": "This page helps Rift CEOs and Head Moderators complete a permitted account-management change for the intended account or explicitly selected global scope. The business outcome is controlled platform access. The primary conversion is a successful, clearly acknowledged administrative action.",
     "mode": "operate_monitor",
     "novelty": "low",
     "grid": "Retain the existing application shell and 1400px maximum page width. Use a 12-column content grid with 16px gaps. Breakpoints depend on available content width after the sidebar: compact below 640px, medium 640–999px, expanded from 1000px. Sections span all columns; their internal proportions follow their assigned references. Source order is context, timeouts, CEO directory, CEO allowance reset.",
@@ -58,9 +58,7 @@
     {
       "id": "admin_context",
       "layoutFamily": "about",
-      "layoutCases": [
-        "ollef-03-studio"
-      ],
+      "layoutCases": ["ollef-03-studio"],
       "referenceDirectionId": "ollef-03-studio",
       "purpose": "Identify the workspace and resolve access before exposing account controls.",
       "userQuestion": "What can I manage here?",
@@ -99,16 +97,12 @@
     {
       "id": "user_timeouts",
       "layoutFamily": "feature",
-      "layoutCases": [
-        "fabrica-10-case-study"
-      ],
+      "layoutCases": ["fabrica-10-case-study"],
       "referenceDirectionId": "fabrica-10-case-study",
       "purpose": "Select an account and manage its temporary access restriction.",
       "userQuestion": "Which account needs a timeout change, and what am I allowed to change?",
       "stage": "act",
-      "dependencies": [
-        "admin_context"
-      ],
+      "dependencies": ["admin_context"],
       "evidence": [
         "src/components/app/admin/timeout-console.tsx queries users in pages of 50 and filters loaded names, handles, and account IDs.",
         "The same component exposes canManage, CEO-cleared status, timeout reason and expiry, and start, restart, and end mutations.",
@@ -181,16 +175,12 @@
     {
       "id": "user_directory",
       "layoutFamily": "feature",
-      "layoutCases": [
-        "stodio-05-services"
-      ],
+      "layoutCases": ["stodio-05-services"],
       "referenceDirectionId": "stodio-05-services",
       "purpose": "Let CEOs identify an account, edit its role, or select it for an allowance reset.",
       "userQuestion": "Which account am I managing, and what role does it have?",
       "stage": "act",
-      "dependencies": [
-        "admin_context"
-      ],
+      "dependencies": ["admin_context"],
       "evidence": [
         "src/components/app/admin/admin-console.tsx mounts QuotaConsole only for the CEO role.",
         "src/components/app/admin/quota-console.tsx searches names, usernames, emails, and account IDs.",
@@ -243,17 +233,12 @@
     {
       "id": "quota_reset",
       "layoutFamily": "pricing",
-      "layoutCases": [
-        "xodexdesign-07-pricing"
-      ],
+      "layoutCases": ["xodexdesign-07-pricing"],
       "referenceDirectionId": "xodexdesign-07-pricing",
       "purpose": "Let CEOs restore explicitly selected allowances for an explicit account scope.",
       "userQuestion": "Which allowances will be reset, and whose accounts will change?",
       "stage": "act",
-      "dependencies": [
-        "admin_context",
-        "user_directory"
-      ],
+      "dependencies": ["admin_context", "user_directory"],
       "evidence": [
         "src/components/app/admin/quota-console.tsx supports global and specific-user reset scope.",
         "The existing reset supports experience and bot quotas, labeled Proxy time and Bot usage.",

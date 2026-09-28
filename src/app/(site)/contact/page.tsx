@@ -10,7 +10,7 @@ import { contact } from "@/lib/content";
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "How to reach the Interactive Learning team: support, schools and districts, press, and privacy.",
+    "How to reach the Rift team: support, schools and districts, press, and privacy.",
 };
 
 export default function ContactPage() {

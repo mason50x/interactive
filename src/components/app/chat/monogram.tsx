@@ -88,7 +88,7 @@ export function Monogram({
         ) : admins ? (
           <ShieldCheckIcon className="size-[72%]" />
         ) : (
-          <LogoMark className="h-[65%] w-[72%]" />
+          <LogoMark className="size-[72%]" />
         )}
       </span>
     );

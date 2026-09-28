@@ -4,7 +4,7 @@
  * The panic key in `src/lib/preferences.ts` answers the moment someone is
  * already standing behind you. This answers the hour before that: the strip
  * along the top of the browser is the part of a screen a passer-by reads
- * without meaning to, and a tab that says "Interactive Learning" is the one
+ * without meaning to, and a tab that says "Rift" is the one
  * thing about this app that cannot be turned down. A mask replaces the title
  * and the favicon with a site nobody looks at twice, so the tab is boring at
  * rest rather than only after a keystroke.

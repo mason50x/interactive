@@ -17,7 +17,7 @@ import styles from "./onboarding.module.css";
 
 const scenes = [
   {
-    title: "Welcome to interactive learning.",
+    title: "Welcome to Rift.",
     detail: "Your space to explore, play, and connect.",
   },
   {
@@ -317,10 +317,7 @@ export function OnboardingExperience() {
   }
 
   return (
-    <main
-      className={styles.screen}
-      aria-label="Welcome to interactive learning"
-    >
+    <main className={styles.screen} aria-label="Welcome to Rift">
       <RailConstellation
         className={styles.constellation}
         areaPerPoint={8500}
@@ -339,10 +336,7 @@ export function OnboardingExperience() {
       )}
 
       {stage === 1 && (
-        <div
-          className={styles.burst}
-          aria-label="Interactive logo bursts into light"
-        >
+        <div className={styles.burst} aria-label="Rift logo bursts into light">
           <LogoMark className={styles.burstLogo} />
           {Array.from({ length: 16 }, (_, index) => (
             <i

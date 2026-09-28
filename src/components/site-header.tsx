@@ -50,7 +50,7 @@ export function SiteHeader() {
           <Link
             href="/"
             className="-ml-1 rounded-lg px-1 py-1 text-foreground"
-            aria-label="Interactive Learning home"
+            aria-label="Rift home"
           >
             <Wordmark className="text-[1.125rem]" />
           </Link>

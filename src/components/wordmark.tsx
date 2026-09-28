@@ -1,34 +1,34 @@
-import { brand, monogram } from "@/lib/brand";
+import { brand, mark } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 /**
- * The IL monogram on its own, drawn in `currentColor`.
+ * The Rift airplane on its own, drawn in `currentColor`.
  *
  * The viewBox is cropped to the mark's ink box rather than its 100x100
  * design canvas, so the element has no built-in padding and its edges are
- * the letterforms themselves. Sized in `em` and baseline-aligned, which is
- * what lets it sit on the same cap line as text beside it.
+ * the wingtips, nose and tail themselves. Sized in `em`, so it scales with
+ * the text beside it.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="18 21 64 58"
+      viewBox={mark.inkBox}
       fill="currentColor"
       role="img"
       aria-label={brand.name}
       className={className}
     >
-      <path d={monogram.path} />
+      <path fillRule="evenodd" d={mark.path} />
     </svg>
   );
 }
 
 /**
- * The horizontal lockup: monogram plus name, sharing one cap line.
+ * The horizontal lockup: the airplane plus the name.
  *
- * `items-baseline` puts the SVG's bottom edge on the text baseline, and the
- * 0.727em height is Inter's cap height — so the mark is exactly as tall as
- * the capital I next to it at any font size.
+ * The mark is a diagonal, so its visual mass sits in the middle of its square
+ * rather than on a baseline; centring it against the name and letting it run
+ * a little past the cap height is what makes the two read at the same weight.
  */
 export function Wordmark({
   tone = "default",
@@ -55,12 +55,12 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex items-baseline gap-[0.42em] text-[1.0625rem] leading-none",
+        "inline-flex items-center gap-[0.36em] text-[1.0625rem] leading-none",
         color,
         className,
       )}
     >
-      <LogoMark className="h-[0.727em] w-[0.802em] shrink-0" />
+      <LogoMark className="size-[1.05em] shrink-0" />
       {showName && (
         <span className={cn("font-semibold whitespace-nowrap", nameClassName)}>
           {short ? brand.shortName : brand.name}

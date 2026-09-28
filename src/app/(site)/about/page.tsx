@@ -8,7 +8,7 @@ import { about } from "@/lib/content";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Who builds Interactive Learning, why it exists, and the principles behind every map.",
+    "Who builds Rift, why it exists, and the principles behind every map.",
 };
 
 export default function AboutPage() {

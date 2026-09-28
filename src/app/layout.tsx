@@ -17,8 +17,8 @@ import { paneScript } from "@/lib/workspace";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-// Inter is the brand typeface: the monogram is drawn from its letterforms, so
-// the wordmark beside it has to be the same face for the lockup to hold.
+// Inter is the brand typeface: the wordmark beside the airplane is set in it,
+// and every rendered brand asset uses the same face so the lockup holds.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],

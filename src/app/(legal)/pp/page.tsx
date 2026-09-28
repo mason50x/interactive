@@ -8,7 +8,7 @@ const { document, sibling } = legalDocuments.pp;
 export const metadata: Metadata = {
   title: document.title,
   description:
-    "What Interactive Learning collects, why, who else handles it, and what you can do about it.",
+    "What Rift collects, why, who else handles it, and what you can do about it.",
 };
 
 export default function PrivacyPage() {

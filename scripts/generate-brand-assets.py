@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-Regenerates every raster brand asset from one definition of the IL monogram.
+Regenerates every raster brand asset from one definition of the Rift mark.
 
-The vector assets (src/app/icon.svg, public/brand/*.svg) and this script share
-the same numbers, which come from measuring Inter Black at 1000upm. Run it
-after changing the mark or the wordmark:
+The mark is a swept-wing jet climbing at 45 degrees with a needle-shaped rift
+cut down its fuselage. It is drawn here, nose-up, as a half outline mirrored
+about the centreline, then rotated and fitted to the 12..88 ink box of a
+100x100 canvas. The script prints the resulting SVG path; the vector assets
+(src/app/icon.svg, public/brand/*.svg) and `mark.path` in src/lib/brand.ts
+carry that string verbatim, filled evenodd. Run it after changing the mark or
+the wordmark:
 
     python3 scripts/generate-brand-assets.py
 
@@ -12,6 +16,7 @@ Requires Pillow. Inter is downloaded to .cache/fonts on first run and is not
 committed; only the rendered PNGs are.
 """
 
+import math
 import os
 import urllib.request
 from PIL import Image, ImageDraw, ImageFont
@@ -26,21 +31,51 @@ PAPER = (255, 255, 255, 255)
 MUTED = (91, 91, 91, 255)
 RULE = (227, 227, 227, 255)
 
-NAME = "Interactive Learning"
+NAME = "Rift"
 TAGLINE = "The visual learning platform"
 BLURB = ("Concept maps, animated walkthroughs, and practice that adapts "
          "to what you have not understood yet.")
 DOMAIN = "interactivelearningresources.org"
 
-# The monogram on a 100x100 canvas: the union of three bars, with the counter
-# between the letters cut back out down to the baseline web. Kept identical to
-# `monogram.path` in src/lib/brand.ts.
-RECTS = [
-    (18.00, 21.00, 33.77, 79.00),   # I stem
-    (42.73, 21.00, 58.50, 79.00),   # L stem
-    (18.00, 66.33, 82.00, 79.00),   # shared foot
-]
-COUNTER = (33.77, 21.00, 42.73, 74.50)  # subtracted; leaves a 4.5 web
+# The aircraft, nose-up, in its own units: nose at (0, 0), tail at y ~= 100,
+# starboard half only. The nose is a quadratic ogive sampled into segments so
+# the whole outline stays a polygon, which both PIL and SVG draw identically.
+def _bez(p0, p1, p2, n):
+    return [((1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0],
+             (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1])
+            for t in (i / n for i in range(1, n + 1))]
+
+
+_HALF = ([(0, 0)] + _bez((0, 0), (6.4, 4.5), (6.4, 19), 10) + [
+    (6.4, 33),               # wing root, leading edge
+    (45, 64), (45, 70.5),    # wingtip, cut parallel to the line of flight
+    (6.4, 57),               # wing root, trailing edge
+    (4.2, 82),               # fuselage tapers into the tail
+    (19, 95.5), (19, 100),   # tailplane tip
+    (0, 95.5),               # swallow-tail finish on the centreline
+])
+_BODY = _HALF + [(-x, y) for x, y in reversed(_HALF[1:-1])]
+# The rift: a needle along the spine, never reaching nose or tail.
+_RIFT = [(0, 21), (-1.3, 50), (0, 84), (1.3, 50)]
+ANGLE = 45       # degrees clockwise from nose-up
+INK_BOX = 76     # fitted extent on the 100-unit canvas (12..88)
+
+
+def _fit():
+    a = math.radians(ANGLE)
+    rot = lambda pts: [(x * math.cos(a) - y * math.sin(a),
+                        x * math.sin(a) + y * math.cos(a)) for x, y in pts]
+    body, rift = rot(_BODY), rot(_RIFT)
+    xs, ys = [p[0] for p in body], [p[1] for p in body]
+    k = INK_BOX / max(max(xs) - min(xs), max(ys) - min(ys))
+    cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
+    place = lambda pts: [(round(50 + (x - cx) * k, 2), round(50 + (y - cy) * k, 2))
+                         for x, y in pts]
+    return place(body), place(rift)
+
+
+BODY, RIFT = _fit()
+PATH = "".join("M" + " ".join("%g %g" % p for p in pts) + "Z" for pts in (BODY, RIFT))
 TILE_RADIUS = 0.20  # fraction of the tile edge
 
 FONTS = {
@@ -63,20 +98,18 @@ def font(name, size):
 
 
 def mark(size, fill=INK, ss=8):
-    """The bare monogram, anti-aliased, on a transparent square."""
+    """The bare airplane, anti-aliased, on a transparent square."""
     big = size * ss
     img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     k = big / 100.0
-    for x0, y0, x1, y1 in RECTS:
-        d.rectangle([x0 * k, y0 * k, x1 * k, y1 * k], fill=fill)
-    x0, y0, x1, y1 = COUNTER
-    d.rectangle([x0 * k, y0 * k, x1 * k, y1 * k], fill=(0, 0, 0, 0))
+    d.polygon([(x * k, y * k) for x, y in BODY], fill=fill)
+    d.polygon([(x * k, y * k) for x, y in RIFT], fill=(0, 0, 0, 0))
     return img.resize((size, size), Image.LANCZOS)
 
 
 def tile(size, radius=TILE_RADIUS, inset=0.0, ss=8):
-    """The monogram on its white tile — the icon form of the logo."""
+    """The airplane on its white tile — the icon form of the logo."""
     big = size * ss
     img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -96,21 +129,6 @@ def tile(size, radius=TILE_RADIUS, inset=0.0, ss=8):
     return img.resize((size, size), Image.LANCZOS)
 
 
-def tracked(draw, xy, text, fnt, fill, tracking=0.0, anchor=None):
-    """Draw text with letterspacing, which PIL has no native support for."""
-    x, y = xy
-    for ch in text:
-        draw.text((x, y), ch, font=fnt, fill=fill, anchor=anchor)
-        x += draw.textlength(ch, font=fnt) + tracking
-    return x
-
-
-def tracked_width(draw, text, fnt, tracking=0.0):
-    if not text:
-        return 0.0
-    return sum(draw.textlength(c, font=fnt) for c in text) + tracking * (len(text) - 1)
-
-
 def wrap(draw, text, fnt, max_width):
     lines, line = [], ""
     for word in text.split():
@@ -128,34 +146,34 @@ def wrap(draw, text, fnt, max_width):
 def lockup(cap=256, dark=False, pad=0):
     """Mark + wordmark on transparent — the horizontal logo.
 
-    Everything is driven off one cap height so the monogram and the wordmark
-    share a cap line: the mark is cropped to its ink box (the 100x100 canvas
-    carries padding a lockup must not inherit), and Inter is sized by its
-    0.728em cap height rather than by eye.
+    Driven off one cap height. The mark is cropped to its ink box (the
+    100x100 canvas carries padding a lockup must not inherit), drawn at
+    1.05x the name's size, and centred on the capitals rather than sat on the
+    baseline: a diagonal has its weight in the middle, not at its foot.
     """
     ink = PAPER if dark else INK
+    em = cap / 0.728                       # Inter's cap height is 0.728em
+    fnt = font("Inter-SemiBold.ttf", int(round(em)))
 
-    # Crop the mark to its ink: x 18..82, y 21..79 of the 100-unit canvas.
-    n = int(round(cap / 0.58))
+    n = int(round(em * 1.05 / 0.76))
     glyph = mark(n, fill=ink)
-    glyph = glyph.crop((round(n * 0.18), round(n * 0.21),
-                        round(n * 0.82), round(n * 0.79)))
+    lo, hi = round(n * 0.12), round(n * 0.88)
+    glyph = glyph.crop((lo, lo, hi, hi))
     gw, gh = glyph.size
 
-    fnt = font("Inter-SemiBold.ttf", int(round(cap / 0.728)))
-    tracking = cap * 0.004
-    gap = int(round(cap * 0.38))
+    gap = int(round(em * 0.36))
     probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
-    text_w = tracked_width(probe, NAME, fnt, tracking)
+    text_w = probe.textlength(NAME, font=fnt)
     _, descent = fnt.getmetrics()
 
+    # Baseline sits so the cap block is centred on the mark.
+    base = pad + gh / 2 + cap / 2
     w = int(round(gw + gap + text_w)) + pad * 2 + 2
-    h = gh + descent + pad * 2
+    h = int(round(max(pad * 2 + gh, base + descent + pad)))
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     img.alpha_composite(glyph, (pad, pad))
     d = ImageDraw.Draw(img)
-    # Baseline of the wordmark == baseline of the monogram.
-    tracked(d, (pad + gw + gap, pad + gh), NAME, fnt, ink, tracking, anchor="ls")
+    d.text((pad + gw + gap, base), NAME, font=fnt, fill=ink, anchor="ls")
     return img
 
 
@@ -169,8 +187,8 @@ def social(width=1200, height=630):
     # Eyebrow: the mark beside the name, with the domain closing the row.
     g = 60
     img.alpha_composite(mark(g), (pad, pad))
-    eyebrow = font("Inter-SemiBold.ttf", 25)
-    tracked(d, (pad + g + 18, pad + 17), NAME.upper(), eyebrow, INK, 3.4)
+    eyebrow = font("Inter-SemiBold.ttf", 30)
+    d.text((pad + g + 18, pad + 14), NAME, font=eyebrow, fill=INK)
     dom = font("Inter-Medium.ttf", 25)
     d.text((width - pad - d.textlength(DOMAIN, font=dom), pad + 17),
            DOMAIN, font=dom, fill=MUTED)
@@ -180,7 +198,7 @@ def social(width=1200, height=630):
     head = font("Inter-Bold.ttf", 82)
     y = 252
     for line in wrap(d, TAGLINE, head, width - pad * 2):
-        tracked(d, (pad, y), line, head, INK, -1.8)
+        d.text((pad, y), line, font=head, fill=INK)
         y += 94
 
     body = font("Inter-Regular.ttf", 31)
@@ -201,6 +219,7 @@ def save(img, path):
 
 def main():
     print("brand assets")
+    print("  mark.path = %s" % PATH)
 
     # favicon.ico — Pillow writes every size into one file.
     ico = tile(256)

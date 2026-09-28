@@ -76,8 +76,8 @@ export function InviteGate() {
         <LogoMark className="size-10 text-primary" />
         <h1 className="mt-6 text-2xl font-semibold">Enter your invite code</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Interactive learning is invite-only for now. Ask a friend who&apos;s
-          already in for a code.
+          Rift is invite-only for now. Ask a friend who&apos;s already in for a
+          code.
         </p>
         <InputOTP
           maxLength={6}

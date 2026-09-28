@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Interactive Learning. Use your own development
+Thanks for helping improve Rift. Use your own development
 services and follow the setup in the README. Never use production data in tests.
 
 ## Changes
