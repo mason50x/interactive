@@ -13,6 +13,7 @@ import {
 import {
   ChartBarIcon,
   FaceSmileIcon,
+  GifIcon,
   MicrophoneIcon,
 } from "@heroicons/react/24/solid";
 import { useQuery } from "convex/react";
@@ -55,12 +56,14 @@ import { personName, refusalMessage, type Refusal } from "@/lib/chat";
 import { useChatDraft, type ChatPollDraft } from "@/lib/chat-drafts";
 import { trimChatMarkdownForSend } from "@/lib/chat-editor-format";
 import { MAX_IMAGES_PER_MESSAGE } from "@/lib/images";
+import { gifsAvailable } from "@/lib/klipy";
 import { EVERYONE, findMentionTokens } from "@/lib/mentions";
 import { useDictation } from "@/lib/use-dictation";
 import { cn } from "@/lib/utils";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type {
+  ChatGif,
   ChatImage,
   ChatMention,
   ChatMessage,
@@ -72,10 +75,11 @@ const MAX_BODY = 2000;
 const EmojiPicker = lazy(
   () => import("@/components/app/chat/thread/emoji-picker"),
 );
+const GifPicker = lazy(() => import("@/components/app/chat/thread/gif-picker"));
 
-/** A tab left open across a deploy may request an emoji chunk that is gone. */
-class EmojiPickerBoundary extends Component<
-  { children: ReactNode },
+/** A tab left open across a deploy may request a picker chunk that is gone. */
+class PickerBoundary extends Component<
+  { what: string; children: ReactNode },
   { failed: boolean }
 > {
   state = { failed: false };
@@ -88,7 +92,7 @@ class EmojiPickerBoundary extends Component<
     if (this.state.failed) {
       return (
         <div className="flex flex-col gap-2 p-3 text-sm">
-          <p>Emojis couldn’t load. Refresh the page to try again.</p>
+          <p>{this.props.what} couldn’t load. Refresh the page to try again.</p>
           <Button onClick={() => window.location.reload()}>Refresh page</Button>
         </div>
       );
@@ -122,6 +126,7 @@ export type ComposerHandle = {
 export function Composer({
   ref,
   onSubmit,
+  onGif,
   pictures,
   replyingTo,
   onCancelReply,
@@ -146,6 +151,8 @@ export function Composer({
     everyone: boolean,
     poll?: ChatPollDraft,
   ) => Promise<Refusal | null>;
+  /** Sends a GIF straight away, as its own message, answering `replyTo`. */
+  onGif: (gif: ChatGif, replyTo: ChatMessage | null) => void;
   /**
    * Whether pictures are on for this deployment. Polls remain available
    * through the plus menu when uploads are disabled.
@@ -590,6 +597,17 @@ export function Composer({
                   }}
                   onUpload={() => fileInput.current?.click()}
                   onEmoji={(emoji) => inputRef.current?.insertEmoji(emoji)}
+                  onGif={(gif) => {
+                    setNotice(null);
+                    try {
+                      onGif(gif, reply);
+                    } catch {
+                      setNotice("That GIF could not be queued. Try again.");
+                      return;
+                    }
+                    // The GIF answered the reply; the typed draft stays.
+                    if (reply !== null) cancelReply();
+                  }}
                 />
                 <input
                   ref={fileInput}
@@ -714,6 +732,7 @@ function PlusMenu({
   canPoll,
   onPoll,
   onEmoji,
+  onGif,
   disabled,
 }: {
   quota: Parameters<typeof BotQuota>[0]["quota"];
@@ -724,10 +743,11 @@ function PlusMenu({
   canPoll: boolean;
   onPoll: () => void;
   onEmoji: (emoji: string) => void;
+  onGif: (gif: ChatGif) => void;
   disabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<"actions" | "emojis">("actions");
+  const [view, setView] = useState<"actions" | "emojis" | "gifs">("actions");
   const [panelHeight, setPanelHeight] = useState<number | "expanded" | null>(
     null,
   );
@@ -743,7 +763,7 @@ function PlusMenu({
     };
   }, []);
 
-  function showView(next: "actions" | "emojis") {
+  function showView(next: "actions" | "emojis" | "gifs") {
     const popup = popupRef.current;
     if (popup === null) return;
     if (resizeFrame.current !== null)
@@ -753,7 +773,7 @@ function PlusMenu({
     setPanelHeight(popup.getBoundingClientRect().height);
     setView(next);
     resizeFrame.current = window.requestAnimationFrame(() => {
-      if (next === "emojis") {
+      if (next !== "actions") {
         setPanelHeight("expanded");
       } else if (actionsRef.current !== null) {
         const style = window.getComputedStyle(popup);
@@ -809,12 +829,14 @@ function PlusMenu({
             style={{
               height:
                 panelHeight === "expanded"
-                  ? "min(22rem, calc(100dvh - 6rem))"
+                  ? view === "gifs"
+                    ? "min(34rem, calc(100dvh - 6rem))"
+                    : "min(22rem, calc(100dvh - 6rem))"
                   : (panelHeight ?? undefined),
             }}
             finalFocus={() => !returnToEditor.current}
             onKeyDownCapture={(event) => {
-              if (view === "emojis" && event.key === "Escape") {
+              if (view !== "actions" && event.key === "Escape") {
                 event.preventDefault();
                 event.stopPropagation();
                 showView("actions");
@@ -847,6 +869,15 @@ function PlusMenu({
                   <FaceSmileIcon className="size-[1.125rem]" />
                   Emojis
                 </MenuItem>
+                {gifsAvailable ? (
+                  <MenuItem
+                    closeOnClick={false}
+                    onClick={() => showView("gifs")}
+                  >
+                    <GifIcon className="size-[1.125rem]" />
+                    GIFs
+                  </MenuItem>
+                ) : null}
                 <MenuItem
                   onClick={onPoll}
                   disabled={!canPoll}
@@ -856,9 +887,30 @@ function PlusMenu({
                   Create a poll
                 </MenuItem>
               </div>
+            ) : view === "gifs" ? (
+              <div className="plus-menu-emojis flex min-h-0 flex-1 flex-col">
+                <PickerBoundary what="GIFs">
+                  <Suspense
+                    fallback={
+                      <p className="p-3 text-sm text-muted-foreground">
+                        Loading GIFs…
+                      </p>
+                    }
+                  >
+                    <GifPicker
+                      onBack={() => showView("actions")}
+                      onPick={(gif) => {
+                        returnToEditor.current = true;
+                        onGif(gif);
+                        setOpen(false);
+                      }}
+                    />
+                  </Suspense>
+                </PickerBoundary>
+              </div>
             ) : (
               <div className="plus-menu-emojis flex min-h-0 flex-1 flex-col">
-                <EmojiPickerBoundary>
+                <PickerBoundary what="Emojis">
                   <Suspense
                     fallback={
                       <p className="p-3 text-sm text-muted-foreground">
@@ -875,7 +927,7 @@ function PlusMenu({
                       }}
                     />
                   </Suspense>
-                </EmojiPickerBoundary>
+                </PickerBoundary>
               </div>
             )}
           </MenuPrimitive.Popup>

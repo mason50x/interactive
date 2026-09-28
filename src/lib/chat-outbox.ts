@@ -1,5 +1,6 @@
 import type { Id } from "@convex/_generated/dataModel";
 import type {
+  ChatGif,
   ChatImage,
   ChatMention,
   ChatMessage,
@@ -15,6 +16,7 @@ export type OutboxEntry = {
   mentions: ChatMention[];
   everyone: boolean;
   poll?: { options: string[] };
+  gif?: ChatGif;
   status: "queued" | "sending" | "failed";
   /** An interrupted attempt may have committed; retry its original nonce. */
   uncertain?: boolean;
@@ -76,6 +78,23 @@ function validImage(value: unknown): value is ChatImage {
   }
 }
 
+function validGif(value: unknown): value is ChatGif {
+  if (
+    !object(value) ||
+    typeof value.slug !== "string" ||
+    typeof value.url !== "string" ||
+    !finite(value.width) ||
+    !finite(value.height) ||
+    (value.title !== undefined && typeof value.title !== "string")
+  )
+    return false;
+  try {
+    return new URL(value.url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function restoreEntry(value: unknown): OutboxEntry | null {
   if (
     !object(value) ||
@@ -110,6 +129,7 @@ function restoreEntry(value: unknown): OutboxEntry | null {
       return null;
     poll = { options: value.poll.options };
   }
+  if (value.gif !== undefined && !validGif(value.gif)) return null;
   let replyTo: ChatMessage | null = null;
   if (value.replyTo !== null && value.replyTo !== undefined) {
     const reply = value.replyTo;
@@ -153,6 +173,7 @@ function restoreEntry(value: unknown): OutboxEntry | null {
     ),
     everyone: value.everyone,
     poll,
+    gif: value.gif,
     uncertain,
     status: "failed",
     error:
@@ -197,7 +218,9 @@ function serialize(entry: OutboxEntry): string {
             authorClerkId: reply.authorClerkId,
             authorHandle: reply.authorHandle,
             authorName: reply.authorName,
-            body: reply.body || (reply.images.length ? "Picture" : ""),
+            body:
+              reply.body ||
+              (reply.gif ? "GIF" : reply.images.length ? "Picture" : ""),
           },
   });
 }

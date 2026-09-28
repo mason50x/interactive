@@ -614,6 +614,23 @@ export default defineSchema({
         }),
       ),
     ),
+    /**
+     * A GIF picked from KLIPY, as the link KLIPY handed the sender's browser.
+     *
+     * Only the link is kept: KLIPY's terms require media to load straight
+     * from their CDN and forbid storing or re-hosting it, so there is no file
+     * here to delete with the message. `send` accepts only KLIPY media hosts.
+     * `slug` is KLIPY's id for it, and what the duplicate rule remembers.
+     */
+    gif: v.optional(
+      v.object({
+        slug: v.string(),
+        url: v.string(),
+        width: v.number(),
+        height: v.number(),
+        title: v.optional(v.string()),
+      }),
+    ),
   })
     .index("byConversation", ["conversationId"])
     .index("byAuthor", ["authorClerkId"])

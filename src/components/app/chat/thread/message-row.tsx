@@ -18,6 +18,7 @@ import {
   MessageMenu,
   ReactionPicker,
 } from "@/components/app/chat/thread/message-menu";
+import { MessageGif } from "@/components/app/chat/thread/message-gif";
 import { Pictures } from "@/components/app/chat/thread/pictures";
 import { ReactionPill } from "@/components/app/chat/thread/reaction-pill";
 import { ReplyPreview } from "@/components/app/chat/thread/reply-preview";
@@ -323,6 +324,9 @@ export function MessageRow({
         {gone || message.images.length === 0 ? null : (
           <Pictures images={message.images} />
         )}
+        {gone || message.gif === undefined ? null : (
+          <MessageGif gif={message.gif} />
+        )}
 
         {gone || (message.body === "" && !message.poll) ? null : (
           <div
@@ -331,7 +335,8 @@ export function MessageRow({
               corners,
               highlighted &&
                 "ring-2 ring-primary ring-offset-2 ring-offset-background",
-              message.images.length > 0 && "mt-1",
+              (message.images.length > 0 || message.gif !== undefined) &&
+                "mt-1",
               mine
                 ? "font-semibold text-primary-foreground"
                 : "text-foreground",

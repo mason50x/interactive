@@ -22,6 +22,7 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `EXPERIENCE_ORIGIN` | Experience Worker origin for development and production |
 | `NEXT_PUBLIC_EXPERIENCE_ORIGIN` | Legacy alias for the Worker origin |
 | `EXPERIENCE_ACCESS_SECRET` | Shared app/Experience Worker secret for Mason's X access; at least 32 random characters |
+| `NEXT_PUBLIC_KLIPY_APP_KEY` | Optional KLIPY app key for chat GIFs; unset hides the GIF picker. Public by design — KLIPY requires requests from the browser. Set it as a build variable |
 | `CONVEX_DEPLOY_KEY` | Production deployment and runtime administrative account-sync credential |
 
 `EXPERIENCE_ORIGIN` is a public server-side origin committed in the app's

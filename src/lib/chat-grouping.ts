@@ -17,6 +17,8 @@ export function messagesConnect(
       new Date(after._creationTime).toDateString() &&
     before.images.length === 0 &&
     after.images.length === 0 &&
+    !before.gif &&
+    !after.gif &&
     !before.poll &&
     !after.poll &&
     !after.replyTo &&

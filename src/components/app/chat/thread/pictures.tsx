@@ -72,8 +72,8 @@ const SINGLE_EDGE = 320;
  *
  * Its own shape, no larger than `SINGLE_EDGE` on either side, and never
  * larger than the picture itself — a sixty-pixel sticker is not blown up to
- * a poster. `min(100%, …)` is the column: on a narrow screen the column is
- * narrower than the cap, and the box follows it. The height comes from the
+ * a poster. `maxWidth` is the column: on a narrow screen the column is narrower than
+ * the cap, and the box follows it. The height comes from the
  * aspect ratio, so the width is the only number that needs deciding.
  */
 function singleBox(image: ChatImage): CSSProperties {
@@ -81,8 +81,12 @@ function singleBox(image: ChatImage): CSSProperties {
   const width = Math.round(
     Math.min(image.width, SINGLE_EDGE, SINGLE_EDGE * ratio),
   );
+  // A fixed width capped by `maxWidth`, not `min(100%, …)`: the message
+  // column is sized by its content, so a percentage would resolve against
+  // nothing and stretch the column, leaving the hover actions stranded.
   return {
     aspectRatio: `${image.width} / ${image.height}`,
-    width: `min(100%, ${width}px)`,
+    width: `${width}px`,
+    maxWidth: "100%",
   };
 }

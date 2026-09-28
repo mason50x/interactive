@@ -421,3 +421,61 @@ test("same-millisecond sends can be marked read using the exact message timestam
   expect(position?.firstUnreadId).toBeNull();
   expect(position?.lastReadAt).toBeGreaterThanOrEqual(message._creationTime);
 });
+
+test("GIFs are KLIPY links only, stand alone, and still meet the duplicate rule", async () => {
+  const { room, alice, bob } = await setup();
+  const gif = {
+    slug: "hello-hi-662",
+    url: "https://static.klipy.com/ii/935d7ab9d8c6202580a668421940ec81/14/af/JUYsGsrc.webp",
+    width: 498,
+    height: 498,
+    title: "Hello",
+  };
+  const send = (extra: Record<string, unknown>) =>
+    alice.mutation(api.chat.messages.send, {
+      conversationId: room,
+      body: "",
+      ...extra,
+    });
+
+  for (const url of [
+    "https://evil.example/a.webp",
+    "http://static.klipy.com/a.webp",
+    "https://static.klipy.com.evil.example/a.webp",
+    "javascript:alert(1)",
+  ])
+    expect(await send({ gif: { ...gif, url } })).toEqual({
+      ok: false,
+      refusal: "gif",
+    });
+  expect(await send({ gif: { ...gif, width: 0 } })).toEqual({
+    ok: false,
+    refusal: "gif",
+  });
+  expect(
+    await send({ body: "Vote", gif, poll: { options: ["A", "B"] } }),
+  ).toEqual({ ok: false, refusal: "gif" });
+
+  // The same rule as words: the third identical send in a row is refused.
+  expect(await send({ gif })).toEqual({ ok: true });
+  expect(await send({ gif })).toEqual({ ok: true });
+  expect(await send({ gif })).toEqual({ ok: false, refusal: "duplicate" });
+  expect(await send({ gif: { ...gif, slug: "wave-2" } })).toEqual({
+    ok: true,
+  });
+
+  const page = (
+    await bob.query(api.chat.messages.list, {
+      conversationId: room,
+      dayStart: 0,
+      dayEnd: Date.now() + 1,
+      paginationOpts: { numItems: 10, cursor: null },
+    })
+  ).page;
+  expect(page.map((message) => message.gif?.slug).sort()).toEqual([
+    "hello-hi-662",
+    "hello-hi-662",
+    "wave-2",
+  ]);
+  expect(page[0]).toMatchObject({ body: "", images: [] });
+});

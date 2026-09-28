@@ -874,7 +874,7 @@
   }
 
   .plus-menu-popup[data-view="gifs"] {
-    width: min(22rem, calc(100vw - 1rem));
+    width: min(26rem, calc(100vw - 1rem));
   }
 
   .plus-menu-actions,

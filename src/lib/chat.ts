@@ -89,6 +89,7 @@ const REFUSALS: Record<string, string> = {
   image: "That picture could not be used. Try another.",
   "image-check": "Pictures cannot be checked right now. Try again in a minute.",
   "too-many-images": "That is too many pictures at once.",
+  gif: "That GIF could not be sent. Try another.",
 };
 
 export function refusalMessage(refusal: Refusal): string {

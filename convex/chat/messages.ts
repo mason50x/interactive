@@ -100,6 +100,8 @@ export type ChatMessage = {
    * nothing more structured.
    */
   images: ChatImage[];
+  /** A KLIPY GIF, drawn from KLIPY's own link. See `gif` in `convex/schema.ts`. */
+  gif?: ChatGif;
 };
 
 /** One person a message names: the card to open, and the handle to find. */
@@ -131,6 +133,9 @@ export type ChatPoll = {
 
 export const EDIT_WINDOW_MS = 15 * 60_000;
 const MAX_POLL_VOTERS = 1000;
+const gifValidator = v.object({
+  slug: v.string(), url: v.string(), width: v.number(), height: v.number(), title: v.optional(v.string()),
+});
 const sendResultValidator = v.union(
   v.object({ ok: v.literal(true) }),
   v.object({ ok: v.literal(false), refusal: v.string() }),
@@ -154,6 +159,7 @@ const chatMessageValidator = v.object({
   mentionsEveryone: v.boolean(), status: v.union(v.literal("visible"), v.literal("hidden")),
   reactions: v.array(v.object({ emoji: v.string(), count: v.number(), mine: v.boolean() })),
   images: v.array(v.object({ attachmentId: v.id("attachments"), url: v.string(), width: v.number(), height: v.number() })),
+  gif: v.optional(gifValidator),
 });
 
 /** A person named inside a reaction tooltip. */
@@ -176,6 +182,46 @@ export type ChatImage = {
   width: number;
   height: number;
 };
+
+export type ChatGif = {
+  slug: string;
+  url: string;
+  width: number;
+  height: number;
+  title?: string;
+};
+
+/** KLIPY's media hosts. See "Network Requirements" in KLIPY's docs. */
+const KLIPY_MEDIA_HOST = /^static\d*\.klipy\.com$/;
+
+/**
+ * A GIF as the client described it, or null when it is not one we will draw.
+ *
+ * The link is the only part that reaches another browser as a request, so it
+ * has to be HTTPS on KLIPY's CDN. The title is only alt text, and is dropped
+ * rather than refused when it would not pass as a group title would.
+ */
+function checkGif(gif: ChatGif): ChatGif | null {
+  if (!/^[A-Za-z0-9_-]{1,160}$/.test(gif.slug) || gif.url.length > 500) return null;
+  let url: URL;
+  try {
+    url = new URL(gif.url);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || !KLIPY_MEDIA_HOST.test(url.hostname) || url.username || url.password || url.port) return null;
+  for (const side of [gif.width, gif.height]) {
+    if (!Number.isInteger(side) || side < 1 || side > 4096) return null;
+  }
+  const title = gif.title === undefined ? undefined : screenStatic(gif.title, 120);
+  return {
+    slug: gif.slug,
+    url: gif.url,
+    width: gif.width,
+    height: gif.height,
+    title: title?.ok && title.text !== "" ? title.text : undefined,
+  };
+}
 
 /**
  * Send a message, if it survives.
@@ -202,13 +248,14 @@ export const send = mutation({
     attachmentIds: v.optional(v.array(v.id("attachments"))),
     replyToId: v.optional(v.id("messages")),
     poll: v.optional(v.object({ options: v.array(v.string()) })),
+    gif: v.optional(gifValidator),
     clientNonce: v.optional(v.string()),
     expectedAuthorClerkId: v.optional(v.string()),
   },
   returns: sendResultValidator,
   handler: async (
     ctx,
-    { conversationId, body, attachmentIds, replyToId, poll, clientNonce, expectedAuthorClerkId },
+    { conversationId, body, attachmentIds, replyToId, poll, gif: sentGif, clientNonce, expectedAuthorClerkId },
   ): Promise<SendResult> => {
     const profile = await callerAccount(ctx);
     if (profile === null) return { ok: false, refusal: "not-a-member" };
@@ -229,7 +276,9 @@ export const send = mutation({
     let clientRequestHash: string | undefined;
     if (clientNonce !== undefined) {
       if (clientNonce.length < 1 || clientNonce.length > 128) return { ok: false, refusal: "too-long" };
-      const payload = JSON.stringify([conversationId, body, attachmentIds ?? [], replyToId ?? null, poll?.options ?? null]);
+      // The GIF joins the fingerprint only when present, so a retry queued
+      // before GIFs existed still matches the row its first attempt wrote.
+      const payload = JSON.stringify([conversationId, body, attachmentIds ?? [], replyToId ?? null, poll?.options ?? null, ...(sentGif ? [sentGif.slug, sentGif.url] : [])]);
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload));
       clientRequestHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
       const existing = await ctx.db.query("messages")
@@ -237,6 +286,16 @@ export const send = mutation({
         .unique();
       if (existing !== null) return existing.conversationId === conversationId && existing.clientRequestHash === clientRequestHash
         ? { ok: true } : { ok: false, refusal: "duplicate" };
+    }
+
+    // A GIF is its own message: words may go with it, pictures and polls not.
+    let gif: ChatGif | undefined;
+    if (sentGif !== undefined) {
+      const checked = checkGif(sentGif);
+      if (checked === null || poll !== undefined || (attachmentIds?.length ?? 0) > 0) {
+        return { ok: false, refusal: "gif" };
+      }
+      gif = checked;
     }
 
     let pollOptions: string[] | undefined;
@@ -330,6 +389,7 @@ export const send = mutation({
       messagesSent: state.messagesSent,
       recent: state.recent,
       attachmentKey: attached.length > 0 ? ids.join(",") : undefined,
+      gifKey: gif?.slug,
       mentions: named.tokens,
       // `@bot` is reserved syntax rather than user-authored text. Keep every
       // word around it under the normal lexicon and pattern scans, but do not
@@ -371,6 +431,7 @@ export const send = mutation({
               width: row.width,
               height: row.height,
             })),
+      gif,
     });
 
     // Shared rooms earn full playtime and direct messages half. Group chats,
@@ -665,6 +726,8 @@ async function replyOf(
   const preview =
     body !== ""
       ? body.slice(0, REPLY_PREVIEW_CHARS)
+      : target.gif !== undefined
+        ? "GIF"
       : pictures === 1
         ? "Photo"
         : pictures > 1
@@ -778,6 +841,7 @@ async function presentMessages(ctx: QueryCtx, rows: Doc<"messages">[], profile: 
         status: message.status,
         reactions: gone ? [] : readReactions(message, clerkId),
         images: gone ? [] : await imagesOf(ctx, message),
+        gif: gone ? undefined : message.gif,
       });
     }
 

@@ -21,11 +21,13 @@ export function replyFromMessage(
   const preview =
     body !== ""
       ? body.slice(0, 160)
-      : message.images.length === 1
-        ? "Photo"
-        : message.images.length > 1
-          ? `${message.images.length} photos`
-          : "Message";
+      : message.gif !== undefined
+        ? "GIF"
+        : message.images.length === 1
+          ? "Photo"
+          : message.images.length > 1
+            ? `${message.images.length} photos`
+            : "Message";
 
   return {
     messageId: message._id,

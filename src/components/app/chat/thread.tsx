@@ -39,6 +39,7 @@ import type { ChatPollDraft } from "@/lib/chat-drafts";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import type {
+  ChatGif,
   ChatImage,
   ChatMention,
   ChatMessage,
@@ -211,6 +212,7 @@ function ConversationThread({
     status: "visible",
     reactions: [],
     images: entry.images,
+    gif: entry.gif,
     poll: entry.poll
       ? {
           options: entry.poll.options.map((text) => ({ text, votes: 0 })),
@@ -290,6 +292,22 @@ function ConversationThread({
     setReplyingTo(null);
     returnLatest();
     return null;
+  }
+
+  /** A GIF goes out on its own the moment it is picked, like a sticker. */
+  function sendGif(gif: ChatGif, replyTo: ChatMessage | null) {
+    if (!profile || !userId) throw new Error("Your account is still loading.");
+    outbox.enqueue({
+      body: "",
+      attachmentIds: [],
+      images: [],
+      replyTo,
+      mentions: [],
+      everyone: false,
+      gif,
+    });
+    setReplyingTo(null);
+    returnLatest();
   }
 
   function jumpToMessage(messageId: Id<"messages">) {
@@ -666,6 +684,7 @@ function ConversationThread({
                           Retry
                         </Button>
                         {!entry.uncertain &&
+                        entry.gif === undefined &&
                         entry.attachmentIds.every((id) =>
                           entry.images.some(
                             (image) => image.attachmentId === id,
@@ -734,6 +753,7 @@ function ConversationThread({
             <Composer
               ref={composer}
               onSubmit={submit}
+              onGif={sendGif}
               pictures={pictures}
               replyingTo={replyingTo}
               onCancelReply={() => setReplyingTo(null)}

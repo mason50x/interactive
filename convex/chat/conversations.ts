@@ -217,7 +217,7 @@ export const list = query({
           _id: latest._id, _creationTime: latest._creationTime,
           authorClerkId: latest.authorClerkId,
           authorHandle: latest.authorClerkId === BOT_ID ? BOT_HANDLE : latest.authorHandle,
-          body: presentBotBody(latest.body, latest.authorClerkId).slice(0, 160) || (latest.images?.length ? "Photo" : "Message"),
+          body: presentBotBody(latest.body, latest.authorClerkId).slice(0, 160) || (latest.gif ? "GIF" : latest.images?.length ? "Photo" : "Message"),
         },
         unreadExact: exact,
         mentioned,

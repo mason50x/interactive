@@ -323,7 +323,9 @@ export const context = internalQuery({
         authorName: row.authorName,
         body:
           row.body ||
-          (row.images?.length === 1
+          (row.gif !== undefined
+            ? `[shared a GIF${row.gif.title ? `: ${row.gif.title}` : ""}]`
+            : row.images?.length === 1
             ? "[shared a picture]"
             : `[shared ${row.images?.length ?? 0} pictures]`),
         fromBot: row.authorClerkId === BOT_ID,

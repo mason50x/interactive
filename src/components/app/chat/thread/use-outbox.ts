@@ -72,6 +72,7 @@ export function useOutbox(
             : undefined,
           replyToId: entry.replyTo?._id,
           poll: entry.poll,
+          gif: entry.gif,
           clientNonce: entry.nonce,
           expectedAuthorClerkId: account ?? undefined,
         });

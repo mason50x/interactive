@@ -59,6 +59,14 @@ export type SendContext = {
    */
   attachmentKey?: string;
   /**
+   * Set when the message is a GIF: its KLIPY slug.
+   *
+   * Like `attachmentKey` it lets a message with no words through, but a GIF
+   * can be sent again and again, so unlike a picture it still goes through
+   * the duplicate and broadcast rules below.
+   */
+  gifKey?: string;
+  /**
    * The `@words` in the body that the caller has already established are
    * people in this conversation, lowercased and without the `@`. These and
    * only these are hidden from the contact-details rule — see
@@ -109,6 +117,12 @@ export function screen(raw: string, context: SendContext): Verdict {
   // sent exactly once, so its key cannot appear twice in the ring.
   if (raw.trim() === "" && context.attachmentKey !== undefined) {
     return { allow: true, body: "", hash: hashBody(`image:${context.attachmentKey}`) };
+  }
+  if (raw.trim() === "" && context.gifKey !== undefined) {
+    const hash = hashBody(`gif:${context.gifKey}`);
+    if (isDuplicate(context.recent, hash)) return refuse("duplicate");
+    if (isBroadcast(context.recent, hash, context.conversationId, context.now)) return refuse("broadcast");
+    return { allow: true, body: "", hash };
   }
 
   // Shape, which is also the length cap, and therefore the guard that keeps

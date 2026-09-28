@@ -55,7 +55,10 @@ export type Refusal =
   | "graphic"
   | "image"
   | "image-check"
-  | "too-many-images";
+  | "too-many-images"
+  // A GIF that is not a KLIPY link, or that arrived alongside pictures or a
+  // poll. Only a tampered or stale client can earn it.
+  | "gif";
 
 /** A lexicon category, as the client is told about it. */
 export function refusalForCategory(category: Category): Refusal {

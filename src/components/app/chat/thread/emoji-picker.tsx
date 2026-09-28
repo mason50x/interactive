@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import emojiData from "emojibase-data/en/compact.json";
 import { useMemo, useRef, useState } from "react";
 import { MenuItem } from "@/components/ui/menu";
-import { LineSearch } from "@/components/ui/line-search";
+import { PickerSearch } from "@/components/app/chat/thread/picker-search";
 import { useFlip } from "@/lib/use-flip";
 
 type Emoji = {
@@ -60,8 +60,8 @@ export default function EmojiPicker({
         <ArrowLeftIcon className="size-4" />
         Emojis
       </MenuItem>
-      <div className="mx-1 mb-2" onKeyDown={(event) => event.stopPropagation()}>
-        <LineSearch
+      <div className="mx-1 mb-2">
+        <PickerSearch
           value={query}
           onChange={(value) => {
             setQuery(value);
