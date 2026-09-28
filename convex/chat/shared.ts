@@ -35,13 +35,14 @@ async function chatName(ctx: QueryCtx, user: Doc<"users">): Promise<string | und
   const initial = lastName?.trim().charAt(0).toUpperCase();
   if (!initial || user.usernameKey === PLAIN_NAME_HANDLE) return firstName;
   for await (const other of ctx.db.query("users").withIndex("byFirstName", q => q.eq("firstName", firstName))) {
-    if (other._id !== user._id && other.username) return `${firstName} ${initial}`;
+    if (other._id !== user._id && other.username && other.invited !== false) return `${firstName} ${initial}`;
   }
   return firstName;
 }
 
+/** `null` until the account has a username and has got past the invite gate. */
 export async function chatAccount(ctx: QueryCtx, user: Doc<"users"> | null): Promise<ChatAccount | null> {
-  if (!user?.username) return null;
+  if (!user?.username || user.invited === false) return null;
   return { ...user, handle: user.username, displayName: await chatName(ctx, user),
     createdAt: user.clerkCreatedAt ?? user._creationTime };
 }

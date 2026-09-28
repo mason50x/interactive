@@ -51,7 +51,7 @@ export const users = query({
   handler: async (ctx, { paginationOpts }) => {
     await requireCeo(ctx);
     const result = await ctx.db.query("users").paginate(paginationOpts);
-    const page = await Promise.all(result.page.map(async user => ({
+    const page = await Promise.all(result.page.filter(user => user.invited !== false).map(async user => ({
         clerkId: user.clerkId,
         name: user.name,
         email: user.email,

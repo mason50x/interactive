@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 
@@ -12,6 +13,7 @@ test("new accounts start unfinished and only their own final action completes th
   const otherUser = t.withIdentity({ subject: "other-user" });
   await newUser.mutation(api.users.store, {});
   await otherUser.mutation(api.users.store, {});
+  await admit(t, "new-user", "other-user");
   expect(await newUser.query(api.users.current, {})).toMatchObject({
     onboardingComplete: false,
   });

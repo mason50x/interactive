@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
+import { admit } from "./invited";
 const modules = import.meta.glob("../../convex/**/*.ts");
 
 async function setup() {
@@ -29,6 +30,7 @@ async function setup() {
       .withIdentity({ subject: name })
       .mutation(api.chat.accounts.joinGlobal, {});
   }
+  await admit(t, "eve");
   const alice = t.withIdentity({ subject: "alice" });
   const bob = t.withIdentity({ subject: "bob" });
   const list = await alice.query(api.chat.conversations.list, {});

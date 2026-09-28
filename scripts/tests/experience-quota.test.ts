@@ -11,6 +11,7 @@ import {
 } from "../../config/playtime";
 import { rewardChatPlaytime } from "../../convex/experience";
 import schema from "../../convex/schema";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 
@@ -35,14 +36,15 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
-function setup(subject = "person") {
+async function setup(subject = "person") {
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
+  await admit(t, subject, "other", "outsider", "impostor");
   return { t, user: t.withIdentity({ subject }) };
 }
 
 test("requires authentication and reads do not spend time or create records", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   await expect(t.mutation(api.experience.acquire, {})).rejects.toThrow(
     "Sign in",
   );
@@ -55,7 +57,7 @@ test("requires authentication and reads do not spend time or create records", as
 });
 
 test("reloads and concurrent tabs reuse one lease; regular accounts stop at thirty minutes", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   const results = await Promise.all([
     user.mutation(api.experience.acquire, {}),
     user.mutation(api.experience.acquire, {}),
@@ -83,7 +85,7 @@ test("reloads and concurrent tabs reuse one lease; regular accounts stop at thir
 
 test("staff receive the same thirty minutes, independently of other accounts", async () => {
   vi.stubEnv("NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS", "impostor");
-  const { t, user } = setup("admin");
+  const { t, user } = await setup("admin");
   const result = await user.mutation(api.experience.acquire, {});
   expect(result.allowanceSeconds).toBe(1800);
   expect(result.remainingSeconds).toBe(1785);
@@ -94,7 +96,7 @@ test("staff receive the same thirty minutes, independently of other accounts", a
 });
 
 test("early renewal never reserves more than fifteen seconds ahead", async () => {
-  const { user } = setup();
+  const { user } = await setup();
   await user.mutation(api.experience.acquire, {});
   vi.setSystemTime(start + 10_000);
   const result = await user.mutation(api.experience.acquire, {});
@@ -103,7 +105,7 @@ test("early renewal never reserves more than fifteen seconds ahead", async () =>
 });
 
 test("idle time is not charged; only short prepaid intervals are consumed", async () => {
-  const { user } = setup();
+  const { user } = await setup();
   await user.mutation(api.experience.acquire, {});
   vi.setSystemTime(start + 3_600_000);
   const result = await user.mutation(api.experience.acquire, {});
@@ -112,7 +114,7 @@ test("idle time is not charged; only short prepaid intervals are consumed", asyn
 });
 
 test("7:30 Central clips the lease, restores quota, and deletes old limiter and lease records", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   const midnight = playtimeDay(start).resetsAt;
   vi.setSystemTime(midnight - 2_000);
   const result = await user.mutation(api.experience.acquire, {});
@@ -148,7 +150,7 @@ test("7:30 Central clips the lease, restores quota, and deletes old limiter and 
 });
 
 test("leaving returns unused seconds and the overview stays frozen", async () => {
-  const { user } = setup();
+  const { user } = await setup();
   await user.mutation(api.experience.acquire, { sessionId: "tab" });
   vi.setSystemTime(start + 3_000);
   await user.mutation(api.experience.release, { sessionId: "tab" });
@@ -166,7 +168,7 @@ test("leaving returns unused seconds and the overview stays frozen", async () =>
 });
 
 test("closing one tab does not refund time reserved by another active tab", async () => {
-  const { user } = setup();
+  const { user } = await setup();
   await user.mutation(api.experience.acquire, { sessionId: "one" });
   await user.mutation(api.experience.acquire, { sessionId: "two" });
   vi.setSystemTime(start + 2_000);
@@ -182,7 +184,7 @@ test("closing one tab does not refund time reserved by another active tab", asyn
 });
 
 test("delayed closes cannot stop a new session or refund another account", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   await user.mutation(api.experience.acquire, { sessionId: "old" });
   vi.setSystemTime(start + 2_000);
   await user.mutation(api.experience.acquire, { sessionId: "resumed" });
@@ -201,7 +203,7 @@ test("delayed closes cannot stop a new session or refund another account", async
 });
 
 test("legacy midnight leases do not override the new shared allowance", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   await t.run((ctx) =>
     ctx.db.insert("experienceLeases", {
       clerkId: "person",
@@ -221,8 +223,8 @@ const different =
   "Our science project involves growing plants near different windows and recording their height every morning.";
 
 async function exhaust(
-  t: ReturnType<typeof setup>["t"],
-  user: ReturnType<typeof setup>["user"],
+  t: Awaited<ReturnType<typeof setup>>["t"],
+  user: Awaited<ReturnType<typeof setup>>["user"],
 ) {
   await user.mutation(api.experience.acquire, { sessionId: "game" });
   await t.run(async (ctx) => {
@@ -254,7 +256,7 @@ async function exhaust(
 }
 
 test("a direct message reward adds 45 seconds", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed, 45));
   const status = await user.query(api.experience.status, { day: 0 });
   expect(status.remainingSeconds).toBe(1845);
@@ -262,7 +264,7 @@ test("a direct message reward adds 45 seconds", async () => {
 });
 
 test("qualifying messages stack 90 seconds; filler and a third similar message do not", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   let status = await user.query(api.experience.status, { day: 0 });
   expect(status.remainingSeconds).toBe(1890);
@@ -298,7 +300,7 @@ test("qualifying messages stack 90 seconds; filler and a third similar message d
 });
 
 test("bonus minutes expire at the reset even if yesterday's cleanup is delayed", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   await exhaust(t, user);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   vi.setSystemTime(playtimeDay(start).resetsAt);
@@ -382,8 +384,7 @@ test("short overlapping replies are distinct while long near-copies stay blocked
 });
 
 test("two similar messages earn immediately; a third waits for different conversation", async () => {
-  const { t, user } = setup();
-  await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
+  const { t, user } = await setup();
   const remaining = async () =>
     (await user.query(api.experience.status, { day: 0 })).remainingSeconds;
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", "thanks"));
@@ -405,10 +406,13 @@ test("two similar messages earn immediately; a third waits for different convers
 });
 
 test("short chat sends grant credit atomically; retries and nonmembers cannot claim it", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   const room = await t.run(async (ctx) => {
-    await ctx.db.insert("users", {
-      clerkId: "person",
+    const person = await ctx.db
+      .query("users")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", "person"))
+      .unique();
+    await ctx.db.patch(person!._id, {
       username: "person",
       usernameKey: "person",
       clerkCreatedAt: 0,
@@ -465,9 +469,8 @@ test("short chat sends grant credit atomically; retries and nonmembers cannot cl
 });
 
 test("a CEO quota reset restores the shared allowance and discards bonus time", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   vi.stubEnv("STAFF_ROLES", JSON.stringify({ boss: "ceo" }));
-  await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
   await exhaust(t, user);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   await t.withIdentity({ subject: "boss" }).mutation(api.adminQuotas.reset, {
@@ -480,9 +483,8 @@ test("a CEO quota reset restores the shared allowance and discards bonus time", 
 });
 
 test("head moderators can set and clear a user's custom activity limit without restoring spent time", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   vi.stubEnv("STAFF_ROLES", JSON.stringify({ head: "head_moderator", boss: "ceo" }));
-  await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
   const head = t.withIdentity({ subject: "head" });
   await head.mutation(api.adminQuotas.setActivityLimit, { clerkId: "person", minutes: 60 });
   expect((await user.query(api.experience.status, { day: 0 })).remainingSeconds).toBe(3600);
@@ -501,9 +503,8 @@ test("head moderators can set and clear a user's custom activity limit without r
 });
 
 test("custom activity limits reject invalid values and unauthorized callers", async () => {
-  const { t } = setup();
+  const { t } = await setup();
   vi.stubEnv("STAFF_ROLES", JSON.stringify({ head: "head_moderator", boss: "ceo" }));
-  await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
   const head = t.withIdentity({ subject: "head" });
   for (const minutes of [19, 161, 20.5, Number.NaN]) {
     await expect(head.mutation(api.adminQuotas.setActivityLimit, { clerkId: "person", minutes })).rejects.toThrow();
@@ -513,9 +514,8 @@ test("custom activity limits reject invalid values and unauthorized callers", as
 });
 
 test("lowering a spent allowance does not give back time or erase chat rewards", async () => {
-  const { t, user } = setup();
+  const { t, user } = await setup();
   vi.stubEnv("STAFF_ROLES", JSON.stringify({ head: "head_moderator" }));
-  await t.run((ctx) => ctx.db.insert("users", { clerkId: "person" }));
   await exhaust(t, user);
   await t.run((ctx) => rewardChatPlaytime(ctx, "person", detailed));
   const head = t.withIdentity({ subject: "head" });

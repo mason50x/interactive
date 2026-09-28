@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 afterEach(() => vi.unstubAllEnvs());
@@ -20,6 +21,7 @@ async function setup() {
       data: { id, username: id, updated_at: 1 },
     });
   }
+  await admit(t, "member");
   return t;
 }
 

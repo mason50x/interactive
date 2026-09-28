@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { mutation, query } from "./functions";
+import { mutation, preInviteQuery, query } from "./functions";
 import { roleChangeRefusal } from "../config/roles";
 import { badgeHidden, resolveRole } from "./roles";
 import {
@@ -63,10 +63,12 @@ export const liveUsers = query({
       .withIndex("byLastActiveAt", q => q.gt("lastActiveAt", threshold))
       .order("desc")
       .take(200);
-    return await Promise.all(activity.map(async row => {
+    const live = await Promise.all(activity.map(async row => {
       const user = await ctx.db.query("users")
         .withIndex("byClerkId", q => q.eq("clerkId", row.clerkId))
         .unique();
+      // Not in until they've redeemed a code.
+      if (user?.invited === false) return null;
       return {
         clerkId: row.clerkId,
         label: user?.name ?? user?.username ?? row.clerkId,
@@ -75,10 +77,11 @@ export const liveUsers = query({
         lastActiveAt: row.lastActiveAt,
       };
     }));
+    return live.filter(row => row !== null);
   },
 });
 
-export const mine = query({
+export const mine = preInviteQuery({
   args: {},
   returns: v.union(timeoutView, v.null()),
   handler: async (ctx) => {
@@ -132,7 +135,8 @@ export const users = query({
     const result = await ctx.db.query("users").paginate(args.paginationOpts);
     const now = Date.now();
     const page = await Promise.all(
-      result.page.map(async (user) => {
+      // Accounts still at the invite gate aren't members yet.
+      result.page.filter((user) => user.invited !== false).map(async (user) => {
         const role = await resolveRole(ctx, user.clerkId);
         const row = await timeoutRow(ctx, user.clerkId);
         const active = row?.enabled && row.expiresAt > now;

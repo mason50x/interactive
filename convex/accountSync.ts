@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { internalAction, internalQuery } from "./_generated/server";
-import { action } from "./functions";
+import { preInviteAction } from "./functions";
 import { internal } from "./_generated/api";
 
 type ClerkAccount = {
@@ -25,7 +25,7 @@ async function fetchAccount(id: string): Promise<ClerkAccount> {
 }
 
 /** No client-provided identity fields: authenticate, then read Clerk directly. */
-export const mine = action({
+export const mine = preInviteAction({
   args: {}, returns: v.null(),
   handler: async ctx => {
     const identity = await ctx.auth.getUserIdentity();

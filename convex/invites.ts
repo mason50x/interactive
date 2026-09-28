@@ -3,7 +3,10 @@ import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./functions";
+import { internalQuery } from "./_generated/server";
+import { ensureGlobalMembership } from "./chat/shared";
+import { mutation, preInviteMutation, query } from "./functions";
+import { isUninvited as uninvited } from "./inviteState";
 import { requireCeo } from "./roles";
 
 /**
@@ -43,7 +46,7 @@ function statusOf(
  * Every refusal is a returned result, never a throw: a throw would roll back
  * the attempt the limiter just counted, and the limit would count nothing.
  */
-export const redeem = mutation({
+export const redeem = preInviteMutation({
   args: { code: v.string() },
   returns: v.union(
     v.object({ ok: v.literal(true) }),
@@ -84,8 +87,17 @@ export const redeem = mutation({
 
     await ctx.db.patch(invite._id, { uses: invite.uses + 1 });
     await ctx.db.patch(user._id, { invited: true, inviteCodeId: invite._id });
+    // Chat rooms wait for the code, so the account appears there only now.
+    if (user.username) await ensureGlobalMembership(ctx, identity.subject);
     return { ok: true as const };
   },
+});
+
+/** For the action builder in `functions.ts`, which has no `ctx.db`. */
+export const isUninvited = internalQuery({
+  args: { clerkId: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, { clerkId }) => uninvited(ctx, clerkId),
 });
 
 const inviteRow = v.object({

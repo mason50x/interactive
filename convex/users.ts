@@ -5,7 +5,7 @@ import { normalizePersonName } from "../src/lib/person-name";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { mutation, query } from "./functions";
+import { mutation, preInviteMutation, preInviteQuery } from "./functions";
 
 /** The subset of Clerk's `user.*` webhook payload we care about. */
 type ClerkUserJSON = {
@@ -62,7 +62,10 @@ async function upsertUser(
   if (existing !== null && Object.entries(fields).some(([key, value]) => existing[key as keyof UserFields] !== value)) {
     await ctx.db.patch(id, fields);
   }
-  if (fields.username) await ensureGlobalMembership(ctx, clerkId);
+  // An account still at the invite gate joins no rooms; `invites.redeem`
+  // seats it once it has a code.
+  const invited = existing === null ? (await ctx.db.get(id))?.invited : existing.invited;
+  if (fields.username && invited !== false) await ensureGlobalMembership(ctx, clerkId);
   return id;
 }
 
@@ -101,7 +104,7 @@ async function usersByClerkId(ctx: QueryCtx, clerkId: string) {
 }
 
 /** The signed-in user's row, or null when signed out / not synced yet. */
-export const current = query({
+export const current = preInviteQuery({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -115,7 +118,7 @@ export const current = query({
  * Clerk webhook is wired up. Reads everything from the verified JWT — never
  * from client-supplied arguments.
  */
-export const store = mutation({
+export const store = preInviteMutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();

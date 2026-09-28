@@ -60,3 +60,49 @@ export const pruneUserActivity = internalMutation({
     return rows.length;
   },
 });
+
+/**
+ * Takes accounts still at the invite gate back out of chat and the live view.
+ * Before the gate was enforced on the server they were seated in the default
+ * rooms on sign-up, and could be opened in a DM. Their row and settings stay,
+ * so they are still at the gate; `invites.redeem` seats them again. Run once
+ * after deploying, then again until it returns zero.
+ */
+export const clearGatedAccounts = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async ctx => {
+    let removed = 0;
+    for await (const user of ctx.db.query("users")) {
+      if (user.invited !== false) continue;
+      const seats = await ctx.db.query("conversationMembers")
+        .withIndex("byUser", q => q.eq("clerkId", user.clerkId))
+        .take(BATCH);
+      for (const seat of seats) {
+        const conversation = await ctx.db.get(seat.conversationId);
+        if (conversation?.kind === "dm") {
+          // The DM has no one to talk to until they are in; take the other
+          // side's seat and the conversation with it, if nothing was said.
+          const said = await ctx.db.query("messages")
+            .withIndex("byConversation", q => q.eq("conversationId", conversation._id))
+            .first();
+          if (said === null) {
+            const others = await ctx.db.query("conversationMembers")
+              .withIndex("byConversation", q => q.eq("conversationId", conversation._id))
+              .take(BATCH);
+            for (const other of others) if (other._id !== seat._id) await ctx.db.delete(other._id);
+            await ctx.db.delete(conversation._id);
+          }
+        }
+        await ctx.db.delete(seat._id);
+        removed++;
+      }
+      const activity = await ctx.db.query("userActivity")
+        .withIndex("byClerkId", q => q.eq("clerkId", user.clerkId))
+        .take(BATCH);
+      for (const row of activity) await ctx.db.delete(row._id);
+      removed += activity.length;
+    }
+    return removed;
+  },
+});

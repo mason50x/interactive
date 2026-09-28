@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./functions";
+import { preInviteMutation, preInviteQuery } from "./functions";
 
 /**
  * The account's copy of the settings in the account menu's sheet.
@@ -37,7 +37,7 @@ async function callerId(ctx: {
  * changed a setting. Both mean the same thing to the client — use the defaults
  * — and giving them one shape keeps that from being two branches everywhere.
  */
-export const mine = query({
+export const mine = preInviteQuery({
   args: {},
   handler: async (ctx) => {
     const clerkId = await callerId(ctx);
@@ -79,7 +79,7 @@ export const mine = query({
  * is the only one where a bad string would do something rather than be
  * ignored.
  */
-export const save = mutation({
+export const save = preInviteMutation({
   args: {
     accent: v.optional(v.string()),
     panicEnabled: v.optional(v.boolean()),

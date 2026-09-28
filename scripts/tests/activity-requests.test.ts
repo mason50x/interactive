@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal, components } from "../../convex/_generated/api";
+import { admit } from "./invited";
 const modules = import.meta.glob("../../convex/**/*.ts");
 const args = {
   activity: "Chess",
@@ -11,9 +12,10 @@ const args = {
   reason: "Play with friends",
   details: "",
 };
-function setup() {
+async function setup() {
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
+  await admit(t, "one", "two", "cleanup");
   return t;
 }
 afterEach(() => {
@@ -26,7 +28,7 @@ test("two sends per account, independent accounts, and reset at midnight UTC", a
   vi.setSystemTime(new Date("2026-09-15T23:59:00Z"));
   const fetch = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
   vi.stubGlobal("fetch", fetch);
-  const t = setup();
+  const t = await setup();
   const user = t.withIdentity({ subject: "one", name: "Clerk Name" });
   await user.action(api.activityRequests.submit, args);
   await user.action(api.activityRequests.submit, args);
@@ -46,7 +48,7 @@ test("two sends per account, independent accounts, and reset at midnight UTC", a
 test("auth and validation reject before delivery or consuming quota", async () => {
   const fetch = vi.fn().mockResolvedValue(new Response("{}"));
   vi.stubGlobal("fetch", fetch);
-  const t = setup();
+  const t = await setup();
   await expect(t.action(api.activityRequests.submit, args)).rejects.toThrow(
     "Sign in",
   );
@@ -69,7 +71,7 @@ test("auth and validation reject before delivery or consuming quota", async () =
 test("failed delivery is reported and cannot bypass the daily limit", async () => {
   const fetch = vi.fn().mockRejectedValue(new Error("Offline"));
   vi.stubGlobal("fetch", fetch);
-  const user = setup().withIdentity({ subject: "one", name: "Clerk Name" });
+  const user = (await setup()).withIdentity({ subject: "one", name: "Clerk Name" });
   for (let i = 0; i < 2; i++)
     await expect(
       user.action(api.activityRequests.submit, args),
@@ -83,7 +85,7 @@ test("failed delivery is reported and cannot bypass the daily limit", async () =
 test("expired records are deleted and delayed cleanup preserves today's usage", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-15T23:59:00Z"));
-  const t = setup();
+  const t = await setup();
   const user = t.withIdentity({ subject: "cleanup" });
   await user.mutation(internal.activityRequests.reserve, {});
   const state = () =>

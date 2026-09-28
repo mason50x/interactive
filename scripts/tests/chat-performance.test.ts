@@ -7,6 +7,7 @@ import { list } from "../../convex/chat/messages";
 import { list as conversationList } from "../../convex/chat/conversations";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { QueryCtx } from "../../convex/_generated/server";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 
@@ -58,6 +59,7 @@ for (const inPage of [true, false]) {
       dayEnd: Date.now() + 10000,
       paginationOpts: { numItems: inPage ? 10 : 9, cursor: null },
     };
+    await admit(t, "outsider");
     const alice = t.withIdentity({ subject: "alice" });
     // Exercise the real handler and database, counting only extra db.get reads.
     const measured = await alice.run(async (ctx) => {
@@ -95,8 +97,9 @@ for (const inPage of [true, false]) {
     });
     expect(measured.reads).toBe(inPage ? 0 : 1);
     // The caller, all message authors and all quoted authors are the same
-    // person. One authenticated account read serves the entire page.
-    expect(measured.userQueries).toBe(1);
+    // person. One authenticated account read serves the entire page, beside
+    // the invite gate's own read of the caller.
+    expect(measured.userQueries).toBe(2);
     expect(
       measured.result.page.filter(
         (m) => m.replyTo?.preview === "Original text",
