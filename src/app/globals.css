@@ -2028,60 +2028,6 @@
   }
 }
 
-/* While `Cursor` draws the jet itself, the image cursor steps aside; the
-   drawn one is shown only where the resolved cursor is `none`. */
-:root[data-cursor-live] {
-  --cursor: none;
-}
-.cursor-plane {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 2147483647;
-  width: 28px;
-  height: 28px;
-  pointer-events: none;
-  opacity: 0;
-  will-change: transform;
-}
-.cursor-plane[data-on] {
-  opacity: 1;
-}
-.cursor-plane svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  /* The nose, so a press dips toward the point being clicked. */
-  transform-origin: 5.5px 5px;
-  transition: transform 140ms ease-out;
-}
-.cursor-plane[data-press] svg {
-  transform: scale(0.88);
-}
-.cursor-plane-edge,
-.cursor-plane-body {
-  stroke-linejoin: round;
-  fill: #0f0f0f;
-}
-.cursor-plane-edge {
-  stroke: #ffffff;
-  stroke-width: 3.5;
-}
-.cursor-plane-body {
-  stroke: #0f0f0f;
-  stroke-width: 1.2;
-}
-:root[data-theme="dark"] :is(.cursor-plane-edge, .cursor-plane-body) {
-  fill: #f2f2f2;
-}
-:root[data-theme="dark"] .cursor-plane-edge {
-  stroke: #0f0f0f;
-}
-:root[data-theme="dark"] .cursor-plane-body {
-  stroke: #f2f2f2;
-}
-
 /*
  * The account's own settings, painted.
  *
