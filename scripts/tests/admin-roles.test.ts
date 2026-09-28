@@ -3,8 +3,11 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
+import { FOUNDER_CLERK_ID } from "../../config/roles";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
+/** The original CEO: bound to Mason's exact account, not to a role. */
+const founder = FOUNDER_CLERK_ID;
 const boss = "user_test_ceo";
 const mod = "user_test_moderator";
 const amy = "user_test_member";
@@ -12,7 +15,7 @@ const amy = "user_test_member";
 beforeEach(() => {
   vi.stubEnv(
     "STAFF_ROLES",
-    JSON.stringify({ [boss]: "ceo", [mod]: "moderator" }),
+    JSON.stringify({ [founder]: "ceo", [boss]: "ceo", [mod]: "moderator" }),
   );
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -21,6 +24,7 @@ async function setup() {
   const t = convexTest(schema, modules);
   await t.run(async (ctx) => {
     for (const [clerkId, name] of [
+      [founder, "Mason"],
       [boss, "Boss"],
       [mod, "Mod"],
       [amy, "Amy"],
@@ -39,6 +43,18 @@ async function roleOf(
     .withIdentity({ subject: boss })
     .query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } });
   return users.page.find((user) => user.clerkId === clerkId)?.role;
+}
+
+/** The Admin directory row as `viewer` sees it. */
+async function directoryRow(
+  t: ReturnType<typeof convexTest>,
+  viewer: string,
+  clerkId: string,
+) {
+  const users = await t
+    .withIdentity({ subject: viewer })
+    .query(api.timeouts.users, { paginationOpts: { cursor: null, numItems: 50 } });
+  return users.page.find((user) => user.clerkId === clerkId)!;
 }
 
 test("a CEO promotes a member and the merged role takes effect everywhere", async () => {
@@ -75,26 +91,108 @@ test("moderators, members, and signed-out callers cannot change roles", async ()
 
 test("a CEO cannot change their own role", async () => {
   const t = await setup();
-  await expect(
-    t.withIdentity({ subject: boss }).mutation(api.adminQuotas.setRole, {
-      clerkId: boss,
-      role: "moderator",
-    }),
-  ).rejects.toThrow("own role");
-  expect(
-    await t.withIdentity({ subject: boss }).query(api.adminQuotas.access, {}),
-  ).toBe(true);
+  for (const subject of [boss, founder]) {
+    await expect(
+      t.withIdentity({ subject }).mutation(api.adminQuotas.setRole, {
+        clerkId: subject,
+        role: "moderator",
+      }),
+    ).rejects.toThrow("own role");
+    expect(
+      await t.withIdentity({ subject }).query(api.adminQuotas.access, {}),
+    ).toBe(true);
+    expect(await directoryRow(t, subject, subject)).toMatchObject({
+      canChangeRole: false,
+      roleLock: "You cannot change your own role.",
+    });
+  }
 });
 
-test("demoting one of two CEOs leaves the other in charge", async () => {
+test("a CEO cannot change another CEO's role, up or down", async () => {
   const t = await setup();
   const ceo = t.withIdentity({ subject: boss });
+  // Promoting to CEO is still any CEO's call.
   await ceo.mutation(api.adminQuotas.setRole, { clerkId: amy, role: "ceo" });
   expect(
     await t.withIdentity({ subject: amy }).query(api.adminQuotas.access, {}),
   ).toBe(true);
 
-  await ceo.mutation(api.adminQuotas.setRole, {
+  // Neither of the two ordinary CEOs can touch the other, whether the CEO
+  // came from the env map or from a table row, and whatever the new role.
+  for (const [actor, target] of [
+    [boss, amy],
+    [amy, boss],
+  ] as const) {
+    for (const role of ["head_moderator", "member", "ceo"] as const) {
+      await expect(
+        t.withIdentity({ subject: actor }).mutation(api.adminQuotas.setRole, {
+          clerkId: target,
+          role,
+        }),
+      ).rejects.toThrow("Only the founder can change another CEO's role.");
+    }
+    expect(await roleOf(t, target)).toBe("ceo");
+    expect(await directoryRow(t, actor, target)).toMatchObject({
+      canChangeRole: false,
+      roleLock: "Only the founder can change another CEO's role.",
+    });
+  }
+  // Everybody below CEO is still theirs to change.
+  expect(await directoryRow(t, boss, mod)).toMatchObject({
+    canChangeRole: true,
+  });
+  expect(await directoryRow(t, boss, mod)).not.toHaveProperty("roleLock");
+});
+
+test("the founder can change any CEO's role and nobody can change the founder's", async () => {
+  const t = await setup();
+  const mason = t.withIdentity({ subject: founder });
+  const ceo = t.withIdentity({ subject: boss });
+
+  await expect(
+    ceo.mutation(api.adminQuotas.setRole, { clerkId: founder, role: "member" }),
+  ).rejects.toThrow("The founder's role can't be changed.");
+  expect(await directoryRow(t, boss, founder)).toMatchObject({
+    role: "ceo",
+    canChangeRole: false,
+    roleLock: "The founder's role can't be changed.",
+  });
+
+  expect(await directoryRow(t, founder, boss)).toMatchObject({
+    role: "ceo",
+    canChangeRole: true,
+  });
+  await mason.mutation(api.adminQuotas.setRole, {
+    clerkId: boss,
+    role: "head_moderator",
+  });
+  expect(
+    await t.withIdentity({ subject: boss }).query(api.adminQuotas.access, {}),
+  ).toBe(false);
+  expect(
+    await t.withIdentity({ subject: boss }).query(api.timeouts.access, {}),
+  ).toBe("head_moderator");
+
+  // A demoted CEO has no say over the founder either.
+  await expect(
+    ceo.mutation(api.adminQuotas.setRole, { clerkId: founder, role: "member" }),
+  ).rejects.toThrow("CEO access required.");
+  expect(await mason.query(api.adminQuotas.access, {})).toBe(true);
+
+  // The founder can hand the role back, too.
+  await mason.mutation(api.adminQuotas.setRole, { clerkId: boss, role: "ceo" });
+  expect(await roleOf(t, boss)).toBe("ceo");
+});
+
+test("demoting one of two CEOs leaves the other in charge", async () => {
+  const t = await setup();
+  const mason = t.withIdentity({ subject: founder });
+  await mason.mutation(api.adminQuotas.setRole, { clerkId: amy, role: "ceo" });
+  expect(
+    await t.withIdentity({ subject: amy }).query(api.adminQuotas.access, {}),
+  ).toBe(true);
+
+  await mason.mutation(api.adminQuotas.setRole, {
     clerkId: amy,
     role: "member",
   });
@@ -104,7 +202,7 @@ test("demoting one of two CEOs leaves the other in charge", async () => {
   ).toBe(false);
   // The acting CEO is untouched by someone else's demotion.
   expect(
-    await ceo.query(api.adminQuotas.access, {}),
+    await mason.query(api.adminQuotas.access, {}),
   ).toBe(true);
 });
 
@@ -138,13 +236,13 @@ test("env migration copies staff once and never overwrites CEO edits", async () 
   const t = await setup();
 
   expect(await t.mutation(internal.roles.migrateFromEnv, {})).toEqual({
-    inserted: 2,
+    inserted: 3,
     skipped: 0,
   });
   // Rerun is a no-op.
   expect(await t.mutation(internal.roles.migrateFromEnv, {})).toEqual({
     inserted: 0,
-    skipped: 2,
+    skipped: 3,
   });
 
   // A CEO edit after migrating wins over a later migration run.
@@ -155,7 +253,7 @@ test("env migration copies staff once and never overwrites CEO edits", async () 
   });
   expect(await t.mutation(internal.roles.migrateFromEnv, {})).toEqual({
     inserted: 0,
-    skipped: 2,
+    skipped: 3,
   });
   expect(await roleOf(t, mod)).toBe("member");
   expect(await roleOf(t, boss)).toBe("ceo");

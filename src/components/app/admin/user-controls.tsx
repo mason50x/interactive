@@ -350,6 +350,9 @@ function RoleControl({ user }: { user: DirectoryUser }) {
           <BadgeToggle user={user} onFeedback={setFeedback} />
         )}
       </div>
+      {user.roleLock && (
+        <p className="text-xs text-muted-foreground">{user.roleLock}</p>
+      )}
       <FeedbackMessage value={feedback} />
     </div>
   );

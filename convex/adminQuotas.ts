@@ -7,6 +7,7 @@ import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
 import { components, internal } from "./_generated/api";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
+import { roleChangeRefusal } from "../config/roles";
 import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
 import { syncAdminsMembership } from "./chat/shared";
@@ -168,9 +169,12 @@ export const continueReset = internalMutation({
  * is deployment config with no runtime write API, so a CEO client could
  * never edit it directly.
  *
- * Two guards against locking the site out of this page: a CEO cannot change
- * their own role, and the change cannot leave zero CEOs (counting table rows
- * and env entries together).
+ * CEOs are equals except over each other (`roleChangeRefusal` in
+ * `config/roles.ts`): a CEO cannot change their own role or another CEO's,
+ * so nobody can quietly demote a peer. The founder — the original CEO — is
+ * the one exception: they can change any CEO's role, and no one can change
+ * theirs. The change also cannot leave zero CEOs (counting table rows and
+ * env entries together), so the site cannot be locked out of this page.
  */
 export const setRole = mutation({
   args: {
@@ -180,14 +184,17 @@ export const setRole = mutation({
   returns: v.object({ clerkId: v.string(), role: siteRole }),
   handler: async (ctx, { clerkId, role }) => {
     const caller = await requireCeo(ctx);
-    if (clerkId === caller) {
-      throw new ConvexError("You cannot change your own role.");
-    }
     const user = await ctx.db
       .query("users")
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
     if (!user) throw new ConvexError("User not found.");
+    const refusal = roleChangeRefusal(
+      caller,
+      clerkId,
+      await resolveRole(ctx, clerkId),
+    );
+    if (refusal) throw new ConvexError(refusal);
 
     const staff = await resolveStaffRoles(ctx);
     const ceosAfter = staff.filter(
