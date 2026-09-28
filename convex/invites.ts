@@ -3,7 +3,7 @@ import { ConvexError, v } from "convex/values";
 
 import { components } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "./functions";
 import { requireCeo } from "./roles";
 
 /**

@@ -1,4 +1,10 @@
-import { accents, accentVariablesFor, DEFAULT_ACCENT } from "@/lib/accent";
+import {
+  accentInk,
+  accents,
+  accentVariablesFor,
+  DEFAULT_ACCENT,
+} from "@/lib/accent";
+import { customDefaults, documentKeys } from "@/lib/customize";
 import { LEARN_PATH_PREFIX } from "@/lib/learn";
 import { PREFERENCES_STORAGE_KEY } from "@/lib/preferences-cache";
 import { TAB_MASK_SCRIPT_CONSTANTS } from "@/lib/tab-mask";
@@ -29,7 +35,12 @@ import { TAB_MASK_SCRIPT_CONSTANTS } from "@/lib/tab-mask";
  * `themeScript` strikes with `applyTheme` and for the same reason — a
  * serialised function would carry names a bundler has already renamed.
  *
- * `PreferencesProvider` re-applies both on mount and corrects them if the cache
+ * The painted settings in `src/lib/customize.ts` — corner radius, interface
+ * size, typeface and the rest — ride along too, as `data-pref-*` attributes:
+ * each of them moves the whole page, which is exactly the repaint this script
+ * exists to prevent.
+ *
+ * `PreferencesProvider` re-applies all of it on mount and corrects them if the cache
  * was stale, so the two can only ever differ for the length of one query.
  *
  * The default accent is deliberately absent from the table: the stylesheet
@@ -46,6 +57,12 @@ import { TAB_MASK_SCRIPT_CONSTANTS } from "@/lib/tab-mask";
  * ever seen inside a frame, where it has no tab of its own to mask.
  */
 const ACCENT_PLACEHOLDER = "__accent__";
+const INK_PLACEHOLDER = "__ink__";
+
+/** The painted settings and their defaults; see `documentKeys`. */
+const DOCUMENT_DEFAULTS = Object.fromEntries(
+  documentKeys.map((key) => [key, customDefaults[key]]),
+);
 
 const { maskLinkAttribute, relStashAttribute, titleStashAttribute, parkedRel } =
   TAB_MASK_SCRIPT_CONSTANTS;
@@ -62,13 +79,17 @@ export const preferencesScript = `(function(){try{var p=location.pathname;if(p==
       .filter((accent) => accent.id !== DEFAULT_ACCENT)
       .map((accent) => [accent.id, accent.color]),
   ),
-)}[s.accent];if(c){var v=${JSON.stringify(
-  accentVariablesFor(ACCENT_PLACEHOLDER),
+)}[s.accent];if(!c&&/^#[0-9a-f]{6}$/i.test(s.accent))c=s.accent.toLowerCase();if(c){var n=(${accentInk.toString()})(c),v=${JSON.stringify(
+  accentVariablesFor(ACCENT_PLACEHOLDER, INK_PLACEHOLDER),
 )};for(var i=0;i<v.length;i++){d.style.setProperty(v[i][0],v[i][1].split(${JSON.stringify(
   ACCENT_PLACEHOLDER,
-)}).join(c))}}var m=${JSON.stringify(
+)}).join(c).split(${JSON.stringify(
+  INK_PLACEHOLDER,
+)}).join(n))}}var q=${JSON.stringify(
+  DOCUMENT_DEFAULTS,
+)};for(var x in q)if(s[x]!==undefined&&s[x]!==q[x])d.setAttribute("data-pref-"+x,String(s[x]));var m=${JSON.stringify(
   TAB_MASK_SCRIPT_CONSTANTS.table,
-)}[s.tabMask];if(m){if(document.title)d.setAttribute(${JSON.stringify(
+)}[s.tabMask];if(m&&s.maskWhen!=="away"){if(document.title)d.setAttribute(${JSON.stringify(
   titleStashAttribute,
 )},document.title);document.title=m[0];var k=h.querySelectorAll(${JSON.stringify(
   TAB_MASK_SCRIPT_CONSTANTS.realIconSelector,

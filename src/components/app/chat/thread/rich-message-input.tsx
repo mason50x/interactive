@@ -14,6 +14,7 @@ import {
   useState,
   type Ref,
 } from "react";
+import { usePreferences } from "@/components/preferences-provider";
 import { Button } from "@/components/ui/button";
 import {
   MentionPicker,
@@ -107,6 +108,15 @@ export function RichMessageInput({
     Math.max(0, people.candidates.length - 1),
   );
   const known = useRef(people.known);
+  // Read from the key handler, which the editor holds on to from its first
+  // render; a ref is how it sees the setting change after that.
+  const {
+    preferences: { enterToSend },
+  } = usePreferences();
+  const enterSends = useRef(enterToSend);
+  useEffect(() => {
+    enterSends.current = enterToSend;
+  }, [enterToSend]);
   useEffect(() => {
     known.current = people.known;
     onKnownPeople(people.known);
@@ -268,7 +278,12 @@ export function RichMessageInput({
           return true;
         }
         if (event.key !== "Enter") return false;
-        if (event.shiftKey) {
+        // With Enter-to-send off the two swap: Enter is a new line and it
+        // takes Ctrl or ⌘ to send.
+        const newLine = enterSends.current
+          ? event.shiftKey
+          : !(event.ctrlKey || event.metaKey);
+        if (newLine) {
           if (editor?.isActive("listItem")) {
             editor.commands.splitListItem("listItem");
             return true;

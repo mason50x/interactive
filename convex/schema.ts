@@ -130,6 +130,23 @@ export default defineSchema({
     .index("byActor", ["actor"]),
 
   /**
+   * CEO-set account restrictions: a full-screen page the account can't leave,
+   * and every public function refused while the row exists. Absent means
+   * unrestricted. See `convex/restrictions.ts` and `convex/functions.ts`.
+   */
+  accountRestrictions: defineTable({
+    clerkId: v.string(),
+    kind: v.union(v.literal("banned"), v.literal("error")),
+    /** Error screens only; `banned` shows nothing but the word. */
+    title: v.optional(v.string()),
+    heading: v.optional(v.string()),
+    message: v.optional(v.string()),
+    footer: v.optional(v.string()),
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+  }).index("byClerkId", ["clerkId"]),
+
+  /**
    * CEO-editable role overrides, read alongside the server-owned `STAFF_ROLES`
    * env map (see `config/roles.ts`). The env map is deployment config and has
    * no runtime write API, so anything a CEO client can change has to live in
@@ -168,6 +185,30 @@ export default defineSchema({
     updatedBy: v.string(),
   }).index("byClerkId", ["clerkId"])
     .index("byUpdatedBy", ["updatedBy"]),
+
+  /**
+   * CEO-raised topics every member votes yes or no on. `forced` holds the
+   * member's playtime until they vote; otherwise the vote is only asked for.
+   * The tallies live on the row so the admin list never scans the votes.
+   * See `convex/votes.ts`.
+   */
+  voteTopics: defineTable({
+    title: v.string(),
+    description: v.string(),
+    forced: v.boolean(),
+    closed: v.boolean(),
+    yes: v.number(),
+    no: v.number(),
+    createdBy: v.string(),
+  }).index("byClosed", ["closed"]),
+
+  /** One immutable ballot per account per topic. */
+  votes: defineTable({
+    topicId: v.id("voteTopics"),
+    clerkId: v.string(),
+    choice: v.union(v.literal("yes"), v.literal("no")),
+  }).index("byClerkIdAndTopicId", ["clerkId", "topicId"])
+    .index("byTopicId", ["topicId"]),
 
   /**
    * One row per user, holding the choices that are theirs rather than the
@@ -221,6 +262,19 @@ export default defineSchema({
      * so the home page's bell schedule can split Block 3 around it.
      */
     lunch: v.optional(v.number()),
+    /**
+     * Everything else the Settings page can change — the look, the layout,
+     * home, chat, privacy and accessibility — keyed by the names in
+     * `customSpec` in `src/lib/customize.ts`. One record rather than a column
+     * each: there are dozens, they are all small values the client checks
+     * against its own table, and a setting added there needs nothing here.
+     */
+    custom: v.optional(
+      v.record(
+        v.string(),
+        v.union(v.string(), v.number(), v.boolean(), v.array(v.string())),
+      ),
+    ),
   }).index("byClerkId", ["clerkId"]),
 
   /** Per-account moderation counters, separate from Clerk identity. */

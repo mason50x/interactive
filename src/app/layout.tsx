@@ -1,7 +1,14 @@
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Inter } from "next/font/google";
+import {
+  Atkinson_Hyperlegible,
+  Instrument_Serif,
+  Inter,
+  JetBrains_Mono,
+  Nunito,
+  Source_Serif_4,
+} from "next/font/google";
 import { brand } from "@/lib/brand";
 import { consoleGreetingScript } from "@/lib/console-greeting";
 import { preferencesScript } from "@/lib/preferences-script";
@@ -44,6 +51,35 @@ const displaySerif = Instrument_Serif({
   display: "optional",
   // Same gap as Inter's: keep a miss inside the serif family.
   fallback: ["Georgia", "Tinos", "serif"],
+});
+
+// The typefaces an account can switch the app into from Settings. Declared
+// here so their variables sit on <html> with Inter's, and never preloaded:
+// a face is fetched only once `data-pref-font` points the page at it.
+const readable = Atkinson_Hyperlegible({
+  variable: "--font-readable",
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+const rounded = Nunito({
+  variable: "--font-rounded",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+const bookSerif = Source_Serif_4({
+  variable: "--font-book-serif",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+const monoFace = JetBrains_Mono({
+  variable: "--font-mono-face",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -151,6 +187,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         "h-full scroll-smooth font-sans antialiased",
         inter.variable,
         displaySerif.variable,
+        readable.variable,
+        rounded.variable,
+        bookSerif.variable,
+        monoFace.variable,
       )}
     >
       <body className="flex min-h-full flex-col">

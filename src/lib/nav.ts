@@ -96,3 +96,27 @@ export const navItems: NavItem[] = [
     icon: { outline: TrophyIcon, solid: TrophyIconSolid },
   },
 ];
+
+export const SETTINGS_HREF = "/settings";
+
+/**
+ * The rail as the account arranged it: `order` first, in its order, then
+ * anything it does not mention in the default order — so a destination added
+ * after someone rearranged still shows up — less whatever they hid. Home is
+ * never hidden: it is where the logo goes, and a rail without it has no floor.
+ */
+export function arrangeNav(
+  items: NavItem[],
+  order: readonly string[],
+  hidden: readonly string[],
+): NavItem[] {
+  const rank = (href: string) => {
+    const index = order.indexOf(href);
+    return index === -1
+      ? order.length + items.findIndex((item) => item.href === href)
+      : index;
+  };
+  return [...items]
+    .sort((a, b) => rank(a.href) - rank(b.href))
+    .filter((item) => item.href === HOME_HREF || !hidden.includes(item.href));
+}

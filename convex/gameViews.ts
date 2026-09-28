@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "./functions";
 import catalogue from "../src/lib/activities.catalogue.json";
 
 const slugs = new Set(catalogue.map(game => game.slug));

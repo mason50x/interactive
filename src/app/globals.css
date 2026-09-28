@@ -9,10 +9,14 @@
  */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Sidebar layout depends only on viewport width. */
+/* Sidebar layout depends on viewport width — and on the account, which can
+   ask for the icon rail at any width (`data-pref-rail`, see
+   `src/lib/customize.ts`). Only the rail and what hangs off it use this. */
 @custom-variant wide {
   @media (width >= 64rem) {
-    @slot;
+    &:where(:root:not([data-pref-rail="icons"]) *) {
+      @slot;
+    }
   }
 }
 @custom-variant narrow {
@@ -249,9 +253,11 @@
   --shadow-card: var(--elevation-card);
   --shadow-card-hover: var(--elevation-card-hover);
 
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  /* `--font-ui` is the account's typeface when it has picked one; see
+     `data-pref-font` at the foot of this file. */
+  --font-sans: var(--font-ui, var(--font-inter)), system-ui, sans-serif;
   --font-serif: var(--font-display-serif), Georgia, serif;
-  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-ui, var(--font-inter)), system-ui, sans-serif;
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -1900,4 +1906,197 @@
       cursor: var(--cursor);
     }
   }
+}
+
+/*
+ * The account's own settings, painted.
+ *
+ * Every rule here is keyed to a `data-pref-*` attribute on <html>, written
+ * before the first paint by `preferencesScript` and kept in step by
+ * `PreferencesProvider`. A default value writes no attribute, so none of this
+ * applies to anyone who has not asked for it. See `src/lib/customize.ts`.
+ */
+
+/* Corners: every `rounded-*` step is mixed off `--radius`. */
+:root[data-pref-radius="sharp"] {
+  --radius: 0.25rem;
+}
+:root[data-pref-radius="soft"] {
+  --radius: 0.5rem;
+}
+:root[data-pref-radius="round"] {
+  --radius: 1.125rem;
+}
+
+/* Interface size: the app is set in rem, so the root size moves all of it. */
+:root[data-pref-scale="90"] {
+  font-size: 90%;
+}
+:root[data-pref-scale="110"] {
+  font-size: 110%;
+}
+:root[data-pref-scale="120"] {
+  font-size: 120%;
+}
+
+/* Typeface. `--font-ui` is what every sans utility reads first, so setting
+   it moves the whole page; the alternates are declared in the root layout
+   without preloading, so nobody downloads a face they did not pick. */
+:root[data-pref-font="system"] {
+  --font-ui:
+    system-ui, -apple-system, "Segoe UI", Roboto, Arimo, "Helvetica Neue",
+    sans-serif;
+}
+:root[data-pref-font="readable"] {
+  --font-ui: var(--font-readable), system-ui, sans-serif;
+}
+:root[data-pref-font="rounded"] {
+  --font-ui: var(--font-rounded), ui-rounded, system-ui, sans-serif;
+}
+:root[data-pref-font="serif"] {
+  --font-ui: var(--font-book-serif), Georgia, serif;
+}
+:root[data-pref-font="mono"] {
+  --font-ui: var(--font-mono-face), ui-monospace, Menlo, monospace;
+}
+
+/* Surface tint: the chrome and the page take on a little of the accent. */
+:root[data-pref-tint="tinted"] {
+  --sidebar: color-mix(in oklab, var(--primary) 7%, #f3f3f3);
+  --background: color-mix(in oklab, var(--primary) 4%, #f7f7f7);
+  --surface: color-mix(in oklab, var(--primary) 2%, #ffffff);
+}
+:root[data-pref-tint="vivid"] {
+  --sidebar: color-mix(in oklab, var(--primary) 16%, #f3f3f3);
+  --background: color-mix(in oklab, var(--primary) 8%, #f7f7f7);
+  --surface: color-mix(in oklab, var(--primary) 4%, #ffffff);
+  --sidebar-border: color-mix(in oklab, var(--primary) 18%, #e3e3e3);
+}
+:root[data-pref-tint="tinted"][data-theme="dark"] {
+  --sidebar: color-mix(in oklab, var(--primary) 9%, #0f0f0f);
+  --background: color-mix(in oklab, var(--primary) 5%, #0f0f0f);
+  --surface: color-mix(in oklab, var(--primary) 4%, #171717);
+}
+:root[data-pref-tint="vivid"][data-theme="dark"] {
+  --sidebar: color-mix(in oklab, var(--primary) 20%, #0a0a0a);
+  --background: color-mix(in oklab, var(--primary) 10%, #0f0f0f);
+  --surface: color-mix(in oklab, var(--primary) 8%, #151515);
+  --sidebar-border: color-mix(in oklab, var(--primary) 22%, #272727);
+}
+
+/* The rail's backdrop. Dots are the default in `.rail-dots` itself. */
+:root[data-pref-pattern="grid"] .rail-dots {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--foreground) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--foreground) 7%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 18px 18px;
+}
+:root[data-pref-pattern="lines"] .rail-dots {
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--foreground) 8%, transparent) 0 1px,
+    transparent 1px 9px
+  );
+  background-size: auto;
+}
+:root[data-pref-pattern="none"] .rail-dots {
+  display: none;
+}
+
+/* The shell: framed is the default; floating lifts it, flush fills. */
+:root[data-pref-frame="floating"] [data-slot="shell"] {
+  margin: 1rem;
+  border-color: transparent;
+  box-shadow: var(--elevation-card-hover);
+}
+:root[data-pref-frame="flush"] [data-slot="shell"] {
+  margin: 0;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+}
+
+/* Page width: the measure every dashboard page is centred in, lifted. */
+:root[data-pref-width="full"] [data-slot="page"] {
+  max-width: none;
+}
+
+/* Decorative motion — the WebGL fields and the like — marks itself with
+   `data-effect`, and goes when the account turns effects off. */
+:root[data-pref-effects="false"] [data-effect] {
+  display: none;
+}
+
+/* The system cursor, for anyone who would rather have the one they know. */
+@media (pointer: fine) {
+  :root[data-pref-cursor="system"] {
+    --cursor: default;
+  }
+  :root[data-pref-cursor="system"]
+    :is(
+      a[href],
+      button:not(:disabled),
+      [role="button"],
+      [role="link"],
+      [role="tab"],
+      [role="menuitem"],
+      [role="option"],
+      summary,
+      label[for],
+      select,
+      .cursor-pointer
+    ) {
+    cursor: pointer;
+  }
+}
+
+/* High contrast: stronger lines and darker secondary text, both themes. */
+:root[data-pref-contrast="high"] {
+  --border: #b4b4b4;
+  --input: #9c9c9c;
+  --border-strong: #8a8a8a;
+  --sidebar-border: #b4b4b4;
+  --muted-foreground: #333333;
+  --faint: #595959;
+}
+:root[data-pref-contrast="high"][data-theme="dark"] {
+  --border: #4d4d4d;
+  --input: #666666;
+  --border-strong: #777777;
+  --sidebar-border: #4d4d4d;
+  --muted-foreground: #d4d4d4;
+  --faint: #ababab;
+}
+
+/* Reduced motion on request, whatever the operating system says. */
+:root[data-pref-motion="reduce"] *,
+:root[data-pref-motion="reduce"] *::before,
+:root[data-pref-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Links inside running text, underlined so they do not rely on colour. */
+:root[data-pref-underline="true"]
+  :is(p, li, blockquote)
+  a[href]:not([class*="rounded"]) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Privacy blur: the page goes soft while the tab is out of sight. */
+[data-slot="shell"] {
+  transition: filter 200ms ease;
+}
+:root[data-away] [data-slot="shell"] {
+  filter: blur(18px) saturate(0.6);
 }

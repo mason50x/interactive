@@ -1,6 +1,7 @@
 import { activeTimeout } from "../timeoutState";
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type QueryCtx } from "../_generated/server";
+import { type QueryCtx } from "../_generated/server";
+import { mutation, query } from "../functions";
 import { deleteMessage, membership } from "./shared";
 
 import { resolvePrivileges, resolveAdminClerkIds, resolveStaffRoles, resolveRole } from "../roles";

@@ -4,13 +4,8 @@ import { resolveRole } from "./roles";
 import { normalizePersonName } from "../src/lib/person-name";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import {
-  internalMutation,
-  mutation,
-  query,
-  type MutationCtx,
-  type QueryCtx,
-} from "./_generated/server";
+import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { mutation, query } from "./functions";
 
 /** The subset of Clerk's `user.*` webhook payload we care about. */
 type ClerkUserJSON = {

@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, type MutationCtx } from "./_generated/server";
+import { type MutationCtx } from "./_generated/server";
+import { mutation } from "./functions";
 import { generatePuzzle, isCorrect, puzzleParams, solve } from "./geometry";
 import { activeTimeout } from "./timeoutState";
 

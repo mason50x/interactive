@@ -1,11 +1,13 @@
 import { addScore } from "./leaderboard";
 import { requireNotTimedOut } from "./timeoutState";
+import { voteRequired } from "./votes";
 import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 import { PLAYTIME_SECONDS, CHAT_REWARD_SECONDS, playtimeDay, rewardText, similarReward } from "../config/playtime";
 import type { MutationCtx } from "./_generated/server";
 import { components, internal } from "./_generated/api";
-import { internalMutation, mutation, query, type QueryCtx } from "./_generated/server";
+import { internalMutation, type QueryCtx } from "./_generated/server";
+import { mutation, query } from "./functions";
 
 const limiter = new RateLimiter(components.rateLimiter);
 const statusValidator = v.object({
@@ -14,6 +16,8 @@ const statusValidator = v.object({
   leaseUntil: v.number(),
   resetsAt: v.number(),
   serverNow: v.number(),
+  /** An open forced vote is waiting on this account; no lease until it lands. */
+  voteRequired: v.boolean(),
 });
 
 async function quotaFor(ctx: QueryCtx, clerkId: string) {
@@ -31,7 +35,8 @@ async function quotaFor(ctx: QueryCtx, clerkId: string) {
   const value = await limiter.getValue(ctx, "experienceSeconds", { key, config });
   return { now, day, key, config, lease, clerkId,
     status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value)),
-      allowanceSeconds, leaseUntil: lease?.until ?? 0, resetsAt, serverNow: now } };
+      allowanceSeconds, leaseUntil: lease?.until ?? 0, resetsAt, serverNow: now,
+      voteRequired: await voteRequired(ctx, clerkId) } };
 }
 
 /** Preserve today's spent time when an admin changes the daily base limit. */
@@ -121,7 +126,7 @@ export const acquire = mutation({
       sessions.push({ id: sessionId, until: q.now + 15_000 });
       if (q.lease) await ctx.db.patch(q.lease._id, { sessions });
     }
-    if (q.status.leaseUntil > q.now + 5_000 || q.status.remainingSeconds <= 0) return q.status;
+    if (q.status.voteRequired || q.status.leaseUntil > q.now + 5_000 || q.status.remainingSeconds <= 0) return q.status;
     const from = Math.max(q.now, q.status.leaseUntil);
     const seconds = Math.min((q.now + 15_000 - from) / 1000, q.status.remainingSeconds, (q.status.resetsAt - from) / 1000);
     if (seconds <= 0) return q.status;

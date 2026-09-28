@@ -7,13 +7,8 @@ import type { ModelMessage, UserContent } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { v } from "convex/values";
 import { components, internal } from "../_generated/api";
-import {
-  mutation,
-  internalAction,
-  internalMutation,
-  internalQuery,
-  query,
-} from "../_generated/server";
+import { internalAction, internalMutation, internalQuery } from "../_generated/server";
+import { mutation, query } from "../functions";
 import {
   BOT_HANDLE,
   BOT_ID,

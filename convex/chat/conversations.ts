@@ -3,7 +3,8 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { EVERYONE } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
-import { mutation, query, type QueryCtx } from "../_generated/server";
+import { type QueryCtx } from "../_generated/server";
+import { mutation, query } from "../functions";
 import type { Doc } from "../_generated/dataModel";
 import {
   avatarAppearance,

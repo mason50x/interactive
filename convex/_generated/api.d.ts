@@ -29,6 +29,7 @@ import type * as crons from "../crons.js";
 import type * as dataMaintenance from "../dataMaintenance.js";
 import type * as experience from "../experience.js";
 import type * as features from "../features.js";
+import type * as functions from "../functions.js";
 import type * as gameViews from "../gameViews.js";
 import type * as geometry from "../geometry.js";
 import type * as http from "../http.js";
@@ -45,6 +46,8 @@ import type * as moderation_patterns from "../moderation/patterns.js";
 import type * as moderation_rules from "../moderation/rules.js";
 import type * as moderation_verdict from "../moderation/verdict.js";
 import type * as preferences from "../preferences.js";
+import type * as restrictionState from "../restrictionState.js";
+import type * as restrictions from "../restrictions.js";
 import type * as roles from "../roles.js";
 import type * as simulator_cleanup from "../simulator/cleanup.js";
 import type * as simulator_html from "../simulator/html.js";
@@ -60,6 +63,7 @@ import type * as timeoutPuzzles from "../timeoutPuzzles.js";
 import type * as timeoutState from "../timeoutState.js";
 import type * as timeouts from "../timeouts.js";
 import type * as users from "../users.js";
+import type * as votes from "../votes.js";
 
 import type {
   ApiFromModules,
@@ -89,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   dataMaintenance: typeof dataMaintenance;
   experience: typeof experience;
   features: typeof features;
+  functions: typeof functions;
   gameViews: typeof gameViews;
   geometry: typeof geometry;
   http: typeof http;
@@ -105,6 +110,8 @@ declare const fullApi: ApiFromModules<{
   "moderation/rules": typeof moderation_rules;
   "moderation/verdict": typeof moderation_verdict;
   preferences: typeof preferences;
+  restrictionState: typeof restrictionState;
+  restrictions: typeof restrictions;
   roles: typeof roles;
   "simulator/cleanup": typeof simulator_cleanup;
   "simulator/html": typeof simulator_html;
@@ -120,6 +127,7 @@ declare const fullApi: ApiFromModules<{
   timeoutState: typeof timeoutState;
   timeouts: typeof timeouts;
   users: typeof users;
+  votes: typeof votes;
 }>;
 
 /**

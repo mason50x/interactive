@@ -5,7 +5,6 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ShieldCheckIcon } from "@heroicons/react/16/solid";
 import Link from "next/link";
 import { useCallback, useRef, useState, type RefObject } from "react";
-import { useAccountModal } from "@/components/app/account-modal";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
@@ -15,7 +14,6 @@ import { useTheme } from "@/components/theme-provider";
 import {
   Menu,
   MenuContent,
-  MenuItem,
   MenuLinkItem,
   MenuSeparator,
   MenuTrigger,
@@ -24,6 +22,7 @@ import { useClickOutside } from "@/lib/use-click-outside";
 import { useCachedAdminBadge } from "@/lib/use-cached-admin-badge";
 import { cn } from "@/lib/utils";
 import { normalizePersonName } from "@/lib/person-name";
+import { SETTINGS_HREF } from "@/lib/nav";
 
 /**
  * The account control at the foot of the rail: who you are, and the two
@@ -62,7 +61,6 @@ export function UserMenu({
   );
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();
-  const { open: openAccount, pages: accountPages } = useAccountModal();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const signOutRef = useRef<HTMLDivElement>(null);
@@ -144,20 +142,16 @@ export function UserMenu({
 
           <MenuSeparator className="-mx-1.5 mb-1.5" />
 
-          {/* One door. Behind it is Clerk's account modal with the site's
-            settings as its first page and Clerk's own — profile, email
-            addresses, password, connected accounts, devices — after it;
-            see `useAccountModal`. This used to be two rows, "Account" and
-            "Settings", and the line between them was one only the code
-            could see.
+          {/* One door: the Settings page, which ends in an Account section
+            with Clerk's own modal — profile, email, password, devices —
+            one button further in.
 
             The avatar leads the row rather than a gear: the row is the
             door to your account as much as to the site's settings, and
-            the face is what says so. `MenuItem` closes the
-            menu on click, which is what keeps it from sitting open behind
-            the modal it launches. */}
-          <MenuItem
-            onClick={() => openAccount("settings")}
+            the face is what says so. */}
+          <MenuLinkItem
+            closeOnClick
+            render={<Link href={SETTINGS_HREF} />}
             tone="muted"
             size="tall"
             className="justify-between"
@@ -170,7 +164,7 @@ export function UserMenu({
               strokeWidth={3}
               className="size-4 shrink-0 text-faint"
             />
-          </MenuItem>
+          </MenuLinkItem>
 
           {hasAdminPanel && (
             <MenuLinkItem
@@ -209,10 +203,6 @@ export function UserMenu({
           />
         </MenuContent>
       </Menu>
-
-      {/* The settings page and its nav icon, portalled into the modal while
-        it is open and nothing at all while it is not. */}
-      {accountPages}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@convex/_generated/api";
 import { TimeoutMessage } from "@/components/app/timeout-message";
+import { RestrictionScreen } from "@/components/app/restriction-screen";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
@@ -39,6 +40,9 @@ export default async function LearnPage({
   const { getToken } = await auth();
   const token = await getToken({ template: "convex" });
   if (!token) throw new Error("Your session is not available.");
+  // First: every other function refuses a restricted account outright.
+  const restriction = await fetchQuery(api.restrictions.mine, {}, { token });
+  if (restriction) return <RestrictionScreen restriction={restriction} />;
   const timeout = await fetchQuery(api.timeouts.mine, {}, { token });
   if (timeout)
     return (

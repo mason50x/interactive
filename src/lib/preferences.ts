@@ -24,12 +24,24 @@
  */
 
 import { type AccentId, DEFAULT_ACCENT, isAccentId } from "@/lib/accent";
+import {
+  type CustomSettings,
+  customDefaults,
+  resolveCustom,
+} from "@/lib/customize";
 import { BLANK_PAGE } from "@/lib/panic-key";
 import { isLunchNumber, type LunchNumber } from "@/lib/school-schedule";
 import { isTabMaskId, NO_TAB_MASK, type TabMaskId } from "@/lib/tab-mask";
 
-export type Preferences = {
-  /** An id from `accents`. */
+/**
+ * The original columns, and everything in `src/lib/customize.ts` beside them,
+ * as one flat object. Where a key lives on the row is the provider's business;
+ * nothing that reads a setting has to know.
+ */
+export type Preferences = CorePreferences & CustomSettings;
+
+type CorePreferences = {
+  /** An id from `accents`, or a `#rrggbb` of the account's own. */
   accent: AccentId;
   panicEnabled: boolean;
   /** A canonical combo (see `canonicalCombo`). */
@@ -71,6 +83,7 @@ export const defaultPreferences: Preferences = {
   panicUrl: BLANK_PAGE,
   tabMask: NO_TAB_MASK,
   lunch: null,
+  ...customDefaults,
 };
 
 /**
@@ -82,11 +95,19 @@ export const defaultPreferences: Preferences = {
  * which is the only shape anything downstream ever sees.
  */
 export function resolvePreferences(
-  row: Partial<Record<keyof Preferences, unknown>> | null | undefined,
+  row: Record<string, unknown> | null | undefined,
 ): Preferences {
   if (!row) return defaultPreferences;
 
+  // A server row keeps these under `custom`; the cache and an imported file
+  // keep them flat. Flat wins, since it is only ever the newer of the two.
+  const custom =
+    typeof row.custom === "object" && row.custom !== null
+      ? (row.custom as Record<string, unknown>)
+      : {};
+
   return {
+    ...resolveCustom({ ...custom, ...row }),
     accent: isAccentId(row.accent) ? row.accent : defaultPreferences.accent,
     panicEnabled:
       typeof row.panicEnabled === "boolean"
@@ -106,6 +127,3 @@ export function resolvePreferences(
     lunch: isLunchNumber(row.lunch) ? row.lunch : defaultPreferences.lunch,
   };
 }
-
-/** The settings page or Clerk's account page in the account modal. */
-export type SettingsPage = "settings" | "account";

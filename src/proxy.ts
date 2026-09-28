@@ -55,6 +55,7 @@ export default clerkMiddleware(async (auth, req) => {
       "/chat",
       "/browse",
       "/emulate",
+      "/settings",
       LEARN_PATH_PREFIX,
     ].some((root) => inRouteTree(path, root))
   ) {
@@ -82,6 +83,7 @@ export const config = {
     "/chat/:path*",
     "/browse/:path*",
     "/emulate/:path*",
+    "/settings/:path*",
     "/learn/:path*",
     "/auth/:path*",
     // Public route trees that mount ClerkProvider also need Clerk context.

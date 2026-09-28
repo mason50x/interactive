@@ -17,6 +17,7 @@ import { useGamePopularity } from "@/components/app/game-views";
 import { usePlaytimeQuota } from "@/components/app/playtime-status";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { SchoolSchedule } from "@/components/app/home/school-schedule";
+import { usePreferences } from "@/components/preferences-provider";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { thumbnailSrc, type ActivityEntry } from "@/lib/activity";
@@ -27,6 +28,18 @@ import { cn } from "@/lib/utils";
 import PixelBlast from "@/components/PixelBlast";
 
 const DAY = 86_400_000;
+
+/** The parts of Home an account can hide, in the order they appear. */
+export const homeSections = [
+  { id: "greeting", label: "Greeting" },
+  { id: "featured", label: "Top pick" },
+  { id: "schedule", label: "Bell schedule" },
+  { id: "chat", label: "Chat" },
+  { id: "leaders", label: "Leaderboard" },
+  { id: "quote", label: "Quote of the day" },
+] as const;
+
+export type HomeSectionId = (typeof homeSections)[number]["id"];
 
 /**
  * Home: the page a session lands on.
@@ -69,33 +82,68 @@ export function Home() {
   const resuming = recentGames.length > 0;
   const featured = recentGames[0] ?? ranked[0];
 
+  // What the account chose to keep on Home; see the Home section of Settings.
+  const {
+    preferences: { homeHidden },
+  } = usePreferences();
+  const shows = (id: HomeSectionId) => !homeHidden.includes(id);
+  const showFeatured = shows("featured") && featured;
+  const community = (["chat", "leaders", "quote"] as const).filter(shows);
+
   return (
     <>
-      <Hero />
+      {shows("greeting") && <Hero />}
 
-      <section
-        aria-label={resuming ? "Jump back in" : "Top pick and school day"}
-        className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]"
-        style={
-          scheduleHeight === null
-            ? undefined
-            : ({ "--schedule-h": `${scheduleHeight}px` } as CSSProperties)
-        }
-      >
-        {featured && <Featured game={featured} resuming={resuming} />}
-        <div ref={scheduleRef}>
-          <SchoolSchedule />
-        </div>
-      </section>
+      {(showFeatured || shows("schedule")) && (
+        <section
+          aria-label={resuming ? "Jump back in" : "Top pick and school day"}
+          className={cn(
+            "grid items-start gap-5",
+            showFeatured &&
+              shows("schedule") &&
+              "lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]",
+          )}
+          style={
+            scheduleHeight === null || !shows("schedule")
+              ? undefined
+              : ({ "--schedule-h": `${scheduleHeight}px` } as CSSProperties)
+          }
+        >
+          {showFeatured && (
+            <Featured
+              game={featured}
+              resuming={resuming}
+              alone={!shows("schedule")}
+            />
+          )}
+          {shows("schedule") && (
+            <div ref={scheduleRef}>
+              <SchoolSchedule />
+            </div>
+          )}
+        </section>
+      )}
 
-      <section
-        aria-label="Around the community"
-        className="grid gap-5 md:grid-cols-3"
-      >
-        <ChatCard />
-        <TopPlayers />
-        <QuoteCard />
-      </section>
+      {community.length > 0 && (
+        <section
+          aria-label="Around the community"
+          className={cn(
+            "grid gap-5",
+            community.length === 3 && "md:grid-cols-3",
+            community.length === 2 && "md:grid-cols-2",
+          )}
+        >
+          {community.map((id) =>
+            id === "chat" ? (
+              <ChatCard key={id} />
+            ) : id === "leaders" ? (
+              <TopPlayers key={id} />
+            ) : (
+              <QuoteCard key={id} />
+            ),
+          )}
+        </section>
+      )}
     </>
   );
 }
@@ -119,6 +167,9 @@ function Hero() {
   const now = useNow();
   const { profile } = useChat();
   const quota = usePlaytimeQuota();
+  const {
+    preferences: { nickname },
+  } = usePreferences();
 
   const hour = now?.getHours();
   const greeting =
@@ -129,9 +180,11 @@ function Hero() {
         : hour < 18
           ? "Good afternoon"
           : "Good evening";
-  const name = profile
-    ? profile.displayName?.trim().split(/\s+/)[0] || profile.handle
-    : null;
+  const name =
+    nickname ||
+    (profile
+      ? profile.displayName?.trim().split(/\s+/)[0] || profile.handle
+      : null);
 
   const seconds = quota?.remaining ?? null;
   const clock =
@@ -166,15 +219,23 @@ function Hero() {
 function Featured({
   game,
   resuming,
+  alone,
 }: {
   game: ActivityEntry;
   resuming: boolean;
+  /** No schedule beside it to take a height from, so it keeps its shape. */
+  alone: boolean;
 }) {
   return (
     <Link
       href={`/activities/${game.slug}`}
       prefetch={false}
-      className="group relative isolate flex aspect-[16/10] min-h-72 flex-col justify-end overflow-hidden rounded-[1.5rem] bg-muted p-6 text-white transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none focus-visible:ring-3 focus-visible:ring-ring/60 sm:p-8 lg:aspect-auto lg:h-[var(--schedule-h,auto)] lg:min-h-0"
+      className={cn(
+        "group relative isolate flex aspect-[16/10] min-h-72 flex-col justify-end overflow-hidden rounded-[1.5rem] bg-muted p-6 text-white transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none focus-visible:ring-3 focus-visible:ring-ring/60 sm:p-8",
+        alone
+          ? "lg:aspect-[21/8]"
+          : "lg:aspect-auto lg:h-[var(--schedule-h,auto)] lg:min-h-0",
+      )}
     >
       {/* Catalogue art is served from `public/`; see `thumbnailSrc`. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -336,20 +397,26 @@ function QuoteCard() {
     timer = setTimeout(refresh, 0);
     return () => clearTimeout(timer);
   }, []);
+  const {
+    preferences: { effects },
+  } = usePreferences();
   return (
     <figure className="relative flex min-h-72 flex-col overflow-hidden rounded-[1.5rem] bg-primary p-7 text-primary-foreground">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 opacity-40"
-        style={{ maskImage: "linear-gradient(to top, black, transparent)" }}
-      >
-        <PixelBlast
-          color="#c7e1ff"
-          pixelSize={4}
-          edgeFade={0.15}
-          enableRipples={false}
-        />
-      </div>
+      {effects && (
+        <div
+          aria-hidden="true"
+          data-effect
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-32 opacity-40"
+          style={{ maskImage: "linear-gradient(to top, black, transparent)" }}
+        >
+          <PixelBlast
+            color="#c7e1ff"
+            pixelSize={4}
+            edgeFade={0.15}
+            enableRipples={false}
+          />
+        </div>
+      )}
       <figcaption className="relative z-10 text-[0.875rem] font-medium text-primary-foreground/75">
         Quote of the day
       </figcaption>

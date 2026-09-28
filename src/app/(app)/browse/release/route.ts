@@ -10,11 +10,19 @@ export async function POST(request: Request) {
   const { userId, getToken } = await auth();
   if (!userId) return new Response(null, { status: 401 });
   const body = await request.json().catch(() => null);
-  if (typeof body?.sessionId !== "string" || !body.sessionId || body.sessionId.length > 100) {
+  if (
+    typeof body?.sessionId !== "string" ||
+    !body.sessionId ||
+    body.sessionId.length > 100
+  ) {
     return new Response(null, { status: 400 });
   }
   const token = await getToken({ template: "convex" });
   if (!token) return new Response(null, { status: 401 });
-  await fetchMutation(api.experience.release, { sessionId: body.sessionId }, { token });
+  await fetchMutation(
+    api.experience.release,
+    { sessionId: body.sessionId },
+    { token },
+  );
   return new Response(null, { status: 204 });
 }

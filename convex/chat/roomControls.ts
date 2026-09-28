@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
-import { mutation, query, type QueryCtx } from "../_generated/server";
+import { type QueryCtx } from "../_generated/server";
+import { mutation, query } from "../functions";
 import { resolvePrivileges, resolveRole, type SiteRole } from "../roles";
 import { staffId } from "./admin";
 import { accountByHandle, callerId, deleteMessage, membership } from "./shared";

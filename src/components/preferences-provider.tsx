@@ -6,10 +6,20 @@ import {
   use,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { applyAccent } from "@/lib/accent";
+import {
+  applyDocumentSettings,
+  type CustomSettings,
+  customKeys,
+  isCustomKey,
+  resolveCustom,
+} from "@/lib/customize";
+import { HOME_HREF } from "@/lib/nav";
 import { canonicalCombo, safePanicUrl } from "@/lib/panic-key";
 import {
   defaultPreferences,
@@ -82,6 +92,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           panicUrl: args.panicUrl ?? current?.panicUrl,
           tabMask: args.tabMask ?? current?.tabMask,
           lunch: args.lunch ?? current?.lunch,
+          custom:
+            args.custom === undefined
+              ? current?.custom
+              : { ...current?.custom, ...args.custom },
         },
       );
     },
@@ -117,8 +131,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     () => ({
       preferences,
       loaded: !authLoading && row !== undefined,
-      update: ({ lunch, ...patch }) => {
-        void save({ ...patch, ...(lunch ? { lunch } : {}) });
+      update: (patch) => {
+        // The original columns go as themselves; everything from
+        // `src/lib/customize.ts` rides in the `custom` record.
+        const core: Record<string, unknown> = {};
+        const custom: Record<string, CustomSettings[keyof CustomSettings]> = {};
+        for (const [key, value] of Object.entries(patch)) {
+          if (value === undefined) continue;
+          if (isCustomKey(key)) custom[key] = value as never;
+          else if (key !== "lunch" || value) core[key] = value;
+        }
+        void save({
+          ...(core as Parameters<typeof save>[0]),
+          ...(Object.keys(custom).length ? { custom } : {}),
+        });
       },
     }),
     [preferences, save, authLoading, row],
@@ -138,11 +164,40 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   // owns the `<title>` and the icon links, and every route in the signed-in app
   // declares a title of its own, so a mask written once on mount lasts until
   // the first click. `watchTabMask` writes it back — see `src/lib/tab-mask.ts`.
+  // `away` is only listened for when a setting asks about it; see `useAway`.
+  const away = useAway(
+    preferences.maskWhen === "away" || preferences.privacyBlur,
+  );
+  const masked = preferences.maskWhen === "always" || away;
+
   useEffect(() => {
     if (!cacheRead) return;
-    return watchTabMask(tabMaskAssets(preferences.tabMask));
-  }, [cacheRead, preferences.tabMask]);
+    return watchTabMask(masked ? tabMaskAssets(preferences.tabMask) : null);
+  }, [cacheRead, masked, preferences.tabMask]);
 
+  // The painted settings. Built from the fields rather than passed whole so
+  // the effect only runs when one of them actually changes.
+  const painted = JSON.stringify(
+    customKeys.map((key) => preferences[key as keyof Preferences]),
+  );
+  useEffect(() => {
+    if (!cacheRead) return;
+    applyDocumentSettings(resolveCustom(preferences));
+    // `painted` is the dependency that says when; `preferences` is read for what.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheRead, painted]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (preferences.privacyBlur && away) root.setAttribute("data-away", "");
+    else root.removeAttribute("data-away");
+  }, [preferences.privacyBlur, away]);
+
+  useLeaveGuard(preferences.confirmLeave);
+  useLanding(
+    preferences.landing,
+    cacheRead && (cached !== null || value.loaded),
+  );
   usePanicKey(preferences);
 
   return <PreferencesContext value={value}>{children}</PreferencesContext>;
@@ -220,10 +275,96 @@ function usePanicKey({ panicEnabled, panicKey, panicUrl }: Preferences) {
     function onKeyDown(event: KeyboardEvent) {
       if (canonicalCombo(event) !== panicKey) return;
       event.preventDefault();
+      // The whole point is to leave without a dialog in the way.
+      leaving = true;
       window.location.replace(destination as string);
     }
 
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [panicEnabled, panicKey, panicUrl]);
+}
+
+/** Set on the way out by the panic key, so the leave guard stands aside. */
+let leaving = false;
+
+/**
+ * "Ask before closing the tab": the browser's own leave dialog, which is the
+ * only one a page is allowed to put in front of a close.
+ */
+function useLeaveGuard(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (leaving) return;
+      event.preventDefault();
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [enabled]);
+}
+
+/**
+ * Whether this tab is out of sight: hidden behind another tab, or its window
+ * no longer the one being used.
+ *
+ * Focus moving into an activity's frame blurs the window without the page
+ * being any less in front of you, so a blur is only believed once
+ * `document.hasFocus()` — which counts a focused child frame — agrees.
+ */
+function useAway(listening: boolean): boolean {
+  const [away, setAway] = useState(false);
+
+  useEffect(() => {
+    if (!listening) return;
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() =>
+        setAway(document.hidden || !document.hasFocus()),
+      );
+    };
+    check();
+    window.addEventListener("blur", check);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("blur", check);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [listening]);
+
+  return listening && away;
+}
+
+const LANDED_KEY = "il-landed";
+
+/**
+ * "Open to": the page a fresh tab starts on, when it is not Home.
+ *
+ * Every door into the app lands on Home — sign-in, `/`, the logo — and those
+ * are decided on the server, which has no idea what this account picked. So
+ * the choice is made here, once per tab: the first time the app is on screen
+ * with settings to read, a tab that opened on Home is moved on. Every visit to
+ * Home after that is one somebody asked for, and stays.
+ */
+function useLanding(landing: string, known: boolean) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!known) return;
+    try {
+      if (sessionStorage.getItem(LANDED_KEY)) return;
+      sessionStorage.setItem(LANDED_KEY, "1");
+    } catch {
+      return;
+    }
+    if (pathname === HOME_HREF && landing !== HOME_HREF)
+      router.replace(landing);
+    // Decided once, on the first render that knows the answer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [known]);
 }

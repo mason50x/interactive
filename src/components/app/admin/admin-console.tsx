@@ -5,12 +5,16 @@ import { useState } from "react";
 import { api } from "@convex/_generated/api";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { useAuthedQuery } from "@/lib/use-authed-query";
+import { AccountConfig } from "./account-config";
 import { InviteCodes } from "./invite-codes";
 import { UserDirectory } from "./user-directory";
+import { Votes } from "./votes";
 
 const TABS = [
   { value: "users", label: "Users" },
   { value: "invites", label: "Invite codes" },
+  { value: "votes", label: "Vote" },
+  { value: "config", label: "Config" },
 ] as const;
 
 export function AdminConsole() {
@@ -30,7 +34,15 @@ export function AdminConsole() {
         onValueChange={setTab}
         options={TABS}
       />
-      {tab === "users" ? <UserDirectory role={role} /> : <InviteCodes />}
+      {tab === "users" ? (
+        <UserDirectory role={role} />
+      ) : tab === "invites" ? (
+        <InviteCodes />
+      ) : tab === "votes" ? (
+        <Votes />
+      ) : (
+        <AccountConfig />
+      )}
     </>
   );
 }

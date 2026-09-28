@@ -8,7 +8,8 @@ import {
   MAX_TITLE,
 } from "../moderation/limits";
 import { screenStatic } from "../moderation/verdict";
-import { mutation, query, type MutationCtx } from "../_generated/server";
+import { type MutationCtx } from "../_generated/server";
+import { mutation, query } from "../functions";
 import {
   avatarAppearance,
   callerAccount,

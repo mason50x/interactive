@@ -80,7 +80,10 @@ export default async function DashboardLayout({
                 <PlaytimeStatusProvider>
                   <div className="flex h-svh overflow-hidden bg-sidebar">
                     <AppSidebar />
-                    <main className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface">
+                    <main
+                      data-slot="shell"
+                      className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface"
+                    >
                       <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
                     </main>
                   </div>

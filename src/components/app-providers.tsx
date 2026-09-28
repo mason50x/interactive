@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { PreferencesProvider } from "@/components/preferences-provider";
+import { RestrictionGate } from "@/components/restriction-gate";
 import { StoreUser } from "@/components/store-user";
 import { ActivityPresence } from "@/components/app/activity-presence";
 
@@ -21,12 +22,16 @@ export function AppProviders({ children }: { children: ReactNode }) {
             and inside Clerk, because whose settings they are depends on the
             session. It wraps the children rather than sitting beside them:
             the accent and the panic key apply to the whole tree. */}
-          <PreferencesProvider>
-            <StoreUser />
-            <ActivityPresence />
-            {children}
-            <GoogleAnalytics />
-          </PreferencesProvider>
+          {/* Outermost inside Convex: a restricted account gets its screen in
+            place of everything below, providers and all. */}
+          <RestrictionGate>
+            <PreferencesProvider>
+              <StoreUser />
+              <ActivityPresence />
+              {children}
+              <GoogleAnalytics />
+            </PreferencesProvider>
+          </RestrictionGate>
         </ConvexClientProvider>
       </ClerkProvider>
     </>

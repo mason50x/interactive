@@ -244,8 +244,11 @@ export function scheduleFor(date: string): ScheduleKind | null {
   return LATE_START.has(date) ? "late" : "regular";
 }
 
-export function formatClockTime(minutes: number): string {
+export function formatClockTime(minutes: number, clock24 = false): string {
   const hours = Math.floor(minutes / 60);
+  if (clock24) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  }
   const suffix = hours < 12 ? "am" : "pm";
   const hour12 = hours % 12 || 12;
   return `${hour12}:${String(minutes % 60).padStart(2, "0")} ${suffix}`;

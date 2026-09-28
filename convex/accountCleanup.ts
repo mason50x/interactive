@@ -114,6 +114,11 @@ export const purge = internalMutation({
       for (const name of ["botTags", "adminBotTags", "activityRequests", "imageUploadUrl", "publishedHtml", "simulatorLibrary", "simulatorSave"]) {
         await limiter.reset(ctx, name, { key: clerkId });
       }
+    } else if (stage === 15) {
+      const rows = await ctx.db.query("accountRestrictions")
+        .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).take(BATCH);
+      for (const row of rows) await ctx.db.delete(row._id);
+      changed = rows.length;
     } else {
       return { stage, changed: 0, done: true };
     }

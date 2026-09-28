@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
-import { action, internalAction, internalQuery } from "./_generated/server";
+import { internalAction, internalQuery } from "./_generated/server";
+import { action } from "./functions";
 import { internal } from "./_generated/api";
 
 type ClerkAccount = {

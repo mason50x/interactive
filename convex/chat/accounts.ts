@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "../functions";
 import { accountFor, callerAccount, callerId, chatAccount, dmKeyFor, ensureGlobalMembership, membership, senderRow, type ChatAccount } from "./shared";
 
 const accountFields = {

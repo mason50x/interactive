@@ -242,6 +242,9 @@ function InSession({
   status: Extract<SchoolStatus, { state: "in-session" }>;
 }) {
   const { periods, seconds, index, passing } = status;
+  const {
+    preferences: { clock24 },
+  } = usePreferences();
   // Between classes the gap gets a row of its own, so something is always
   // the one counting down.
   const rows: readonly Period[] = passing
@@ -301,7 +304,7 @@ function InSession({
               >
                 {current
                   ? `${formatDuration(length - elapsed)} left`
-                  : formatClockTime(period.start)}
+                  : formatClockTime(period.start, clock24)}
               </span>
             )}
           </li>
@@ -378,6 +381,9 @@ function OffHours({
   compact: boolean;
 }) {
   const { reason, occasion, next } = status;
+  const {
+    preferences: { clock24 },
+  } = usePreferences();
   const headline =
     reason === "before"
       ? "Not yet"
@@ -387,7 +393,7 @@ function OffHours({
   // Only before the bell is there anything worth adding to the headline.
   const message =
     reason === "before"
-      ? `${status.schedule === "late" ? "Late start today · " : ""}Block 1 starts at ${formatClockTime(next!.start)}.`
+      ? `${status.schedule === "late" ? "Late start today · " : ""}Block 1 starts at ${formatClockTime(next!.start, clock24)}.`
       : null;
 
   return (

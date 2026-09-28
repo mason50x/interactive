@@ -5,7 +5,8 @@ import { paginationOptsValidator } from "convex/server";
 
 import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
 import { components, internal } from "./_generated/api";
-import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { internalMutation, type MutationCtx } from "./_generated/server";
+import { mutation, query } from "./functions";
 import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
 import { syncAdminsMembership } from "./chat/shared";

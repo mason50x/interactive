@@ -2,7 +2,8 @@ import { requireNotTimedOut } from "./timeoutState";
 import { DAY, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 import { components, internal } from "./_generated/api";
-import { action, internalMutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { action } from "./functions";
 
 const limiter = new RateLimiter(components.rateLimiter, {
   activityRequests: { kind: "fixed window", rate: 2, capacity: 2, period: DAY, start: 0 },

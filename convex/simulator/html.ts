@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "../functions";
 import { caller, hash, label } from "./shared";
 import { htmlDoc } from "./htmlModel";
 import { limits } from "./limits";

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "./functions";
 
 /**
  * The account's copy of the settings in the account menu's sheet.
@@ -14,6 +14,15 @@ import { mutation, query } from "./_generated/server";
  * always found by the caller's own identity, never by an id from the client,
  * so there is no row to address but your own.
  */
+
+const customValue = v.union(
+  v.string(),
+  v.number(),
+  v.boolean(),
+  v.array(v.string()),
+);
+
+type CustomValue = string | number | boolean | string[];
 
 /** No identity, no preferences. Signed-out visitors run on the defaults. */
 async function callerId(ctx: {
@@ -50,6 +59,7 @@ export const mine = query({
       panicUrl: row.panicUrl,
       tabMask: row.tabMask,
       lunch: row.lunch,
+      custom: row.custom,
     };
   },
 });
@@ -77,13 +87,24 @@ export const save = mutation({
     panicUrl: v.optional(v.string()),
     tabMask: v.optional(v.string()),
     lunch: v.optional(v.number()),
+    custom: v.optional(v.record(v.string(), customValue)),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, { custom, ...args }) => {
     const clerkId = await callerId(ctx);
     if (!clerkId) return;
 
+    const existing = await ctx.db
+      .query("preferences")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+      .unique();
+
     const patch = {
       ...args,
+      // Merged key by key, for the same reason the row is patched rather than
+      // replaced: a control writes only its own key.
+      ...(custom === undefined
+        ? {}
+        : { custom: mergeCustom(existing?.custom, custom) }),
       ...(args.accent === undefined
         ? {}
         : { accent: args.accent.slice(0, 32) }),
@@ -101,15 +122,35 @@ export const save = mutation({
         : { lunch: [1, 2, 3].includes(args.lunch) ? args.lunch : undefined }),
     };
 
-    const existing = await ctx.db
-      .query("preferences")
-      .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
-      .unique();
-
     if (existing) await ctx.db.patch(existing._id, patch);
     else await ctx.db.insert("preferences", { clerkId, ...patch });
   },
 });
+
+/**
+ * The old record with the new keys laid over it, cut to size.
+ *
+ * Shape only, as with every other value here: the client resolves each key
+ * against `customSpec` and drops what it does not know. What this enforces is
+ * that nobody can use the record as storage — a bounded number of keys, each
+ * a short name holding a short value.
+ */
+function mergeCustom(
+  previous: Record<string, CustomValue> | undefined,
+  next: Record<string, CustomValue>,
+): Record<string, CustomValue> {
+  const merged: Record<string, CustomValue> = { ...previous };
+  for (const [key, value] of Object.entries(next)) {
+    if (!/^[a-zA-Z0-9]{1,32}$/.test(key)) continue;
+    merged[key] =
+      typeof value === "string"
+        ? value.slice(0, 64)
+        : Array.isArray(value)
+          ? value.slice(0, 16).map((item) => item.slice(0, 64))
+          : value;
+  }
+  return Object.fromEntries(Object.entries(merged).slice(0, 64));
+}
 
 /**
  * A destination has to be a page, not a scheme. `javascript:` and `data:` are

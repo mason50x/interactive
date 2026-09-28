@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { internalMutation, query, type MutationCtx } from "./_generated/server";
+import { internalMutation, type MutationCtx } from "./_generated/server";
+import { query } from "./functions";
 import { internal } from "./_generated/api";
 
 const DAY = 86_400_000;

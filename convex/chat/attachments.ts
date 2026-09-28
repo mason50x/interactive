@@ -4,13 +4,8 @@ import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { imagesEnabled } from "../features";
 import { components, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import {
-  action,
-  internalAction,
-  internalMutation,
-  mutation,
-  type MutationCtx,
-} from "../_generated/server";
+import { internalAction, internalMutation, type MutationCtx } from "../_generated/server";
+import { action, mutation } from "../functions";
 import { inspectImage, moderate } from "../moderation/images";
 import {
   IMAGE_TTL_MS,

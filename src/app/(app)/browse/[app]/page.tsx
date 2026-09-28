@@ -2,7 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExperienceChrome } from "@/components/app/experience-chrome";
-import { experienceAppsFor, experienceSrc, findExperienceApp } from "@/lib/experience";
+import {
+  experienceAppsFor,
+  experienceSrc,
+  findExperienceApp,
+} from "@/lib/experience";
 import { experienceAccessFor } from "@/lib/experience-access";
 
 type Props = { params: Promise<{ app: string }> };
@@ -31,7 +35,10 @@ export default async function ExperienceAppPage({ params }: Props) {
       accessToken={accessToken}
       services={experienceAppsFor(userId).map((service) => ({
         ...service,
-        src: service.id === "x" && !accessToken ? null : experienceSrc(service.start),
+        src:
+          service.id === "x" && !accessToken
+            ? null
+            : experienceSrc(service.start),
       }))}
     />
   );

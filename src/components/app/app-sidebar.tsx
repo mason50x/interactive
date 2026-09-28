@@ -18,9 +18,11 @@ import {
 } from "@/components/app/rail/use-nav-pending";
 import { SchoolDayButton } from "@/components/app/school-day-button";
 import { UserMenu } from "@/components/app/user-menu";
+import { VoteRailCard } from "@/components/app/vote-prompt";
 import { Wordmark } from "@/components/wordmark";
 import { brand } from "@/lib/brand";
-import { HOME_HREF, navItems } from "@/lib/nav";
+import { arrangeNav, HOME_HREF, navItems as allNavItems } from "@/lib/nav";
+import { usePreferences } from "@/components/preferences-provider";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
 import { usePlaytimeActivity } from "@/components/app/playtime-activity";
@@ -53,6 +55,13 @@ import { usePlaytimeActivity } from "@/components/app/playtime-activity";
 export function AppSidebar() {
   const pathname = usePathname();
   const exhausted = usePlaytimeExhausted();
+  const {
+    preferences: { navOrder, navHidden },
+  } = usePreferences();
+  const navItems = useMemo(
+    () => arrangeNav(allNavItems, navOrder, navHidden),
+    [navOrder, navHidden],
+  );
   const { hasUnread, mentioned, conversations } = useChat();
   const hasNewAnnouncement = conversations.some(
     (conversation) =>
@@ -69,7 +78,7 @@ export function AppSidebar() {
       navItems
         .filter((item) => !exhausted || !isPlaytimeRoute(item.href))
         .map((item) => item.href),
-    [exhausted],
+    [exhausted, navItems],
   );
   const warm = useWarmRoutes(pathname, hotRoutes);
   const list = useRef<HTMLUListElement>(null);
@@ -210,6 +219,9 @@ export function AppSidebar() {
         </ul>
         <NavUnderline list={list} href={litHref || null} />
       </div>
+
+      {/* Only while a vote waits on this account. */}
+      <VoteRailCard />
 
       {/* A column under the icons, account last; one row once the rail is
           wide, account first, so the schedule and playtime sit on the rail's

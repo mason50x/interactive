@@ -1,0 +1,14 @@
+/*
+ * Search hides rows by setting `hidden` on them; everything above a row —
+ * the card it sits in, the section it belongs to, the "nothing matched" line —
+ * follows from whether any row under it is still showing. Selectors rather
+ * than bookkeeping, so no row has to report to anything.
+ */
+.group:not(:has([data-setting]:not([hidden]))),
+.section:not(:has([data-setting]:not([hidden]))) {
+  display: none;
+}
+
+.results:has([data-setting]:not([hidden])) .empty {
+  display: none;
+}

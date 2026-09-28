@@ -1,4 +1,4 @@
-import { query } from "./_generated/server";
+import { query } from "./functions";
 
 /**
  * The switches, read off the deployment.

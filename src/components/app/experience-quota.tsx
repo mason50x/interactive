@@ -24,6 +24,7 @@ import { playtimeDay, REWARD_REQUIREMENTS } from "@config/playtime";
 import { cn } from "@/lib/utils";
 import { useClickOutside } from "@/lib/use-click-outside";
 import { useReportPlaytimeActivity } from "@/components/app/playtime-activity";
+import { VoteBlocked } from "@/components/app/vote-prompt";
 import {
   availablePlaytimeSeconds,
   stablePlaytimeSeconds,
@@ -113,8 +114,11 @@ export function useExperienceQuota(active = false) {
         });
         setPaused(false);
         setError(false);
-        const delay =
-          result.remainingSeconds <= 0
+        // A vote hold lifts through the `status` subscription, which resets
+        // this check; the slow poll is only a backstop.
+        const delay = result.voteRequired
+          ? 30_000
+          : result.remainingSeconds <= 0
             ? result.resetsAt - result.serverNow
             : result.leaseUntil - result.serverNow - 5_000;
         nextCheck.current = receivedAt + Math.max(1000, delay);
@@ -156,17 +160,19 @@ export function useExperienceQuota(active = false) {
   ]);
 
   useEffect(() => {
-    const hasTime = (status?.remainingSeconds ?? 0) > 0;
+    const hasTime = (status?.remainingSeconds ?? 0) > 0 && !status?.voteRequired;
     if (hasTime && !hadTime.current) nextCheck.current = 0;
     hadTime.current = hasTime;
-  }, [status?.remainingSeconds]);
+  }, [status?.remainingSeconds, status?.voteRequired]);
 
   useEffect(() => {
     if (status) statusOffset.current = status.serverNow - Date.now();
   }, [status]);
   const serverNow = now + (active ? lease.offset : clockOffset);
+  // A forced vote stops the player at once rather than at the lease's end.
   const allowed =
     active &&
+    !status?.voteRequired &&
     (paused ||
       (isAuthenticated &&
         visible &&
@@ -415,6 +421,7 @@ export function PlaytimeSidebar({
 }
 
 export function PlaytimeBlocked({ quota }: { quota: Quota }) {
+  if (quota.status?.voteRequired) return <VoteBlocked />;
   if (quota.remaining === 0)
     return (
       <section

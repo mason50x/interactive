@@ -34,15 +34,45 @@ export const accents = [
   { id: "rose", label: "Rose", color: "#f43f5e" },
   { id: "pink", label: "Pink", color: "#ec4899" },
   { id: "cyan", label: "Cyan", color: "#0891b2" },
+  { id: "indigo", label: "Indigo", color: "#4f46e5" },
+  { id: "teal", label: "Teal", color: "#0d9488" },
+  { id: "green", label: "Green", color: "#16a34a" },
+  { id: "orange", label: "Orange", color: "#ea580c" },
+  { id: "red", label: "Red", color: "#dc2626" },
+  { id: "fuchsia", label: "Fuchsia", color: "#c026d3" },
+  { id: "slate", label: "Slate", color: "#475569" },
 ] as const;
 
-/**
- * The ink on top of any of them. One value, not a column in the table above:
- * the palette is chosen so this is always the right answer.
- */
-const ACCENT_INK = "#ffffff";
+export type AccentPresetId = (typeof accents)[number]["id"];
 
-export type AccentId = (typeof accents)[number]["id"];
+/**
+ * A preset's id, or a colour of the account's own as `#rrggbb`.
+ *
+ * A custom colour is the one case where the palette's promise — white always
+ * reads on it — cannot be kept by construction, so its ink is worked out from
+ * the colour itself; see `accentInk`.
+ */
+export type AccentId = AccentPresetId | `#${string}`;
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+export function isCustomAccent(value: unknown): value is `#${string}` {
+  return typeof value === "string" && HEX.test(value);
+}
+
+/**
+ * White, or near-black for a colour light enough that white falls apart on it.
+ *
+ * Written as one self-contained function so `preferencesScript` can carry it
+ * as source: the pre-paint copy and this one cannot disagree about which ink
+ * a custom accent gets. Every preset lands on white.
+ */
+export function accentInk(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const luma =
+    ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114;
+  return luma > 165 ? "#0f0f0f" : "#ffffff";
+}
 
 /**
  * The brand blue is the default because it is the one the rest of the app
@@ -51,10 +81,11 @@ export type AccentId = (typeof accents)[number]["id"];
 export const DEFAULT_ACCENT: AccentId = "blue";
 
 export function isAccentId(value: unknown): value is AccentId {
-  return accents.some((accent) => accent.id === value);
+  return isCustomAccent(value) || accents.some((accent) => accent.id === value);
 }
 
-function accentColor(id: AccentId): string {
+export function accentColor(id: AccentId): string {
+  if (isCustomAccent(id)) return id.toLowerCase();
   return (accents.find((accent) => accent.id === id) ?? accents[0]).color;
 }
 
@@ -87,15 +118,18 @@ function accentVariables(id: AccentId): [string, string][] {
  * where the hex goes and ships that instead of six expanded copies. Nothing
  * else should need it — an accent is an id everywhere but there.
  */
-export function accentVariablesFor(color: string): [string, string][] {
+export function accentVariablesFor(
+  color: string,
+  ink: string = accentInk(color),
+): [string, string][] {
   const hover = `color-mix(in oklab, ${color} 86%, var(--foreground))`;
   const tint = `color-mix(in oklab, ${color} 12%, var(--background))`;
   const tintForeground = `color-mix(in oklab, ${color} 65%, var(--foreground))`;
 
   return [
     ["--primary", color],
-    ["--primary-foreground", ACCENT_INK],
-    ["--sidebar-primary-foreground", ACCENT_INK],
+    ["--primary-foreground", ink],
+    ["--sidebar-primary-foreground", ink],
     ["--primary-hover", hover],
     ["--ring", color],
     ["--accent", tint],

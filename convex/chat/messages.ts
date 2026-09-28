@@ -22,7 +22,8 @@ import {
 import { EVERYONE, findMentionTokens } from "../moderation/mentions";
 import type { Refusal } from "../moderation/rules";
 import { screen, screenStatic, type SendContext } from "../moderation/verdict";
-import { mutation, query, type QueryCtx } from "../_generated/server";
+import { type QueryCtx } from "../_generated/server";
+import { mutation, query } from "../functions";
 import { BOT_HANDLE, BOT_ID, BOT_NAME, botRateLimiter, presentBotBody } from "./botConfig";
 import {
   avatarAppearance,

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query, type MutationCtx } from "../_generated/server";
+import { type MutationCtx } from "../_generated/server";
+import { mutation, query } from "../functions";
 import type { Doc } from "../_generated/dataModel";
 import { owned, validateSave } from "./shared";
 import {
