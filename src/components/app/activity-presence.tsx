@@ -17,7 +17,8 @@ export function ActivityPresence() {
   useEffect(() => {
     // The /learn player also mounts this component. Its embedded copy should
     // leave the parent dashboard page as the browser's reported location.
-    if (!isAuthenticated || !invited || !path || window.self !== window.top) return;
+    if (!isAuthenticated || !invited || !path || window.self !== window.top)
+      return;
     let timer: ReturnType<typeof setInterval> | undefined;
 
     function beat() {
