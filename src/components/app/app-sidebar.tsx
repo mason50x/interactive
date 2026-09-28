@@ -98,7 +98,7 @@ export function AppSidebar() {
           rail can outgrow a short viewport, so the list — and only the list —
           scrolls, and the underline scrolls with it. It measures against the
           list, which starts where this box does. */}
-      <div className="relative min-h-0 flex-1 overflow-y-auto">
+      <div className="relative min-h-0 overflow-y-auto">
         <ul ref={list} className="flex flex-col gap-1 pb-2 pl-3">
           {navItems.map((item) => {
             const disabled = exhausted && isPlaytimeRoute(item.href);
@@ -199,6 +199,15 @@ export function AppSidebar() {
         </ul>
         <NavUnderline list={list} href={litHref || null} />
       </div>
+
+      {/* The rail's empty stretch between the list and the controls: the
+          site's dot lattice at a tighter pitch, faded out toward every edge
+          so it melts into the chrome rather than stopping at a line. It takes
+          whatever height the list leaves and none of what it needs. */}
+      <div
+        aria-hidden
+        className="bg-dots ml-3 min-h-0 flex-1 mask-y-from-60% mask-x-from-70% [background-size:12px_12px]!"
+      />
 
       {/* A column under the icons, account last; one row once the rail is
           wide, account first, so the schedule and playtime sit on the rail's
