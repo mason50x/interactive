@@ -5,16 +5,18 @@ import rateLimiter from "@convex-dev/rate-limiter/test";
 import { api, internal } from "../../convex/_generated/api";
 import { addScore, pageKey } from "../../convex/leaderboard";
 import schema from "../../convex/schema";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 const DAY = 86_400_000;
 const now = Date.UTC(2026, 8, 23, 12);
 afterEach(() => vi.useRealTimers());
-function setup() {
+async function setup() {
   vi.useFakeTimers();
   vi.setSystemTime(now);
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
+  await admit(t, "one", "two");
   return {
     t,
     one: t.withIdentity({ subject: "one", name: "Ada" }),
@@ -23,7 +25,7 @@ function setup() {
 }
 
 test("ranked playtime is charged once and unused reserved time is refunded", async () => {
-  const { t, one, two } = setup();
+  const { t, one, two } = await setup();
   await one.mutation(api.users.store, {});
   await two.mutation(api.users.store, {});
   await one.mutation(api.experience.acquire, { sessionId: "tab" });
@@ -53,7 +55,7 @@ test("ranked playtime is charged once and unused reserved time is refunded", asy
 });
 
 test("chat buckets roll over and expire without touching lifetime playtime", async () => {
-  const { t, one } = setup();
+  const { t, one } = await setup();
   await one.mutation(api.users.store, {});
   await t.run((ctx) => addScore(ctx, "one", "chat", 3, now));
   await t.run((ctx) => addScore(ctx, "one", "playtime", 70, now));
@@ -87,7 +89,7 @@ test("chat buckets roll over and expire without touching lifetime playtime", asy
 });
 
 test("page views coalesce heartbeats, require auth, and only count known sections", async () => {
-  const { t, one } = setup();
+  const { t, one } = await setup();
   expect(pageKey("/chat/room")).toBe("/chat");
   expect(pageKey("/unknown")).toBeNull();
   expect(pageKey("/admin")).toBeNull();

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect } from "react";
 import { api } from "@convex/_generated/api";
 
@@ -10,11 +10,15 @@ export function ActivityPresence() {
   const path = usePathname();
   const { isAuthenticated } = useConvexAuth();
   const heartbeat = useMutation(api.users.heartbeat);
+  // The server refuses the beat until the account is past the invite gate.
+  const user = useQuery(api.users.current, isAuthenticated ? {} : "skip");
+  const invited = user != null && user.invited !== false;
 
   useEffect(() => {
     // The /learn player also mounts this component. Its embedded copy should
     // leave the parent dashboard page as the browser's reported location.
-    if (!isAuthenticated || !path || window.self !== window.top) return;
+    if (!isAuthenticated || !invited || !path || window.self !== window.top)
+      return;
     let timer: ReturnType<typeof setInterval> | undefined;
 
     function beat() {
@@ -41,7 +45,7 @@ export function ActivityPresence() {
       document.removeEventListener("visibilitychange", onVisibility);
       if (timer !== undefined) clearInterval(timer);
     };
-  }, [heartbeat, isAuthenticated, path]);
+  }, [heartbeat, invited, isAuthenticated, path]);
 
   return null;
 }

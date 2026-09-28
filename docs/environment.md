@@ -1,9 +1,8 @@
 # Environment configuration
 
 Copy `.env.example` to `.env.local` and fill it with your own development values.
-The example is the only tracked env file. Cloudflare's Vite plugin loads local
-variables from `.env.local` or `.dev.vars`; do not commit either. Existing Vercel
-exports are migration backups, not automatically uploaded Worker configuration.
+The example is the only tracked env file; do not commit `.env.local`.
+Production and preview values live in the Vercel project settings.
 
 ## App environment
 
@@ -25,9 +24,10 @@ exports are migration backups, not automatically uploaded Worker configuration.
 | `NEXT_PUBLIC_KLIPY_APP_KEY` | Optional KLIPY app key for chat GIFs; unset hides the GIF picker. Public by design — KLIPY requires requests from the browser. Set it as a build variable |
 | `CONVEX_DEPLOY_KEY` | Production deployment and runtime administrative account-sync credential |
 
-`EXPERIENCE_ORIGIN` is a public server-side origin committed in the app's
-`wrangler.jsonc` vars so production receives it. `.env.local` alone does not
-deploy this setting. Update the Wrangler value when moving the Experience Worker.
+`EXPERIENCE_ORIGIN` is a public server-side origin with no fallback; set it
+in the Vercel project for Production
+(`https://experience.interactivelearning-content-net.work`). `.env.local`
+alone does not deploy this setting. Update it when moving the Experience Worker.
 
 X is limited to Mason's exact production Clerk account in
 `config/experience-access.json`. Other staff roles do not grant access. Its
@@ -35,17 +35,17 @@ route, service list, HTTP relay and WebSocket relay enforce this restriction;
 the other Experience services retain their existing availability.
 
 Before deploying X, configure the same random `EXPERIENCE_ACCESS_SECRET` as a
-runtime secret on **both** the app Worker and `il-experience`. For local work,
+secret on **both** the Vercel project and the `il-experience` Worker. For local work,
 put the same value in the app's `.env.local` and `experience/.dev.vars`.
 Keep it out of public variables and version control. A missing or mismatched
 secret denies X. The app issues ten-minute, X-only signed grants and renews
 them while Experience is open; no Clerk session token reaches the relay.
 Popups carry the current X-only grant for up to ten minutes. Reopen an X popup
 from Experience if its grant expires; the main embedded session renews automatically.
-Deploy both the app and Experience Worker when changing this access policy.
+Redeploy both the app and the Experience Worker when changing this access policy.
 
 Public variables are embedded at build time; changing them requires rebuilding.
-Set `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.
+Set `SITE_URL` or `NEXT_PUBLIC_SITE_URL` explicitly for previews; generated URLs are not inferred.
 Public variables must never contain secrets.
 
 ## Convex deployment environment
@@ -92,6 +92,13 @@ CEO client: env vars are deployment config with no runtime write API. A CEO
 cannot change their own role, and the change cannot leave zero CEOs, so the
 site cannot be locked out of the Admin page.
 
+CEOs are equals except over each other: a CEO cannot change another CEO's
+role, up or down, so no CEO can demote a peer. Promoting anybody below CEO
+to CEO remains any CEO's call. The one exception is the founder — Mason's
+exact Clerk account, `FOUNDER_CLERK_ID` in `config/roles.ts`, bound the same
+way X access is — who can change any CEO's role, while nobody can change the
+founder's. The directory shows the reason under a locked role selector.
+
 After deploying the `staffRoles` table, copy the existing env staff into it
 once per deployment so nobody loses access in between — the migration skips
 anyone who already has a row, so CEO edits are never overwritten:
@@ -116,15 +123,22 @@ fork workflows. `GITHUB_TOKEN` optionally raises catalogue API rate limits.
 Use separate development data and credentials. Rotate a credential if it is
 committed; removing the file from the latest commit does not remove Git history.
 
-## Cloudflare build and runtime placement
+## Vercel placement
 
-Configure public variables in Workers Builds before bundling. Configure
-`CLERK_SECRET_KEY`, `CONVEX_DEPLOY_KEY` and `ASSET_ORIGIN` as Worker runtime values
-(secrets for credentials). The Convex deploy key must also be available to the
-trusted production build. Public Clerk keys, route settings and the Convex URL
-are also needed by server code, so retain their runtime values. Use the same
-Clerk instance for each environment's public and secret keys.
+Vercel variables apply to both the build and the functions. Mark
+`CLERK_SECRET_KEY`, `CONVEX_DEPLOY_KEY` and `EXPERIENCE_ACCESS_SECRET` as
+sensitive. Scope `CONVEX_DEPLOY_KEY` to **Production only**: the production
+build uses it to deploy Convex and account sync reads it at runtime, and a
+preview that could see it could deploy to production Convex. `ASSET_ORIGIN`
+has no fallback; without it every hosted activity is hidden. Use the same
+Clerk instance for each environment's public and secret keys, and give
+Preview a development Clerk instance and Convex deployment.
 
-Do not migrate `VERCEL_*` system values, OIDC tokens, or maintenance credentials.
-Convex-only secrets stay in Convex. The Cloudflare account token used by a CI
-runner is a deployment credential, not a Worker binding.
+Production also sets `CLERK_DISABLE_AUTO_PROXY=1`. Clerk proxies itself
+through `/__clerk` whenever the project's production URL is a `*.vercel.app`
+host, and that proxy only answers on `*.vercel.app` — on the custom domain
+every page then points at a path that 404s and sign-in never loads. The live
+instance is served from `clerk.interactivelearningresources.org` directly.
+
+Do not copy `VERCEL_*` system values, OIDC tokens, or maintenance credentials
+into project settings. Convex-only secrets stay in Convex.

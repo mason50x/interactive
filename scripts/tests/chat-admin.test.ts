@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
+import { admit } from "./invited";
 const modules = import.meta.glob("../../convex/**/*.ts");
 const mason = "user_test_admin";
 beforeEach(() =>
@@ -60,6 +61,7 @@ async function setup() {
     });
     return { messageId, memberId };
   });
+  await admit(t, "user_other");
   return { t, ...ids };
 }
 
@@ -242,11 +244,10 @@ test("badges follow the single admin list and do not expose it to anonymous call
   vi.stubEnv("NEXT_PUBLIC_CHAT_ADMIN_CLERK_IDS", "impostor");
   const { t } = await setup();
   expect(await t.query(api.chat.admin.badges, {})).toEqual([]);
-  expect(
-    await t
-      .withIdentity({ subject: "unknown" })
-      .query(api.chat.admin.badges, {}),
-  ).toEqual([]);
+  // A caller with no account row is still at the invite gate.
+  await expect(
+    t.withIdentity({ subject: "unknown" }).query(api.chat.admin.badges, {}),
+  ).rejects.toThrow("Enter an invite code first.");
   const member = t.withIdentity({ subject: "impostor" });
   expect(await member.query(api.chat.admin.badges, {})).toEqual([
     mason,

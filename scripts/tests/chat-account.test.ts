@@ -5,7 +5,8 @@ import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import type { PublicAccount } from "../../convex/chat/accounts";
-import { accountByHandle } from "../../convex/chat/shared";
+import { accountByHandle, ensureDm, ensureGlobalMembership } from "../../convex/chat/shared";
+import { admit } from "./invited";
 const modules = import.meta.glob("../../convex/**/*.ts");
 
 test("Clerk identity is read from one user row and exposes no private account fields", async () => {
@@ -21,6 +22,7 @@ test("Clerk identity is read from one user row and exposes no private account fi
     created_at: 1,
   };
   await t.mutation(internal.users.upsertFromClerk, { data });
+  await admit(t, "account");
   const mine = t.withIdentity({ subject: "account" });
   const first = await mine.query(api.chat.accounts.mine, {});
   expect(first).toMatchObject({
@@ -67,6 +69,7 @@ test("same first names use app casing and keep distinct usernames; any account c
     await t.mutation(internal.users.upsertFromClerk, { data });
     await t.mutation(internal.users.upsertFromClerk, { data });
   }
+  await admit(t, "one", "two");
   const one = t.withIdentity({ subject: "one" });
   expect(await one.query(api.chat.accounts.mine, {})).toMatchObject({
     displayName: "Mason",
@@ -104,6 +107,7 @@ test("repeat first names add a last initial, except for Mason Singel (@mason)", 
       data: { id, username, first_name, last_name, updated_at: 1 },
     });
   }
+  await admit(t, "singel", "d", "j", "solo");
   const names = Object.fromEntries(
     (await t.withIdentity({ subject: "solo" }).query(api.chat.accounts.search, { term: "mason" }))
       .map((account: PublicAccount) => [account.handle, account.displayName]),
@@ -126,6 +130,7 @@ test("messages keep their ids and show the current Clerk identity after rename",
     created_at: 0,
   };
   await t.mutation(internal.users.upsertFromClerk, { data: account });
+  await admit(t, "sender");
   const room = await t.run(async (ctx) => {
     return (await ctx.db
       .query("conversations")
@@ -169,6 +174,7 @@ test("sync automatically rejoins Everyone for an existing account without duplic
     first_name: "RETURNING",
   };
   await t.mutation(internal.users.upsertFromClerk, { data });
+  await admit(t, "returning");
   const memberId = await t.run(async (ctx) => {
     const members = await ctx.db.query("conversationMembers").take(10);
     const member = members.find((row) => row.kind === "global")!;
@@ -264,4 +270,69 @@ test("provider names are normalized on onboarding and subsequent Clerk syncs", a
       firstName: "Jane", lastName: "Doe", name: "Jane Doe", username: "JaneDOE",
     });
   }
+});
+
+test("an account at the invite gate is refused, unseen, and seated only once it redeems a code", async () => {
+  const t = convexTest(schema, modules);
+  rateLimiter.register(t);
+  for (const [id, username] of [["member", "member"], ["new", "newcomer"]]) {
+    await t.mutation(internal.users.upsertFromClerk, {
+      data: { id, username, first_name: "Same", updated_at: 1 },
+    });
+  }
+  await admit(t, "member");
+  const newcomer = t.withIdentity({ subject: "new" });
+  const member = t.withIdentity({ subject: "member" });
+
+  expect(await newcomer.query(api.users.current, {})).toMatchObject({ invited: false });
+  await expect(newcomer.query(api.chat.conversations.list, {})).rejects.toThrow(
+    "Enter an invite code first.",
+  );
+  await expect(
+    newcomer.mutation(api.users.heartbeat, { path: "/chat" }),
+  ).rejects.toThrow("Enter an invite code first.");
+  expect(
+    await t.run((ctx) =>
+      ctx.db.query("conversationMembers").filter((q) => q.eq(q.field("clerkId"), "new")).collect(),
+    ),
+  ).toEqual([]);
+  expect(await member.query(api.chat.accounts.search, { term: "newcomer" })).toEqual([]);
+  expect(await member.query(api.chat.accounts.mine, {})).toMatchObject({ displayName: "Same" });
+
+  await t.run((ctx) =>
+    ctx.db.insert("inviteCodes", { code: "123456", uses: 0, disabled: false, createdBy: "ceo" }),
+  );
+  expect(await newcomer.mutation(api.invites.redeem, { code: "123456" })).toEqual({ ok: true });
+  expect(
+    (await newcomer.query(api.chat.conversations.list, {})).map((row) => row.kind),
+  ).toContain("global");
+  expect(await member.query(api.chat.accounts.search, { term: "newcomer" })).toMatchObject([
+    { clerkId: "new" },
+  ]);
+});
+
+test("clearing gated accounts takes them out of chat and leaves admitted accounts alone", async () => {
+  const t = convexTest(schema, modules);
+  for (const id of ["member", "gated"]) {
+    await t.mutation(internal.users.upsertFromClerk, {
+      data: { id, username: id, updated_at: 1 },
+    });
+  }
+  await admit(t, "member");
+  // Seated the way sign-up did before the gate was enforced.
+  await t.run(async (ctx) => {
+    await ensureGlobalMembership(ctx, "gated");
+    await ensureDm(ctx, "member", "gated");
+    await ctx.db.insert("userActivity", { clerkId: "gated", currentPath: "/chat", lastActiveAt: 1 });
+  });
+  const seats = (clerkId: string) =>
+    t.run((ctx) =>
+      ctx.db.query("conversationMembers").withIndex("byUser", (q) => q.eq("clerkId", clerkId)).collect(),
+    );
+  const memberSeats = (await seats("member")).length;
+  expect(await t.mutation(internal.dataMaintenance.clearGatedAccounts, {})).toBeGreaterThan(0);
+  expect(await seats("gated")).toEqual([]);
+  expect(await seats("member")).toHaveLength(memberSeats - 1);
+  expect(await t.run((ctx) => ctx.db.query("userActivity").collect())).toEqual([]);
+  expect(await t.mutation(internal.dataMaintenance.clearGatedAccounts, {})).toBe(0);
 });

@@ -10,6 +10,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { RESTRICTED_ERROR, restrictionRow } from "./restrictionState";
+import { UNINVITED_ERROR, isUninvited } from "./inviteState";
 
 /**
  * The public `query`, `mutation` and `action` builders every module imports
@@ -23,6 +24,12 @@ import { RESTRICTED_ERROR, restrictionRow } from "./restrictionState";
  *
  * `restrictions.mine` is the one public function built on the raw builder,
  * because it is how the client learns which screen to show.
+ *
+ * They also refuse an account that has not redeemed an invite code yet, or
+ * whose row does not exist yet, so the invite gate is the server's too. The
+ * `preInvite*` builders below are the few a gated account needs to create its
+ * row, see its own settings, and get through the gate; they still refuse a
+ * restricted one.
  */
 
 type Definition<Ctx> =
@@ -44,13 +51,20 @@ function guarded<Ctx>(
   };
 }
 
-async function checkDb(ctx: QueryCtx | MutationCtx) {
+async function checkRestrictedDb(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (identity && (await restrictionRow(ctx, identity.subject)))
     throw new ConvexError(RESTRICTED_ERROR);
 }
 
-async function checkAction(ctx: ActionCtx) {
+async function checkDb(ctx: QueryCtx | MutationCtx) {
+  await checkRestrictedDb(ctx);
+  const identity = await ctx.auth.getUserIdentity();
+  if (identity && (await isUninvited(ctx, identity.subject)))
+    throw new ConvexError(UNINVITED_ERROR);
+}
+
+async function checkRestrictedAction(ctx: ActionCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (
     identity &&
@@ -59,6 +73,18 @@ async function checkAction(ctx: ActionCtx) {
     }))
   )
     throw new ConvexError(RESTRICTED_ERROR);
+}
+
+async function checkAction(ctx: ActionCtx) {
+  await checkRestrictedAction(ctx);
+  const identity = await ctx.auth.getUserIdentity();
+  if (
+    identity &&
+    (await ctx.runQuery(internal.invites.isUninvited, {
+      clerkId: identity.subject,
+    }))
+  )
+    throw new ConvexError(UNINVITED_ERROR);
 }
 
 export const query = ((definition: Definition<QueryCtx>) =>
@@ -72,4 +98,19 @@ export const mutation = ((definition: Definition<MutationCtx>) =>
 export const action = ((definition: Definition<ActionCtx>) =>
   rawAction(
     guarded(definition, checkAction) as never,
+  )) as unknown as typeof rawAction;
+
+export const preInviteQuery = ((definition: Definition<QueryCtx>) =>
+  rawQuery(
+    guarded(definition, checkRestrictedDb) as never,
+  )) as unknown as typeof rawQuery;
+
+export const preInviteMutation = ((definition: Definition<MutationCtx>) =>
+  rawMutation(
+    guarded(definition, checkRestrictedDb) as never,
+  )) as unknown as typeof rawMutation;
+
+export const preInviteAction = ((definition: Definition<ActionCtx>) =>
+  rawAction(
+    guarded(definition, checkRestrictedAction) as never,
   )) as unknown as typeof rawAction;

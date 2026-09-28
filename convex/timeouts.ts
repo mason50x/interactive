@@ -2,7 +2,8 @@ import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { mutation, query } from "./functions";
+import { mutation, preInviteQuery, query } from "./functions";
+import { roleChangeRefusal } from "../config/roles";
 import { badgeHidden, resolveRole } from "./roles";
 import {
   activeTimeout,
@@ -62,10 +63,12 @@ export const liveUsers = query({
       .withIndex("byLastActiveAt", q => q.gt("lastActiveAt", threshold))
       .order("desc")
       .take(200);
-    return await Promise.all(activity.map(async row => {
+    const live = await Promise.all(activity.map(async row => {
       const user = await ctx.db.query("users")
         .withIndex("byClerkId", q => q.eq("clerkId", row.clerkId))
         .unique();
+      // Not in until they've redeemed a code.
+      if (user?.invited === false) return null;
       return {
         clerkId: row.clerkId,
         label: user?.name ?? user?.username ?? row.clerkId,
@@ -74,10 +77,11 @@ export const liveUsers = query({
         lastActiveAt: row.lastActiveAt,
       };
     }));
+    return live.filter(row => row !== null);
   },
 });
 
-export const mine = query({
+export const mine = preInviteQuery({
   args: {},
   returns: v.union(timeoutView, v.null()),
   handler: async (ctx) => {
@@ -113,6 +117,8 @@ const directoryUser = v.object({
   badgeHidden: v.boolean(),
   activityLimitMinutes: v.optional(v.number()),
   canChangeRole: v.boolean(),
+  /** Why a CEO caller can't change this role; absent when they can. */
+  roleLock: v.optional(v.string()),
   canManage: v.boolean(),
   ceoCleared: v.boolean(),
   timeout: v.union(timeoutView, v.null()),
@@ -129,11 +135,16 @@ export const users = query({
     const result = await ctx.db.query("users").paginate(args.paginationOpts);
     const now = Date.now();
     const page = await Promise.all(
-      result.page.map(async (user) => {
+      // Accounts still at the invite gate aren't members yet.
+      result.page.filter((user) => user.invited !== false).map(async (user) => {
         const role = await resolveRole(ctx, user.clerkId);
         const row = await timeoutRow(ctx, user.clerkId);
         const active = row?.enabled && row.expiresAt > now;
         const ceoCleared = isCeoClearActive(row, now);
+        const roleLock =
+          caller.role === "ceo"
+            ? roleChangeRefusal(caller.clerkId, user.clerkId, role)
+            : null;
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
@@ -147,7 +158,8 @@ export const users = query({
           joinedAt: user.clerkCreatedAt ?? user._creationTime,
           badgeHidden: await badgeHidden(ctx, user.clerkId),
           activityLimitMinutes: user.activityLimitMinutes,
-          canChangeRole: caller.role === "ceo" && user.clerkId !== caller.clerkId,
+          canChangeRole: caller.role === "ceo" && roleLock === null,
+          ...(roleLock ? { roleLock } : {}),
           ceoCleared,
           canManage:
             ranks[role] < ranks[caller.role] &&

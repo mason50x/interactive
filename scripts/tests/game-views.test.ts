@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import catalogue from "../../src/lib/activities.catalogue.json";
 import { gameViewLabel, rankGames } from "../../src/lib/game-popularity";
 import type { ActivityEntry } from "../../src/lib/activity";
+import { admit } from "./invited";
 const modules = import.meta.glob("../../convex/**/*.ts");
 const DAY = 86_400_000;
 afterEach(() => vi.useRealTimers());
@@ -14,6 +15,7 @@ test("views require auth and a real game; duplicates coalesce and histories stay
   vi.useFakeTimers();
   vi.setSystemTime(20 * DAY);
   const t = convexTest(schema, modules);
+  await admit(t, "one", "two");
   const one = t.withIdentity({ subject: "one" });
   const two = t.withIdentity({ subject: "two" });
   const slug = catalogue[0].slug;
@@ -38,6 +40,7 @@ test("recent is ten distinct games ordered by latest open; old weekly buckets ex
   vi.useFakeTimers();
   vi.setSystemTime(20 * DAY);
   const t = convexTest(schema, modules);
+  await admit(t, "one", "two");
   const user = t.withIdentity({ subject: "one" });
   for (let i = 0; i < 12; i++) {
     vi.setSystemTime(20 * DAY + i * 61_000);

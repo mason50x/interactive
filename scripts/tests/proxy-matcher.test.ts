@@ -3,7 +3,6 @@ import vm from "node:vm";
 import ts from "typescript";
 import { expect, test } from "vitest";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
-import { matchesMiddleware } from "../../node_modules/vinext/dist/server/middleware-matcher.js";
 
 const output = ts.transpileModule(readFileSync("src/proxy.ts", "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
@@ -19,6 +18,7 @@ vm.runInNewContext(output, {
       };
     if (name === "next/server") return {};
     if (name === "@/lib/learn") return { LEARN_PATH_PREFIX: "/learn" };
+    if (name === "@/lib/access-hours") return {};
     throw new Error(name);
   },
 });
@@ -50,12 +50,6 @@ for (const path of [
         url: path,
       }),
     ).toBe(true);
-    expect(
-      matchesMiddleware(
-        new URL(path, "https://test.invalid").pathname,
-        moduleExports.config.matcher,
-      ),
-    ).toBe(true);
   });
 }
 for (const path of [
@@ -71,12 +65,6 @@ for (const path of [
         nextConfig: {},
         url: path,
       }),
-    ).toBe(false);
-    expect(
-      matchesMiddleware(
-        new URL(path, "https://test.invalid").pathname,
-        moduleExports.config.matcher,
-      ),
     ).toBe(false);
   });
 }

@@ -120,7 +120,7 @@ function isDeploymentHost(host) {
     host === "localhost" ||
     host.startsWith("localhost:") ||
     host.startsWith("127.0.0.1") ||
-    (host.endsWith(".workers.dev") || host.endsWith(".vercel.app"))
+    host.endsWith(".vercel.app")
   );
 }
 

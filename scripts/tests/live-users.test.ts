@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 const ceo = "user_live_ceo";
@@ -19,6 +20,7 @@ afterEach(() => {
 
 test("a user's current page replaces the prior snapshot and expires from the live view", async () => {
   const t = convexTest(schema, modules);
+  await admit(t, member);
   const visitor = t.withIdentity({ subject: member, name: "A Member" });
   const admin = t.withIdentity({ subject: ceo });
 
@@ -45,6 +47,7 @@ test("a user's current page replaces the prior snapshot and expires from the liv
 
 test("only admins can inspect presence, and clients can update only their own valid path", async () => {
   const t = convexTest(schema, modules);
+  await admit(t, member);
   const visitor = t.withIdentity({ subject: member });
   await visitor.mutation(api.users.heartbeat, { path: "/activities/math" });
   await expect(

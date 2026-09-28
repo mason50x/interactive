@@ -5,6 +5,7 @@ import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { admit } from "./invited";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 
@@ -34,6 +35,7 @@ async function setup() {
       data: { id, username: id, updated_at: 1 },
     });
   }
+  await admit(t, "member", "spammer");
   const as = (subject: string) => t.withIdentity({ subject });
   const rows = await as("member").query(api.chat.conversations.list, {});
   const room = rows.find((row) => row.kind === "global")!._id;

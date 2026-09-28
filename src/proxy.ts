@@ -1,5 +1,10 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import {
+  NextResponse,
+  type NextFetchEvent,
+  type NextRequest,
+} from "next/server";
+import { accessClosedResponse, isAccessClosed } from "@/lib/access-hours";
 import { LEARN_PATH_PREFIX } from "@/lib/learn";
 
 /**
@@ -41,7 +46,7 @@ const isSignedOutRoute = (path: string) =>
  * why), and with it the host matching, the rewrite, and the grant check. What
  * is left is the session gate, which is all a single-origin deployment needs.
  */
-export default clerkMiddleware(async (auth, req) => {
+const sessionGate = clerkMiddleware(async (auth, req) => {
   const path = req.nextUrl.pathname;
   // Early navigation handling only: protected pages and server actions also
   // enforce authentication themselves, independently of this path check.
@@ -70,6 +75,15 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/home", req.url));
   }
 });
+
+/**
+ * The working-hours gate runs first, so a closed site answers without
+ * touching Clerk at all. See `src/lib/access-hours.ts`.
+ */
+export default function proxy(req: NextRequest, event: NextFetchEvent) {
+  if (isAccessClosed(req)) return accessClosedResponse(req);
+  return sessionGate(req, event);
+}
 
 export const config = {
   matcher: [

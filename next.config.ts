@@ -17,7 +17,55 @@ import type { NextConfig } from "next";
  * and `HostedActivity`), not by a header it does not emit.
  */
 
+/** Signed-in and auth route trees: never stored by a browser or a CDN. */
+const PRIVATE_ROUTES = [
+  "/home",
+  "/admin",
+  "/leaderboard",
+  "/activities",
+  "/chat",
+  "/tv",
+  "/browse",
+  "/emulate",
+  "/settings",
+  "/learn",
+  "/auth",
+  // Renamed sections, still answered with a redirect.
+  "/entertainment",
+  "/experience",
+  "/learning-simulator",
+  "/dashboard",
+];
+
+/**
+ * Public artwork and media under `public/`. A day in the browser, and a week
+ * of serving the old file while the CDN fetches a new one. Hashed output
+ * under `/_next/static/` is already immutable for a year by default.
+ */
+const PUBLIC_MEDIA = [
+  "/thumbnails",
+  "/app-icons",
+  "/logos",
+  "/brand",
+  "/images",
+  "/fonts",
+  "/audio",
+  "/avatars",
+  "/onboarding",
+  "/entertainment-setup",
+  "/simulator",
+];
+
 const nextConfig: NextConfig = {
+  images: {
+    /**
+     * Every image is served as the file it is. Artwork is already sized for
+     * where it appears, and the Image Optimization API is a metered line
+     * item on Vercel that this site has no need to spend.
+     */
+    unoptimized: true,
+  },
+
   experimental: {
     /**
      * How long the router may reuse what it has already fetched.
@@ -113,6 +161,22 @@ const nextConfig: NextConfig = {
           { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
         ],
       },
+      // Pages behind a session, and the auth flow, belong to one person.
+      ...PRIVATE_ROUTES.flatMap((root) =>
+        [root, `${root}/:path*`].map((source) => ({
+          source,
+          headers: [{ key: "Cache-Control", value: "private, no-store" }],
+        })),
+      ),
+      ...PUBLIC_MEDIA.map((root) => ({
+        source: `${root}/:path*`,
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      })),
     ];
   },
 };

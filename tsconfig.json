@@ -44,11 +44,7 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
     ".cache",
-    "worker.ts",
-    "worker-configuration.d.ts",
-    "scripts/tests/worker.test.ts",
     ".next/types/validator.ts",
     ".next/dev"
   ]

@@ -144,7 +144,7 @@ export const accounts = query({
     );
     const users = await ctx.db.query("users").take(MAX_ACCOUNTS);
     return users
-      .filter((user) => !ceos.has(user.clerkId))
+      .filter((user) => !ceos.has(user.clerkId) && user.invited !== false)
       .map((user) => ({
         clerkId: user.clerkId,
         username: user.username,
