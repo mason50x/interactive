@@ -57,6 +57,11 @@ export const LEADERBOARD_HREF = "/leaderboard";
  */
 export const navItems: NavItem[] = [
   {
+    label: "Home",
+    href: HOME_HREF,
+    icon: { outline: HomeIcon, solid: HomeIconSolid },
+  },
+  {
     label: "Activities",
     href: ACTIVITIES_HREF,
     icon: { outline: ControllerIcon, solid: ControllerIconSolid },
@@ -74,11 +79,6 @@ export const navItems: NavItem[] = [
       solid: ChatIconSolid,
     },
     unread: true,
-  },
-  {
-    label: "Home",
-    href: HOME_HREF,
-    icon: { outline: HomeIcon, solid: HomeIconSolid },
   },
   {
     label: "Browse",
