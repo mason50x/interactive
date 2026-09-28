@@ -39,7 +39,7 @@ function useSecondClock() {
 export type SchoolDay = ReturnType<typeof useSchoolDay>;
 
 /**
- * Everything the bell schedule needs, for the home card and the header
+ * Everything the bell schedule needs, for the home card and the rail
  * button alike: the clock, today's status, and the lunch — saved to the
  * account, so picking it in one place answers the other.
  */
@@ -75,7 +75,7 @@ export function SchoolSchedule() {
   );
 }
 
-/** The schedule's contents, shared by the home card and the header popover. */
+/** The schedule's contents, shared by the home card and the rail popover. */
 export function SchoolDayContent({
   day: { status, lunch, choose, needsLunch },
   compact = false,
@@ -138,7 +138,7 @@ function LunchPicker({ onChoose }: { onChoose: (lunch: LunchNumber) => void }) {
 
 /**
  * A line of text that opens into the three lunches. Its list sits above the
- * header popover (`z-[60]`), which it also opens from.
+ * rail popover (`z-[60]`), which it also opens from.
  */
 function LunchSelect({
   value,

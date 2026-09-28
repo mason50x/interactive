@@ -323,7 +323,7 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
   );
 }
 
-/** The time left, as text in the header; its details drop open over the page. */
+/** The time left, as text in the rail; its details open beside it over the page. */
 export function PlaytimeSidebar({
   quota,
   compact = false,
@@ -356,7 +356,7 @@ export function PlaytimeSidebar({
         }
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "flex h-9 items-center gap-1 rounded-lg px-2 text-[0.8125rem] font-medium text-muted-foreground tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+          "flex h-9 items-center gap-1 rounded-lg px-1 text-[0.8125rem] font-medium text-muted-foreground tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/60 wide:px-2",
           compact
             ? "cursor-default"
             : "cursor-pointer transition-colors hover:text-foreground",
@@ -372,7 +372,8 @@ export function PlaytimeSidebar({
           <ChevronDownIcon
             aria-hidden="true"
             className={cn(
-              "playtime-spring size-3.5 transition-transform duration-[440ms] motion-reduce:transition-none",
+              // No room for it in the icon rail; the time is the control.
+              "playtime-spring hidden size-3.5 transition-transform duration-[440ms] motion-reduce:transition-none wide:block",
               open && "rotate-180",
             )}
           />
@@ -383,10 +384,10 @@ export function PlaytimeSidebar({
         aria-hidden={!open}
         inert={!open}
         className={cn(
-          "playtime-spring absolute top-full right-0 mt-1 w-64 transition-[opacity,transform,visibility] duration-[350ms] motion-reduce:transition-none",
+          "playtime-spring absolute bottom-0 left-full ml-2 w-64 transition-[opacity,transform,visibility] duration-[350ms] motion-reduce:transition-none",
           open
-            ? "visible translate-y-0 opacity-100"
-            : "invisible -translate-y-2 opacity-0",
+            ? "visible translate-x-0 opacity-100"
+            : "invisible -translate-x-2 opacity-0",
         )}
       >
         <Card

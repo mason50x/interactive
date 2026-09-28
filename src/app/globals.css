@@ -338,7 +338,7 @@
    * account's accent instead of being a second, permanent blue. The mix
    * percentages are what was picked by eye; the hue is not.
    *
-   * This face belongs to one element that `AppHeader` slides between rows,
+   * This face belongs to one element that `AppSidebar` slides between rows,
    * not to the rows themselves. A gradient cannot be interpolated, so a face
    * drawn on each row can only cut from one to the next, and a cut across the
    * gap between two rows reads as the selection jumping.

@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { normalizePersonName } from "@/lib/person-name";
 
 /**
- * The account control at the end of the header: who you are, and the two
+ * The account control at the foot of the rail: who you are, and the two
  * things you can do about it.
  *
  * This replaces Clerk's `<UserButton />` rather than restyling it. The stock
@@ -103,7 +103,7 @@ export function UserMenu() {
           </span>
         </MenuTrigger>
 
-        <MenuContent side="bottom" align="end" sideOffset={8} className="w-60">
+        <MenuContent side="top" align="start" sideOffset={8} className="w-60">
           {/* The trigger is only a face, so the popup opens by saying whose
             account it is — and wears the staff chip that used to sit under
             the name in the rail. */}

@@ -10,7 +10,7 @@ import { popupVariants } from "@/components/ui/popup";
 import { cn } from "@/lib/utils";
 
 /**
- * The bell schedule in the header: a ring for the class under way, or a grey
+ * The bell schedule in the rail: a ring for the class under way, or a grey
  * circle when there isn't one — a dot between classes, a dash when school is
  * out. Opens the same schedule the home page shows.
  */
@@ -53,7 +53,7 @@ export function SchoolDayButton() {
 
       <Popover.Portal>
         <Popover.Positioner
-          side="bottom"
+          side="right"
           align="end"
           sideOffset={8}
           collisionPadding={12}
@@ -61,7 +61,7 @@ export function SchoolDayButton() {
         >
           <Popover.Popup
             className={cn(
-              popupVariants({ motion: "drop", padding: "none" }),
+              popupVariants({ motion: "slide", padding: "none" }),
               "flex max-h-[min(36rem,var(--available-height))] w-[20rem] flex-col overflow-y-auto px-4 pt-5 pb-3",
             )}
           >

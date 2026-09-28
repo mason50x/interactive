@@ -26,28 +26,28 @@ import { useWarmRoutes } from "@/lib/warm";
 import { usePlaytimeActivity } from "@/components/app/playtime-activity";
 
 /**
- * The signed-in app's chrome: one bar across the top of the page.
+ * The signed-in app's chrome: a vertical rail down the left of the page.
  *
  * The dashboard is a workspace rather than a page in the site, so it takes
  * none of the marketing chrome — no `SiteHeader` with its hover panels, no
  * `SiteFooter` with its legal links. Brand, destinations, playtime
- * and account all live in this one row.
+ * and account all live in this one column.
  *
  * It does not scroll and needs no `position: sticky`: the layout is a
- * viewport-height column in which this bar is a fixed-height row, so the only
- * thing that can scroll is the shell beneath it. It paints no background of
- * its own — it sits on the layout's chrome, and the shell's border draws the
- * edge between them.
+ * viewport-height row in which this rail is a full-height, fixed-width
+ * column, so the only thing that can scroll is the shell beside it. It paints
+ * no background of its own — it sits on the layout's chrome, and the shell's
+ * border draws the edge between them.
  *
- * The row is budgeted by breakpoint, because every item in it wants width:
- * destinations are words, set tighter below `xl`; the brand's name
- * arrives at `2xl`.
+ * Rows are padded on the left and run flush to the rail's right edge, where
+ * the shell's own 12px margin picks up, so every row has the same 12px of
+ * chrome on both sides. Below `wide` the rail is 4.5rem of icons; from `wide`
+ * up it is 15rem and every destination has its label.
  *
- * `z-30` keeps what the bar
- * floats — the playtime details and account menu — above
- * anything positioned inside the shell.
+ * `z-30` keeps what the rail floats — the playtime details, the schedule and
+ * the account menu — above anything positioned inside the shell beside it.
  */
-export function AppHeader() {
+export function AppSidebar() {
   const pathname = usePathname();
   const exhausted = usePlaytimeExhausted();
   const { hasUnread, mentioned, conversations } = useChat();
@@ -70,32 +70,36 @@ export function AppHeader() {
   );
   const warm = useWarmRoutes(pathname, hotRoutes);
   const list = useRef<HTMLUListElement>(null);
+  const onHome = pathname === HOME_HREF;
 
   return (
-    <header className="relative z-30 grid h-16 shrink-0 grid-cols-[minmax(max-content,1fr)_minmax(max-content,3fr)_minmax(max-content,1fr)] items-center gap-3 px-3">
-      {/* Returns to Home, the default app page. */}
-      <Link
-        href={HOME_HREF}
-        aria-label={`${brand.name} home`}
-        {...warm(HOME_HREF)}
-        className="w-fit shrink-0 rounded-full px-2 backdrop-blur-[3px] transition-opacity hover:opacity-70"
-      >
-        <Wordmark
-          short
-          className="text-[1.375rem] 2xl:text-[1.0625rem]"
-          nameClassName="hidden 2xl:inline"
-        />
-      </Link>
+    <nav
+      aria-label="Dashboard"
+      className="relative z-30 flex w-[4.5rem] shrink-0 flex-col wide:w-60"
+    >
+      {/* Returns to Home, the default app page. The narrow padding centres
+          the mark over the icon column; wide, it sits on the labels' edge. */}
+      <div className="flex h-16 shrink-0 items-center pl-[2.0625rem] wide:pl-5">
+        <Link
+          href={HOME_HREF}
+          aria-label={`${brand.name} home`}
+          {...warm(HOME_HREF)}
+          className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
+        >
+          <Wordmark
+            short
+            className="text-[1.375rem] wide:text-[1.0625rem]"
+            nameClassName="hidden wide:inline"
+          />
+        </Link>
+      </div>
 
-      {/* The middle of three columns, weighted 1:3:1. The outer two are
-          equal while each can hold what it carries (the controls are the
-          wider side), so the links sit on the page's centre line and spread
-          across everything between. Every destination lives here, Leaderboard
-          last on the far right; Admin is in the account menu. Capped so a
-          very wide screen doesn't scatter them. The underline measures against the list, so the cap
-          lives here on the nav and the list fills it. */}
-      <nav aria-label="Dashboard" className="relative mx-auto w-full max-w-5xl">
-        <ul ref={list} className="flex items-center justify-between gap-1">
+      {/* Every destination lives here; Admin is in the account menu. The
+          rail can outgrow a short viewport, so the list — and only the list —
+          scrolls, and the underline scrolls with it. It measures against the
+          list, which starts where this box does. */}
+      <div className="relative min-h-0 flex-1 overflow-y-auto">
+        <ul ref={list} className="flex flex-col gap-1 pb-2 pl-3">
           {navItems.map((item) => {
             const disabled = exhausted && isPlaytimeRoute(item.href);
             const active = item.href === activeHref;
@@ -103,7 +107,7 @@ export function AppHeader() {
             const showUnread = item.unread && hasUnread && !lit;
             const Icon = item.icon.solid;
             return (
-              <li key={item.href} className="shrink-0">
+              <li key={item.href}>
                 <PlaytimeNavLink
                   disabled={disabled}
                   href={item.href}
@@ -111,19 +115,20 @@ export function AppHeader() {
                   data-lit={lit ? "true" : undefined}
                   {...(disabled ? {} : warm(item.href))}
                   className={cn(
-                    "group relative flex h-11 items-center rounded-lg border border-transparent px-2 text-[0.875rem] font-medium whitespace-nowrap backdrop-blur-[3px] lg:text-[0.9375rem] xl:px-3",
+                    "group relative flex h-11 items-center rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap backdrop-blur-[3px]",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
                     disabled
                       ? "cursor-not-allowed opacity-40"
                       : lit
                         ? "font-bold text-foreground"
-                        : "text-muted-foreground transition-colors duration-150 hover:text-foreground",
+                        : "text-muted-foreground transition-[background-color,color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground",
                   )}
                 >
-                  {/* What the underline measures. See `NavUnderline`. */}
+                  {/* What the underline measures. See `NavUnderline`. The
+                      narrow margin centres the icon in the 60px row. */}
                   <span
                     data-underline={item.href}
-                    className="inline-flex h-full items-center gap-2"
+                    className="ml-2 inline-flex h-full min-w-0 items-center gap-3 wide:ml-0"
                   >
                     <Icon aria-hidden className="size-5 shrink-0" />
                     {/* An unread row's label glints now and then in the brand
@@ -131,9 +136,9 @@ export function AppHeader() {
                         is already where it points. */}
                     <span
                       className={cn(
-                        // Icons only below `lg`, as the old rail did; the
-                        // label stays for screen readers.
-                        "sr-only lg:not-sr-only",
+                        // Icons only below `wide`; the label stays for
+                        // screen readers.
+                        "sr-only wide:not-sr-only",
                         showUnread &&
                           "text-shimmer-periodic [--shimmer-base:var(--muted-foreground)] group-hover:[--shimmer-base:var(--foreground)]",
                       )}
@@ -144,8 +149,10 @@ export function AppHeader() {
 
                   {/* A dot and a word, never a number: the conversation list
                       is where "how many, and from whom" belongs. The word
-                      changes when one of them names you, and is dropped below
-                      `xl` to save room. */}
+                      changes when one of them names you. In the icon rail the
+                      word goes and the dot tucks into the row's top corner,
+                      since a dot on the icon's centreline reads as part of the
+                      glyph; wide, it sits on the label's line. */}
                   {showUnread ? (
                     <span
                       aria-label={
@@ -157,13 +164,13 @@ export function AppHeader() {
                       }
                       role="status"
                       className={cn(
-                        "ml-2 flex items-center gap-1.5",
+                        "absolute top-2.5 right-2 flex items-center gap-1.5 wide:top-1/2 wide:right-3 wide:-translate-y-1/2",
                         hasNewAnnouncement ? "text-red-500" : "text-primary",
                       )}
                     >
                       <span
                         className={cn(
-                          "hidden text-xs leading-none font-medium xl:inline",
+                          "hidden text-xs leading-none font-medium wide:inline",
                           hasNewAnnouncement &&
                             "text-shimmer-periodic [--shimmer-base:var(--color-red-500)]",
                         )}
@@ -191,19 +198,23 @@ export function AppHeader() {
           })}
         </ul>
         <NavUnderline list={list} href={litHref || null} />
-      </nav>
+      </div>
 
-      <div className="flex min-w-0 items-center justify-end gap-1">
+      {/* A column under the icons, account last; one row once the rail is
+          wide, account first, so the schedule and playtime sit on the rail's
+          right edge and open beside it rather than over the avatar. */}
+      <div className="flex shrink-0 flex-col items-center gap-1 pb-3 pl-3 wide:flex-row">
         {/* Home already shows the schedule as a card, so the button tucks
-            away there and slides back in everywhere else. */}
+            away there and slides back in everywhere else — out of the column
+            by its height, out of the row by its width. */}
         <div
-          aria-hidden={pathname === HOME_HREF || undefined}
-          inert={pathname === HOME_HREF}
+          aria-hidden={onHome || undefined}
+          inert={onHome}
           className={cn(
-            "flex shrink-0 justify-center overflow-hidden transition-[width,opacity,margin,scale] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            pathname === HOME_HREF
-              ? "-mr-1 w-0 scale-75 opacity-0"
-              : "w-11 opacity-100",
+            "flex shrink-0 justify-center overflow-hidden transition-[width,height,opacity,margin,scale] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            onHome
+              ? "-mb-1 h-0 w-11 scale-75 opacity-0 wide:-mr-1 wide:mb-0 wide:h-11 wide:w-0"
+              : "h-11 w-11 opacity-100",
           )}
         >
           <SchoolDayButton />
@@ -213,8 +224,10 @@ export function AppHeader() {
         {/* Nothing links back to the marketing site: `/` bounces a live
             session straight back here, so it would be a round trip to
             nowhere. */}
-        <UserMenu />
+        <div className="wide:order-first wide:mr-auto">
+          <UserMenu />
+        </div>
       </div>
-    </header>
+    </nav>
   );
 }
