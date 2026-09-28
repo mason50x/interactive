@@ -131,7 +131,11 @@ export function AppSidebar() {
           scrolls, and the underline scrolls with it. It measures against the
           list, which starts where this box does. */}
       <div className="relative min-h-0 flex-1 overflow-y-auto">
-        <ul ref={list} className="flex flex-col gap-1 pb-2 pl-3">
+        <ul
+          ref={list}
+          data-cursor-snap="rail"
+          className="flex flex-col gap-1 pb-2 pl-3"
+        >
           {navItems.map((item) => {
             const disabled = exhausted && isPlaytimeRoute(item.href);
             const active = item.href === activeHref;

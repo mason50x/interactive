@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Cursor } from "@/components/cursor";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata, Viewport } from "next";
 import {
@@ -237,6 +238,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <ThemeProvider />
         </Suspense>
         {children}
+        <Cursor />
       </body>
     </html>
   );
