@@ -147,7 +147,7 @@ function LayoutMenu({ onDone }: { onDone: () => void }) {
               aria-pressed={current}
               title={layout.hint}
               className={cn(
-                "group/layout flex flex-col items-center gap-1.5 rounded-lg p-2 text-center transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                "group/layout flex flex-col items-center gap-1.5 rounded-lg p-2 text-center transition-[background-color,scale] duration-150 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-[0.97]",
                 current ? "bg-foreground/[0.07]" : "hover:bg-foreground/[0.04]",
               )}
             >
@@ -155,7 +155,10 @@ function LayoutMenu({ onDone }: { onDone: () => void }) {
               <span
                 className={cn(
                   "text-xs leading-tight",
-                  current ? "text-foreground" : "text-muted-foreground",
+                  "transition-colors duration-150",
+                  current
+                    ? "text-foreground"
+                    : "text-muted-foreground group-hover/layout:text-foreground",
                 )}
               >
                 {layout.label}
@@ -168,7 +171,7 @@ function LayoutMenu({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** A layout, drawn small. Hovering it plays the panes in one by one. */
+/** A layout, drawn small. Hovering it lights the panes up in turn. */
 function LayoutThumb({
   layout,
   current,
@@ -183,16 +186,17 @@ function LayoutThumb({
         <span
           key={index}
           className={cn(
-            "absolute rounded-[3px] transition-[background-color,scale] duration-300 group-hover/layout:bg-foreground/40",
-            current ? "bg-foreground/70" : "bg-foreground/15",
-            "group-hover/layout:animate-[workspace-cell_700ms_ease-out_both]",
+            "workspace-cell absolute rounded-[3px]",
+            current
+              ? "bg-foreground/70"
+              : "bg-foreground/15 group-hover/layout:bg-foreground/30",
           )}
           style={{
+            ["--i" as string]: index,
             left: `calc(${rect.l * 100}% + ${rect.l > 0 ? 1.5 : 0}px)`,
             top: `calc(${rect.t * 100}% + ${rect.t > 0 ? 1.5 : 0}px)`,
             width: `calc(${rect.w * 100}% - ${(rect.l > 0 ? 1.5 : 0) + (rect.l + rect.w < 0.999 ? 1.5 : 0)}px)`,
             height: `calc(${rect.h * 100}% - ${(rect.t > 0 ? 1.5 : 0) + (rect.t + rect.h < 0.999 ? 1.5 : 0)}px)`,
-            animationDelay: `${index * 70}ms`,
           }}
         />
       ))}
@@ -244,7 +248,7 @@ function LayoutGlyph({
             )}
             rx={1.5}
             className={cn(
-              "transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "transition-[x,y,width,height,fill] duration-[460ms] ease-(--ease-workspace)",
               filled ? "fill-current" : "fill-none stroke-current",
             )}
             strokeWidth={1.5}

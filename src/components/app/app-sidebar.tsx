@@ -100,7 +100,7 @@ export function AppSidebar() {
     <nav
       aria-label="Dashboard"
       data-slot="rail"
-      className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] wide:w-60"
+      className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col transition-[width] duration-[460ms] ease-(--ease-workspace) wide:w-60"
     >
       {/* A faint dot lattice rising from the foot of the rail and thinning
           out behind the rows above. See `.rail-dots`. */}

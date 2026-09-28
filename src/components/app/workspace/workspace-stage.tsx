@@ -10,13 +10,16 @@ import {
 import { isPlaytimeRoute } from "@config/playtime";
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type CSSProperties,
   type ReactNode,
+  type RefObject,
 } from "react";
+import { flushSync } from "react-dom";
 import { usePlaytimeExhausted } from "@/components/app/playtime-status";
 import { usePreferences } from "@/components/preferences-provider";
 import { Spinner } from "@/components/ui/spinner";
@@ -29,6 +32,7 @@ import {
   MAIN,
   PANE_WINDOW_PREFIX,
   planDrop,
+  rectPixels,
   rectStyle,
   WORKSPACE_DRAG_TYPE,
   type DropPlan,
@@ -39,6 +43,8 @@ import { useWorkspace } from "./workspace-provider";
 
 /** Pixels between panes. */
 const GAP = 10;
+/** The pane's handle strip above its card, `h-7`. */
+const HANDLE = 28;
 const FULL: Rect = { l: 0, t: 0, w: 1, h: 1 };
 
 const NARROW = "(width < 48rem)";
@@ -53,6 +59,66 @@ function useNarrow() {
     () => window.matchMedia(NARROW).matches,
     () => false,
   );
+}
+
+type Size = { width: number; height: number };
+
+/**
+ * How much wider the stage is about to get: the distance the rail still has
+ * to travel if it is folding or unfolding, read off its own transition.
+ */
+function railTravel() {
+  const rail = document.querySelector<HTMLElement>('[data-slot="rail"]');
+  if (!rail) return 0;
+  for (const animation of rail.getAnimations()) {
+    if (
+      !(animation instanceof CSSTransition) ||
+      animation.transitionProperty !== "width" ||
+      !(animation.effect instanceof KeyframeEffect)
+    )
+      continue;
+    const to = parseFloat(
+      String(animation.effect.getKeyframes().at(-1)?.width),
+    );
+    if (Number.isFinite(to)) return rail.getBoundingClientRect().width - to;
+  }
+  return 0;
+}
+
+/**
+ * The stage's size once it stops moving.
+ *
+ * What is in a pane is laid out at the size its pane is going to be, not the
+ * size it is on the way there: a frame is a whole document and the page is a
+ * size container, and re-laying either out on every frame of a half-second
+ * glide is what turns a glide into a stutter. So the content takes its final
+ * size at once and the card around it does the moving, clipping or revealing
+ * it as it goes. That needs the stage's final size — which, while the rail
+ * folds away for split view, is not the size it is now.
+ */
+function useSettledSize(stage: RefObject<HTMLDivElement | null>) {
+  const [size, setSize] = useState<Size | null>(null);
+  useLayoutEffect(() => {
+    const element = stage.current;
+    if (!element) return;
+    const measure = () => {
+      const box = element.getBoundingClientRect();
+      const width = box.width + railTravel();
+      const height = box.height;
+      setSize((current) =>
+        current && current.width === width && current.height === height
+          ? current
+          : { width, height },
+      );
+    };
+    measure();
+    // Synchronously, so a window being resized never shows a frame of the
+    // page at the old size.
+    const observer = new ResizeObserver(() => flushSync(measure));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [stage]);
+  return size;
 }
 
 /**
@@ -84,6 +150,7 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
   } = workspace;
   const narrow = useNarrow();
   const stage = useRef<HTMLDivElement>(null);
+  const settled = useSettledSize(stage);
   const [resizing, setResizing] = useState(false);
   const [drop, setDrop] = useState<DropPlan | null>(null);
   const [loaded, setLoaded] = useState<Set<string>>(() => new Set());
@@ -144,6 +211,15 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
         const hidden = !rect;
         const place = rect ?? rects[slots.indexOf(id)] ?? FULL;
         const path = id === MAIN ? workspace.mainPath : (pane?.path ?? null);
+        // The card's size when it gets where it is going; what is in it is
+        // laid out at that size from the start. See `useSettledSize`.
+        const final = settled && rectPixels(place, chrome ? GAP : 0, settled);
+        const content: CSSProperties = final
+          ? {
+              width: final.width,
+              height: final.height - (chrome ? HANDLE : 0),
+            }
+          : { right: 0, bottom: 0 };
 
         return (
           <section
@@ -153,6 +229,8 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
             inert={hidden || closing}
             onPointerDownCapture={() => workspace.focusPane(id)}
             data-pane={id}
+            data-state={closing ? "closing" : hidden ? "hidden" : undefined}
+            data-resizing={resizing || undefined}
             style={
               {
                 ...rectStyle(place, chrome ? GAP : 0),
@@ -160,16 +238,10 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
               } as CSSProperties
             }
             className={cn(
-              "absolute",
+              "workspace-pane absolute",
               // Room for the pane's controls above it, so the page never
               // sits under them.
               chrome && "flex flex-col",
-              !resizing &&
-                "transition-[left,top,width,height,opacity,scale,visibility] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              hidden &&
-                !closing &&
-                "pointer-events-none invisible scale-95 opacity-0 [transition-behavior:allow-discrete]",
-              closing && "pointer-events-none scale-95 opacity-0",
               pane && !closing && "workspace-pane-in",
             )}
           >
@@ -182,22 +254,21 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
               />
             )}
             <div
-              data-slot={id === MAIN ? undefined : "shell"}
+              data-slot="card"
               className={cn(
-                "relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl",
+                "relative min-h-0 w-full flex-1 overflow-hidden rounded-2xl bg-surface",
                 !chrome && "h-full",
-                id !== MAIN && "border border-border bg-surface",
               )}
             >
-              {id === MAIN ? (
-                <main
-                  data-slot="shell"
-                  className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface"
-                >
-                  {children}
-                </main>
-              ) : pane?.src ? (
-                <>
+              <div className="absolute top-0 left-0" style={content}>
+                {id === MAIN ? (
+                  <main
+                    data-slot="shell"
+                    className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain"
+                  >
+                    {children}
+                  </main>
+                ) : pane?.src ? (
                   <iframe
                     ref={(frame) => {
                       if (frame) frames.current.set(id, frame);
@@ -211,24 +282,28 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
                       setLoaded((current) => new Set(current).add(id))
                     }
                     className={cn(
-                      "size-full border-0 bg-surface transition-opacity duration-300",
+                      "block size-full border-0 bg-surface transition-opacity duration-300 ease-out",
                       !loaded.has(id) && "opacity-0",
                       busy && "pointer-events-none",
                     )}
                   />
-                  {!loaded.has(id) && (
-                    <div className="absolute inset-0 grid place-items-center">
-                      <Spinner />
-                    </div>
-                  )}
-                </>
-              ) : pane ? (
-                <PanePicker
-                  onPick={(href) => workspace.fillPane(id, href)}
-                  onCancel={() => workspace.closePane(id)}
-                  cancelLabel="Close this pane"
-                />
-              ) : null}
+                ) : pane ? (
+                  <PanePicker
+                    onPick={(href) => workspace.fillPane(id, href)}
+                    onCancel={() => workspace.closePane(id)}
+                    cancelLabel="Close this pane"
+                  />
+                ) : null}
+              </div>
+              {pane?.src && !loaded.has(id) && (
+                // A beat late, so a pane that loads quickly never flashes it.
+                <div
+                  className="workspace-drop-in absolute inset-0 grid place-items-center"
+                  style={{ animationDelay: "150ms" }}
+                >
+                  <Spinner />
+                </div>
+              )}
               {picking === id && (
                 // Choosing what goes here, over what is here now; the page
                 // underneath keeps running until something is picked.
@@ -259,6 +334,7 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
           <DividerHandle
             key={`${layout}-${divider.key}`}
             divider={divider}
+            settling={!resizing}
             onStart={() => setResizing(true)}
             onEnd={() => setResizing(false)}
             onMove={(clientX, clientY) => {
@@ -329,7 +405,7 @@ export function WorkspaceStage({ children }: { children: ReactNode }) {
           <div className="absolute inset-0 rounded-2xl bg-sidebar/40 backdrop-blur-[2px]" />
           {drop && (
             <div
-              className="absolute grid place-items-center rounded-2xl border-2 border-dashed border-primary bg-primary/15 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="workspace-drop-target absolute grid place-items-center rounded-2xl border-2 border-dashed border-primary bg-primary/15"
               style={rectStyle(drop.rect, GAP)}
             >
               <DropLabel href={dragging} kind={drop.kind} />
@@ -435,6 +511,7 @@ function HandleButton({
 
 function DividerHandle({
   divider,
+  settling,
   onStart,
   onEnd,
   onMove,
@@ -442,6 +519,8 @@ function DividerHandle({
   onReset,
 }: {
   divider: ReturnType<typeof layoutDividers>[number];
+  /** Glide to a new place with the panes, rather than jump there. */
+  settling: boolean;
   onStart: () => void;
   onEnd: () => void;
   onMove: (clientX: number, clientY: number) => void;
@@ -510,12 +589,13 @@ function DividerHandle({
       style={style}
       className={cn(
         "group/divider absolute z-10 flex touch-none items-center justify-center outline-none",
+        settling && "workspace-divider-settling",
         vertical ? "cursor-col-resize" : "cursor-row-resize",
       )}
     >
       <span
         className={cn(
-          "rounded-full bg-foreground/40 opacity-0 transition-all duration-200 group-hover/divider:opacity-100 group-focus-visible/divider:opacity-100",
+          "rounded-full bg-foreground/40 opacity-0 transition-[opacity,width,height] duration-200 ease-out group-hover/divider:opacity-100 group-focus-visible/divider:opacity-100",
           vertical
             ? "h-10 w-1 group-hover/divider:h-20 group-focus-visible/divider:h-20"
             : "h-1 w-10 group-hover/divider:w-20 group-focus-visible/divider:w-20",

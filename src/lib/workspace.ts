@@ -272,6 +272,23 @@ export function rectStyle(rect: Rect, gap: number) {
   return { left: x.start, width: x.size, top: y.start, height: y.size };
 }
 
+/** `rectStyle`'s width and height in pixels, on a stage of a given size. */
+export function rectPixels(
+  rect: Rect,
+  gap: number,
+  stage: { width: number; height: number },
+) {
+  const half = gap / 2;
+  const size = (start: number, span: number, total: number) =>
+    span * total -
+    (start > 0.001 ? half : 0) -
+    (start + span < 0.999 ? half : 0);
+  return {
+    width: size(rect.l, rect.w, stage.width),
+    height: size(rect.t, rect.h, stage.height),
+  };
+}
+
 /** Where a drop would land, for the preview and the drop itself. */
 export type DropPlan =
   | { kind: "replace"; slot: number; rect: Rect }

@@ -873,6 +873,10 @@
     width: min(20rem, calc(100vw - 1rem));
   }
 
+  .plus-menu-popup[data-view="gifs"] {
+    width: min(22rem, calc(100vw - 1rem));
+  }
+
   .plus-menu-actions,
   .plus-menu-emojis {
     animation: plus-menu-content-in 180ms ease-out both;
@@ -937,6 +941,22 @@
   .popup-slide[data-ending-style] {
     opacity: 0;
     transform: translateY(0.625rem);
+  }
+
+  /* A popup out to the side of its trigger — the rail's menus open to the
+     right — slides out of it sideways, along the axis it is anchored on,
+     for the same reason the others rise. */
+  :is(.popup-slide, .popup-drop)[data-side="right"]:is(
+      [data-starting-style],
+      [data-ending-style]
+    ) {
+    transform: translateX(-0.625rem);
+  }
+  :is(.popup-slide, .popup-drop)[data-side="left"]:is(
+      [data-starting-style],
+      [data-ending-style]
+    ) {
+    transform: translateX(0.625rem);
   }
 
   .plus-menu-popup.popup-slide[data-starting-style],
@@ -2114,18 +2134,24 @@
 :root[data-pref-frame="floating"] [data-slot="stage"] {
   margin: 1rem;
 }
-:root[data-pref-frame="floating"] [data-slot="shell"] {
-  border-color: transparent;
+:root[data-pref-frame="floating"] [data-slot="card"] {
   box-shadow: var(--elevation-card-hover);
+}
+:root[data-pref-frame="floating"] [data-slot="card"]::after {
+  border-color: transparent;
 }
 :root[data-pref-frame="flush"] [data-slot="stage"]:not([data-split]) {
   margin: 0;
 }
 :root[data-pref-frame="flush"]
   [data-slot="stage"]:not([data-split])
-  [data-slot="shell"] {
-  border-width: 0 0 0 1px;
+  [data-slot="card"] {
   border-radius: 0;
+}
+:root[data-pref-frame="flush"]
+  [data-slot="stage"]:not([data-split])
+  [data-slot="card"]::after {
+  border-width: 0 0 0 1px;
 }
 
 /* Page width: the measure every dashboard page is centred in, lifted. */
@@ -2204,11 +2230,27 @@ main[data-slot="shell"] {
   container: page / size;
 }
 
+/*
+ * The card a page sits on. Its hairline is drawn over it rather than around
+ * it, so the card's inside is exactly its size — which is what lets a pane
+ * lay its page out at the card's final size while the card is still on its
+ * way there (see `useSettledSize` in `WorkspaceStage`).
+ */
+[data-slot="card"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  border: 1px solid var(--border);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 /* Privacy blur: the page goes soft while the tab is out of sight. */
-[data-slot="shell"] {
+[data-slot="card"] {
   transition: filter 200ms ease;
 }
-:root[data-away] [data-slot="shell"] {
+:root[data-away] [data-slot="card"] {
   filter: blur(18px) saturate(0.6);
 }
 
@@ -2226,23 +2268,88 @@ main[data-slot="shell"] {
 :root[data-pane] [data-slot="stage"] {
   margin: 0;
 }
-:root[data-pane] [data-slot="shell"] {
-  border: 0;
+:root[data-pane] [data-slot="card"] {
   border-radius: 0;
   box-shadow: none;
   filter: none;
 }
+:root[data-pane] [data-slot="card"]::after {
+  display: none;
+}
 
-/* A pane arriving: up from slightly small, the way a window opens. */
-@keyframes workspace-pane-in {
+/*
+ * Panes moving. Every change of layout is a change of rectangle, and the
+ * rectangles glide on one curve — a soft start and a long settle, so a pane
+ * picks up rather than jumps and arrives without a bump. The rail folding
+ * away for split view rides the same curve, so the stage's edge and the
+ * panes on it move as one thing.
+ *
+ * Only the card moves: what is in it is laid out at its final size up front
+ * (see `useSettledSize` in `WorkspaceStage`), so a glide costs the browser
+ * one layout, not thirty.
+ */
+:root {
+  --ease-workspace: cubic-bezier(0.32, 0.72, 0, 1);
+}
+.workspace-pane {
+  transition-property: left, top, width, height, scale, opacity, visibility;
+  transition-duration: 460ms, 460ms, 460ms, 460ms, 460ms, 240ms, 460ms;
+  transition-timing-function: var(--ease-workspace);
+}
+/* Out of sight or on its way out: a step back and gone. Leaving is quicker
+   than arriving, and eases in — the pane is let go of, not pushed. */
+.workspace-pane:is([data-state="hidden"], [data-state="closing"]) {
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.96;
+}
+.workspace-pane[data-state="hidden"] {
+  visibility: hidden;
+}
+.workspace-pane[data-state="closing"] {
+  transition-duration: 460ms, 460ms, 460ms, 460ms, 220ms, 180ms, 0ms;
+  transition-timing-function:
+    var(--ease-workspace), var(--ease-workspace), var(--ease-workspace),
+    var(--ease-workspace), cubic-bezier(0.4, 0, 1, 1),
+    cubic-bezier(0.4, 0, 1, 1);
+}
+/* A divider being dragged: the panes follow the pointer, not a curve. */
+.workspace-pane[data-resizing] {
+  transition: none;
+}
+
+/* A pane arriving: up from a touch small, the way a window opens. The fade
+   is over well before the growth, so it reads as a solid thing settling
+   rather than a ghost sharpening. No blur: over a frame that is a whole
+   page, a blur is repainted at full size on every frame. */
+@keyframes workspace-pane-grow {
+  from {
+    scale: 0.94;
+  }
+}
+@keyframes workspace-pane-fade {
   from {
     opacity: 0;
-    scale: 0.92;
-    filter: blur(6px);
   }
 }
 .workspace-pane-in {
-  animation: workspace-pane-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation:
+    workspace-pane-grow 460ms var(--ease-workspace) both,
+    workspace-pane-fade 220ms ease-out both;
+}
+
+/* A divider rides along with the panes it sits between. */
+.workspace-divider-settling {
+  transition-property: left, top, width, height;
+  transition-duration: 460ms;
+  transition-timing-function: var(--ease-workspace);
+}
+
+/* Where a drag would land, sliding from one place to the next. */
+.workspace-drop-target {
+  transition-property: left, top, width, height;
+  transition-duration: 280ms;
+  transition-timing-function: var(--ease-workspace);
 }
 
 /* The drop zones fading up over the stage when a drag starts. */
@@ -2266,19 +2373,14 @@ main[data-slot="shell"] {
   animation: workspace-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* A layout thumbnail's panes popping in one by one on hover. */
-@keyframes workspace-cell {
-  0% {
-    scale: 0.6;
-    opacity: 0.3;
-  }
-  60% {
-    scale: 1.06;
-  }
-  100% {
-    scale: 1;
-    opacity: 1;
-  }
+/* A layout thumbnail on hover: its panes light up in reading order, a
+   quick sweep in and all at once out. Nothing moves or resizes — in a grid
+   of eight, motion under the pointer is noise. */
+.workspace-cell {
+  transition: background-color 180ms ease-out;
+}
+.group\/layout:hover .workspace-cell {
+  transition-delay: calc(var(--i) * 40ms);
 }
 
 /* The rail's split-view glyph, until it has been used: a small wave now and
