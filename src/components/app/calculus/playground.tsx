@@ -14,7 +14,8 @@ import { api } from "@convex/_generated/api";
 import {
   FigureFrame,
   describePuzzle,
-} from "@/components/app/geometry/problems";
+} from "@/components/app/calculus/problems";
+import { parseAnswer } from "@/lib/calculus-text";
 
 type Started = Extract<
   FunctionReturnType<typeof api.timeoutPuzzles.start>,
@@ -61,7 +62,7 @@ function NoticeBanner({ notice }: { notice: Notice }) {
     case "correct":
       return (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-800">
-          <span className="font-medium">Correct.</span> Last puzzle:{" "}
+          <span className="font-medium">Correct.</span> Last problem:{" "}
           {notice.solution.working}
         </p>
       );
@@ -88,7 +89,7 @@ function NoticeBanner({ notice }: { notice: Notice }) {
       return (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-rose-800">
           <span className="font-medium">You left the tab.</span> Your streak
-          starts over with a new puzzle.
+          starts over with a new problem.
         </p>
       );
     case "expired":
@@ -126,7 +127,7 @@ function Progress({ streak, goal }: { streak: number; goal: number | null }) {
       </div>
       <div
         role="progressbar"
-        aria-label="Puzzles solved in a row"
+        aria-label="Problems solved in a row"
         aria-valuemin={0}
         aria-valuemax={goal}
         aria-valuenow={streak}
@@ -173,8 +174,8 @@ function PuzzleCard({
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const value = Number(guess.trim().replace(/[^\d.\-]/g, ""));
-    if (pending || guess.trim() === "" || !Number.isFinite(value)) return;
+    const value = parseAnswer(guess);
+    if (pending || value === null) return;
     onAnswer(value);
   };
 
@@ -211,7 +212,7 @@ function PuzzleCard({
               inputMode="decimal"
               autoComplete="off"
               autoFocus
-              placeholder="Your answer"
+              placeholder="Decimal or fraction"
               className="min-w-0 flex-1 bg-transparent px-3 py-2 tabular-nums outline-none placeholder:text-neutral-400"
             />
             {problem.unit && (
@@ -263,14 +264,14 @@ function PuzzleCard({
 }
 
 /**
- * Work the timeout off: twenty geometry puzzles right in a row lifts it,
- * when the timeout allows a math bypass. Otherwise the puzzles are for fun.
+ * Work the timeout off: twenty calculus problems right in a row lifts it,
+ * when the timeout allows a math bypass. Otherwise the problems are for fun.
  *
  * The server owns the streak, the timer, the answers and which mode applies
  * (`convex/timeoutPuzzles.ts`); this page only shows them. With the bypass
  * on, any page load starts a new run and leaving the tab ends the streak.
  */
-export function GeometryPlayground({ mathBypass }: { mathBypass: boolean }) {
+export function CalculusPlayground({ mathBypass }: { mathBypass: boolean }) {
   const { isAuthenticated } = useConvexAuth();
   const start = useMutation(api.timeoutPuzzles.start);
   const answer = useMutation(api.timeoutPuzzles.answer);
@@ -400,17 +401,17 @@ export function GeometryPlayground({ mathBypass }: { mathBypass: boolean }) {
 
   return (
     <section
-      aria-labelledby="geometry-title"
+      aria-labelledby="calculus-title"
       className="mx-auto w-full max-w-xl"
     >
       <header>
-        <h2 id="geometry-title" className="text-xl font-semibold">
-          Geometry break
+        <h2 id="calculus-title" className="text-xl font-semibold">
+          Calculus break
         </h2>
         <p className="mt-1 text-sm text-neutral-500">
           {counts
-            ? "Leaving this tab, a miss or the timer resets the streak."
-            : "A few puzzles to pass the time."}
+            ? "AP Calculus BC, the hard parts. Leaving this tab, a miss or the timer resets the streak."
+            : "A few AP Calculus problems to pass the time."}
         </p>
       </header>
 
@@ -439,7 +440,7 @@ export function GeometryPlayground({ mathBypass }: { mathBypass: boolean }) {
 
       {run.phase === "loading" && (
         <div className="mt-5 grid aspect-[4/3] place-items-center rounded-2xl border border-neutral-200 bg-white text-sm text-neutral-500">
-          Setting up your first puzzle…
+          Setting up your first problem…
         </div>
       )}
 

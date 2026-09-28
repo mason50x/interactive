@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GeometryPlayground } from "@/components/app/geometry/playground";
+import { CalculusPlayground } from "@/components/app/calculus/playground";
 
 function TimeoutCountdown({ expiresAt }: { expiresAt: number }) {
   const [now, setNow] = useState<number | null>(null);
@@ -68,7 +68,7 @@ export function TimeoutMessage({
       </div>
       <div className="border-t border-neutral-200 bg-neutral-50 px-6 pt-10 pb-24 lg:h-svh lg:overflow-y-auto lg:border-t-0 lg:border-l lg:py-12">
         <div className="flex min-h-full items-center">
-          <GeometryPlayground mathBypass={mathBypass} />
+          <CalculusPlayground mathBypass={mathBypass} />
         </div>
       </div>
       <p className="fixed inset-x-0 bottom-0 z-[101] bg-white px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-xs text-neutral-500 lg:right-1/2">

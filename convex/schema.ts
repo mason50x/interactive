@@ -4,7 +4,7 @@ import { v } from "convex/values";
 import { publishedFields } from "./simulator/publishedModel";
 import { htmlFields } from "./simulator/htmlModel";
 import { entryFields, saveFields } from "./simulator/model";
-import { puzzleParams } from "./geometry";
+import { legacyPuzzleParams, puzzleParams } from "./calculus";
 
 export default defineSchema({
   leaderboardScores: defineTable({
@@ -99,7 +99,7 @@ export default defineSchema({
     issuedBy: v.string(),
     issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
     /**
-     * Whether twenty geometry puzzles in a row lift this timeout early (see
+     * Whether twenty calculus problems in a row lift this timeout early (see
      * `timeoutPuzzles.ts`). Missing on rows from before the option, which
      * read as on, the default.
      */
@@ -116,7 +116,11 @@ export default defineSchema({
     timeoutExpiresAt: v.number(),
     session: v.string(),
     streak: v.number(),
-    params: puzzleParams,
+    /**
+     * The legacy half of the union is only for rows written before the
+     * switch from geometry to calculus; see `legacyPuzzleParams`.
+     */
+    params: v.union(puzzleParams, legacyPuzzleParams),
     issuedAt: v.number(),
   }).index("byClerkId", ["clerkId"]),
   timeoutAudit: defineTable({

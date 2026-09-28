@@ -2,11 +2,18 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { type MutationCtx } from "./_generated/server";
 import { mutation } from "./functions";
-import { generatePuzzle, isCorrect, puzzleParams, solve } from "./geometry";
+import {
+  generatePuzzle,
+  isCorrect,
+  isCurrentPuzzle,
+  puzzleParams,
+  solve,
+  type PuzzleParams,
+} from "./calculus";
 import { activeTimeout } from "./timeoutState";
 
 /**
- * Working off a timeout: twenty geometry puzzles right in a row lifts it.
+ * Working off a timeout: twenty calculus problems right in a row lifts it.
  *
  * Only when the timeout was issued with `mathBypass` on, the default. With it
  * off the puzzles are for fun: the streak still counts and answers are still
@@ -22,8 +29,11 @@ import { activeTimeout } from "./timeoutState";
  */
 
 export const PUZZLE_GOAL = 20;
-/** Long enough to work one out by hand, too short to go and ask someone. */
-export const PUZZLE_TIME_MS = 2 * 60_000;
+/**
+ * Long enough to work an AP free-response part out by hand, too short to go
+ * and ask someone.
+ */
+export const PUZZLE_TIME_MS = 4 * 60_000;
 
 const puzzleView = v.object({
   params: puzzleParams,
@@ -49,7 +59,11 @@ async function puzzleRow(ctx: MutationCtx, clerkId: string) {
     .unique();
 }
 
-/** The caller's row, but only for this session and this very timeout. */
+/**
+ * The caller's row, but only for this session and this very timeout. A row
+ * still holding one of the old geometry puzzles is stale too: a tab left
+ * open across the switch starts over, from `start`.
+ */
 async function liveRow(ctx: MutationCtx, session: string) {
   const { clerkId, timeout } = await timedOutCaller(ctx);
   const row = await puzzleRow(ctx, clerkId);
@@ -61,13 +75,15 @@ async function liveRow(ctx: MutationCtx, session: string) {
     row.timeoutExpiresAt !== timeout.expiresAt
   )
     return null;
-  return { row, timeout };
+  const { params } = row;
+  if (!isCurrentPuzzle(params)) return null;
+  return { row: { ...row, params }, timeout };
 }
 
 const bypassable = (timeout: Doc<"userTimeouts">) => timeout.mathBypass !== false;
 
 function view(
-  row: Pick<Doc<"timeoutPuzzles">, "params" | "streak" | "issuedAt">,
+  row: { params: PuzzleParams; streak: number; issuedAt: number },
   timeout: Doc<"userTimeouts">,
 ) {
   const counts = bypassable(timeout);
@@ -81,7 +97,7 @@ function view(
 
 async function reissue(
   ctx: MutationCtx,
-  row: Doc<"timeoutPuzzles">,
+  row: Doc<"timeoutPuzzles"> & { params: PuzzleParams },
   timeout: Doc<"userTimeouts">,
   streak: number,
 ) {
