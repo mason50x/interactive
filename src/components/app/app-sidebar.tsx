@@ -44,6 +44,9 @@ import { usePlaytimeActivity } from "@/components/app/playtime-activity";
  * chrome on both sides. Below `wide` the rail is 4.5rem of icons; from `wide`
  * up it is 15rem and every destination has its label.
  *
+ * `isolate` gives the dot lattice at `-z-10` a stacking context of its own
+ * here; without it the lattice would drop behind the layout's `bg-sidebar`.
+ *
  * `z-30` keeps what the rail floats — the playtime details, the schedule and
  * the account menu — above anything positioned inside the shell beside it.
  */
@@ -76,8 +79,16 @@ export function AppSidebar() {
   return (
     <nav
       aria-label="Dashboard"
-      className="relative z-30 flex w-[4.5rem] shrink-0 flex-col wide:w-60"
+      className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col wide:w-60"
     >
+      {/* A dot lattice behind the whole rail, rows included, faded out at
+          its edges so it melts into the chrome rather than stopping at a
+          line. See `.rail-dots`. */}
+      <div
+        aria-hidden
+        className="rail-dots pointer-events-none absolute inset-0 -z-10 mask-t-from-85% mask-r-from-80% mask-b-from-80%"
+      />
+
       {/* Returns to Home, the default app page. The narrow padding centres
           the mark over the icon column; wide, it sits on the labels' edge. */}
       <div className="flex h-16 shrink-0 items-center pl-[2.0625rem] wide:pl-5">
@@ -85,7 +96,7 @@ export function AppSidebar() {
           href={HOME_HREF}
           aria-label={`${brand.name} home`}
           {...warm(HOME_HREF)}
-          className="rounded-full backdrop-blur-[3px] transition-opacity hover:opacity-70"
+          className="rounded-full transition-opacity hover:opacity-70"
         >
           <Wordmark
             short
@@ -99,7 +110,7 @@ export function AppSidebar() {
           rail can outgrow a short viewport, so the list — and only the list —
           scrolls, and the underline scrolls with it. It measures against the
           list, which starts where this box does. */}
-      <div className="relative min-h-0 overflow-y-auto">
+      <div className="relative min-h-0 flex-1 overflow-y-auto">
         <ul ref={list} className="flex flex-col gap-1 pb-2 pl-3">
           {navItems.map((item) => {
             const disabled = exhausted && isPlaytimeRoute(item.href);
@@ -116,7 +127,7 @@ export function AppSidebar() {
                   data-lit={lit ? "true" : undefined}
                   {...(disabled ? {} : warm(item.href))}
                   className={cn(
-                    "group relative flex h-11 items-center rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap backdrop-blur-[3px]",
+                    "group relative flex h-11 items-center rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
                     disabled
                       ? "cursor-not-allowed opacity-40"
@@ -200,15 +211,6 @@ export function AppSidebar() {
         </ul>
         <NavUnderline list={list} href={litHref || null} />
       </div>
-
-      {/* The rail's empty stretch between the list and the controls: the
-          site's dot lattice at a tighter pitch, faded out toward every edge
-          so it melts into the chrome rather than stopping at a line. It takes
-          whatever height the list leaves and none of what it needs. */}
-      <div
-        aria-hidden
-        className="bg-dots ml-3 min-h-0 flex-1 mask-y-from-60% mask-x-from-70% [background-size:12px_12px]!"
-      />
 
       {/* A column under the icons, account last; one row once the rail is
           wide, account first, so the schedule and playtime sit on the rail's

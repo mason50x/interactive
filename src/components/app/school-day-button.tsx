@@ -34,7 +34,7 @@ export function SchoolDayButton() {
       <Popover.Trigger
         aria-label={label}
         title={label}
-        className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground backdrop-blur-[3px] transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset data-popup-open:text-foreground"
+        className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset data-popup-open:text-foreground"
       >
         {inClass && status?.state === "in-session" ? (
           <Donut

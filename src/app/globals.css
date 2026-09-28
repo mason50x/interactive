@@ -1798,6 +1798,18 @@
     background-size: 24px 24px;
   }
 
+  /* The app rail's version: a tighter pitch, and inked off the foreground
+     rather than the border so it reads as a texture on the chrome instead of
+     vanishing into it — in both themes, since the mix follows the ink. */
+  .rail-dots {
+    background-image: radial-gradient(
+      circle at 1.5px 1.5px,
+      color-mix(in oklab, var(--foreground) 20%, transparent) 1.2px,
+      transparent 0
+    );
+    background-size: 12px 12px;
+  }
+
   .bg-glow {
     background-image: radial-gradient(
       60% 55% at 50% 0%,

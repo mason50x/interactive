@@ -103,7 +103,7 @@ export function UserMenu({
       >
         <MenuTrigger
           aria-label={`Account: ${name}`}
-          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full backdrop-blur-[3px] transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/60"
+          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           {/* Staff wear the same ring round their face here as in chat. */}
           <span data-role={staffRole} className={cn(staffRole && "staff-ring")}>
