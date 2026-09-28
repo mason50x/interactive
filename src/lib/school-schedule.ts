@@ -368,3 +368,58 @@ export function schoolStatus(
     dayEnd,
   };
 }
+
+export type Bell = {
+  /** Whether this bell ends `period` or starts it. */
+  event: "end" | "start";
+  period: Period;
+  /** What comes straight after an ending bell, if anything does. */
+  next: Period | null;
+  /** The day's final bell. */
+  last: boolean;
+  date: string;
+  /** Seconds after midnight, school time. */
+  at: number;
+  /** Seconds from the reading until it rings. */
+  remaining: number;
+};
+
+/**
+ * The next bell from `now`: the end of the period under way, the start of the
+ * one being passed to, or Block 1 on a school morning. `null` once the day's
+ * last bell has rung, and on days without one.
+ */
+export function nextBell(
+  now: number,
+  lunch: LunchNumber | null = null,
+): Bell | null {
+  const status = schoolStatus(now, lunch);
+  const { date, seconds } = schoolClock(now);
+  if (status.state === "off") {
+    if (status.reason !== "before" || !status.schedule) return null;
+    const period = personalPeriods(BELL_SCHEDULES[status.schedule], lunch)[0];
+    const at = period.start * 60;
+    return {
+      event: "start",
+      period,
+      next: null,
+      last: false,
+      date,
+      at,
+      remaining: at - seconds,
+    };
+  }
+
+  const { periods, index, passing } = status;
+  const period = periods[index];
+  const at = (passing ? period.start : period.end) * 60;
+  return {
+    event: passing ? "start" : "end",
+    period,
+    next: passing ? null : (periods[index + 1] ?? null),
+    last: !passing && index === periods.length - 1,
+    date,
+    at,
+    remaining: at - seconds,
+  };
+}

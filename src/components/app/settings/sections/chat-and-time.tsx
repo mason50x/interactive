@@ -1,8 +1,10 @@
 "use client";
 
+import { previewBell } from "@/components/app/bell-toast";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { Group, Row, Section } from "@/components/app/settings/primitives";
 import { usePreferences } from "@/components/preferences-provider";
+import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
@@ -91,6 +93,77 @@ export function TimeSection() {
             onCheckedChange={(clock24) => update({ clock24 })}
           />
         </Row>
+      </Group>
+      <Group>
+        <Row
+          label="Bell countdown"
+          description="A countdown in the corner before the bell rings."
+          keywords="bell toast countdown timer class ends minutes left notification"
+        >
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={previewBell}>
+              Preview
+            </Button>
+            <Switch
+              aria-label="Bell countdown"
+              checked={preferences.bellCountdown}
+              onCheckedChange={(bellCountdown) => update({ bellCountdown })}
+            />
+          </div>
+        </Row>
+        {preferences.bellCountdown && (
+          <>
+            <Row
+              label="Show it"
+              keywords="bell countdown lead minutes before warning early"
+            >
+              <SegmentedControl
+                aria-label="Minutes before the bell"
+                tone="neutral"
+                value={preferences.bellLead}
+                onValueChange={(bellLead) =>
+                  update({ bellLead: bellLead as typeof preferences.bellLead })
+                }
+                options={[
+                  { value: "1", label: "1 min" },
+                  { value: "2", label: "2 min" },
+                  { value: "5", label: "5 min" },
+                  { value: "10", label: "10 min" },
+                  { value: "15", label: "15 min" },
+                ]}
+              />
+            </Row>
+            <Row
+              label="Count down to"
+              keywords="bell countdown class lunch passing end of day which bells"
+            >
+              <SegmentedControl
+                aria-label="Which bells"
+                tone="neutral"
+                value={preferences.bellFor}
+                onValueChange={(bellFor) =>
+                  update({ bellFor: bellFor as typeof preferences.bellFor })
+                }
+                options={[
+                  { value: "every", label: "Every bell" },
+                  { value: "class", label: "End of class" },
+                  { value: "day", label: "End of day" },
+                ]}
+              />
+            </Row>
+            <Row
+              label="Chime"
+              description="A soft bell sound when the countdown hits zero."
+              keywords="bell sound audio chime ring"
+            >
+              <Switch
+                aria-label="Chime"
+                checked={preferences.bellChime}
+                onCheckedChange={(bellChime) => update({ bellChime })}
+              />
+            </Row>
+          </>
+        )}
       </Group>
     </Section>
   );

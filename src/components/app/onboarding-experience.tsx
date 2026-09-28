@@ -8,7 +8,11 @@ import { Monogram } from "@/components/app/chat/monogram";
 import { RailConstellation } from "@/components/app/rail-constellation";
 import { LogoMark } from "@/components/wordmark";
 import { navItems } from "@/lib/nav";
-import { onboardingEndSeconds, onboardingStageAt, onboardingVolumeAt } from "@/lib/onboarding-timing";
+import {
+  onboardingEndSeconds,
+  onboardingStageAt,
+  onboardingVolumeAt,
+} from "@/lib/onboarding-timing";
 import styles from "./onboarding.module.css";
 
 const scenes = [
@@ -52,19 +56,28 @@ const shows = [
 
 function NavOrbit() {
   return (
-    <div className={styles.navVisual} aria-label="The website's destinations come together around the interactive logo">
+    <div
+      className={styles.navVisual}
+      aria-label="The website's destinations come together around the interactive logo"
+    >
       <div className={styles.navRow}>
         {navItems.map((item, index) => {
           const Icon = item.icon.solid;
           return (
-            <div className={styles.navTile} key={item.href} style={{ "--i": index } as React.CSSProperties}>
+            <div
+              className={styles.navTile}
+              key={item.href}
+              style={{ "--i": index } as React.CSSProperties}
+            >
               <Icon className={styles.navIcon} />
               <span>{item.label}</span>
             </div>
           );
         })}
       </div>
-      <div className={styles.orbitCore}><LogoMark /></div>
+      <div className={styles.orbitCore}>
+        <LogoMark />
+      </div>
       <div className={styles.orbitRing} />
     </div>
   );
@@ -73,10 +86,22 @@ function NavOrbit() {
 function CatalogueGrid({ kind }: { kind: "games" | "tv" }) {
   const items = kind === "games" ? games : shows;
   return (
-    <div className={`${styles.catalogueGrid} ${kind === "tv" ? styles.tvGrid : ""}`} aria-label={kind === "games" ? "Activities catalogue" : "TV catalogue"}>
+    <div
+      className={`${styles.catalogueGrid} ${kind === "tv" ? styles.tvGrid : ""}`}
+      aria-label={kind === "games" ? "Activities catalogue" : "TV catalogue"}
+    >
       {items.map(([title, thumbnail], index) => (
-        <div className={styles.catalogueCard} key={title} style={{ "--i": index } as React.CSSProperties}>
-          <Image src={thumbnail} alt={title} fill sizes="(max-width: 767px) 30vw, 160px" />
+        <div
+          className={styles.catalogueCard}
+          key={title}
+          style={{ "--i": index } as React.CSSProperties}
+        >
+          <Image
+            src={thumbnail}
+            alt={title}
+            fill
+            sizes="(max-width: 767px) 30vw, 160px"
+          />
           <span>{title}</span>
         </div>
       ))}
@@ -89,14 +114,27 @@ function ChatVisual() {
     <div className={styles.chatVisual} aria-label="A preview of chat messages">
       <div className={styles.chatLine}>
         <Monogram handle="river" initials="R" className={styles.chatAvatar} />
-        <div className={styles.chatContent}><span>river</span><div className={`${styles.chatBubble} bubble-theirs`}>How did you get past level 3?</div></div>
+        <div className={styles.chatContent}>
+          <span>river</span>
+          <div className={`${styles.chatBubble} bubble-theirs`}>
+            How did you get past level 3?
+          </div>
+        </div>
       </div>
       <div className={`${styles.chatLine} ${styles.chatOwn}`}>
-        <div className={styles.chatContent}><div className={`${styles.chatBubble} bubble-mine`}>Jump right before the edge.</div></div>
+        <div className={styles.chatContent}>
+          <div className={`${styles.chatBubble} bubble-mine`}>
+            Jump right before the edge.
+          </div>
+        </div>
       </div>
       <div className={styles.chatLine}>
         <Monogram handle="river" initials="R" className={styles.chatAvatar} />
-        <div className={styles.chatContent}><div className={`${styles.chatBubble} bubble-theirs`}>Oh, that worked. Thanks.</div></div>
+        <div className={styles.chatContent}>
+          <div className={`${styles.chatBubble} bubble-theirs`}>
+            Oh, that worked. Thanks.
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -104,14 +142,29 @@ function ChatVisual() {
 
 function RestrictionsVisual() {
   return (
-    <div className={styles.restrictionsVisual} aria-label="A hand pushes Securly and GoGuardian away">
+    <div
+      className={styles.restrictionsVisual}
+      aria-label="A hand pushes Securly and GoGuardian away"
+    >
       <div className={`${styles.filterCard} ${styles.filterSecurly}`}>
-        <Image src="/onboarding/securly.svg" alt="Securly" width={210} height={55} />
+        <Image
+          src="/onboarding/securly.svg"
+          alt="Securly"
+          width={210}
+          height={55}
+        />
       </div>
       <div className={`${styles.filterCard} ${styles.filterGuardian}`}>
-        <Image src="/onboarding/goguardian.svg" alt="GoGuardian" width={210} height={55} />
+        <Image
+          src="/onboarding/goguardian.svg"
+          alt="GoGuardian"
+          width={210}
+          height={55}
+        />
       </div>
-      <span className={styles.pushHand} aria-hidden="true">🫷</span>
+      <span className={styles.pushHand} aria-hidden="true">
+        🫷
+      </span>
     </div>
   );
 }
@@ -127,16 +180,26 @@ function BinaryGlobe() {
       const y = 1 - (index / 389) * 2;
       const radius = Math.sqrt(1 - y * y);
       const angle = index * Math.PI * (3 - Math.sqrt(5));
-      return { x: Math.cos(angle) * radius, y, z: Math.sin(angle) * radius, digit: index % 3 === 0 ? "0" : "1" };
+      return {
+        x: Math.cos(angle) * radius,
+        y,
+        z: Math.sin(angle) * radius,
+        digit: index % 3 === 0 ? "0" : "1",
+      };
     });
     let frame = 0;
     let start = performance.now();
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const draw = (now: number) => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
-      if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+      if (
+        canvas.width !== Math.round(width * dpr) ||
+        canvas.height !== Math.round(height * dpr)
+      ) {
         canvas.width = Math.round(width * dpr);
         canvas.height = Math.round(height * dpr);
       }
@@ -145,26 +208,42 @@ function BinaryGlobe() {
       const turn = reduced ? 0.35 : (now - start) * 0.00032;
       const tilt = -0.25;
       const size = Math.min(width, height) * 0.43;
-      const projected = points.map((point) => {
-        const x = point.x * Math.cos(turn) + point.z * Math.sin(turn);
-        const z = point.z * Math.cos(turn) - point.x * Math.sin(turn);
-        const y = point.y * Math.cos(tilt) - z * Math.sin(tilt);
-        const depth = point.y * Math.sin(tilt) + z * Math.cos(tilt);
-        return { x, y, depth, digit: point.digit };
-      }).sort((a, b) => a.depth - b.depth);
+      const projected = points
+        .map((point) => {
+          const x = point.x * Math.cos(turn) + point.z * Math.sin(turn);
+          const z = point.z * Math.cos(turn) - point.x * Math.sin(turn);
+          const y = point.y * Math.cos(tilt) - z * Math.sin(tilt);
+          const depth = point.y * Math.sin(tilt) + z * Math.cos(tilt);
+          return { x, y, depth, digit: point.digit };
+        })
+        .sort((a, b) => a.depth - b.depth);
       for (const point of projected) {
         const perspective = 2.8 / (2.8 - point.depth * 0.38);
         context.font = `${Math.round((9 + point.depth * 3) * perspective)}px ui-monospace, SFMono-Regular, monospace`;
         context.fillStyle = `rgba(220,234,255,${0.12 + (point.depth + 1) * 0.34})`;
         context.textAlign = "center";
-        context.fillText(point.digit, width / 2 + point.x * size * perspective, height / 2 + point.y * size * perspective);
+        context.fillText(
+          point.digit,
+          width / 2 + point.x * size * perspective,
+          height / 2 + point.y * size * perspective,
+        );
       }
       if (!reduced) frame = requestAnimationFrame(draw);
     };
     frame = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(frame); start = 0; };
+    return () => {
+      cancelAnimationFrame(frame);
+      start = 0;
+    };
   }, []);
-  return <canvas ref={canvasRef} className={styles.binaryGlobe} role="img" aria-label="A rotating globe made of zeros and ones" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className={styles.binaryGlobe}
+      role="img"
+      aria-label="A rotating globe made of zeros and ones"
+    />
+  );
 }
 
 export function OnboardingExperience() {
@@ -190,9 +269,13 @@ export function OnboardingExperience() {
     let frame = 0;
     const tick = () => {
       const audio = audioRef.current;
-      const elapsed = audio && !audio.paused
-        ? Math.max(audio.currentTime, (performance.now() - startedAt.current) / 1000)
-        : (performance.now() - startedAt.current) / 1000;
+      const elapsed =
+        audio && !audio.paused
+          ? Math.max(
+              audio.currentTime,
+              (performance.now() - startedAt.current) / 1000,
+            )
+          : (performance.now() - startedAt.current) / 1000;
       const next = onboardingStageAt(elapsed);
       setStage((current) => Math.max(current, next));
       if (audio && !audio.paused) {

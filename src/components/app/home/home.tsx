@@ -101,7 +101,7 @@ export function Home() {
             "grid items-start gap-5",
             showFeatured &&
               shows("schedule") &&
-              "lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]",
+              "page-lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]",
           )}
           style={
             scheduleHeight === null || !shows("schedule")
@@ -129,8 +129,8 @@ export function Home() {
           aria-label="Around the community"
           className={cn(
             "grid gap-5",
-            community.length === 3 && "md:grid-cols-3",
-            community.length === 2 && "md:grid-cols-2",
+            community.length === 3 && "page-md:grid-cols-3",
+            community.length === 2 && "page-md:grid-cols-2",
           )}
         >
           {community.map((id) =>
@@ -194,7 +194,7 @@ function Hero() {
 
   return (
     <section className="flex flex-col items-center text-center">
-      <h1 className="text-display max-w-4xl text-[2.25rem] leading-[1.05] text-balance sm:text-[3.25rem]">
+      <h1 className="text-display max-w-4xl text-[2.25rem] leading-[1.05] text-balance page-sm:text-[3.25rem]">
         {greeting}
         {name ? (
           <>
@@ -231,10 +231,10 @@ function Featured({
       href={`/activities/${game.slug}`}
       prefetch={false}
       className={cn(
-        "group relative isolate flex aspect-[16/10] min-h-72 flex-col justify-end overflow-hidden rounded-[1.5rem] bg-muted p-6 text-white transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none focus-visible:ring-3 focus-visible:ring-ring/60 sm:p-8",
+        "group relative isolate flex aspect-[16/10] min-h-72 flex-col justify-end overflow-hidden rounded-[1.5rem] bg-muted p-6 text-white transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] outline-none focus-visible:ring-3 focus-visible:ring-ring/60 page-sm:p-8",
         alone
-          ? "lg:aspect-[21/8]"
-          : "lg:aspect-auto lg:h-[var(--schedule-h,auto)] lg:min-h-0",
+          ? "page-lg:aspect-[21/8]"
+          : "page-lg:aspect-auto page-lg:h-[var(--schedule-h,auto)] page-lg:min-h-0",
       )}
     >
       {/* Catalogue art is served from `public/`; see `thumbnailSrc`. */}
@@ -248,7 +248,7 @@ function Featured({
       <p className="text-[0.875rem] font-medium text-white/75">
         {resuming ? "Jump back in" : "Top pick today"}
       </p>
-      <h2 className="mt-1.5 max-w-lg text-[2rem] leading-tight font-semibold text-balance sm:text-[2.5rem]">
+      <h2 className="mt-1.5 max-w-lg text-[2rem] leading-tight font-semibold text-balance page-sm:text-[2.5rem]">
         {game.title}
       </h2>
       <span className="mt-5 inline-flex h-11 w-fit items-center gap-2 rounded-full bg-white px-5 text-[0.9375rem] font-medium text-neutral-900 transition-transform group-hover:translate-x-0.5">

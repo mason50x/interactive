@@ -47,7 +47,7 @@ export function ThreadHeader({
       <Link
         href={CHAT_HREF}
         aria-label="All conversations"
-        className="-ml-1.5 flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground md:hidden"
+        className="-ml-1.5 flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground page-md:hidden"
       >
         <ChevronLeftIcon className="size-5" />
       </Link>

@@ -185,7 +185,7 @@ function PuzzleCard({
           {problem.figure}
         </FigureFrame>
       </div>
-      <div className="p-5 sm:p-6">
+      <div className="p-5 page-sm:p-6">
         <div className="flex items-baseline justify-between gap-4 text-sm">
           <p className="font-medium text-blue-600">{problem.topic}</p>
           {secondsLeft !== null && (

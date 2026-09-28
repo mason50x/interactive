@@ -104,10 +104,13 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Everything else is never framed by anything.
+        // Everything else is framed by nothing but this app itself: split
+        // view shows a second page of the app beside the first in a
+        // same-origin frame (see `src/lib/workspace.ts`). Any other origin
+        // is still refused.
         source: "/((?!learn).*)",
         headers: [
-          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
         ],
       },
     ];

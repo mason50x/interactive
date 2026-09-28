@@ -25,6 +25,7 @@ import styles from "./admin.module.css";
 import { AdminSelect } from "./admin-select";
 import { AllowanceReset, UserControls } from "./user-controls";
 import { useLiveUsers } from "./use-live-users";
+import { PAGE_BREAKPOINTS, pageWidthRem } from "@/lib/page-width";
 
 export type DirectoryUser = FunctionReturnType<
   typeof api.timeouts.users
@@ -38,25 +39,26 @@ export const ROLE_LABEL: Record<SiteRole, string> = {
   member: "Member",
 };
 // A span over hidden cells creates phantom columns in a fixed-layout table.
-// Keep expanded rows aligned with the sm, md, and xl columns above them.
+// Keep expanded rows aligned with the page-sm, -md, -lg and -xl columns above.
 const COLUMN_BREAKPOINTS = [
-  "(min-width: 40rem)",
-  "(min-width: 48rem)",
-  "(min-width: 64rem)",
-  "(min-width: 80rem)",
+  PAGE_BREAKPOINTS.sm,
+  PAGE_BREAKPOINTS.md,
+  PAGE_BREAKPOINTS.lg,
+  PAGE_BREAKPOINTS.xl,
 ];
 function subscribeColumns(onChange: () => void) {
-  const queries = COLUMN_BREAKPOINTS.map((query) => window.matchMedia(query));
-  queries.forEach((query) => query.addEventListener("change", onChange));
-  return () =>
-    queries.forEach((query) => query.removeEventListener("change", onChange));
+  const shell = document.querySelector('main[data-slot="shell"]');
+  window.addEventListener("resize", onChange);
+  const observer = shell ? new ResizeObserver(onChange) : null;
+  if (shell) observer?.observe(shell);
+  return () => {
+    observer?.disconnect();
+    window.removeEventListener("resize", onChange);
+  };
 }
 function visibleColumns() {
-  return (
-    2 +
-    COLUMN_BREAKPOINTS.filter((query) => window.matchMedia(query).matches)
-      .length
-  );
+  const width = pageWidthRem();
+  return 2 + COLUMN_BREAKPOINTS.filter((rem) => width >= rem).length;
 }
 function serverColumns() {
   return 6;
@@ -195,7 +197,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
   return (
     <section aria-label="Users" className="min-w-0">
       <div className="flex flex-wrap items-center gap-3">
-        <InputGroup className="min-w-0 flex-1 basis-56 sm:max-w-md">
+        <InputGroup className="min-w-0 flex-1 basis-56 page-sm:max-w-md">
           <InputAddon>
             <MagnifyingGlassIcon />
           </InputAddon>
@@ -226,7 +228,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
         {role === "ceo" && (
           <Button
             variant="ghost"
-            className="max-w-full text-left whitespace-normal sm:ml-auto"
+            className="max-w-full text-left whitespace-normal page-sm:ml-auto"
             aria-expanded={showBulkReset}
             aria-controls="bulk-allowances"
             onClick={() => setShowBulkReset(!showBulkReset)}
@@ -265,34 +267,37 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
           </caption>
           <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-4 py-3 font-medium sm:px-5">
+              <th scope="col" className="px-4 py-3 font-medium page-sm:px-5">
                 User
               </th>
               <th
                 scope="col"
-                className="hidden w-36 px-3 py-3 font-medium sm:table-cell"
+                className="hidden w-36 px-3 py-3 font-medium page-sm:table-cell"
               >
                 Role
               </th>
               <th
                 scope="col"
-                className="hidden w-44 px-3 py-3 font-medium md:table-cell"
+                className="hidden w-44 px-3 py-3 font-medium page-md:table-cell"
               >
                 Current Page
               </th>
               <th
                 scope="col"
-                className="hidden w-36 px-3 py-3 font-medium lg:table-cell"
+                className="hidden w-36 px-3 py-3 font-medium page-lg:table-cell"
               >
                 Account Status
               </th>
               <th
                 scope="col"
-                className="hidden w-32 px-3 py-3 font-medium xl:table-cell"
+                className="hidden w-32 px-3 py-3 font-medium page-xl:table-cell"
               >
                 Joined
               </th>
-              <th scope="col" className="w-10 px-1 py-3 sm:w-20 sm:px-3">
+              <th
+                scope="col"
+                className="w-10 px-1 py-3 page-sm:w-20 page-sm:px-3"
+              >
                 <span className="sr-only">Details</span>
               </th>
             </tr>
@@ -315,7 +320,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                     )}
                     onClick={() => toggleUser(user.clerkId)}
                   >
-                    <td className="px-4 py-3.5 sm:px-5">
+                    <td className="px-4 py-3.5 page-sm:px-5">
                       <button
                         type="button"
                         aria-expanded={expanded}
@@ -336,11 +341,11 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                               ? `@${user.username}`
                               : (user.email ?? user.clerkId)}
                           </span>
-                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 lg:hidden">
-                            <span className="text-xs text-muted-foreground sm:hidden">
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 page-lg:hidden">
+                            <span className="text-xs text-muted-foreground page-sm:hidden">
                               {ROLE_LABEL[user.role]}
                             </span>
-                            <span className="max-w-full min-w-0 md:hidden">
+                            <span className="max-w-full min-w-0 page-md:hidden">
                               <CurrentPage
                                 path={path}
                                 label={pageLabel}
@@ -352,27 +357,27 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         </span>
                       </button>
                     </td>
-                    <td className="hidden px-3 py-3.5 text-muted-foreground sm:table-cell">
+                    <td className="hidden px-3 py-3.5 text-muted-foreground page-sm:table-cell">
                       {ROLE_LABEL[user.role]}
                     </td>
-                    <td className="hidden px-3 py-3.5 md:table-cell">
+                    <td className="hidden px-3 py-3.5 page-md:table-cell">
                       <CurrentPage
                         path={path}
                         label={pageLabel}
                         loading={liveUsers === undefined}
                       />
                     </td>
-                    <td className="hidden px-3 py-3.5 lg:table-cell">
+                    <td className="hidden px-3 py-3.5 page-lg:table-cell">
                       <AccountStatus user={user} />
                     </td>
-                    <td className="hidden px-3 py-3.5 text-xs text-muted-foreground xl:table-cell">
+                    <td className="hidden px-3 py-3.5 text-xs text-muted-foreground page-xl:table-cell">
                       {new Date(user.joinedAt).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </td>
-                    <td className="px-1 py-3.5 sm:px-3">
+                    <td className="px-1 py-3.5 page-sm:px-3">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -380,13 +385,13 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         aria-expanded={expanded}
                         aria-controls={`user-${user.clerkId}`}
                       >
-                        <span className="hidden sm:inline">
+                        <span className="hidden page-sm:inline">
                           {expanded ? "Close" : "View"}
                         </span>
                         <ChevronDownIcon
                           aria-hidden="true"
                           className={cn(
-                            "size-4 sm:hidden",
+                            "size-4 page-sm:hidden",
                             !expanded && "-rotate-90",
                           )}
                         />
@@ -404,7 +409,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                           inert={!expanded}
                         >
                           <div className={styles.revealContent}>
-                            <div className="p-4 sm:p-5">
+                            <div className="p-4 page-sm:p-5">
                               <UserControls
                                 user={user}
                                 isCeo={role === "ceo"}

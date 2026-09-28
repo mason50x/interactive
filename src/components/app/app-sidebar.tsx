@@ -26,6 +26,10 @@ import { usePreferences } from "@/components/preferences-provider";
 import { cn } from "@/lib/utils";
 import { useWarmRoutes } from "@/lib/warm";
 import { usePlaytimeActivity } from "@/components/app/playtime-activity";
+import { SplitViewButton } from "@/components/app/workspace/split-view-button";
+import { useWorkspace } from "@/components/app/workspace/workspace-provider";
+import { WORKSPACE_DRAG_TYPE } from "@/lib/workspace";
+import { ViewColumnsIcon } from "@heroicons/react/24/outline";
 
 /**
  * The signed-in app's chrome: a vertical rail down the left of the page.
@@ -68,8 +72,15 @@ export function AppSidebar() {
       conversation.kind === "announcements" && conversation.unread > 0,
   );
 
+  const workspace = useWorkspace();
   const { pendingHref, report } = useNavPending();
-  const { activeHref, litHref } = useActiveNav(pathname, pendingHref, navItems);
+  // In split view the rail drives the focused pane, so it lights that
+  // pane's page rather than the router's.
+  const { activeHref, litHref } = useActiveNav(
+    workspace.multi ? workspace.focusedPath : pathname,
+    workspace.multi && workspace.focus !== "main" ? null : pendingHref,
+    navItems,
+  );
 
   const compactPlaytime = usePlaytimeActivity();
 
@@ -88,7 +99,8 @@ export function AppSidebar() {
   return (
     <nav
       aria-label="Dashboard"
-      className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col wide:w-60"
+      data-slot="rail"
+      className="relative isolate z-30 flex w-[4.5rem] shrink-0 flex-col transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] wide:w-60"
     >
       {/* A faint dot lattice rising from the foot of the rail and thinning
           out behind the rows above. See `.rail-dots`. */}
@@ -127,13 +139,35 @@ export function AppSidebar() {
             const showUnread = item.unread && hasUnread && !lit;
             const Icon = item.icon.solid;
             return (
-              <li key={item.href}>
+              <li key={item.href} className="group/row relative">
                 <PlaytimeNavLink
                   disabled={disabled}
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   data-lit={lit ? "true" : undefined}
                   {...(disabled ? {} : warm(item.href))}
+                  // Shift-click opens it beside; in split view a plain click
+                  // goes to whichever pane is focused. Dragging it onto the
+                  // page snaps it into a pane.
+                  onClick={(event) => {
+                    if (event.shiftKey && !event.metaKey && !event.ctrlKey) {
+                      event.preventDefault();
+                      workspace.openPane(item.href);
+                    } else if (
+                      !event.metaKey &&
+                      !event.ctrlKey &&
+                      workspace.routeToFocused(item.href)
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                  draggable={!disabled}
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(WORKSPACE_DRAG_TYPE, item.href);
+                    event.dataTransfer.effectAllowed = "copyLink";
+                    workspace.setDragging(item.href);
+                  }}
+                  onDragEnd={() => workspace.setDragging(null)}
                   className={cn(
                     "group relative flex h-11 items-center rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap",
                     "outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
@@ -184,7 +218,7 @@ export function AppSidebar() {
                       }
                       role="status"
                       className={cn(
-                        "absolute top-2.5 right-2 flex items-center gap-1.5 wide:top-1/2 wide:right-3 wide:-translate-y-1/2",
+                        "absolute top-2.5 right-2 flex items-center gap-1.5 transition-opacity wide:top-1/2 wide:right-3 wide:-translate-y-1/2 md:wide:group-hover/row:opacity-0",
                         hasNewAnnouncement ? "text-red-500" : "text-primary",
                       )}
                     >
@@ -213,12 +247,27 @@ export function AppSidebar() {
 
                   {!disabled && <NavPending href={item.href} report={report} />}
                 </PlaytimeNavLink>
+                {/* One click to split: on hover in the labelled rail, the
+                    row offers to open beside what is already up. */}
+                {!disabled && !active && (
+                  <button
+                    type="button"
+                    onClick={() => workspace.openPane(item.href)}
+                    aria-label={`Open ${item.label} beside`}
+                    title={`Open ${item.label} beside · or drag it onto the page`}
+                    className="absolute top-1/2 right-1.5 hidden size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground opacity-0 transition-[opacity,background-color,color] duration-150 group-hover/row:opacity-100 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring md:wide:grid"
+                  >
+                    <ViewColumnsIcon className="size-4" />
+                  </button>
+                )}
               </li>
             );
           })}
         </ul>
         <NavUnderline list={list} href={litHref || null} />
       </div>
+
+      <SplitViewButton />
 
       {/* Only while a vote waits on this account. */}
       <VoteRailCard />

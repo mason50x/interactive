@@ -11,7 +11,7 @@ export default async function SettingsLayout({
 }) {
   await auth.protect();
   return (
-    <Page className="max-w-5xl pt-10 sm:pt-12">
+    <Page className="max-w-5xl pt-10 page-sm:pt-12">
       <SettingsShell>{children}</SettingsShell>
     </Page>
   );

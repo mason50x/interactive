@@ -64,6 +64,12 @@ export const customSpec = {
 
   /* Time */
   clock24: flag(false),
+  bellCountdown: flag(true),
+  /** Minutes before a bell that its countdown appears. */
+  bellLead: choice(["1", "2", "5", "10", "15"], "5"),
+  /** Which bells get one: all of them, the end of each class, or the day's last. */
+  bellFor: choice(["every", "class", "day"], "every"),
+  bellChime: flag(false),
 
   /* Privacy */
   maskWhen: choice(["always", "away"], "always"),

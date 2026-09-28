@@ -93,19 +93,20 @@ export function EntertainmentSetup({
       {completed !== true && (
         <section
           aria-labelledby={titleId}
-          className="grid min-h-full w-full items-center gap-10 p-6 sm:p-10 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.4fr)] lg:gap-12 xl:p-14"
+          className="grid min-h-full w-full items-center gap-10 p-6 page-sm:p-10 page-lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.4fr)] page-lg:gap-12 page-xl:p-14"
         >
           <div className="min-w-0 text-left">
             <h1
               id={titleId}
-              className="max-w-sm text-3xl font-semibold sm:text-4xl"
+              className="max-w-sm text-3xl font-semibold page-sm:text-4xl"
             >
               We need some permissions
             </h1>
             <p className="mt-4 max-w-sm text-base leading-relaxed text-muted-foreground">
               Follow the steps{" "}
-              <span className="hidden lg:inline">on the right</span>
-              <span className="lg:hidden">below</span> to set up entertainment.
+              <span className="hidden page-lg:inline">on the right</span>
+              <span className="page-lg:hidden">below</span> to set up
+              entertainment.
             </p>
             <TooltipProvider>
               <Tooltip open={whyOpen} onOpenChange={setWhyOpen}>
@@ -141,7 +142,7 @@ export function EntertainmentSetup({
               )}
             </div>
           </div>
-          <article className="min-w-0 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+          <article className="min-w-0 rounded-2xl border border-border bg-surface p-6 shadow-sm page-sm:p-8">
             <p className="text-xs font-semibold text-muted-foreground">
               Chrome · desktop
             </p>

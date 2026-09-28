@@ -73,7 +73,7 @@ export function ActivityControls({
             focus disappears. */}
         <div className="overflow-hidden" inert={!open}>
           <div className="flex items-center gap-0.5 pr-0.5">
-            <span className="hidden max-w-[14rem] truncate px-2 text-[0.875rem] whitespace-nowrap text-white/85 sm:block">
+            <span className="hidden max-w-[14rem] truncate px-2 text-[0.875rem] whitespace-nowrap text-white/85 page-sm:block">
               {title}
             </span>
 

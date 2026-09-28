@@ -51,7 +51,7 @@ export function InviteGate() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] isolate flex items-center justify-center overflow-y-auto bg-background px-4 py-12 text-foreground">
+    <div className="fixed inset-0 isolate z-[100] flex items-center justify-center overflow-y-auto bg-background px-4 py-12 text-foreground">
       {/* The auth screens' web, rising from the bottom edge and gone well
           before the form, so it frames the page without crossing the code.
           The mask is on a wrapper and not the canvas; nothing here blurs
@@ -99,13 +99,21 @@ export function InviteGate() {
         >
           <InputOTPGroup>
             {[0, 1, 2].map((index) => (
-              <InputOTPSlot key={index} index={index} aria-invalid={error !== null} />
+              <InputOTPSlot
+                key={index}
+                index={index}
+                aria-invalid={error !== null}
+              />
             ))}
           </InputOTPGroup>
           <InputOTPSeparator />
           <InputOTPGroup>
             {[3, 4, 5].map((index) => (
-              <InputOTPSlot key={index} index={index} aria-invalid={error !== null} />
+              <InputOTPSlot
+                key={index}
+                index={index}
+                aria-invalid={error !== null}
+              />
             ))}
           </InputOTPGroup>
         </InputOTP>

@@ -441,7 +441,7 @@ export function Composer({
   }
 
   return (
-    <div className="px-3 pb-3 sm:px-8 lg:px-14 xl:px-20">
+    <div className="px-3 pb-3 page-sm:px-8 page-lg:px-14 page-xl:px-20">
       {/* Same side padding as the messages, so the two share edges until
           the screen is wide enough that a full-width field is a long way
           to read across. Past that it stops growing and sits centered. */}

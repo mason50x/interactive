@@ -29,8 +29,8 @@ export function ChatFrame({ children }: { children: ReactNode }) {
     <div className="flex size-full min-h-0">
       <div
         className={cn(
-          "min-h-0 shrink-0 md:w-72 md:border-r md:border-border lg:w-80",
-          atIndex ? "flex w-full" : "hidden md:flex",
+          "min-h-0 shrink-0 page-md:w-72 page-md:border-r page-md:border-border page-lg:w-80",
+          atIndex ? "flex w-full" : "hidden page-md:flex",
         )}
       >
         <ConversationList />
@@ -39,7 +39,7 @@ export function ChatFrame({ children }: { children: ReactNode }) {
       <div
         className={cn(
           "min-h-0 min-w-0 flex-1",
-          atIndex ? "hidden md:flex" : "flex",
+          atIndex ? "hidden page-md:flex" : "flex",
         )}
       >
         {children}

@@ -529,7 +529,7 @@ function ConversationThread({
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="-mt-14 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[4.25rem] pb-20 sm:px-8 lg:px-14 xl:px-20"
+        className="-mt-14 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[4.25rem] pb-20 page-sm:px-8 page-lg:px-14 page-xl:px-20"
       >
         {daily ? (
           <DayPager

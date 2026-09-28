@@ -11,14 +11,82 @@
 
 /* Sidebar layout depends on viewport width — and on the account, which can
    ask for the icon rail at any width (`data-pref-rail`, see
-   `src/lib/customize.ts`). Only the rail and what hangs off it use this. */
+   `src/lib/customize.ts`) — and on split view, which folds the rail to icons
+   while more than one pane is up to give the panes the room
+   (`data-workspace`, see `WorkspaceProvider`). Only the rail and what hangs
+   off it use this. */
 @custom-variant wide {
   @media (width >= 64rem) {
-    &:where(:root:not([data-pref-rail="icons"]) *) {
+    &:where(
+      :root:not([data-pref-rail="icons"]):not([data-workspace="split"]) *
+    ) {
       @slot;
     }
   }
 }
+/*
+ * Page breakpoints: the width of the page, not the window.
+ *
+ * Every signed-in page is laid out inside the shell (`data-slot="shell"`),
+ * which is a size container named `page`. In split view that shell can be a
+ * quarter of the window, so a page that asked the viewport how wide it was
+ * would lay itself out for room it does not have. These ask the shell.
+ *
+ * The thresholds are roughly the width the page had when the window crossed
+ * Tailwind's `sm`/`md`/`lg`/`xl`/`2xl` with the rail beside it, so a page
+ * alone on the stage lays out as it always did. A split-view pane in a frame
+ * is the same shell with the frame for a window, so it answers the same way.
+ *
+ * Only in-page markup uses these. Menus, popovers and sheets render in a
+ * portal outside the shell, where no `page` container exists; they keep the
+ * viewport breakpoints.
+ */
+@custom-variant page-sm {
+  @container page (width >= 34rem) {
+    @slot;
+  }
+}
+@custom-variant page-md {
+  @container page (width >= 42rem) {
+    @slot;
+  }
+}
+@custom-variant page-lg {
+  @container page (width >= 48rem) {
+    @slot;
+  }
+}
+@custom-variant page-xl {
+  @container page (width >= 64rem) {
+    @slot;
+  }
+}
+@custom-variant page-2xl {
+  @container page (width >= 80rem) {
+    @slot;
+  }
+}
+@custom-variant max-page-sm {
+  @container page (width < 34rem) {
+    @slot;
+  }
+}
+@custom-variant max-page-md {
+  @container page (width < 42rem) {
+    @slot;
+  }
+}
+@custom-variant max-page-lg {
+  @container page (width < 48rem) {
+    @slot;
+  }
+}
+@custom-variant max-page-xl {
+  @container page (width < 64rem) {
+    @slot;
+  }
+}
+
 @custom-variant narrow {
   @media (width < 64rem) {
     @slot;
@@ -1686,6 +1754,37 @@
     stroke-dashoffset: 4;
   }
 }
+/* The shared loading spinner: the svg turns steadily while its one arc
+   grows and shrinks along the circle, so the line flows instead of ticking. */
+.spinner {
+  animation: spinner-turn 1.4s linear infinite;
+}
+/* The resting arc is what reduced motion leaves on screen once the
+   animations collapse. */
+.spinner circle {
+  stroke-dasharray: 30 100;
+  stroke-dashoffset: 0;
+  animation: spinner-arc 1.4s ease-in-out infinite;
+}
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spinner-arc {
+  0% {
+    stroke-dasharray: 1 100;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 60 100;
+    stroke-dashoffset: -20;
+  }
+  100% {
+    stroke-dasharray: 1 100;
+    stroke-dashoffset: -99;
+  }
+}
 /* The disclosure settles with a small spring overshoot. */
 .playtime-spring {
   transition-timing-function: linear(
@@ -2012,13 +2111,19 @@
 }
 
 /* The shell: framed is the default; floating lifts it, flush fills. */
-:root[data-pref-frame="floating"] [data-slot="shell"] {
+:root[data-pref-frame="floating"] [data-slot="stage"] {
   margin: 1rem;
+}
+:root[data-pref-frame="floating"] [data-slot="shell"] {
   border-color: transparent;
   box-shadow: var(--elevation-card-hover);
 }
-:root[data-pref-frame="flush"] [data-slot="shell"] {
+:root[data-pref-frame="flush"] [data-slot="stage"]:not([data-split]) {
   margin: 0;
+}
+:root[data-pref-frame="flush"]
+  [data-slot="stage"]:not([data-split])
+  [data-slot="shell"] {
   border-width: 0 0 0 1px;
   border-radius: 0;
 }
@@ -2093,10 +2198,141 @@
   text-underline-offset: 0.2em;
 }
 
+/* The page's own size, for the `page-*` variants above and for `cqh`,
+   which is the page's height where `svh` would be the window's. */
+main[data-slot="shell"] {
+  container: page / size;
+}
+
 /* Privacy blur: the page goes soft while the tab is out of sight. */
 [data-slot="shell"] {
   transition: filter 200ms ease;
 }
 :root[data-away] [data-slot="shell"] {
   filter: blur(18px) saturate(0.6);
+}
+
+/*
+ * Split view. See `src/lib/workspace.ts` and `WorkspaceStage`.
+ *
+ * A pane is this app in a frame of itself, marked `data-pane` by a script
+ * before it paints: no rail, no margin, and no card of its own — the host
+ * draws the card around the frame. It does not blur itself for privacy
+ * either; the host's blur already covers the frame.
+ */
+:root[data-pane] [data-slot="rail"] {
+  display: none;
+}
+:root[data-pane] [data-slot="stage"] {
+  margin: 0;
+}
+:root[data-pane] [data-slot="shell"] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+}
+
+/* A pane arriving: up from slightly small, the way a window opens. */
+@keyframes workspace-pane-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+    filter: blur(6px);
+  }
+}
+.workspace-pane-in {
+  animation: workspace-pane-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The drop zones fading up over the stage when a drag starts. */
+@keyframes workspace-drop-in {
+  from {
+    opacity: 0;
+  }
+}
+.workspace-drop-in {
+  animation: workspace-drop-in 180ms ease-out both;
+}
+
+/* Tiles and titles in an empty pane and the layout menu, in sequence. */
+@keyframes workspace-rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+.workspace-rise {
+  animation: workspace-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A layout thumbnail's panes popping in one by one on hover. */
+@keyframes workspace-cell {
+  0% {
+    scale: 0.6;
+    opacity: 0.3;
+  }
+  60% {
+    scale: 1.06;
+  }
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+/* The rail's split-view glyph, until it has been used: a small wave now and
+   then, so the new row catches the eye without nagging. */
+@keyframes workspace-glyph-tease {
+  0%,
+  86%,
+  100% {
+    rotate: 0deg;
+    scale: 1;
+  }
+  90% {
+    rotate: -8deg;
+    scale: 1.12;
+  }
+  94% {
+    rotate: 6deg;
+    scale: 1.12;
+  }
+}
+.workspace-glyph-tease {
+  animation: workspace-glyph-tease 6s ease-in-out 2s infinite;
+  transform-origin: center;
+}
+
+/* The first-run hint's picture: the second pane sliding in and out. */
+@keyframes workspace-hint-pane {
+  0%,
+  15% {
+    scale: 0 1;
+    opacity: 0;
+  }
+  40%,
+  85% {
+    scale: 1 1;
+    opacity: 1;
+  }
+  100% {
+    scale: 0 1;
+    opacity: 0;
+  }
+}
+.workspace-hint-pane {
+  transform-origin: right;
+  animation: workspace-hint-pane 3.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.workspace-hint-arrow {
+  width: 12px;
+  height: 12px;
+  rotate: 45deg;
+  background: var(--popover);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.workspace-hint-arrow[data-side="right"] {
+  left: -7px;
 }

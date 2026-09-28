@@ -562,7 +562,7 @@ function TimeoutHistory({ user }: { user: DirectoryUser }) {
   return (
     <section
       aria-label={`Timeout log for ${user.label}`}
-      className="border-t border-border pt-5 lg:col-span-2 xl:col-span-3"
+      className="border-t border-border pt-5 page-lg:col-span-2 page-xl:col-span-3"
     >
       <button
         type="button"
@@ -640,7 +640,7 @@ export function UserControls({
   isCeo: boolean;
 }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+    <div className="grid gap-6 page-lg:grid-cols-2 page-xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
       <section
         aria-label={`Account details for ${user.label}`}
         className="min-w-0 space-y-4"
@@ -676,14 +676,14 @@ export function UserControls({
       </section>
       <section
         aria-label={`Timeout for ${user.label}`}
-        className="min-w-0 border-t border-border pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"
+        className="min-w-0 border-t border-border pt-5 page-lg:border-t-0 page-lg:border-l page-lg:pt-0 page-lg:pl-6"
       >
         <TimeoutControl user={user} />
       </section>
       {(isCeo || user.role !== "ceo") && (
         <section
           aria-label={`Allowances for ${user.label}`}
-          className="min-w-0 border-t border-border pt-5 lg:col-span-2 xl:col-span-1 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6"
+          className="min-w-0 border-t border-border pt-5 page-lg:col-span-2 page-xl:col-span-1 page-xl:border-t-0 page-xl:border-l page-xl:pt-0 page-xl:pl-6"
         >
           <ActivityLimitControl user={user} />
           {isCeo && (

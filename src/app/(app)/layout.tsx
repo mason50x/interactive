@@ -7,11 +7,14 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { ChatProvider } from "@/components/app/chat/chat-provider";
 import { AppSidebar } from "@/components/app/app-sidebar";
+import { BellToast } from "@/components/app/bell-toast";
 import { PlaytimeActivityProvider } from "@/components/app/playtime-activity";
 import { ActivitiesProvider } from "@/components/app/activities-provider";
 import { AppProviders } from "@/components/app-providers";
 import { CLIENT_ACTIVITIES } from "@/lib/activities";
 import { OnboardingGate } from "@/components/app/onboarding-gate";
+import { WorkspaceProvider } from "@/components/app/workspace/workspace-provider";
+import { WorkspaceStage } from "@/components/app/workspace/workspace-stage";
 
 export const metadata: Metadata = {
   // Nothing behind a session is indexable. This is now the same answer the
@@ -78,15 +81,19 @@ export default async function DashboardLayout({
             <ActivitiesProvider activities={CLIENT_ACTIVITIES}>
               <PlaytimeActivityProvider>
                 <PlaytimeStatusProvider>
-                  <div className="flex h-svh overflow-hidden bg-sidebar">
-                    <AppSidebar />
-                    <main
-                      data-slot="shell"
-                      className="m-3 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface"
-                    >
-                      <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
-                    </main>
-                  </div>
+                  {/* Split view: the page is one pane of the stage, and
+                      anything else on screen beside it is this same app in
+                      a frame. With one pane the stage is the shell it
+                      always was. See `WorkspaceStage`. */}
+                  <WorkspaceProvider>
+                    <div className="flex h-svh overflow-hidden bg-sidebar">
+                      <AppSidebar />
+                      <WorkspaceStage>
+                        <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
+                      </WorkspaceStage>
+                      <BellToast />
+                    </div>
+                  </WorkspaceProvider>
                 </PlaytimeStatusProvider>
               </PlaytimeActivityProvider>
             </ActivitiesProvider>

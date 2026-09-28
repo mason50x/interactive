@@ -328,7 +328,7 @@ function RestrictForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-xl border border-border p-4 sm:p-5"
+      className="rounded-xl border border-border p-4 page-sm:p-5"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-medium">
@@ -345,7 +345,7 @@ function RestrictForm({
         is refused until it’s lifted.
       </p>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-2">
+      <div className="mt-4 grid gap-5 page-lg:grid-cols-2">
         <div className="min-w-0 space-y-4">
           <div className="space-y-1.5">
             <span className="text-sm font-medium">
@@ -491,7 +491,7 @@ function RestrictedRow({
 
   return (
     <tr className="border-b border-border align-top last:border-0">
-      <td className="px-4 py-3.5 sm:px-5">
+      <td className="px-4 py-3.5 page-sm:px-5">
         {accountLabel(row)}
         {row.name && row.username && (
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
@@ -516,7 +516,7 @@ function RestrictedRow({
           </>
         )}
       </td>
-      <td className="hidden px-3 py-3.5 text-xs text-muted-foreground md:table-cell">
+      <td className="hidden px-3 py-3.5 text-xs text-muted-foreground page-md:table-cell">
         {new Date(row.updatedAt).toLocaleString(undefined, {
           month: "short",
           day: "numeric",
@@ -618,7 +618,7 @@ export function AccountConfig() {
           </caption>
           <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-4 py-3 font-medium sm:px-5">
+              <th scope="col" className="px-4 py-3 font-medium page-sm:px-5">
                 Account
               </th>
               <th scope="col" className="px-3 py-3 font-medium">
@@ -626,7 +626,7 @@ export function AccountConfig() {
               </th>
               <th
                 scope="col"
-                className="hidden w-40 px-3 py-3 font-medium md:table-cell"
+                className="hidden w-40 px-3 py-3 font-medium page-md:table-cell"
               >
                 Updated
               </th>

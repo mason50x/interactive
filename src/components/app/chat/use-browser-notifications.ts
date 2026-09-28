@@ -11,6 +11,7 @@ import {
 import { conversationName } from "@/lib/chat";
 import { shouldNotifyMessage } from "@/lib/chat-notifications";
 import { CHAT_HREF } from "@/lib/nav";
+import { hostWindow, isPaneWindow, pathsOnScreen } from "@/lib/workspace";
 import type { ConversationSummary } from "@convex/chat/conversations";
 
 const CHANGE_EVENT = "50x:chat-notifications";
@@ -139,7 +140,8 @@ export function useBrowserNotifications({
       state.current = { startedAt: 0, seen: new Map() };
       return;
     }
-    if (!loaded) return;
+    // In split view the host alone sends alerts, knowing every pane.
+    if (!loaded || isPaneWindow()) return;
     const initialSnapshot = state.current.accountId !== accountId;
     if (initialSnapshot)
       state.current = { accountId, startedAt: Date.now(), seen: new Map() };
@@ -167,10 +169,11 @@ export function useBrowserNotifications({
           accountId,
           unread: conversation.unread,
           visibleConversation:
-            reading === conversation._id &&
             document.visibilityState === "visible" &&
-            document.hasFocus() &&
-            pathname === `${CHAT_HREF}/${conversation._id}`,
+            hostWindow().document.hasFocus() &&
+            ((reading === conversation._id &&
+              pathname === `${CHAT_HREF}/${conversation._id}`) ||
+              pathsOnScreen().includes(`${CHAT_HREF}/${conversation._id}`)),
         })
       )
         continue;

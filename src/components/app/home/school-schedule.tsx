@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /** Ticks every second once mounted, so the server and client agree first. */
-function useSecondClock() {
+export function useSecondClock() {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     const update = () => setNow(Date.now());

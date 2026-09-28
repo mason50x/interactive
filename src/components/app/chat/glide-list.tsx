@@ -23,6 +23,9 @@ export function GlideList({
   const frame = useRef<HTMLDivElement>(null);
   const pill = useRef<HTMLDivElement>(null);
   const hovering = useRef(false);
+  // The row the pointer or keyboard is visiting, so a re-render while the
+  // list is being browsed does not snap the pill back to the selected row.
+  const visiting = useRef<Element | null>(null);
 
   const move = useCallback((row: Element | null) => {
     const box = frame.current;
@@ -49,7 +52,8 @@ export function GlideList({
   );
   useLayoutEffect(() => {
     const id = requestAnimationFrame(() => {
-      move(selected());
+      const row = visiting.current;
+      move(row?.isConnected ? row : selected());
       if (pill.current) pill.current.dataset.ready = "true";
     });
     return () => cancelAnimationFrame(id);
@@ -65,12 +69,14 @@ export function GlideList({
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (event.pointerType === "touch") return;
     hovering.current = true;
-    move(rowUnder(event.target) ?? selected());
+    visiting.current = rowUnder(event.target);
+    move(visiting.current ?? selected());
   }
 
   function onPointerLeave(event: PointerEvent<HTMLDivElement>) {
     if (event.pointerType === "touch") return;
     hovering.current = false;
+    visiting.current = null;
     move(selected());
   }
 
@@ -79,12 +85,17 @@ export function GlideList({
       !hovering.current &&
       event.target instanceof Element &&
       event.target.matches(":focus-visible")
-    )
-      move(rowUnder(event.target));
+    ) {
+      visiting.current = rowUnder(event.target);
+      move(visiting.current);
+    }
   }
 
   function onBlur(event: FocusEvent<HTMLDivElement>) {
-    if (!hovering.current && !rowUnder(event.relatedTarget)) move(selected());
+    if (!hovering.current && !rowUnder(event.relatedTarget)) {
+      visiting.current = null;
+      move(selected());
+    }
   }
 
   return (

@@ -14,7 +14,7 @@ function Page({ className, ...props }: ComponentProps<"div">) {
     <div
       data-slot="page"
       className={cn(
-        "mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-6 pt-8 pb-16 sm:px-8 lg:px-10",
+        "mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-6 pt-8 pb-16 page-sm:px-8 page-lg:px-10",
         className,
       )}
       {...props}

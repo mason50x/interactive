@@ -245,7 +245,7 @@ export function ExperienceChrome({
           )}
         >
           <Squares2X2Icon className="size-4" />
-          <span className="max-sm:sr-only">Apps</span>
+          <span className="max-page-sm:sr-only">Apps</span>
         </button>
 
         {sessions.length > 0 && (
@@ -290,7 +290,7 @@ export function ExperienceChrome({
                   <span
                     className={cn(
                       "max-w-32 truncate",
-                      front || beside ? "font-medium" : "max-md:sr-only",
+                      front || beside ? "font-medium" : "max-page-md:sr-only",
                     )}
                   >
                     {service.label}
@@ -299,7 +299,7 @@ export function ExperienceChrome({
                 <button
                   onClick={() => close(session.appId)}
                   aria-label={`Close ${service.label}`}
-                  className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground opacity-0 transition-opacity group-focus-within/chip:opacity-100 group-hover/chip:opacity-100 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring max-md:opacity-100"
+                  className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground opacity-0 transition-opacity group-focus-within/chip:opacity-100 group-hover/chip:opacity-100 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring max-page-md:opacity-100"
                 >
                   <XMarkIcon className="size-3.5" />
                 </button>
@@ -319,7 +319,7 @@ export function ExperienceChrome({
                       setSplit(focus);
                       setFocus(splitApp);
                     }}
-                    className="max-md:hidden"
+                    className="max-page-md:hidden"
                   >
                     <ArrowsRightLeftIcon className="size-4" />
                   </BarButton>
@@ -328,7 +328,7 @@ export function ExperienceChrome({
                   label="Close side pane"
                   pressed
                   onClick={() => setSplit(null)}
-                  className="max-md:hidden"
+                  className="max-page-md:hidden"
                 >
                   <ViewColumnsIcon className="size-4" />
                 </BarButton>
@@ -337,7 +337,7 @@ export function ExperienceChrome({
               <BarButton
                 label="Open an app beside this one"
                 onClick={() => setSplit(PICK)}
-                className="max-md:hidden"
+                className="max-page-md:hidden"
               >
                 <ViewColumnsIcon className="size-4" />
               </BarButton>
@@ -486,7 +486,7 @@ export function ExperienceChrome({
               event.preventDefault();
             }}
             style={{ order: 1 }}
-            className="group/divider flex w-3 shrink-0 cursor-col-resize touch-none items-center justify-center outline-none max-md:hidden"
+            className="group/divider flex w-3 shrink-0 cursor-col-resize touch-none items-center justify-center outline-none max-page-md:hidden"
           >
             <span
               className={cn(
@@ -534,7 +534,7 @@ function Pane({
       }
       className={cn(
         "min-w-0 overflow-hidden rounded-2xl border border-border bg-surface",
-        side === "beside" && "max-md:hidden",
+        side === "beside" && "max-page-md:hidden",
       )}
     >
       {children}
@@ -619,7 +619,7 @@ function Launcher({
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
       <div className="min-h-full rounded-2xl border border-border bg-surface">
-        <div className="mx-auto w-full max-w-5xl px-5 pt-6 pb-16 sm:px-8 sm:pt-8">
+        <div className="mx-auto w-full max-w-5xl px-5 pt-6 pb-16 page-sm:px-8 page-sm:pt-8">
           <form
             role="search"
             onSubmit={(event) => {
@@ -641,7 +641,7 @@ function Launcher({
               }}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
             />
-            {!query && <Kbd className="max-sm:hidden">/</Kbd>}
+            {!query && <Kbd className="max-page-sm:hidden">/</Kbd>}
           </form>
 
           {term ? (
@@ -699,8 +699,8 @@ function Shelf({
         className={cn(
           "grid gap-3",
           wide
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+            ? "grid-cols-1 page-sm:grid-cols-2 page-lg:grid-cols-3"
+            : "grid-cols-2 page-sm:grid-cols-3 page-lg:grid-cols-4",
         )}
       >
         {children}
@@ -775,7 +775,7 @@ function AppTile({
           "absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-full transition-opacity hover:bg-foreground/[0.06] focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring",
           starred
             ? "text-amber-500"
-            : "text-muted-foreground opacity-0 group-hover/tile:opacity-100 max-md:opacity-100",
+            : "text-muted-foreground opacity-0 group-hover/tile:opacity-100 max-page-md:opacity-100",
         )}
       >
         {starred ? (

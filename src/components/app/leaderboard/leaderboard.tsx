@@ -163,7 +163,7 @@ export function Leaderboard() {
 
       <section aria-live="polite" className="min-w-0">
         <div className="min-w-0 overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-5 sm:px-7">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-5 page-sm:px-7">
             <h2 className="flex items-center gap-2.5 text-2xl font-semibold text-foreground">
               <selected.icon
                 aria-hidden="true"
@@ -214,7 +214,7 @@ export function Leaderboard() {
                   <li
                     key={entry.id}
                     className={cn(
-                      "flex items-center gap-3 px-5 py-4 sm:gap-4 sm:px-7",
+                      "flex items-center gap-3 px-5 py-4 page-sm:gap-4 page-sm:px-7",
                       index === 0 && "bg-muted/40",
                     )}
                   >
@@ -270,7 +270,7 @@ export function Leaderboard() {
                         {entry.id === profile?.clerkId && " · You"}
                       </div>
                     </div>
-                    <div className="hidden w-20 overflow-hidden rounded-full bg-muted sm:block">
+                    <div className="hidden w-20 overflow-hidden rounded-full bg-muted page-sm:block">
                       <div
                         className="h-1.5 rounded-full bg-primary"
                         style={{

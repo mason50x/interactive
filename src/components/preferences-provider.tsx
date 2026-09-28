@@ -34,6 +34,7 @@ import {
   subscribeToCachedPreferences,
 } from "@/lib/preferences-cache";
 import { tabMaskAssets, watchTabMask } from "@/lib/tab-mask";
+import { hostWindow, isPaneWindow, PANE_MESSAGE } from "@/lib/workspace";
 import { api } from "@convex/_generated/api";
 
 type PreferencesContextValue = {
@@ -272,16 +273,41 @@ function usePanicKey({ panicEnabled, panicKey, panicUrl }: Preferences) {
     const destination = safePanicUrl(panicUrl);
     if (!destination) return;
 
+    // A split-view pane is a frame; leaving it would leave the tab where it
+    // was. It asks the host to go instead, which the host does from here.
+    const pane = isPaneWindow();
+
     function onKeyDown(event: KeyboardEvent) {
       if (canonicalCombo(event) !== panicKey) return;
       event.preventDefault();
+      if (pane) {
+        window.parent.postMessage(
+          { type: PANE_MESSAGE.panic },
+          window.location.origin,
+        );
+        return;
+      }
       // The whole point is to leave without a dialog in the way.
       leaving = true;
       window.location.replace(destination as string);
     }
 
+    function onMessage(event: MessageEvent) {
+      if (
+        event.origin !== window.location.origin ||
+        (event.data as { type?: string })?.type !== PANE_MESSAGE.panic
+      )
+        return;
+      leaving = true;
+      window.location.replace(destination as string);
+    }
+
     window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
+    if (!pane) window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("message", onMessage);
+    };
   }, [panicEnabled, panicKey, panicUrl]);
 }
 
@@ -294,7 +320,8 @@ let leaving = false;
  */
 function useLeaveGuard(enabled: boolean) {
   useEffect(() => {
-    if (!enabled) return;
+    // A pane closing is not the tab closing; the host guards the tab.
+    if (!enabled || isPaneWindow()) return;
     function onBeforeUnload(event: BeforeUnloadEvent) {
       if (leaving) return;
       event.preventDefault();
@@ -318,20 +345,28 @@ function useAway(listening: boolean): boolean {
   useEffect(() => {
     if (!listening) return;
     let frame = 0;
+    // A split-view pane asks about the tab, not itself: focus moving to the
+    // pane beside it is not the reader leaving.
+    const host = hostWindow();
     const check = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() =>
-        setAway(document.hidden || !document.hasFocus()),
+        setAway(host.document.hidden || !host.document.hasFocus()),
       );
     };
     check();
-    window.addEventListener("blur", check);
-    window.addEventListener("focus", check);
+    const windows = host === window ? [window] : [window, host];
+    for (const target of windows) {
+      target.addEventListener("blur", check);
+      target.addEventListener("focus", check);
+    }
     document.addEventListener("visibilitychange", check);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("blur", check);
-      window.removeEventListener("focus", check);
+      for (const target of windows) {
+        target.removeEventListener("blur", check);
+        target.removeEventListener("focus", check);
+      }
       document.removeEventListener("visibilitychange", check);
     };
   }, [listening]);
@@ -355,7 +390,8 @@ function useLanding(landing: string, known: boolean) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!known) return;
+    // A split-view pane was opened at a page on purpose.
+    if (!known || isPaneWindow()) return;
     try {
       if (sessionStorage.getItem(LANDED_KEY)) return;
       sessionStorage.setItem(LANDED_KEY, "1");

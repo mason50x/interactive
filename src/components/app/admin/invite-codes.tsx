@@ -37,7 +37,9 @@ function errorMessage(error: unknown, fallback: string) {
 
 /** A minute is fine-grained enough to flip a code to expired on screen. */
 function useMinute() {
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 60_000) * 60_000);
+  const [now, setNow] = useState(
+    () => Math.floor(Date.now() / 60_000) * 60_000,
+  );
   useEffect(() => {
     const timer = window.setInterval(
       () => setNow(Math.floor(Date.now() / 60_000) * 60_000),
@@ -55,7 +57,10 @@ function CreateInvite() {
   const [maxUses, setMaxUses] = useState("");
   const [expiry, setExpiry] = useState<string>("never");
   const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState<{ message: string; error?: boolean } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    error?: boolean;
+  } | null>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -73,16 +78,22 @@ function CreateInvite() {
       setNote("");
       setMaxUses("");
     } catch (error) {
-      setFeedback({ error: true, message: errorMessage(error, "Couldn't create the code.") });
+      setFeedback({
+        error: true,
+        message: errorMessage(error, "Couldn't create the code."),
+      });
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-border p-4 sm:p-5">
+    <form
+      onSubmit={submit}
+      className="rounded-xl border border-border p-4 page-sm:p-5"
+    >
       <h2 className="font-medium">New invite code</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[9rem_1fr_9rem_auto_auto]">
+      <div className="mt-4 grid gap-3 page-sm:grid-cols-2 page-lg:grid-cols-[9rem_1fr_9rem_auto_auto]">
         <Input
           aria-label="Code"
           placeholder="Random code"
@@ -128,7 +139,10 @@ function CreateInvite() {
       {feedback && (
         <p
           role={feedback.error ? "alert" : "status"}
-          className={cn("mt-3 text-sm", feedback.error ? "text-destructive" : "text-success")}
+          className={cn(
+            "mt-3 text-sm",
+            feedback.error ? "text-destructive" : "text-success",
+          )}
         >
           {feedback.message}
         </p>
@@ -155,8 +169,8 @@ function InviteRow({ invite }: { invite: InviteCode }) {
 
   const status = STATUS[invite.status];
   return (
-    <tr className="border-b border-border last:border-0 align-top">
-      <td className="px-4 py-3.5 sm:px-5">
+    <tr className="border-b border-border align-top last:border-0">
+      <td className="px-4 py-3.5 page-sm:px-5">
         <button
           type="button"
           className="rounded-sm font-mono text-base tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -174,7 +188,9 @@ function InviteRow({ invite }: { invite: InviteCode }) {
           {copied ? "Copied" : ""}
         </span>
         {invite.note && (
-          <span className="mt-0.5 block truncate text-xs text-muted-foreground">{invite.note}</span>
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+            {invite.note}
+          </span>
         )}
         {error && (
           <span role="alert" className="mt-1 block text-xs text-destructive">
@@ -189,7 +205,7 @@ function InviteRow({ invite }: { invite: InviteCode }) {
           {invite.maxUses ?? "∞"}
         </span>
       </td>
-      <td className="hidden px-3 py-3.5 text-xs text-muted-foreground md:table-cell">
+      <td className="hidden px-3 py-3.5 text-xs text-muted-foreground page-md:table-cell">
         {invite.expiresAt === undefined
           ? "Never"
           : new Date(invite.expiresAt).toLocaleString(undefined, {
@@ -199,9 +215,12 @@ function InviteRow({ invite }: { invite: InviteCode }) {
               minute: "2-digit",
             })}
       </td>
-      <td className="hidden px-3 py-3.5 sm:table-cell">
+      <td className="hidden px-3 py-3.5 page-sm:table-cell">
         <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span aria-hidden="true" className={cn("size-1.5 rounded-full", status.dot)} />
+          <span
+            aria-hidden="true"
+            className={cn("size-1.5 rounded-full", status.dot)}
+          />
           {status.label}
         </span>
       </td>
@@ -216,7 +235,11 @@ function InviteRow({ invite }: { invite: InviteCode }) {
             >
               Delete
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirming(false)}
+            >
               Keep
             </Button>
           </>
@@ -226,12 +249,18 @@ function InviteRow({ invite }: { invite: InviteCode }) {
               variant="ghost"
               size="sm"
               onClick={() =>
-                void run(() => setDisabled({ id: invite._id, disabled: !invite.disabled }))
+                void run(() =>
+                  setDisabled({ id: invite._id, disabled: !invite.disabled }),
+                )
               }
             >
               {invite.disabled ? "Enable" : "Disable"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirming(true)}
+            >
               Delete
             </Button>
           </>
@@ -254,27 +283,51 @@ export function InviteCodes() {
           <caption className="sr-only">Invite codes, newest first.</caption>
           <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-4 py-3 font-medium sm:px-5">Code</th>
-              <th scope="col" className="w-24 px-3 py-3 font-medium">Uses</th>
-              <th scope="col" className="hidden w-40 px-3 py-3 font-medium md:table-cell">Expires</th>
-              <th scope="col" className="hidden w-28 px-3 py-3 font-medium sm:table-cell">Status</th>
+              <th scope="col" className="px-4 py-3 font-medium page-sm:px-5">
+                Code
+              </th>
+              <th scope="col" className="w-24 px-3 py-3 font-medium">
+                Uses
+              </th>
+              <th
+                scope="col"
+                className="hidden w-40 px-3 py-3 font-medium page-md:table-cell"
+              >
+                Expires
+              </th>
+              <th
+                scope="col"
+                className="hidden w-28 px-3 py-3 font-medium page-sm:table-cell"
+              >
+                Status
+              </th>
               <th scope="col" className="px-3 py-3">
                 <span className="sr-only">Actions</span>
               </th>
             </tr>
           </thead>
           <tbody>
-            {invites?.map((invite) => <InviteRow key={invite._id} invite={invite} />)}
+            {invites?.map((invite) => (
+              <InviteRow key={invite._id} invite={invite} />
+            ))}
             {invites?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-14 text-center text-muted-foreground" role="status">
+                <td
+                  colSpan={5}
+                  className="px-5 py-14 text-center text-muted-foreground"
+                  role="status"
+                >
                   No invite codes yet.
                 </td>
               </tr>
             )}
             {invites === undefined && (
               <tr>
-                <td colSpan={5} className="px-5 py-14 text-center text-muted-foreground" role="status">
+                <td
+                  colSpan={5}
+                  className="px-5 py-14 text-center text-muted-foreground"
+                  role="status"
+                >
                   Loading codes…
                 </td>
               </tr>

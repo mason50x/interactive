@@ -72,7 +72,7 @@ function RaiseVote() {
   return (
     <form
       onSubmit={submit}
-      className="space-y-3 rounded-xl border border-border p-4 sm:p-5"
+      className="space-y-3 rounded-xl border border-border p-4 page-sm:p-5"
     >
       <h2 className="font-medium">Raise a vote</h2>
       <Input
@@ -155,7 +155,7 @@ function TopicRow({
         selected && "bg-muted/50",
       )}
     >
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:px-5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5 page-sm:px-5">
         <button
           type="button"
           aria-expanded={selected}
@@ -180,7 +180,7 @@ function TopicRow({
             {/* A sliver of the split, so the list reads at a glance. */}
             <span
               aria-hidden
-              className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-muted sm:flex"
+              className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-muted page-sm:flex"
             >
               {total > 0 && (
                 <>
@@ -255,7 +255,10 @@ function TopicRow({
         </div>
       </div>
       {error && (
-        <p role="alert" className="px-4 pb-3 text-xs text-destructive sm:px-5">
+        <p
+          role="alert"
+          className="px-4 pb-3 text-xs text-destructive page-sm:px-5"
+        >
           {error}
         </p>
       )}
@@ -276,7 +279,10 @@ const STEPS = [
 const MAX_BUCKETS = 24;
 
 function time(d: Date) {
-  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 function day(d: Date) {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -338,14 +344,14 @@ function Results({ topic }: { topic: Topic }) {
   ];
 
   return (
-    <div className="space-y-5 px-4 pb-5 sm:px-5">
+    <div className="space-y-5 px-4 pb-5 page-sm:px-5">
       {topic.description && (
         <p className="text-sm whitespace-pre-line text-muted-foreground">
           {topic.description}
         </p>
       )}
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 page-sm:grid-cols-4">
         {[
           { label: "Yes", value: topic.yes, tone: "text-green-600" },
           { label: "No", value: topic.no, tone: "text-red-600" },
@@ -362,10 +368,7 @@ function Results({ topic }: { topic: Topic }) {
           >
             <dt className="text-xs text-muted-foreground">{stat.label}</dt>
             <dd
-              className={cn(
-                "text-2xl font-semibold tabular-nums",
-                stat.tone,
-              )}
+              className={cn("text-2xl font-semibold tabular-nums", stat.tone)}
             >
               {stat.value}
             </dd>
@@ -381,7 +384,7 @@ function Results({ topic }: { topic: Topic }) {
           No ballots yet.
         </p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <div className="grid gap-4 page-lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <figure className="rounded-xl border border-border bg-background p-4">
             <figcaption className="mb-2 text-xs text-muted-foreground">
               Split
@@ -418,7 +421,7 @@ function Results({ topic }: { topic: Topic }) {
             </div>
           </figure>
 
-          <figure className="rounded-xl border border-border bg-background p-4 lg:col-span-2">
+          <figure className="rounded-xl border border-border bg-background p-4 page-lg:col-span-2">
             <figcaption className="mb-2 text-xs text-muted-foreground">
               Ballots over time
             </figcaption>
@@ -454,11 +457,17 @@ export function Votes() {
       <RaiseVote />
       <div className="overflow-hidden rounded-xl border border-border">
         {topics === undefined ? (
-          <p role="status" className="px-5 py-14 text-center text-sm text-muted-foreground">
+          <p
+            role="status"
+            className="px-5 py-14 text-center text-sm text-muted-foreground"
+          >
             Loading votes…
           </p>
         ) : topics.length === 0 ? (
-          <p role="status" className="px-5 py-14 text-center text-sm text-muted-foreground">
+          <p
+            role="status"
+            className="px-5 py-14 text-center text-sm text-muted-foreground"
+          >
             No votes yet.
           </p>
         ) : (

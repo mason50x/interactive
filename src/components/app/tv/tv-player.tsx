@@ -29,7 +29,7 @@ export function TvPlayer({ show }: { show: TvShow }) {
               setIndex(Number(event.target.value));
               setCaptionsOpen(false);
             }}
-            className="h-9 max-w-32 rounded-full border border-white/20 bg-black/70 px-2 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:max-w-40"
+            className="h-9 max-w-32 rounded-full border border-white/20 bg-black/70 px-2 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70 page-sm:max-w-40"
           >
             {show.episodes.map((item, i) => (
               <option key={item.fileId} value={i}>

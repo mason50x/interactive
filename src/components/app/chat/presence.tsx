@@ -91,7 +91,7 @@ export function Present({
   return (
     <TooltipProvider delay={250}>
       <div
-        className="hidden shrink-0 items-center sm:flex"
+        className="hidden shrink-0 items-center page-sm:flex"
         aria-label={`${otherCount}${presence.capped ? "+" : ""} other people online in this conversation`}
       >
         {others.map((person, index) => (

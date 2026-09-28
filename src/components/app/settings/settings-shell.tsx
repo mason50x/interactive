@@ -51,13 +51,13 @@ export function SettingsShell({ children }: { children: ReactNode }) {
 
   return (
     <div>
-      <div className="grid gap-8 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-14">
+      <div className="grid gap-8 page-lg:grid-cols-[12rem_minmax(0,1fr)] page-lg:gap-14">
         {/* A column of tabs on a wide screen; a strip that scrolls sideways
             above the page on a narrow one. */}
         <nav
           aria-label="Settings sections"
           className={cn(
-            "sticky top-0 z-20 -mx-6 bg-surface/85 px-6 py-2 backdrop-blur-md sm:-mx-8 sm:px-8 lg:top-8 lg:mx-0 lg:self-start lg:bg-transparent lg:p-0 lg:backdrop-blur-none",
+            "sticky top-0 z-20 -mx-6 bg-surface/85 px-6 py-2 backdrop-blur-md page-sm:-mx-8 page-sm:px-8 page-lg:top-8 page-lg:mx-0 page-lg:self-start page-lg:bg-transparent page-lg:p-0 page-lg:backdrop-blur-none",
           )}
         >
           <label className="relative flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
@@ -90,7 +90,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
               <Kbd>/</Kbd>
             )}
           </label>
-          <ul className="mt-3 flex gap-0.5 overflow-x-auto lg:flex-col">
+          <ul className="mt-3 flex gap-0.5 overflow-x-auto page-lg:flex-col">
             {settingsSections.map((section) => {
               const href = `${SETTINGS_HREF}/${section.id}`;
               const current = !query && pathname === href;

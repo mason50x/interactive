@@ -9,8 +9,6 @@ import { personName } from "@/lib/chat";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import { Separator } from "@/components/ui/separator";
 
-
-
 export type Person = {
   clerkId: string;
   handle: string;

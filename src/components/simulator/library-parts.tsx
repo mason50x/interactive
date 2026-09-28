@@ -35,7 +35,7 @@ export function ImportPanel({
   children?: ReactNode;
 }) {
   return (
-    <section className={cn(styles.uploadPanel, "rounded-2xl p-6 sm:p-8")}>
+    <section className={cn(styles.uploadPanel, "rounded-2xl p-6 page-sm:p-8")}>
       <ArrowUpTrayIcon className="mb-5 size-7 text-muted-foreground" />
       <h2 className="text-lg font-semibold">{heading}</h2>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">

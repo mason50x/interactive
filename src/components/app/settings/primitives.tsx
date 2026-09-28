@@ -178,9 +178,9 @@ export function Tiles<Value extends string>({
       className={cn(
         "grid gap-2.5",
         columns === 2 && "grid-cols-2",
-        columns === 3 && "grid-cols-2 sm:grid-cols-3",
-        columns === 4 && "grid-cols-2 sm:grid-cols-4",
-        columns === 6 && "grid-cols-2 sm:grid-cols-3 xl:grid-cols-6",
+        columns === 3 && "grid-cols-2 page-sm:grid-cols-3",
+        columns === 4 && "grid-cols-2 page-sm:grid-cols-4",
+        columns === 6 && "grid-cols-2 page-sm:grid-cols-3 page-xl:grid-cols-6",
       )}
     >
       {options.map((option) => {

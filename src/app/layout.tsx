@@ -13,6 +13,7 @@ import { brand } from "@/lib/brand";
 import { consoleGreetingScript } from "@/lib/console-greeting";
 import { preferencesScript } from "@/lib/preferences-script";
 import { themeScript } from "@/lib/theme";
+import { paneScript } from "@/lib/workspace";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -214,6 +215,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             its own instead. */}
         <script
           dangerouslySetInnerHTML={{ __html: preferencesScript }}
+          suppressHydrationWarning
+        />
+        {/* A split-view pane is this app in a frame of itself; it draws no
+            rail and no margin of its own, and has to know before it paints.
+            See `src/lib/workspace.ts`. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: paneScript }}
           suppressHydrationWarning
         />
         {/* After the scripts racing the first paint, never before them; this

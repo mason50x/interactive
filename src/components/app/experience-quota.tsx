@@ -160,7 +160,8 @@ export function useExperienceQuota(active = false) {
   ]);
 
   useEffect(() => {
-    const hasTime = (status?.remainingSeconds ?? 0) > 0 && !status?.voteRequired;
+    const hasTime =
+      (status?.remainingSeconds ?? 0) > 0 && !status?.voteRequired;
     if (hasTime && !hadTime.current) nextCheck.current = 0;
     hadTime.current = hasTime;
   }, [status?.remainingSeconds, status?.voteRequired]);
@@ -426,7 +427,7 @@ export function PlaytimeBlocked({ quota }: { quota: Quota }) {
     return (
       <section
         role="status"
-        className="flex min-h-full items-center justify-center bg-surface p-6 text-foreground sm:p-10"
+        className="flex min-h-full items-center justify-center bg-surface p-6 text-foreground page-sm:p-10"
       >
         <div className="w-full max-w-lg space-y-5">
           <h1 className="text-3xl font-semibold">Your playtime is used up</h1>

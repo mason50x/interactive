@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Home" };
 export default async function HomePage() {
   await auth.protect();
   return (
-    <Page className="max-w-6xl gap-16 pt-14 sm:pt-20">
+    <Page className="max-w-6xl gap-16 pt-14 page-sm:pt-20">
       <Home />
     </Page>
   );

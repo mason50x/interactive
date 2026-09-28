@@ -3,7 +3,11 @@
 import { useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useEffect, useState } from "react";
-import { CheckIcon, HandRaisedIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import {
+  CheckIcon,
+  HandRaisedIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/solid";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -257,7 +261,7 @@ export function VoteBlocked() {
   return (
     <section
       role="status"
-      className="flex min-h-full items-center justify-center bg-surface p-6 text-foreground sm:p-10"
+      className="flex min-h-full items-center justify-center bg-surface p-6 text-foreground page-sm:p-10"
     >
       <div className="w-full max-w-lg space-y-5">
         <h1 className="text-3xl font-semibold">Vote to keep playing</h1>

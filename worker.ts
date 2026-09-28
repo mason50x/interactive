@@ -94,10 +94,10 @@ export default {
       "X-Robots-Tag",
       "noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai",
     );
-    headers.set(
-      "Content-Security-Policy",
-      learn ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
-    );
+    // Only this origin may frame a page: `/learn` is framed by the
+    // dashboard, and split view frames the app beside itself (see
+    // `src/lib/workspace.ts`). Every other origin is refused.
+    headers.set("Content-Security-Policy", "frame-ancestors 'self'");
     // Cloudflare assets default to max-age=0: every revisit otherwise asks
     // this Worker to revalidate unchanged files. Cache only actual successful
     // assets privately for a fixed lifetime.

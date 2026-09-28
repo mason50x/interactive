@@ -99,11 +99,11 @@ export function CatalogueBrowser<
       <div
         className={cn(
           "sticky top-0 z-20 flex flex-wrap items-center gap-3 py-3",
-          "-mx-6 px-6 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10",
+          "-mx-6 px-6 page-sm:-mx-8 page-sm:px-8 page-lg:-mx-10 page-lg:px-10",
           "bg-surface/85 backdrop-blur-md",
         )}
       >
-        <search className="min-w-0 basis-full sm:flex-1 sm:basis-0">
+        <search className="min-w-0 basis-full page-sm:flex-1 page-sm:basis-0">
           <LineSearch
             value={query}
             onChange={setQuery}

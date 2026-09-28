@@ -4,10 +4,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useChat } from "@/components/app/chat/chat-provider";
 import { CHAT_HREF } from "@/lib/nav";
+import { PAGE_BREAKPOINTS, pageWidthRem } from "@/lib/page-width";
 
 /** The width `ChatFrame` splits at, written the way `matchMedia` wants it.
  *  Tailwind's `md`, which is where the two panes become two. */
-const WIDE = "(min-width: 48rem)";
 
 /**
  * The right-hand pane with nothing in it, which it tries not to be.
@@ -50,7 +50,8 @@ export function EmptyPane() {
     // default room here would undo that intent and cause a second navigation.
     if (stayInInbox) return;
     if (!roomId) return;
-    if (!window.matchMedia(WIDE).matches) return;
+    // Only where the list and the thread sit side by side; see `ChatFrame`.
+    if (pageWidthRem() < PAGE_BREAKPOINTS.md) return;
 
     router.replace(`${CHAT_HREF}/${roomId}`);
   }, [roomId, router, stayInInbox]);

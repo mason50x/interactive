@@ -53,7 +53,7 @@ export function CatalogueGrid<T extends { slug: string }>({
       {/* Three across and no further. The tile is the art, and a fourth
           column buys another card at the price of shrinking every one of
           them past the point where the thumbnail reads. */}
-      <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-5 page-sm:grid-cols-2 page-lg:grid-cols-3">
         {shown.map((activity) => (
           <li key={activity.slug} data-flip={activity.slug}>
             {renderCard(activity)}
