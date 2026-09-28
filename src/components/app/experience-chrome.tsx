@@ -619,39 +619,30 @@ function Launcher({
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
       <div className="min-h-full rounded-2xl border border-border bg-surface">
-        <div className="mx-auto w-full max-w-5xl px-5 pt-10 pb-16 sm:px-8 sm:pt-14">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold sm:text-4xl">Browse</h1>
-              <p className="mt-2 max-w-md text-muted-foreground">
-                Apps keep running while you switch between them. Open two side
-                by side from the bar.
-              </p>
-            </div>
-            <form
-              role="search"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (matches[0]) onOpen(matches[0].id);
+        <div className="mx-auto w-full max-w-5xl px-5 pt-6 pb-16 sm:px-8 sm:pt-8">
+          <form
+            role="search"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (matches[0]) onOpen(matches[0].id);
+            }}
+            className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-border bg-background px-3.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20"
+          >
+            <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
+            <input
+              ref={search}
+              type="search"
+              aria-label="Find an app"
+              placeholder="Find an app"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setQuery("");
               }}
-              className="flex h-11 w-full items-center gap-2.5 rounded-xl border border-border bg-background px-3.5 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20 sm:w-72"
-            >
-              <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
-              <input
-                ref={search}
-                type="search"
-                aria-label="Find an app"
-                placeholder="Find an app"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") setQuery("");
-                }}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
-              />
-              {!query && <Kbd className="max-sm:hidden">/</Kbd>}
-            </form>
-          </div>
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+            />
+            {!query && <Kbd className="max-sm:hidden">/</Kbd>}
+          </form>
 
           {term ? (
             <Shelf
@@ -737,13 +728,13 @@ function AppTile({
   return (
     <div
       className={cn(
-        "group/tile relative isolate overflow-hidden rounded-2xl border border-border bg-background transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-border-strong hover:shadow-[var(--elevation-card-hover)] motion-reduce:hover:translate-y-0",
+        "group/tile relative isolate overflow-hidden rounded-2xl border border-border bg-background transition-colors duration-150 hover:bg-muted",
         size === "wide" ? "h-28" : "h-36",
       )}
     >
       <span
         aria-hidden="true"
-        className="absolute -top-16 -right-16 -z-10 size-44 rounded-full opacity-[0.18] blur-2xl transition-opacity duration-300 group-hover/tile:opacity-30"
+        className="absolute -top-16 -right-16 -z-10 size-44 rounded-full opacity-[0.18] blur-2xl"
         style={{ background: brand }}
       />
       <button
