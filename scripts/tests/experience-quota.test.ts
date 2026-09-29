@@ -509,7 +509,8 @@ test("only one message per turn earns time until somebody else replies", async (
   expect(await say(user, "Anyone up for a game?", "turn-1")).toEqual({ ok: true });
   expect(await remaining()).toBe(1890);
   // Following your own message earns nothing, however different the text.
-  expect(await say(user, "I mean a board game, not a video game.", "turn-2")).toEqual({ ok: true });
+  // The first time, the sender is told so; after that, quietly.
+  expect(await say(user, "I mean a board game, not a video game.", "turn-2")).toEqual({ ok: true, notice: "turn" });
   expect(await say(user, "Or cards, cards are fine too.", "turn-3")).toEqual({ ok: true });
   expect(await remaining()).toBe(1890);
   // A bot reply is asked for, so it does not hand the turn back.
@@ -539,6 +540,34 @@ test("only one message per turn earns time until somebody else replies", async (
         .take(10),
     ),
   ).toHaveLength(2);
+  expect(
+    (await t.run((ctx) =>
+      ctx.db.query("users").withIndex("byClerkId", (q) => q.eq("clerkId", "person")).unique(),
+    ))?.turnNoticeAt,
+  ).toBe(start);
+});
+
+test("the turn notice waits for a message that would otherwise have counted", async () => {
+  const { t, user } = await setup();
+  const room = await t.run(async (ctx) => {
+    const account = await ctx.db
+      .query("users")
+      .withIndex("byClerkId", (q) => q.eq("clerkId", "person"))
+      .unique();
+    await ctx.db.patch(account!._id, { username: "person", usernameKey: "person", clerkCreatedAt: 0 });
+    await ctx.db.insert("chatSenders", { clerkId: "person", messagesSent: 100, recent: [] });
+    const conversationId = await ctx.db.insert("conversations", { kind: "global", createdBy: "person", createdAt: 0 });
+    await ctx.db.insert("conversationMembers", {
+      conversationId, clerkId: "person", kind: "global", role: "member", status: "active", joinedAt: 0, lastReadAt: 0,
+    });
+    return conversationId;
+  });
+  const say = (body: string, clientNonce: string) =>
+    user.mutation(api.chat.messages.send, { conversationId: room, body, clientNonce });
+  expect(await say("Anyone up for a game?", "notice-1")).toEqual({ ok: true });
+  // Filler would not have earned time on anybody's turn, so there is nothing to explain.
+  expect(await say("12345", "notice-2")).toEqual({ ok: true });
+  expect(await say("Board games, I mean.", "notice-3")).toEqual({ ok: true, notice: "turn" });
 });
 
 test("a CEO quota reset restores the shared allowance and discards bonus time", async () => {

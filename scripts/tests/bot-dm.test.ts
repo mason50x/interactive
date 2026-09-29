@@ -427,7 +427,7 @@ test("@words in DMs send as plain text with no mentions, no pings, and no refusa
         conversationId: bobDm,
         body,
       }),
-    ).toEqual({ ok: true });
+    ).toMatchObject({ ok: true });
   }
   expect(
     await alice.mutation(api.chat.messages.send, {

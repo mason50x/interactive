@@ -5,6 +5,7 @@ import { PhotoIcon } from "@heroicons/react/24/outline";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -15,6 +16,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Toast } from "@/components/ui/toast";
 import { type MentionPerson } from "@/components/app/chat/mentions";
 import {
   Composer,
@@ -34,7 +36,10 @@ import { Typing, useTypists } from "@/components/app/chat/typing";
 import { useChat } from "@/components/app/chat/chat-provider";
 import type { Refusal } from "@/lib/chat";
 import { CHAT_HREF } from "@/lib/nav";
-import { useOutbox } from "@/components/app/chat/thread/use-outbox";
+import {
+  useOutbox,
+  type SendNotice,
+} from "@/components/app/chat/thread/use-outbox";
 import type { ChatPollDraft } from "@/lib/chat-drafts";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
@@ -102,7 +107,9 @@ function ConversationThread({
   );
   if (initialRead === undefined && readPosition !== undefined)
     setInitialRead(readPosition);
-  const outbox = useOutbox(userId, conversationId);
+  const [notice, setNotice] = useState<SendNotice | null>(null);
+  const clearNotice = useCallback(() => setNotice(null), []);
+  const outbox = useOutbox(userId, conversationId, setNotice);
   const {
     profile,
     isAdmin,
@@ -743,6 +750,17 @@ function ConversationThread({
           </p>
         ) : live && detail !== undefined ? (
           <>
+            {/* Over the composer, like a refusal, because it is about the
+                message that just left it. Said once per account, ever; the
+                server decides when. See `notice` on `SendResult`. */}
+            {notice === "turn" ? (
+              <div className="flex justify-center px-4 pb-2">
+                <Toast onDone={clearNotice}>
+                  That one sent, but it didn’t add play time. Only one message
+                  per turn counts, so wait for someone else to reply.
+                </Toast>
+              </div>
+            ) : null}
             {roomLocked || slowModeSeconds > 0 ? (
               <p className="px-4 pt-2 text-center text-[0.8125rem] text-muted-foreground">
                 {roomLocked

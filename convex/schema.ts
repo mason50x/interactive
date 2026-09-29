@@ -74,7 +74,12 @@ export default defineSchema({
      */
     invited: v.optional(v.boolean()),
     inviteCodeId: v.optional(v.id("inviteCodes")),
-
+    /**
+     * When the account was first told that a message earned no playtime
+     * because it was not their turn. Set once, inside the send that did it,
+     * so the note shows a single time per person rather than per browser.
+     */
+    turnNoticeAt: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"])
     .index("byUsernameKey", ["usernameKey"])
     .index("byFirstName", ["firstName"])

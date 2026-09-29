@@ -214,7 +214,7 @@ test("slow mode spaces each member's messages in this room and exempts staff", a
     refusal: "slow-mode",
   });
   expect(await send("mod", "staff one")).toEqual({ ok: true });
-  expect(await send("mod", "staff two")).toEqual({ ok: true });
+  expect(await send("mod", "staff two")).toMatchObject({ ok: true });
   vi.advanceTimersByTime(21_000);
   expect(await send("member", "second thought")).toEqual({ ok: true });
 
@@ -223,7 +223,7 @@ test("slow mode spaces each member's messages in this room and exempts staff", a
     slowModeSeconds: 0,
   });
   vi.advanceTimersByTime(1_000);
-  expect(await send("member", "third thought")).toEqual({ ok: true });
+  expect(await send("member", "third thought")).toMatchObject({ ok: true });
 });
 
 test("bulk delete removes the newest messages, optionally one person's, and spares senior staff", async () => {
