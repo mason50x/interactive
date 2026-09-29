@@ -406,6 +406,21 @@ export const send = mutation({
       return { ok: false, refusal: verdict.refusal };
     }
 
+    // Read before the insert so "the last thing said here" is not this message.
+    // Only one message per turn earns playtime: after a rewarded message, the
+    // sender earns nothing more in this conversation until somebody else has
+    // spoken. The bot is not somebody else — its replies are asked for.
+    const lastSpeaker = (
+      await ctx.db
+        .query("messages")
+        .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+        .order("desc")
+        .first()
+    )?.authorClerkId;
+    const rewardableTurn =
+      lastSpeaker === undefined ||
+      (lastSpeaker !== profile.clerkId && lastSpeaker !== BOT_ID);
+
     const messageId = await ctx.db.insert("messages", {
       conversationId,
       authorClerkId: profile.clerkId,
@@ -435,8 +450,9 @@ export const send = mutation({
     });
 
     // Shared rooms earn full playtime and direct messages half. Group chats,
-    // and anything addressed to the bot, would let one person farm time alone.
-    if (!named.bot) {
+    // anything addressed to the bot, and a run of messages with no reply in
+    // between, would let one person farm time alone.
+    if (!named.bot && rewardableTurn) {
       if (REWARDED_ROOMS.has(member.kind)) {
         await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
       } else if (member.kind === "dm") {

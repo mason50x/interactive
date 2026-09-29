@@ -38,7 +38,7 @@ export function playtimeDay(now: number) {
 }
 
 export const REWARD_REQUIREMENTS =
-  "Messages in Everyone, Announcements and Admin add 1.5 minutes, and direct messages add 45 seconds. Group chats and messages to the bot don’t count. Real short replies like “hi” or “thanks” count. A single letter, punctuation, numbers alone, repeated filler, and a third similar message in a row do not earn time.";
+  "Messages in Everyone, Announcements and Admin add 1.5 minutes, and direct messages add 45 seconds. Group chats and messages to the bot don’t count. Real short replies like “hi” or “thanks” count. Only one message per turn earns time: after you send one, wait for someone else to reply before your next message counts. A single letter, punctuation, numbers alone, repeated filler, and a third similar message in a row do not earn time.";
 
 /** Normal conversation counts, even a single short word. Strip links/mentions
  * before comparing so changing a tag or numeric suffix cannot farm credit.
