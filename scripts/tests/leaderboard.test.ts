@@ -88,6 +88,38 @@ test("chat buckets roll over and expire without touching lifetime playtime", asy
   ).toHaveLength(1);
 });
 
+test("chat week standings count Monday to Friday only", async () => {
+  const { t, one } = await setup();
+  await one.mutation(api.users.store, {});
+  const saturday = Date.UTC(2026, 8, 26, 12);
+  const sunday = Date.UTC(2026, 8, 27, 12);
+  const monday = Date.UTC(2026, 8, 28, 12);
+  await t.run((ctx) => addScore(ctx, "one", "chat", 2, now)); // Wednesday
+  await t.run((ctx) => addScore(ctx, "one", "chat", 5, saturday));
+  await t.run((ctx) => addScore(ctx, "one", "chat", 5, sunday));
+  vi.setSystemTime(sunday);
+  const week = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "week",
+    clock: Math.floor(sunday / DAY),
+  });
+  expect(week.people.map((row) => row.score)).toEqual([2]);
+  const month = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "month",
+    clock: Math.floor(sunday / DAY),
+  });
+  expect(month.people.map((row) => row.score)).toEqual([12]);
+  await t.run((ctx) => addScore(ctx, "one", "chat", 1, monday));
+  vi.setSystemTime(monday);
+  const nextWeek = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "week",
+    clock: Math.floor(monday / DAY),
+  });
+  expect(nextWeek.people.map((row) => row.score)).toEqual([1]);
+});
+
 test("page views coalesce heartbeats, require auth, and only count known sections", async () => {
   const { t, one } = await setup();
   expect(pageKey("/chat/room")).toBe("/chat");
@@ -105,7 +137,5 @@ test("page views coalesce heartbeats, require auth, and only count known section
     period: "day",
     clock: Math.floor(now / DAY),
   });
-  expect(board.pages).toEqual([
-    { path: "/chat", views: 2 },
-  ]);
+  expect(board.pages).toEqual([{ path: "/chat", views: 2 }]);
 });

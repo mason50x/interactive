@@ -164,13 +164,20 @@ export function Leaderboard() {
       <section aria-live="polite" className="min-w-0">
         <div className="min-w-0 overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-5 py-5 page-sm:px-7">
-            <h2 className="flex items-center gap-2.5 text-2xl font-semibold text-foreground">
-              <selected.icon
-                aria-hidden="true"
-                className="size-6 text-foreground"
-              />
-              {selected.label}
-            </h2>
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2.5 text-2xl font-semibold text-foreground">
+                <selected.icon
+                  aria-hidden="true"
+                  className="size-6 text-foreground"
+                />
+                {selected.label}
+              </h2>
+              {metric === "chat" && activePeriod === "week" && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Monday to Friday
+                </p>
+              )}
+            </div>
             {periods.length === 1 ? (
               <span className="text-sm font-medium text-muted-foreground">
                 Today

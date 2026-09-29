@@ -7,10 +7,12 @@ const DAY = 86_400_000;
 const PAGE_PATHS = ["/activities", "/tv", "/chat", "/browse", "/emulate", "/leaderboard"] as const;
 export const dayKey = (now: number) => Math.floor(now / DAY);
 const weekKey = (now: number) => Math.floor((dayKey(now) + 3) / 7); // Monday UTC
+/** The chat week is Monday to Friday; weekend messages count for the day and month only. */
+const isWeekday = (now: number) => (dayKey(now) + 3) % 7 < 5;
 const monthKey = (now: number) => new Date(now).getUTCFullYear() * 12 + new Date(now).getUTCMonth();
 const scoreKeys = (metric: "playtime" | "chat", now: number) => metric === "playtime"
   ? [`playtime:all`, `playtime:day:${dayKey(now)}`]
-  : [`chat:day:${dayKey(now)}`, `chat:week:${weekKey(now)}`, `chat:month:${monthKey(now)}`];
+  : [`chat:day:${dayKey(now)}`, ...(isWeekday(now) ? [`chat:week:${weekKey(now)}`] : []), `chat:month:${monthKey(now)}`];
 const expiryFor = (key: string, now: number) => key.includes(":all") ? undefined
   : key.includes(":day:") ? (dayKey(now) + 35) * DAY
   : key.includes(":week:") ? (dayKey(now) + 84) * DAY
