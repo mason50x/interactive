@@ -427,3 +427,32 @@ test("the asynchronous cookie refresh cannot restore a token before its write co
   });
   expect(result).toEqual({ during: "csrf=fresh", after: "csrf=fresh" });
 });
+
+test("a frame the parent touched before it loaded still posts messages from its own window", async ({ page }) => {
+  await page.goto("/");
+  await page.addScriptTag({ url: "/experience/client.js" });
+  await page.evaluate(async () => {
+    const connection = new BareMux.BareMuxConnection("/bridge/worker.js");
+    await connection.setTransport("/transport.mjs", [location.origin + "/"]);
+    history.replaceState(null, "", experienceConfig.prefix + experienceConfig.encodeUrl("https://www.google.com/recaptcha/api2/demo"));
+    self.__uv$cookies = "";
+    self.__uv$referrer = "";
+  });
+  await page.addScriptTag({ url: "/experience/handler.js" });
+  const result = await page.evaluate(() => new Promise(resolve => {
+    const frame = document.createElement("iframe");
+    // reCAPTCHA's anchor frame hands its parent a MessagePort this way, and the
+    // parent accepts it only when the event's source is the frame's own window.
+    frame.srcdoc = '<script>parent.postMessage("ready", "*", [new MessageChannel().port2]);</script>';
+    addEventListener("message", event => {
+      if (event.data !== "ready") return;
+      resolve({ fromFrame: event.source === frame.contentWindow, ports: event.ports.length });
+    });
+    document.body.append(frame);
+    // Reading contentWindow before the document exists installs the parent's
+    // engine into the initial about:blank window, which the browser reuses.
+    frame.contentWindow;
+    setTimeout(() => resolve({ timedOut: true }), 5000);
+  }));
+  expect(result).toEqual({ fromFrame: true, ports: 1 });
+});

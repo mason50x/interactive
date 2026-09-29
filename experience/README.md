@@ -98,6 +98,13 @@ account, device, DRM, or network restrictions.
 
 The build also applies checked engine compatibility patches for postMessage's
 options/transfer-list form and original script-src lookup used by consent SDKs.
+A third keeps a frame's messages attributed to the frame: a parent that reads
+`contentWindow` before the frame's document exists installs its own engine
+into the initial about:blank window, which the browser then keeps for the
+document loaded there, so the frame's calls ran from the parent's realm and
+its messages arrived with the parent as their source. reCAPTCHA's anchor frame
+hands its parent a MessagePort that way, and the widget spun until "reCAPTCHA
+Timeout" before this patch.
 
 ## Authentication and additional apps
 
