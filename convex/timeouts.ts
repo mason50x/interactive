@@ -117,7 +117,7 @@ const directoryUser = v.object({
   badgeHidden: v.boolean(),
   activityLimitMinutes: v.optional(v.number()),
   canChangeRole: v.boolean(),
-  /** Why a CEO caller can't change this role; absent when they can. */
+  /** Why the caller can't change this role; absent when they can. */
   roleLock: v.optional(v.string()),
   canManage: v.boolean(),
   ceoCleared: v.boolean(),
@@ -141,24 +141,19 @@ export const users = query({
         const row = await timeoutRow(ctx, user.clerkId);
         const active = row?.enabled && row.expiresAt > now;
         const ceoCleared = isCeoClearActive(row, now);
-        const roleLock =
-          caller.role === "ceo"
-            ? roleChangeRefusal(caller.clerkId, user.clerkId, role)
-            : null;
+        const roleLock = roleChangeRefusal(caller, user.clerkId, role);
         return {
           clerkId: user.clerkId,
           label: user.name ?? user.username ?? user.clerkId,
-          // Contact details remain limited to the CEO directory audience.
-          ...(caller.role === "ceo"
-            ? { name: user.name, email: user.email }
-            : {}),
+          name: user.name,
+          email: user.email,
           imageUrl: user.imageUrl,
           username: user.username,
           role,
           joinedAt: user.clerkCreatedAt ?? user._creationTime,
           badgeHidden: await badgeHidden(ctx, user.clerkId),
           activityLimitMinutes: user.activityLimitMinutes,
-          canChangeRole: caller.role === "ceo" && roleLock === null,
+          canChangeRole: roleLock === null,
           ...(roleLock ? { roleLock } : {}),
           ceoCleared,
           canManage:

@@ -62,19 +62,32 @@ test("a CEO's beep reaches only the target, ages on the server, and keeps one ro
   expect(rows[0]).toMatchObject({ clerkId: "member", sentBy: "ceo" });
 });
 
-test("only a CEO can send, and only to an account that exists", async () => {
+test("only an admin can send, a Head Moderator never to a CEO, and only to an account that exists", async () => {
   const t = convexTest(schema, modules);
   await admit(t, "ceo", "head", "member");
   const ceo = t.withIdentity({ subject: "ceo" });
   const head = t.withIdentity({ subject: "head" });
   const member = t.withIdentity({ subject: "member" });
 
-  for (const caller of [head, member, t]) {
+  for (const caller of [member, t]) {
     await expect(
       caller.mutation(api.remoteSound.play, { clerkId: "member" }),
-    ).rejects.toThrow("CEO access required.");
+    ).rejects.toThrow("Admin access required.");
   }
   expect(await member.query(api.remoteSound.mine, {})).toBeNull();
+
+  // A Head Moderator holds the power over everyone but a CEO.
+  await expect(
+    head.mutation(api.remoteSound.play, { clerkId: "ceo" }),
+  ).rejects.toThrow("Only a CEO can play a sound on a CEO's device.");
+  expect(await ceo.query(api.remoteSound.mine, {})).toBeNull();
+  await head.mutation(api.remoteSound.play, { clerkId: "member" });
+  expect(await member.query(api.remoteSound.mine, {})).toMatchObject({
+    sound: "beep",
+  });
+  expect(
+    await t.run((ctx) => ctx.db.query("soundPings").unique()),
+  ).toMatchObject({ clerkId: "member", sentBy: "head" });
 
   await expect(
     ceo.mutation(api.remoteSound.play, { clerkId: "nobody" }),

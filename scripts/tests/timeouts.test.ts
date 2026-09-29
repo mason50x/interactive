@@ -93,15 +93,23 @@ test("the paginated directory combines profiles, roles, and timeouts with CEO-on
     timeout: null,
   });
   const headUsers = (await head.query(api.timeouts.users, args)).page;
-  expect(headUsers.every((user) => !user.canChangeRole)).toBe(true);
-  for (const user of headUsers) {
-    expect(user).not.toHaveProperty("name");
-    expect(user).not.toHaveProperty("email");
-  }
+  // A Head Moderator changes any role below their own; the rest are locked.
+  expect(
+    headUsers
+      .filter((user) => !user.canChangeRole)
+      .map((user) => [user.clerkId, user.roleLock]),
+  ).toEqual([
+    ["ceo", "Only the founder can change another CEO's role."],
+    ["head", "You cannot change your own role."],
+    ["peer", "Only a CEO can change another Head Moderator's role."],
+  ]);
   expect(headUsers.find((user) => user.clerkId === "member")).toMatchObject({
     label: "Member Name",
+    name: "Member Name",
+    email: "member@example.com",
     role: "member",
     joinedAt,
+    canChangeRole: true,
     canManage: true,
     timeout: { reason: "Repeated disruption" },
   });
@@ -140,12 +148,13 @@ test("directory roles and controls follow database overrides and revoke a demote
   expect(users.find((user) => user.clerkId === "mod")).toMatchObject({
     role: "member",
     canManage: true,
-    canChangeRole: false,
+    canChangeRole: true,
   });
   expect(users.find((user) => user.clerkId === "member")).toMatchObject({
     role: "head_moderator",
     canManage: false,
     canChangeRole: false,
+    roleLock: "Only a CEO can change another Head Moderator's role.",
   });
   await ceo.mutation(api.adminQuotas.setRole, {
     clerkId: "head",
@@ -169,7 +178,7 @@ test("directory controls preserve CEO-issued restrictions and deny timed-out man
   ).toMatchObject({
     role: "member",
     canManage: false,
-    canChangeRole: false,
+    canChangeRole: true,
     timeout: { reason: "Repeated disruption" },
   });
   expect(
@@ -183,7 +192,7 @@ test("directory controls preserve CEO-issued restrictions and deny timed-out man
   );
 });
 
-test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay restricted", async () => {
+test("CEO can assign Head Moderator; limits match Moderator and the admin console opens up", async () => {
   const t = await setup();
   await t.withIdentity({ subject: "ceo" }).mutation(api.adminQuotas.setRole, {
     clerkId: "member",
@@ -191,7 +200,7 @@ test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay 
   });
   const head = t.withIdentity({ subject: "member" });
   expect(await head.query(api.timeouts.access, {})).toBe("head_moderator");
-  expect(await head.query(api.adminQuotas.access, {})).toBe(false);
+  expect(await head.query(api.adminQuotas.access, {})).toBe(true);
   await t.run(async (ctx) => {
     expect(await resolvePrivileges(ctx, "member")).toEqual(
       await resolvePrivileges(ctx, "mod"),
@@ -201,26 +210,39 @@ test("CEO can assign Head Moderator; limits match Moderator but CEO powers stay 
   expect(
     (await head.query(api.experience.status, { day: 0 })).allowanceSeconds,
   ).toBe(1800);
+  // Every CEO power but granting CEO itself.
   await expect(
-    head.mutation(api.adminQuotas.setRole, { clerkId: "member", role: "ceo" }),
-  ).rejects.toThrow("CEO access required");
-  await expect(
-    head.mutation(api.adminQuotas.reset, { quotas: ["bot"] }),
-  ).rejects.toThrow("CEO access required");
-  await expect(head.query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } })).rejects.toThrow(
-    "CEO access required",
-  );
+    head.mutation(api.adminQuotas.setRole, { clerkId: "mod", role: "ceo" }),
+  ).rejects.toThrow("Only a CEO can grant the CEO role.");
+  expect(
+    await head.mutation(api.adminQuotas.reset, { quotas: ["bot"] }),
+  ).toEqual({ usersReset: 5, pending: false });
+  expect(
+    (
+      await head.query(api.adminQuotas.users, {
+        paginationOpts: { cursor: null, numItems: 50 },
+      })
+    ).page,
+  ).toHaveLength(5);
 });
 
-test("Head Moderators cannot promote or demote other users", async () => {
+test("Head Moderators change roles below their own, never a peer's, a CEO's, or to CEO", async () => {
   const t = await setup();
   const head = t.withIdentity({ subject: "head" });
   for (const args of [
     { clerkId: "member", role: "moderator" },
     { clerkId: "mod", role: "member" },
   ] as const) {
+    expect(await head.mutation(api.adminQuotas.setRole, args)).toEqual(args);
+  }
+  for (const [args, refusal] of [
+    [{ clerkId: "peer", role: "member" }, "Only a CEO can change another Head Moderator's role."],
+    [{ clerkId: "ceo", role: "member" }, "Only the founder can change another CEO's role."],
+    [{ clerkId: "head", role: "member" }, "You cannot change your own role."],
+    [{ clerkId: "member", role: "ceo" }, "Only a CEO can grant the CEO role."],
+  ] as const) {
     await expect(head.mutation(api.adminQuotas.setRole, args)).rejects.toThrow(
-      "CEO access required",
+      refusal,
     );
   }
   const users = (
@@ -229,16 +251,26 @@ test("Head Moderators cannot promote or demote other users", async () => {
     })
   ).page;
   expect(users.find((user) => user.clerkId === "member")).toMatchObject({
-    role: "member",
-    canChangeRole: false,
+    role: "moderator",
+    canChangeRole: true,
   });
   expect(users.find((user) => user.clerkId === "mod")).toMatchObject({
-    role: "moderator",
-    canChangeRole: false,
+    role: "member",
+    canChangeRole: true,
   });
-  expect(await t.run((ctx) => ctx.db.query("staffRoles").collect())).toEqual(
-    [],
-  );
+  expect(users.find((user) => user.clerkId === "peer")).toMatchObject({
+    role: "head_moderator",
+    canChangeRole: false,
+    roleLock: "Only a CEO can change another Head Moderator's role.",
+  });
+  expect(
+    (await t.run((ctx) => ctx.db.query("staffRoles").collect())).map(
+      ({ clerkId, role, updatedBy }) => ({ clerkId, role, updatedBy }),
+    ),
+  ).toEqual([
+    { clerkId: "member", role: "moderator", updatedBy: "head" },
+    { clerkId: "mod", role: "member", updatedBy: "head" },
+  ]);
 });
 
 test("permissions are enforced for direct calls: no self, peers, higher roles, or nonstaff callers", async () => {

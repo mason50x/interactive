@@ -36,14 +36,14 @@ const draft = (operationId = "first") => ({
   source: "<!doctype html><h1>Gravity</h1><script>window.answer = 42</script>",
 });
 
-test("only Builder and CEO may publish; all signed-in members can load the template", async () => {
+test("only Builders and admins may publish; all signed-in members can load the template", async () => {
   const t = await setup();
-  for (const subject of ["member", "mod", "head"]) {
+  for (const subject of ["member", "mod"]) {
     const user = t.withIdentity({ subject });
     expect(await user.query(api.simulator.published.access, {})).toBe(false);
     await expect(
       user.action(api.simulator.published.save, draft()),
-    ).rejects.toThrow("Only Builders and CEOs");
+    ).rejects.toThrow("Only Builders and admins");
   }
   await expect(t.action(api.simulator.published.save, draft())).rejects.toThrow(
     "Sign in",
@@ -51,7 +51,7 @@ test("only Builder and CEO may publish; all signed-in members can load the templ
   await expect(t.query(api.simulator.published.list, {})).rejects.toThrow(
     "Sign in",
   );
-  for (const subject of ["builder", "ceo"]) {
+  for (const subject of ["builder", "head", "ceo"]) {
     const user = t.withIdentity({ subject });
     expect(await user.query(api.simulator.published.access, {})).toBe(true);
     const id = await user.action(api.simulator.published.save, draft(subject));
@@ -76,7 +76,7 @@ test("only Builder and CEO may publish; all signed-in members can load the templ
   const list = await t
     .withIdentity({ subject: "member" })
     .query(api.simulator.published.list, {});
-  expect(list).toHaveLength(2);
+  expect(list).toHaveLength(3);
   expect(list[0]).not.toHaveProperty("url");
   expect(list[0]).not.toHaveProperty("storageId");
   expect(list[0]).not.toHaveProperty("source");
@@ -117,21 +117,21 @@ test("shared editing replaces stored code, rejects stale editors/deletes, and re
       expectedRevision: 1,
     }),
   ).rejects.toThrow("changed");
-  for (const subject of ["member", "mod", "head"]) {
+  for (const subject of ["member", "mod"]) {
     const user = t.withIdentity({ subject });
     await expect(
       user.mutation(api.simulator.published.remove, {
         id,
         expectedRevision: 2,
       }),
-    ).rejects.toThrow("Only Builders and CEOs");
+    ).rejects.toThrow("Only Builders and admins");
     await expect(
       user.action(api.simulator.published.save, {
         ...draft("denied"),
         id,
         expectedRevision: 2,
       }),
-    ).rejects.toThrow("Only Builders and CEOs");
+    ).rejects.toThrow("Only Builders and admins");
   }
   await t
     .withIdentity({ subject: "ceo" })
@@ -257,7 +257,7 @@ test("live role revocation is rechecked between upload and commit", async () => 
       contentHash: "a".repeat(64),
       byteLength: 12,
     }),
-  ).rejects.toThrow("Only Builders and CEOs");
+  ).rejects.toThrow("Only Builders and admins");
   await t.mutation(internal.simulator.published.discard, { storageId });
   expect(await t.run((ctx) => ctx.storage.get(storageId))).toBeNull();
   expect(await user.query(api.simulator.published.list, {})).toEqual([]);

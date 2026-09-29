@@ -10,11 +10,11 @@ import { InviteCodes } from "./invite-codes";
 import { UserDirectory } from "./user-directory";
 import { Votes } from "./votes";
 
-/** Head Moderators get the users and the announcement; CEOs get everything. */
+/** Invite codes stay with CEOs; every other tab is open to all admins. */
 const TABS = [
   { value: "users", label: "Users", ceoOnly: false },
   { value: "invites", label: "Invite codes", ceoOnly: true },
-  { value: "votes", label: "Vote", ceoOnly: true },
+  { value: "votes", label: "Vote", ceoOnly: false },
   { value: "announcement", label: "Announcement", ceoOnly: false },
 ] as const;
 
@@ -39,7 +39,7 @@ export function AdminConsole() {
         <UserDirectory role={role} />
       ) : tab === "invites" && role === "ceo" ? (
         <InviteCodes />
-      ) : tab === "votes" && role === "ceo" ? (
+      ) : tab === "votes" ? (
         <Votes />
       ) : (
         <AnnouncementConfig />

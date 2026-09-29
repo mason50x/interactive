@@ -447,7 +447,7 @@ function Results({ topic }: { topic: Topic }) {
   );
 }
 
-/** CEO-only: raise topics, choose whether they hold playtime, read results. */
+/** Admin-only: raise topics, choose whether they hold playtime, read results. */
 export function Votes() {
   const topics = useAuthedQuery(api.votes.list, {});
   const [selected, setSelected] = useState<Id<"voteTopics"> | null>(null);

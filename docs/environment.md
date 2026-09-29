@@ -84,13 +84,21 @@ access. Its Builder badge appears in chat and beside OSS in the sidebar.
 Builders can post in Announcements.
 Group membership is independent.
 
-A CEO can also change any account's role — including to `member` — from the
-role selector in the Admin page's user directory. Those edits are stored in
-the `staffRoles` table (`convex/adminQuotas.ts` `setRole`) and always win
-over this env map for that account, which is what makes them editable from a
-CEO client: env vars are deployment config with no runtime write API. A CEO
-cannot change their own role, and the change cannot leave zero CEOs, so the
-site cannot be locked out of the Admin page.
+CEOs and Head Moderators share the whole Admin page: the user directory with
+every control, invite codes, votes, and account restrictions, plus publishing
+shared HTML simulators. A Head Moderator holds every CEO power except over
+CEOs themselves — they cannot time out, restrict, beep, reset, or change the
+role, badge, or activity limit of a CEO's account — and they cannot grant the
+CEO role. Peers follow the CEO rule below: a Head Moderator cannot change or
+restrict another Head Moderator; that is a CEO's call.
+
+An admin can also change any account's role — including to `member` — from
+the role selector in the Admin page's user directory. Those edits are stored
+in the `staffRoles` table (`convex/adminQuotas.ts` `setRole`) and always win
+over this env map for that account, which is what makes them editable from an
+admin client: env vars are deployment config with no runtime write API. An
+admin cannot change their own role, and the change cannot leave zero CEOs, so
+the site cannot be locked out of the Admin page.
 
 CEOs are equals except over each other: a CEO cannot change another CEO's
 role, up or down, so no CEO can demote a peer. Promoting anybody below CEO

@@ -3,6 +3,7 @@ import { internal } from "../_generated/api";
 import { internalMutation, type MutationCtx, type QueryCtx } from "../_generated/server";
 import { action, mutation, query } from "../functions";
 import type { Doc } from "../_generated/dataModel";
+import { isAdminRole } from "../../config/roles";
 import { resolveRole } from "../roles";
 import { caller, label } from "./shared";
 import { limits } from "./limits";
@@ -12,8 +13,8 @@ import { MAX_PUBLISHED_HTML_ENTRIES, MAX_PUBLISHED_DESCRIPTION, validatePublishe
 async function publisher(ctx: QueryCtx | MutationCtx) {
   const id = await caller(ctx);
   const role = await resolveRole(ctx, id);
-  if (role !== "builder" && role !== "ceo")
-    throw new ConvexError("Only Builders and CEOs can manage published HTML.");
+  if (role !== "builder" && !isAdminRole(role))
+    throw new ConvexError("Only Builders and admins can manage published HTML.");
   return id;
 }
 function summary(row: Doc<"publishedHtmlSimulators">) {
@@ -36,7 +37,7 @@ export const access = query({
   handler: async (ctx) => {
     const id = await caller(ctx);
     const role = await resolveRole(ctx, id);
-    return role === "builder" || role === "ceo";
+    return role === "builder" || isAdminRole(role);
   },
 });
 export const list = query({

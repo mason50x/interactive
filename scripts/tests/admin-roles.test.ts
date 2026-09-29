@@ -84,7 +84,7 @@ test("moderators, members, and signed-out callers cannot change roles", async ()
         clerkId: amy,
         role: "moderator",
       }),
-    ).rejects.toThrow("CEO access required.");
+    ).rejects.toThrow("Admin access required.");
   }
   expect(await roleOf(t, amy)).toBe("member");
 });
@@ -166,9 +166,10 @@ test("the founder can change any CEO's role and nobody can change the founder's"
     clerkId: boss,
     role: "head_moderator",
   });
+  // A Head Moderator keeps the Admin page, just not the CEO rank.
   expect(
     await t.withIdentity({ subject: boss }).query(api.adminQuotas.access, {}),
-  ).toBe(false);
+  ).toBe(true);
   expect(
     await t.withIdentity({ subject: boss }).query(api.timeouts.access, {}),
   ).toBe("head_moderator");
@@ -176,7 +177,7 @@ test("the founder can change any CEO's role and nobody can change the founder's"
   // A demoted CEO has no say over the founder either.
   await expect(
     ceo.mutation(api.adminQuotas.setRole, { clerkId: founder, role: "member" }),
-  ).rejects.toThrow("CEO access required.");
+  ).rejects.toThrow("The founder's role can't be changed.");
   expect(await mason.query(api.adminQuotas.access, {})).toBe(true);
 
   // The founder can hand the role back, too.
@@ -293,7 +294,7 @@ test("a CEO hides a staff badge without changing the role's powers", async () =>
   });
 });
 
-test("only CEOs can change badge visibility", async () => {
+test("only admins change badge visibility, and a Head Moderator not a CEO's", async () => {
   const t = await setup();
   for (const subject of [mod, amy, null] as const) {
     const caller = subject === null ? t : t.withIdentity({ subject });
@@ -302,6 +303,26 @@ test("only CEOs can change badge visibility", async () => {
         clerkId: mod,
         visible: false,
       }),
-    ).rejects.toThrow("CEO access required.");
+    ).rejects.toThrow("Admin access required.");
   }
+  await t.withIdentity({ subject: boss }).mutation(api.adminQuotas.setRole, {
+    clerkId: amy,
+    role: "head_moderator",
+  });
+  const head = t.withIdentity({ subject: amy });
+  await head.mutation(api.adminQuotas.setBadgeVisible, {
+    clerkId: mod,
+    visible: false,
+  });
+  expect(await head.query(api.chat.admin.roles, {})).toContainEqual({
+    clerkId: mod,
+    role: "moderator",
+    hideBadge: true,
+  });
+  await expect(
+    head.mutation(api.adminQuotas.setBadgeVisible, {
+      clerkId: boss,
+      visible: false,
+    }),
+  ).rejects.toThrow("Only a CEO can change a CEO's badge.");
 });

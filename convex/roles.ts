@@ -1,7 +1,14 @@
 import { requireNotTimedOut } from "./timeoutState";
 import { ConvexError, v } from "convex/values";
 
-import { ROLES, roleFor, staffRoles, type StaffRole } from "../config/roles";
+import {
+  isAdminRole,
+  ROLES,
+  roleFor,
+  staffRoles,
+  type AdminRole,
+  type StaffRole,
+} from "../config/roles";
 import {
   internalMutation,
   type MutationCtx,
@@ -81,15 +88,33 @@ export async function resolveAdminClerkIds(ctx: ReadCtx): Promise<string[]> {
     .map(({ clerkId }) => clerkId);
 }
 
-/** CEO check for mutations and CEO-only queries. Throws when not a CEO. */
-export async function requireCeo(ctx: ReadCtx): Promise<string> {
+export type AdminCaller = { clerkId: string; role: AdminRole };
+
+/**
+ * Admin check for mutations and admin-only queries: CEOs and Head Moderators
+ * pass, everybody else throws. A Head Moderator holds every CEO power except
+ * over CEOs themselves; the features that touch one account ask
+ * `outrankedByCeo` before acting on it.
+ */
+export async function requireAdmin(ctx: ReadCtx): Promise<AdminCaller> {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("CEO access required.");
-  if ((await resolveRole(ctx, identity.subject)) !== "ceo") {
-    throw new ConvexError("CEO access required.");
-  }
+  if (!identity) throw new ConvexError("Admin access required.");
+  const role = await resolveRole(ctx, identity.subject);
+  if (!isAdminRole(role)) throw new ConvexError("Admin access required.");
   await requireNotTimedOut(ctx, identity.subject);
-  return identity.subject;
+  return { clerkId: identity.subject, role };
+}
+
+/**
+ * Whether `clerkId` is a CEO the caller does not outrank: true for a Head
+ * Moderator acting on any CEO, false for a CEO acting on anyone.
+ */
+export async function outrankedByCeo(
+  ctx: ReadCtx,
+  caller: AdminCaller,
+  clerkId: string,
+): Promise<boolean> {
+  return caller.role !== "ceo" && (await resolveRole(ctx, clerkId)) === "ceo";
 }
 
 /**

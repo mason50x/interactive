@@ -17,7 +17,7 @@ function isFramed() {
 }
 
 /**
- * Plays the sound a CEO sends to this account from the Admin user directory.
+ * Plays the sound an admin sends to this account from the Admin user directory.
  *
  * Mounted once in the signed-in shell. The subscription is the whole
  * mechanism: `remoteSound.mine` re-delivers whenever the account's ping row is

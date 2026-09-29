@@ -7,12 +7,16 @@ import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
 import { components, internal } from "./_generated/api";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
-import { roleChangeRefusal } from "../config/roles";
-import { requireCeo, resolveRole, resolveStaffRoles } from "./roles";
+import { isAdminRole, roleChangeRefusal, roleGrantRefusal } from "../config/roles";
+import {
+  outrankedByCeo,
+  requireAdmin,
+  resolveRole,
+  resolveStaffRoles,
+} from "./roles";
 import { botQuotaName, botRateLimiter } from "./chat/botConfig";
 import { syncAdminsMembership } from "./chat/shared";
 import { changeActivityLimit } from "./experience";
-import { requireNotTimedOut } from "./timeoutState";
 
 const experienceLimiter = new RateLimiter(components.rateLimiter);
 
@@ -23,7 +27,7 @@ export const access = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     return Boolean(
-      identity && (await resolveRole(ctx, identity.subject)) === "ceo",
+      identity && isAdminRole(await resolveRole(ctx, identity.subject)),
     );
   },
 });
@@ -49,7 +53,7 @@ export const users = query({
     }),
   ), isDone: v.boolean(), continueCursor: v.string() }),
   handler: async (ctx, { paginationOpts }) => {
-    await requireCeo(ctx);
+    await requireAdmin(ctx);
     const result = await ctx.db.query("users").paginate(paginationOpts);
     const page = await Promise.all(result.page.filter(user => user.invited !== false).map(async user => ({
         clerkId: user.clerkId,
@@ -69,18 +73,14 @@ export const setActivityLimit = mutation({
   args: { clerkId: v.string(), minutes: v.optional(v.number()) },
   returns: v.null(),
   handler: async (ctx, { clerkId, minutes }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new ConvexError("Admin access required.");
-    await requireNotTimedOut(ctx, identity.subject);
-    const role = await resolveRole(ctx, identity.subject);
-    if (role !== "ceo" && role !== "head_moderator") throw new ConvexError("Admin access required.");
+    const caller = await requireAdmin(ctx);
     if (minutes !== undefined && (!Number.isInteger(minutes) || minutes < 20 || minutes > 160)) {
       throw new ConvexError("Activity time must be between 20 and 160 minutes.");
     }
     const user = await ctx.db.query("users")
       .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).unique();
     if (!user) throw new ConvexError("User not found.");
-    if (role === "head_moderator" && (await resolveRole(ctx, clerkId)) === "ceo") {
+    if (await outrankedByCeo(ctx, caller, clerkId)) {
       throw new ConvexError("Only a CEO can change a CEO's activity time.");
     }
     const oldMinutes = user.activityLimitMinutes ?? PLAYTIME_SECONDS / 60;
@@ -125,7 +125,7 @@ export const reset = mutation({
   },
   returns: v.object({ usersReset: v.number(), pending: v.boolean() }),
   handler: async (ctx, { clerkId, quotas }) => {
-    await requireCeo(ctx);
+    const caller = await requireAdmin(ctx);
     const selected = [...new Set(quotas)];
     if (selected.length === 0) throw new ConvexError("Choose at least one quota.");
 
@@ -135,6 +135,8 @@ export const reset = mutation({
         .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
         .unique();
       if (!user) throw new ConvexError("User not found.");
+      if (await outrankedByCeo(ctx, caller, clerkId))
+        throw new ConvexError("Only a CEO can reset a CEO's allowances.");
       await resetFor(ctx, clerkId, selected);
       return { usersReset: 1, pending: false };
     }
@@ -164,17 +166,20 @@ export const continueReset = internalMutation({
 /**
  * Sets one account's site role from the Admin user directory.
  *
- * CEO-gated. The write lands in the `staffRoles` table, which every
+ * Admin-gated. The write lands in the `staffRoles` table, which every
  * authorization path reads ahead of the `STAFF_ROLES` env map — the env map
- * is deployment config with no runtime write API, so a CEO client could
+ * is deployment config with no runtime write API, so an admin client could
  * never edit it directly.
  *
  * CEOs are equals except over each other (`roleChangeRefusal` in
  * `config/roles.ts`): a CEO cannot change their own role or another CEO's,
  * so nobody can quietly demote a peer. The founder — the original CEO — is
  * the one exception: they can change any CEO's role, and no one can change
- * theirs. The change also cannot leave zero CEOs (counting table rows and
- * env entries together), so the site cannot be locked out of this page.
+ * theirs. Head Moderators are equals the same way: one can change any role
+ * below their own, while a peer's or a CEO's role, and granting CEO itself
+ * (`roleGrantRefusal`), stay a CEO's call. The change also cannot leave zero
+ * CEOs (counting table rows and env entries together), so the site cannot be
+ * locked out of this page.
  */
 export const setRole = mutation({
   args: {
@@ -183,17 +188,15 @@ export const setRole = mutation({
   },
   returns: v.object({ clerkId: v.string(), role: siteRole }),
   handler: async (ctx, { clerkId, role }) => {
-    const caller = await requireCeo(ctx);
+    const caller = await requireAdmin(ctx);
     const user = await ctx.db
       .query("users")
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
     if (!user) throw new ConvexError("User not found.");
-    const refusal = roleChangeRefusal(
-      caller,
-      clerkId,
-      await resolveRole(ctx, clerkId),
-    );
+    const refusal =
+      roleChangeRefusal(caller, clerkId, await resolveRole(ctx, clerkId)) ??
+      roleGrantRefusal(caller.role, role);
     if (refusal) throw new ConvexError(refusal);
 
     const staff = await resolveStaffRoles(ctx);
@@ -217,19 +220,19 @@ export const setRole = mutation({
       await ctx.db.patch(existing._id, {
         role,
         updatedAt: Date.now(),
-        updatedBy: caller,
+        updatedBy: caller.clerkId,
       });
     } else {
       await ctx.db.insert("staffRoles", {
         clerkId,
         role,
         updatedAt: Date.now(),
-        updatedBy: caller,
+        updatedBy: caller.clerkId,
       });
     }
     // Promotions join the Admin room now; demotions leave it now.
     await syncAdminsMembership(ctx, clerkId);
-    // A CEO role change also clears any old restriction on the account.
+    // An admin's role change also clears any old timeout on the account.
     const timeout = await timeoutRow(ctx, clerkId);
     if (timeout?.enabled) {
       const now = Date.now();
@@ -245,7 +248,7 @@ export const setRole = mutation({
       );
       await ctx.db.insert("timeoutAudit", {
         clerkId,
-        actor: caller,
+        actor: caller.clerkId,
         action: "off",
         reason: timeout.reason,
         expiresAt: timeout.expiresAt,
@@ -260,20 +263,23 @@ export const setRole = mutation({
  * Shows or hides one account's staff badge in chat. Cosmetic only: the role,
  * and every power it grants, stay exactly as they are.
  *
- * CEO-gated, like `setRole`. An account the env map names has no table row
- * yet, so the first toggle writes one carrying the role it already resolves
- * to, which leaves the effective role unchanged.
+ * Admin-gated, like `setRole`, and a Head Moderator cannot touch a CEO's.
+ * An account the env map names has no table row yet, so the first toggle
+ * writes one carrying the role it already resolves to, which leaves the
+ * effective role unchanged.
  */
 export const setBadgeVisible = mutation({
   args: { clerkId: v.string(), visible: v.boolean() },
   returns: v.null(),
   handler: async (ctx, { clerkId, visible }) => {
-    const caller = await requireCeo(ctx);
+    const caller = await requireAdmin(ctx);
     const user = await ctx.db
       .query("users")
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
     if (!user) throw new ConvexError("User not found.");
+    if (await outrankedByCeo(ctx, caller, clerkId))
+      throw new ConvexError("Only a CEO can change a CEO's badge.");
     const existing = await ctx.db
       .query("staffRoles")
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
@@ -282,7 +288,7 @@ export const setBadgeVisible = mutation({
       await ctx.db.patch(existing._id, {
         hideBadge: !visible,
         updatedAt: Date.now(),
-        updatedBy: caller,
+        updatedBy: caller.clerkId,
       });
     } else {
       await ctx.db.insert("staffRoles", {
@@ -290,7 +296,7 @@ export const setBadgeVisible = mutation({
         role: await resolveRole(ctx, clerkId),
         hideBadge: !visible,
         updatedAt: Date.now(),
-        updatedBy: caller,
+        updatedBy: caller.clerkId,
       });
     }
     return null;
