@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { BOT_NAME } from "@/lib/chat";
+import {
+  DEFAULT_SOUND,
+  SOUND_GROUPS,
+  soundLabel,
+  VOLUME_DEFAULT,
+  VOLUME_MAX,
+  VOLUME_MIN,
+  VOLUME_STEP,
+  type SoundId,
+} from "@/lib/remote-sound";
+import { playSoundEffect } from "@/lib/sound-effects";
 import { PLAYTIME_SECONDS } from "@config/playtime";
 import { cn } from "@/lib/utils";
 import styles from "./admin.module.css";
@@ -34,16 +45,30 @@ function FeedbackMessage({ value }: { value: Feedback }) {
   );
 }
 
+/** What the CEO has picked for one account: which sound, and how loud. */
+export type SoundChoice = { sound: SoundId; volume: number };
+export const DEFAULT_SOUND_CHOICE: SoundChoice = {
+  sound: DEFAULT_SOUND,
+  volume: VOLUME_DEFAULT,
+};
+
 /**
- * Plays a beep on every device signed in as this account. CEO-only: the
- * directory renders it for CEOs alone, and `remoteSound.play` refuses anyone
- * else. Sits in a row that toggles on click, so the click stops here.
+ * Plays the chosen sound on every device signed in as this account. CEO-only:
+ * the directory renders it for CEOs alone, and `remoteSound.play` refuses
+ * anyone else. Sits in a row that toggles on click, so the click stops here.
  */
-export function RemoteSoundButton({ user }: { user: DirectoryUser }) {
+export function RemoteSoundButton({
+  user,
+  choice,
+}: {
+  user: DirectoryUser;
+  choice: SoundChoice;
+}) {
   const play = useMutation(api.remoteSound.play);
   const [state, setState] = useState<"idle" | "busy" | "sent" | "failed">(
     "idle",
   );
+  const label = soundLabel(choice.sound);
 
   useEffect(() => {
     if (state !== "sent" && state !== "failed") return;
@@ -55,7 +80,11 @@ export function RemoteSoundButton({ user }: { user: DirectoryUser }) {
     if (state === "busy") return;
     setState("busy");
     try {
-      await play({ clerkId: user.clerkId, sound: "beep" });
+      await play({
+        clerkId: user.clerkId,
+        sound: choice.sound,
+        volume: choice.volume,
+      });
       setState("sent");
     } catch {
       setState("failed");
@@ -68,8 +97,8 @@ export function RemoteSoundButton({ user }: { user: DirectoryUser }) {
       size="sm"
       className="min-w-20"
       disabled={state === "busy"}
-      aria-label={`Play a beep on ${user.label}’s device`}
-      title="Play a beep on their device"
+      aria-label={`Play ${label} at ${choice.volume}% on ${user.label}’s device`}
+      title={`Play ${label} at ${choice.volume}% on their device`}
       onClick={(event) => {
         event.stopPropagation();
         void send();
@@ -83,9 +112,94 @@ export function RemoteSoundButton({ user }: { user: DirectoryUser }) {
             ? "Sent"
             : state === "failed"
               ? "Failed"
-              : "Beep"}
+              : "Play"}
       </span>
     </Button>
+  );
+}
+
+/**
+ * The picker behind the Play button: which sound, and how loud. Preview plays
+ * it here, on the CEO's own device, so a choice can be heard before it is
+ * sent. Above 100% the sound is boosted before a soft limiter, which is
+ * louder and a little fuzzy — for a device that has been turned down low.
+ */
+export function RemoteSoundControls({
+  user,
+  choice,
+  onChange,
+}: {
+  user: DirectoryUser;
+  choice: SoundChoice;
+  onChange: (choice: SoundChoice) => void;
+}) {
+  const boosted = choice.volume > VOLUME_DEFAULT;
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="font-medium">Remote sound</h3>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Plays on every device signed in as {user.label}. Preview plays it here
+          first.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <AdminSelect
+          aria-label={`Sound to play on ${user.label}’s device`}
+          value={choice.sound}
+          onChange={(event) =>
+            onChange({ ...choice, sound: event.target.value as SoundId })
+          }
+        >
+          {SOUND_GROUPS.map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.sounds.map((sound) => (
+                <option key={sound.id} value={sound.id}>
+                  {sound.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </AdminSelect>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => playSoundEffect(choice.sound, choice.volume)}
+        >
+          Preview
+        </Button>
+        <RemoteSoundButton user={user} choice={choice} />
+      </div>
+      <label className="flex max-w-sm items-center gap-3 text-xs">
+        <span className="shrink-0 font-medium">Volume</span>
+        <input
+          type="range"
+          className="min-w-0 flex-1 accent-primary"
+          min={VOLUME_MIN}
+          max={VOLUME_MAX}
+          step={VOLUME_STEP}
+          value={choice.volume}
+          onChange={(event) =>
+            onChange({ ...choice, volume: Number(event.target.value) })
+          }
+        />
+        <span
+          className={cn(
+            "w-11 shrink-0 text-right tabular-nums",
+            boosted ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          {choice.volume}%
+        </span>
+      </label>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {boosted
+          ? `Boosted past 100%: louder than the sound was made, with some distortion, for a device turned down low.`
+          : choice.volume < VOLUME_DEFAULT
+            ? "Quieter than the sound was made."
+            : "The sound at the level it was made. Go higher to boost it past that."}
+      </p>
+    </div>
   );
 }
 
@@ -693,9 +807,15 @@ function TimeoutHistory({ user }: { user: DirectoryUser }) {
 export function UserControls({
   user,
   isCeo,
+  remoteSound,
 }: {
   user: DirectoryUser;
   isCeo: boolean;
+  /** The CEO's sound picker for this row; absent for anyone else. */
+  remoteSound?: {
+    choice: SoundChoice;
+    onChange: (choice: SoundChoice) => void;
+  };
 }) {
   return (
     <div className="grid gap-6 page-lg:grid-cols-2 page-xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -731,15 +851,6 @@ export function UserControls({
             {ROLE_LABEL[user.role]} · Only CEOs can change roles.
           </p>
         )}
-        {isCeo && (
-          <div className="space-y-2">
-            <h4 className="text-xs font-medium">Remote sound</h4>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Plays a beep on every device signed in as {user.label}.
-            </p>
-            <RemoteSoundButton user={user} />
-          </div>
-        )}
       </section>
       <section
         aria-label={`Timeout for ${user.label}`}
@@ -758,6 +869,18 @@ export function UserControls({
               <AllowanceReset user={user} />
             </div>
           )}
+        </section>
+      )}
+      {isCeo && remoteSound && (
+        <section
+          aria-label={`Remote sound for ${user.label}`}
+          className="min-w-0 border-t border-border pt-5 page-lg:col-span-2 page-xl:col-span-3"
+        >
+          <RemoteSoundControls
+            user={user}
+            choice={remoteSound.choice}
+            onChange={remoteSound.onChange}
+          />
         </section>
       )}
       <TimeoutHistory user={user} />
