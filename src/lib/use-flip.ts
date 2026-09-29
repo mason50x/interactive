@@ -131,6 +131,13 @@ const REACH = 1;
 
 type Spot = { x: number; y: number; width: number; height: number };
 
+/** Where an arriving card starts: how far below its cell, and at what size.
+ *  The default suits a grid of cards; something as small as a thumbnail
+ *  would travel further than it is tall, so it grows in place instead. */
+type Arrival = { rise: number; scale: number };
+
+const ARRIVAL: Arrival = { rise: 14, scale: 0.94 };
+
 type Reading = {
   el: HTMLElement;
   id: string;
@@ -158,8 +165,10 @@ type Reading = {
  * `signature` is whatever changes when the arrangement changes; the rendered
  * array itself is the obvious thing to pass. Re-renders that leave it alone —
  * a context resolving, a sibling's state — do not disturb the cache.
+ *
+ * `arrival` is where new cards start from; see `Arrival`.
  */
-export function useFlip(signature: unknown) {
+export function useFlip(signature: unknown, arrival: Arrival = ARRIVAL) {
   const frame = useRef<HTMLDivElement | null>(null);
   const ghosts = useRef<HTMLDivElement | null>(null);
 
@@ -179,6 +188,7 @@ export function useFlip(signature: unknown) {
   const tempo = useRef(CALM);
 
   const still = useStillness();
+  const { rise, scale: grow } = arrival;
 
   useLayoutEffect(() => {
     const root = frame.current;
@@ -274,7 +284,10 @@ export function useFlip(signature: unknown) {
         flights.current,
         el,
         [
-          { opacity: 0, transform: "translate(0px, 14px) scale(0.94)" },
+          {
+            opacity: 0,
+            transform: `translate(0px, ${rise}px) scale(${grow})`,
+          },
           { opacity: 1, transform: "translate(0px, 0px) scale(1)" },
         ],
         {
@@ -294,7 +307,7 @@ export function useFlip(signature: unknown) {
         flights.current.delete(el);
       }
     }
-  }, [signature, still]);
+  }, [signature, still, rise, grow]);
 
   useLayoutEffect(() => {
     const root = frame.current;

@@ -891,6 +891,52 @@
     transform: translateX(-50%);
   }
 
+  /* The saved row under the GIF search, and the notice under the grid: they
+     fold open and shut instead of appearing, so the grid gives up its space
+     smoothly. Height eases through the `0fr`/`1fr` grid-row trick; the
+     content fades in a beat behind the space opening for it, and out ahead of
+     the space closing. `data-instant` is state that was already true when the
+     picker opened, which is drawn rather than announced. */
+  .gif-reveal {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    translate: 0 -4px;
+    transition:
+      grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 160ms ease-out,
+      translate 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .gif-reveal[data-open] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    translate: 0 0;
+    transition:
+      grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 220ms ease-out 90ms,
+      translate 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .gif-reveal[data-instant] {
+    transition: none;
+  }
+
+  /* The saved gallery's empty state, after its last GIF has faded out. */
+  .gif-empty-in {
+    animation: gif-empty-in 280ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+  }
+
+  @keyframes gif-empty-in {
+    from {
+      opacity: 0;
+      translate: 0 6px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
   /* The heart, on the tap that fills it: in from small, a beat past full
      size, and back — the same bounce a "like" has everywhere else, so it
      needs no explaining. */
@@ -926,13 +972,16 @@
 
   @media (prefers-reduced-motion: reduce) {
     .plus-menu-popup.popup-slide,
-    .gif-pages {
+    .gif-pages,
+    .gif-reveal,
+    .gif-reveal[data-open] {
       transition: none;
     }
 
     .plus-menu-actions,
     .plus-menu-emojis,
-    .gif-heart-pop {
+    .gif-heart-pop,
+    .gif-empty-in {
       animation: none;
     }
   }

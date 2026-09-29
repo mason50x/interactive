@@ -8,12 +8,15 @@ import {
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
+  type Ref,
+  type SyntheticEvent,
 } from "react";
 import { Button } from "@/components/ui/button";
 import { MenuItem } from "@/components/ui/menu";
@@ -34,6 +37,8 @@ const SKELETON = [
 ];
 /** How many saved GIFs the row under the search field shows before "+n". */
 const ROW_THUMBS = 4;
+/** Row thumbnails are too small to rise into place; they grow in instead. */
+const THUMB_ARRIVAL = { rise: 0, scale: 0.5 };
 
 type Feed = {
   /** The query these results belong to; blank is trending. */
@@ -78,7 +83,50 @@ export default function GifPicker({
   });
   const [page, setPage] = useState<Page>("browse");
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const favorites = useGifFavorites();
+
+  // The saved row and the notice fold shut rather than vanish, so what they
+  // last showed is held on to while they close.
+  const [row, setRow] = useState<GifResult[]>([]);
+  if (favorites.saved && favorites.saved.length > 0 && row !== favorites.saved)
+    setRow(favorites.saved);
+  const [notice, setNotice] = useState<string | null>(null);
+  if (favorites.notice !== null && notice !== favorites.notice)
+    setNotice(favorites.notice);
+
+  // Hearts already saved when the picker opens are part of how it opens, not
+  // news: the row is drawn open at once. Only a change after that folds.
+  const loaded = favorites.saved !== undefined;
+  const [settledIn, setSettledIn] = useState(false);
+  useEffect(() => {
+    if (!loaded) return;
+    const frame = requestAnimationFrame(() => setSettledIn(true));
+    return () => cancelAnimationFrame(frame);
+  }, [loaded]);
+
+  // As the row folds open it takes its height from the grid below. Scrolling
+  // the grid by the same amount, frame by frame, keeps every tile where it
+  // was — including the one whose heart was just tapped, still under the
+  // finger. Resize observations land before paint, so nothing jitters. A row
+  // drawn open as the picker opens leaves the grid at its top.
+  const anchoring = useRef(false);
+  useEffect(() => {
+    anchoring.current = settledIn;
+  }, [settledIn]);
+  useLayoutEffect(() => {
+    const reveal = rowRef.current;
+    const scroller = scrollerRef.current;
+    if (!reveal || !scroller) return;
+    let height = reveal.getBoundingClientRect().height;
+    const observer = new ResizeObserver(() => {
+      const next = reveal.getBoundingClientRect().height;
+      if (anchoring.current) scroller.scrollTop += next - height;
+      height = next;
+    });
+    observer.observe(reveal);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(
@@ -164,13 +212,15 @@ export default function GifPicker({
               placeholder="Search KLIPY"
             />
           </div>
-          {saved.length > 0 ? (
-            <SavedRow
-              saved={saved}
-              disabled={!browsing}
-              onOpen={() => setPage("saved")}
-            />
-          ) : null}
+          <Reveal ref={rowRef} open={saved.length > 0} instant={!settledIn}>
+            {row.length > 0 ? (
+              <SavedRow
+                saved={row}
+                disabled={!browsing || saved.length === 0}
+                onOpen={() => setPage("saved")}
+              />
+            ) : null}
+          </Reveal>
           <div
             ref={scrollerRef}
             className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto overscroll-contain px-1 pb-1"
@@ -253,14 +303,14 @@ export default function GifPicker({
           />
         </PickerPage>
       </div>
-      {favorites.notice ? (
+      <Reveal open={favorites.notice !== null}>
         <p
           role="status"
           className="mx-1 mt-1.5 rounded-xl bg-foreground/[0.05] px-3 py-2 text-xs text-muted-foreground"
         >
-          {favorites.notice}
+          {favorites.notice ?? notice}
         </p>
-      ) : null}
+      </Reveal>
     </div>
   );
 }
@@ -279,6 +329,50 @@ function lanes(results: GifResult[]): GifResult[][] {
     lane.height += result.preview.height / result.preview.width;
   }
   return lanes.map((lane) => lane.items);
+}
+
+/**
+ * Something that folds open and shut in place: its height eases between
+ * nothing and whatever the content needs, via the `0fr`/`1fr` grid-row trick,
+ * so the space around it moves with it instead of jumping. While shut it is
+ * inert. `instant` skips the motion, for state that is already true when the
+ * picker opens. The transitions live in `globals.css` at `.gif-reveal`.
+ */
+function Reveal({
+  ref,
+  open,
+  instant = false,
+  children,
+}: {
+  ref?: Ref<HTMLDivElement>;
+  open: boolean;
+  instant?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      ref={ref}
+      inert={!open}
+      data-open={open ? "" : undefined}
+      data-instant={instant ? "" : undefined}
+      className="gif-reveal grid shrink-0"
+    >
+      <div className="min-h-0 overflow-hidden">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Fades a KLIPY image in once it has decoded, over the tile's own tint, so
+ * the grid fills in softly instead of each picture snapping onto the page as
+ * it arrives. Cached images are already `complete` when mounted.
+ */
+function markLoaded(event: SyntheticEvent<HTMLImageElement>) {
+  event.currentTarget.dataset.loaded = "";
+}
+
+function seeLoaded(image: HTMLImageElement | null) {
+  if (image?.complete && image.naturalWidth > 0) image.dataset.loaded = "";
 }
 
 /**
@@ -349,7 +443,9 @@ function GifTile({
         alt=""
         loading="lazy"
         decoding="async"
-        className="size-full object-cover transition duration-200 ease-out group-data-highlighted/gif:scale-[1.04] group-data-highlighted/gif:brightness-90 motion-reduce:transition-none"
+        ref={seeLoaded}
+        onLoad={markLoaded}
+        className="size-full object-cover opacity-0 transition duration-300 ease-out group-data-highlighted/gif:scale-[1.04] group-data-highlighted/gif:brightness-90 data-loaded:opacity-100 motion-reduce:transition-none"
       />
       <HeartButton saved={saved} onToggle={() => onToggle(result)} />
     </MenuItem>
@@ -418,6 +514,8 @@ function SavedRow({
 }) {
   const shown = saved.slice(0, ROW_THUMBS);
   const more = saved.length - shown.length;
+  // A new heart slides the thumbnails along rather than reshuffling them.
+  const { frame, ghosts } = useFlip(saved, THUMB_ARRIVAL);
   return (
     <MenuItem
       closeOnClick={false}
@@ -429,23 +527,42 @@ function SavedRow({
       <HeartSolidIcon className="size-4 shrink-0 text-rose-500" />
       <span className="font-medium">Saved</span>
       <span className="text-xs text-faint tabular-nums">{saved.length}</span>
-      <span className="ml-auto flex shrink-0 items-center gap-1">
+      <span
+        ref={frame}
+        className="relative ml-auto flex shrink-0 items-center gap-1"
+      >
         {shown.map((item) => (
-          // eslint-disable-next-line @next/next/no-img-element -- KLIPY media must load from KLIPY; see src/lib/klipy.ts
-          <img
+          <span
             key={item.slug}
-            src={item.preview.url}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="size-7 rounded-lg bg-foreground/[0.06] object-cover"
-          />
+            data-flip={item.slug}
+            className="size-7 overflow-hidden rounded-lg bg-foreground/[0.06]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- KLIPY media must load from KLIPY; see src/lib/klipy.ts */}
+            <img
+              src={item.preview.url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              ref={seeLoaded}
+              onLoad={markLoaded}
+              className="size-full object-cover opacity-0 transition-opacity duration-300 ease-out data-loaded:opacity-100 motion-reduce:transition-none"
+            />
+          </span>
         ))}
         {more > 0 ? (
-          <span className="grid h-7 min-w-7 place-items-center rounded-lg bg-foreground/[0.08] px-1 text-[0.6875rem] font-medium text-muted-foreground tabular-nums">
+          <span
+            data-flip="more"
+            className="grid h-7 min-w-7 place-items-center rounded-lg bg-foreground/[0.08] px-1 text-[0.6875rem] font-medium text-muted-foreground tabular-nums"
+          >
             +{more}
           </span>
         ) : null}
+        <span
+          ref={ghosts}
+          inert
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+        />
       </span>
       <ChevronRightIcon className="size-4 shrink-0 text-faint" />
     </MenuItem>
@@ -493,8 +610,33 @@ function SavedGallery({
         className="min-h-0 flex-1 [scrollbar-width:thin] overflow-y-auto overscroll-contain px-1 pb-1"
         aria-label="Saved GIFs"
       >
+        <div ref={frame} className="relative">
+          <div className="flex items-start gap-1.5">
+            {columns.map((items, index) => (
+              <div key={index} className="flex min-w-0 flex-1 flex-col gap-1.5">
+                {items.map((result) => (
+                  <GifTile
+                    key={result.slug}
+                    result={result}
+                    saved
+                    disabled={!active}
+                    onPick={onPick}
+                    onToggle={onToggle}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+          <div
+            ref={ghosts}
+            inert
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+          />
+        </div>
         {saved.length === 0 ? (
-          <div className="flex flex-col items-center gap-1.5 px-6 py-12 text-center">
+          // Held back a beat so the last tile has faded before this arrives.
+          <div className="gif-empty-in flex flex-col items-center gap-1.5 px-6 py-12 text-center">
             <span className="mb-1 grid size-11 place-items-center rounded-full bg-foreground/[0.05]">
               <HeartIcon className="size-5 text-faint" strokeWidth={1.75} />
             </span>
@@ -503,35 +645,7 @@ function SavedGallery({
               Tap the heart on a GIF to keep it here.
             </p>
           </div>
-        ) : (
-          <div ref={frame} className="relative">
-            <div className="flex items-start gap-1.5">
-              {columns.map((items, index) => (
-                <div
-                  key={index}
-                  className="flex min-w-0 flex-1 flex-col gap-1.5"
-                >
-                  {items.map((result) => (
-                    <GifTile
-                      key={result.slug}
-                      result={result}
-                      saved
-                      disabled={!active}
-                      onPick={onPick}
-                      onToggle={onToggle}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-            <div
-              ref={ghosts}
-              inert
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0"
-            />
-          </div>
-        )}
+        ) : null}
       </div>
     </>
   );
