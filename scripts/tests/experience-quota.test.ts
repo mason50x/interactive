@@ -547,6 +547,100 @@ test("only one message per turn earns time until somebody else replies", async (
   ).toBe(start);
 });
 
+/** A global room with `person` and `other` seated and past the trust gate. */
+async function seatedRoom(t: Awaited<ReturnType<typeof setup>>["t"]) {
+  return await t.run(async (ctx) => {
+    const conversationId = await ctx.db.insert("conversations", {
+      kind: "global",
+      createdBy: "person",
+      createdAt: 0,
+    });
+    for (const clerkId of ["person", "other"]) {
+      const account = await ctx.db
+        .query("users")
+        .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
+        .unique();
+      await ctx.db.patch(account!._id, { username: clerkId, usernameKey: clerkId, clerkCreatedAt: 0 });
+      await ctx.db.insert("chatSenders", { clerkId, messagesSent: 100, recent: [] });
+      await ctx.db.insert("conversationMembers", {
+        conversationId, clerkId, kind: "global", role: "member", status: "active", joinedAt: 0, lastReadAt: 0,
+      });
+    }
+    return conversationId;
+  });
+}
+
+test("unsending a rewarded message does not hand the turn back", async () => {
+  const { t, user } = await setup();
+  const room = await seatedRoom(t);
+  const remaining = async () =>
+    (await user.query(api.experience.status, { day: 0 })).remainingSeconds;
+  const say = (body: string, clientNonce: string) =>
+    user.mutation(api.chat.messages.send, { conversationId: room, body, clientNonce });
+
+  expect(await say("Anyone up for a game?", "unsend-1")).toMatchObject({ ok: true });
+  expect(await remaining()).toBe(1890);
+  // Within the delete window the row is gone for good, but the turn is not.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const last = await t.run((ctx) =>
+      ctx.db
+        .query("messages")
+        .withIndex("byConversation", (q) => q.eq("conversationId", room))
+        .order("desc")
+        .first(),
+    );
+    await user.mutation(api.chat.messages.remove, { messageId: last!._id });
+    expect(
+      await t.run((ctx) =>
+        ctx.db
+          .query("messages")
+          .withIndex("byConversation", (q) => q.eq("conversationId", room))
+          .take(1),
+      ),
+    ).toHaveLength(0);
+    expect(await say(`Take ${attempt} on a different sentence.`, `unsend-${attempt + 2}`)).toMatchObject({ ok: true });
+    expect(await remaining()).toBe(1890);
+  }
+  // A reply from somebody else still opens it, even with the rewarded message gone.
+  expect(
+    await t.withIdentity({ subject: "other" }).mutation(api.chat.messages.send, {
+      conversationId: room, body: "I would play.", clientNonce: "unsend-other",
+    }),
+  ).toMatchObject({ ok: true });
+  expect(await say("Then let us play.", "unsend-9")).toMatchObject({ ok: true });
+  expect(await remaining()).toBe(1980);
+});
+
+test("bot rows are read past: they neither hand the turn back nor hide a person who did", async () => {
+  const { t, user } = await setup();
+  const other = t.withIdentity({ subject: "other" });
+  const room = await seatedRoom(t);
+  const remaining = async () =>
+    (await user.query(api.experience.status, { day: 0 })).remainingSeconds;
+  const say = (who: typeof user, body: string, clientNonce: string) =>
+    who.mutation(api.chat.messages.send, { conversationId: room, body, clientNonce });
+  const botSays = (body: string) =>
+    t.run((ctx) =>
+      ctx.db.insert("messages", {
+        conversationId: room, authorClerkId: "bot", authorHandle: "chat", body, status: "visible", flags: [],
+      }),
+    );
+
+  expect(await say(user, "Anyone up for a game?", "bot-1")).toMatchObject({ ok: true });
+  expect(await remaining()).toBe(1890);
+  // Somebody else speaks, then the bot answers them. The bot's row is the
+  // newest, but a person has still spoken since the last reward.
+  expect(await say(other, "What kind of game?", "bot-2")).toMatchObject({ ok: true });
+  await botSays("There are many kinds of games!");
+  expect(await say(user, "A card game, I think.", "bot-3")).toMatchObject({ ok: true });
+  expect(await remaining()).toBe(1980);
+  // The bot alone, however many times, is not a reply.
+  await botSays("Cards are a classic choice.");
+  await botSays("Would you like some rules?");
+  expect(await say(user, "No thanks, we know them.", "bot-4")).toMatchObject({ ok: true });
+  expect(await remaining()).toBe(1980);
+});
+
 test("the turn notice waits for a message that would otherwise have counted", async () => {
   const { t, user } = await setup();
   const room = await t.run(async (ctx) => {
