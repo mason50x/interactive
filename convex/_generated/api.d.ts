@@ -48,6 +48,7 @@ import type * as moderation_patterns from "../moderation/patterns.js";
 import type * as moderation_rules from "../moderation/rules.js";
 import type * as moderation_verdict from "../moderation/verdict.js";
 import type * as preferences from "../preferences.js";
+import type * as remoteSound from "../remoteSound.js";
 import type * as restrictionState from "../restrictionState.js";
 import type * as restrictions from "../restrictions.js";
 import type * as roles from "../roles.js";
@@ -114,6 +115,7 @@ declare const fullApi: ApiFromModules<{
   "moderation/rules": typeof moderation_rules;
   "moderation/verdict": typeof moderation_verdict;
   preferences: typeof preferences;
+  remoteSound: typeof remoteSound;
   restrictionState: typeof restrictionState;
   restrictions: typeof restrictions;
   roles: typeof roles;

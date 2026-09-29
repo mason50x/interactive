@@ -23,7 +23,11 @@ import { adminPageLabel } from "@/lib/admin-page-label";
 import { cn } from "@/lib/utils";
 import styles from "./admin.module.css";
 import { AdminSelect } from "./admin-select";
-import { AllowanceReset, UserControls } from "./user-controls";
+import {
+  AllowanceReset,
+  RemoteSoundButton,
+  UserControls,
+} from "./user-controls";
 import { useLiveUsers } from "./use-live-users";
 import { PAGE_BREAKPOINTS, pageWidthRem } from "@/lib/page-width";
 
@@ -46,6 +50,8 @@ const COLUMN_BREAKPOINTS = [
   PAGE_BREAKPOINTS.lg,
   PAGE_BREAKPOINTS.xl,
 ];
+// The CEO-only Sound column appears alongside Current Page.
+const SOUND_COLUMN_BREAKPOINT = PAGE_BREAKPOINTS.md;
 function subscribeColumns(onChange: () => void) {
   const shell = document.querySelector('main[data-slot="shell"]');
   window.addEventListener("resize", onChange);
@@ -56,12 +62,16 @@ function subscribeColumns(onChange: () => void) {
     window.removeEventListener("resize", onChange);
   };
 }
-function visibleColumns() {
+function visibleColumns(ceo: boolean) {
   const width = pageWidthRem();
-  return 2 + COLUMN_BREAKPOINTS.filter((rem) => width >= rem).length;
+  return (
+    2 +
+    COLUMN_BREAKPOINTS.filter((rem) => width >= rem).length +
+    (ceo && width >= SOUND_COLUMN_BREAKPOINT ? 1 : 0)
+  );
 }
-function serverColumns() {
-  return 6;
+function serverColumns(ceo: boolean) {
+  return ceo ? 7 : 6;
 }
 
 function AccountStatus({ user }: { user: DirectoryUser }) {
@@ -132,10 +142,11 @@ function CurrentPage({
 }
 
 export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
+  const ceo = role === "ceo";
   const columnCount = useSyncExternalStore(
     subscribeColumns,
-    visibleColumns,
-    serverColumns,
+    () => visibleColumns(ceo),
+    () => serverColumns(ceo),
   );
   const { isAuthenticated } = useConvexAuth();
   const { results, status, loadMore } = usePaginatedQuery(
@@ -263,7 +274,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
         <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">
             User directory. View a user to manage their role, timeout, and
-            allowances.
+            allowances{ceo ? ", or play a beep on their device" : ""}.
           </caption>
           <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
@@ -282,6 +293,14 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
               >
                 Current Page
               </th>
+              {ceo && (
+                <th
+                  scope="col"
+                  className="hidden w-28 px-3 py-3 font-medium page-md:table-cell"
+                >
+                  Sound
+                </th>
+              )}
               <th
                 scope="col"
                 className="hidden w-36 px-3 py-3 font-medium page-lg:table-cell"
@@ -367,6 +386,11 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         loading={liveUsers === undefined}
                       />
                     </td>
+                    {ceo && (
+                      <td className="hidden px-3 py-3.5 page-md:table-cell">
+                        <RemoteSoundButton user={user} />
+                      </td>
+                    )}
                     <td className="hidden px-3 py-3.5 page-lg:table-cell">
                       <AccountStatus user={user} />
                     </td>

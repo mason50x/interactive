@@ -202,6 +202,19 @@ export default defineSchema({
     .index("byUpdatedBy", ["updatedBy"]),
 
   /**
+   * The last sound a CEO sent to an account's devices from the Admin user
+   * directory. One replaceable row per target, patched on every send, so the
+   * table never grows and the target's subscription wakes on `sentAt`
+   * changing. See `convex/remoteSound.ts`.
+   */
+  soundPings: defineTable({
+    clerkId: v.string(),
+    sound: v.literal("beep"),
+    sentBy: v.string(),
+    sentAt: v.number(),
+  }).index("byClerkId", ["clerkId"]),
+
+  /**
    * CEO-raised topics every member votes yes or no on. `forced` holds the
    * member's playtime until they vote; otherwise the vote is only asked for.
    * The tallies live on the row so the admin list never scans the votes.
