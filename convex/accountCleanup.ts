@@ -115,6 +115,7 @@ export const purge = internalMutation({
         await limiter.reset(ctx, name, { key: clerkId });
       }
     } else if (stage === 15) {
+      // Retired table, drained until it can leave the schema; see `schema.ts`.
       const rows = await ctx.db.query("accountRestrictions")
         .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).take(BATCH);
       for (const row of rows) await ctx.db.delete(row._id);

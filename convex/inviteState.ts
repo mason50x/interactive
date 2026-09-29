@@ -3,7 +3,7 @@ import { resolveRole } from "./roles";
 
 /**
  * What every public function throws for an account still at the invite gate.
- * Fixed, like `RESTRICTED_ERROR`, so the client can recognise it.
+ * Fixed, like `ANNOUNCEMENT_ERROR`, so the client can recognise it.
  */
 export const UNINVITED_ERROR = "Enter an invite code first.";
 

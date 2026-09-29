@@ -20,8 +20,7 @@ import {
  * ## CEO-gated
  *
  * `play` is the only write and it goes through `requireCeo`, the same gate as
- * every other CEO power on the directory (`adminQuotas.setRole`,
- * `restrictions.set`). Hiding the column from a Head Moderator is a courtesy;
+ * every other CEO power on the directory (`adminQuotas.setRole`). Hiding the column from a Head Moderator is a courtesy;
  * the mutation refusing them is the rule. A CEO may target any account,
  * including their own, which is how the feature is tried out without a second
  * person.

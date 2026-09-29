@@ -9,27 +9,30 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
-import { RESTRICTED_ERROR, restrictionRow } from "./restrictionState";
+import { lockedOut } from "./announcementLock";
+import { ANNOUNCEMENT_ERROR } from "./announcementState";
 import { UNINVITED_ERROR, isUninvited } from "./inviteState";
 
 /**
  * The public `query`, `mutation` and `action` builders every module imports
  * instead of `_generated/server`'s.
  *
- * Each one refuses a restricted account (see `restrictions.ts`) before the
- * handler runs, so a ban or an error screen is the server's and not an
- * overlay a client could delete. One choke point rather than a check beside
- * every handler: a function added later is covered without anyone remembering
- * to be. Internal functions are untouched — nothing a client can call is.
+ * Each one refuses an account the site announcement has locked out (see
+ * `announcement.ts`) before the handler runs, so a full-screen announcement is
+ * the server's and not an overlay a client could delete. One choke point
+ * rather than a check beside every handler: a function added later is covered
+ * without anyone remembering to be. Internal functions are untouched —
+ * nothing a client can call is. CEOs and Head Moderators are never locked
+ * out, since they are the ones who turn it off.
  *
- * `restrictions.mine` is the one public function built on the raw builder,
+ * `announcement.mine` is the one public function built on the raw builder,
  * because it is how the client learns which screen to show.
  *
  * They also refuse an account that has not redeemed an invite code yet, or
  * whose row does not exist yet, so the invite gate is the server's too. The
  * `preInvite*` builders below are the few a gated account needs to create its
  * row, see its own settings, and get through the gate; they still refuse a
- * restricted one.
+ * locked-out one.
  */
 
 type Definition<Ctx> =
@@ -51,32 +54,32 @@ function guarded<Ctx>(
   };
 }
 
-async function checkRestrictedDb(ctx: QueryCtx | MutationCtx) {
+async function checkLockedOutDb(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (identity && (await restrictionRow(ctx, identity.subject)))
-    throw new ConvexError(RESTRICTED_ERROR);
+  if (identity && (await lockedOut(ctx, identity.subject)))
+    throw new ConvexError(ANNOUNCEMENT_ERROR);
 }
 
 async function checkDb(ctx: QueryCtx | MutationCtx) {
-  await checkRestrictedDb(ctx);
+  await checkLockedOutDb(ctx);
   const identity = await ctx.auth.getUserIdentity();
   if (identity && (await isUninvited(ctx, identity.subject)))
     throw new ConvexError(UNINVITED_ERROR);
 }
 
-async function checkRestrictedAction(ctx: ActionCtx) {
+async function checkLockedOutAction(ctx: ActionCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (
     identity &&
-    (await ctx.runQuery(internal.restrictions.isRestricted, {
+    (await ctx.runQuery(internal.announcement.isLockedOut, {
       clerkId: identity.subject,
     }))
   )
-    throw new ConvexError(RESTRICTED_ERROR);
+    throw new ConvexError(ANNOUNCEMENT_ERROR);
 }
 
 async function checkAction(ctx: ActionCtx) {
-  await checkRestrictedAction(ctx);
+  await checkLockedOutAction(ctx);
   const identity = await ctx.auth.getUserIdentity();
   if (
     identity &&
@@ -102,15 +105,15 @@ export const action = ((definition: Definition<ActionCtx>) =>
 
 export const preInviteQuery = ((definition: Definition<QueryCtx>) =>
   rawQuery(
-    guarded(definition, checkRestrictedDb) as never,
+    guarded(definition, checkLockedOutDb) as never,
   )) as unknown as typeof rawQuery;
 
 export const preInviteMutation = ((definition: Definition<MutationCtx>) =>
   rawMutation(
-    guarded(definition, checkRestrictedDb) as never,
+    guarded(definition, checkLockedOutDb) as never,
   )) as unknown as typeof rawMutation;
 
 export const preInviteAction = ((definition: Definition<ActionCtx>) =>
   rawAction(
-    guarded(definition, checkRestrictedAction) as never,
+    guarded(definition, checkLockedOutAction) as never,
   )) as unknown as typeof rawAction;
