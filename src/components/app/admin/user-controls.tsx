@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, usePaginatedQuery } from "convex/react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import { api } from "@convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -31,6 +31,61 @@ function FeedbackMessage({ value }: { value: Feedback }) {
         {value.message}
       </p>
     )
+  );
+}
+
+/**
+ * Plays a beep on every device signed in as this account. CEO-only: the
+ * directory renders it for CEOs alone, and `remoteSound.play` refuses anyone
+ * else. Sits in a row that toggles on click, so the click stops here.
+ */
+export function RemoteSoundButton({ user }: { user: DirectoryUser }) {
+  const play = useMutation(api.remoteSound.play);
+  const [state, setState] = useState<"idle" | "busy" | "sent" | "failed">(
+    "idle",
+  );
+
+  useEffect(() => {
+    if (state !== "sent" && state !== "failed") return;
+    const timer = window.setTimeout(() => setState("idle"), 2000);
+    return () => window.clearTimeout(timer);
+  }, [state]);
+
+  async function send() {
+    if (state === "busy") return;
+    setState("busy");
+    try {
+      await play({ clerkId: user.clerkId, sound: "beep" });
+      setState("sent");
+    } catch {
+      setState("failed");
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="min-w-20"
+      disabled={state === "busy"}
+      aria-label={`Play a beep on ${user.label}’s device`}
+      title="Play a beep on their device"
+      onClick={(event) => {
+        event.stopPropagation();
+        void send();
+      }}
+    >
+      <SpeakerWaveIcon aria-hidden="true" />
+      <span>
+        {state === "busy"
+          ? "Sending…"
+          : state === "sent"
+            ? "Sent"
+            : state === "failed"
+              ? "Failed"
+              : "Beep"}
+      </span>
+    </Button>
   );
 }
 
@@ -675,6 +730,15 @@ export function UserControls({
           <p className="text-xs text-muted-foreground">
             {ROLE_LABEL[user.role]} · Only CEOs can change roles.
           </p>
+        )}
+        {isCeo && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-medium">Remote sound</h4>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Plays a beep on every device signed in as {user.label}.
+            </p>
+            <RemoteSoundButton user={user} />
+          </div>
         )}
       </section>
       <section
