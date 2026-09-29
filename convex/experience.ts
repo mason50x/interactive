@@ -5,6 +5,7 @@ import { RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 import { PLAYTIME_SECONDS, CHAT_REWARD_SECONDS, playtimeDay, rewardText, similarReward } from "../config/playtime";
 import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
 import { internalMutation, type QueryCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
@@ -76,7 +77,10 @@ async function quota(ctx: QueryCtx) {
  * time immediately; distinct rewards stack. Receipts survive message deletion
  * and daily resets. The third similar qualifying message in a row does not
  * earn time. */
-export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string, seconds = CHAT_REWARD_SECONDS) {
+export async function rewardChatPlaytime(
+  ctx: MutationCtx, clerkId: string, body: string, seconds = CHAT_REWARD_SECONDS,
+  conversationId?: Id<"conversations">,
+) {
   const normalized = rewardText(body);
   if (!normalized) return;
   const recent = await ctx.db.query("playtimeRewards")
@@ -102,7 +106,7 @@ export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body
     });
     await ctx.scheduler.runAt(q.status.resetsAt, internal.experience.prune, { leaseId, key: q.key });
   }
-  await ctx.db.insert("playtimeRewards", { clerkId, hash, normalized });
+  await ctx.db.insert("playtimeRewards", { clerkId, hash, normalized, conversationId });
 }
 
 // The day is a subscription refresh key only. Accounting always uses server time.

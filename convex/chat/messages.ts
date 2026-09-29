@@ -42,6 +42,59 @@ import {
 const REWARDED_ROOMS: ReadonlySet<string> = new Set(["global", "announcements", "admins"]);
 
 /**
+ * How far back past the sender's last reward the turn check will read before
+ * giving up and calling the turn held. Reached only by somebody who has
+ * posted this many unrewarded messages since anyone else spoke, and the
+ * answer for them is the safe one.
+ */
+const TURN_SCAN_LIMIT = 200;
+
+/**
+ * Whether the sender's next message in this conversation can earn playtime.
+ *
+ * Only one message per turn does: from the moment a message is rewarded, the
+ * sender earns nothing more here until somebody else has spoken after it.
+ *
+ * The turn is measured from the reward receipt, not from the message rows. A
+ * message can be unsent for thirty seconds after it goes, and a turn that
+ * lived on the row would be handed straight back by deleting it — send,
+ * delete, send again, each one paid. The receipt outlives the message (see
+ * `rewardChatPlaytime`), so the turn does too.
+ *
+ * "Somebody else" is a person. The bot only speaks when asked, so its rows
+ * neither hand the turn back nor take it away: the scan runs past them to the
+ * most recent human who is not the sender. It reads newest-first and stops
+ * at the first such row, which in an ordinary conversation is the last thing
+ * said.
+ */
+async function turnIsOpen(
+  ctx: QueryCtx,
+  clerkId: string,
+  conversationId: Id<"conversations">,
+): Promise<boolean> {
+  const held = await ctx.db
+    .query("playtimeRewards")
+    .withIndex("by_clerkId_and_conversation", (q) =>
+      q.eq("clerkId", clerkId).eq("conversationId", conversationId),
+    )
+    .order("desc")
+    .first();
+  if (held === null) return true;
+
+  let scanned = 0;
+  for await (const row of ctx.db
+    .query("messages")
+    .withIndex("byConversation", (q) =>
+      q.eq("conversationId", conversationId).gt("_creationTime", held._creationTime),
+    )
+    .order("desc")) {
+    if (row.authorClerkId !== clerkId && row.authorClerkId !== BOT_ID) return true;
+    if (++scanned >= TURN_SCAN_LIMIT) return false;
+  }
+  return false;
+}
+
+/**
  * Saying something, and reading what was said.
  *
  * ## A refused message is not stored
@@ -412,20 +465,8 @@ export const send = mutation({
       return { ok: false, refusal: verdict.refusal };
     }
 
-    // Read before the insert so "the last thing said here" is not this message.
-    // Only one message per turn earns playtime: after a rewarded message, the
-    // sender earns nothing more in this conversation until somebody else has
-    // spoken. The bot is not somebody else — its replies are asked for.
-    const lastSpeaker = (
-      await ctx.db
-        .query("messages")
-        .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
-        .order("desc")
-        .first()
-    )?.authorClerkId;
-    const rewardableTurn =
-      lastSpeaker === undefined ||
-      (lastSpeaker !== profile.clerkId && lastSpeaker !== BOT_ID);
+    // Read before the insert so this message is not its own reply.
+    const rewardableTurn = await turnIsOpen(ctx, profile.clerkId, conversationId);
 
     const messageId = await ctx.db.insert("messages", {
       conversationId,
@@ -465,6 +506,7 @@ export const send = mutation({
         await rewardChatPlaytime(
           ctx, profile.clerkId, verdict.body,
           member.kind === "dm" ? DM_REWARD_SECONDS : undefined,
+          conversationId,
         );
       } else if (profile.turnNoticeAt === undefined && rewardText(verdict.body) !== null) {
         // The first time a message that would have counted does not, say so

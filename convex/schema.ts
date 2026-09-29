@@ -38,8 +38,14 @@ export default defineSchema({
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
   playtimeRewards: defineTable({
     clerkId: v.string(), hash: v.string(), normalized: v.string(),
+    /** Where the rewarded message was sent. The receipt, not the message
+     * row, is what holds the sender's turn there: a message can be unsent
+     * for thirty seconds, and the receipt outlives it. Absent on receipts
+     * from before turns were tracked. */
+    conversationId: v.optional(v.id("conversations")),
   }).index("by_clerkId_and_hash", ["clerkId", "hash"])
-    .index("by_clerkId", ["clerkId"]),
+    .index("by_clerkId", ["clerkId"])
+    .index("by_clerkId_and_conversation", ["clerkId", "conversationId"]),
   publishedHtmlSimulators: defineTable(publishedFields)
     .index("by_publishKey", ["publishKey"])
     .index("by_storageId", ["storageId"])
