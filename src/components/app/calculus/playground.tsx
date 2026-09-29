@@ -181,7 +181,9 @@ function PuzzleCard({
 
   return (
     <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-      <div className="border-b border-neutral-100">
+      {/* On wide screens the pane never scrolls, so the figure gives up
+          height to keep the whole card on screen. */}
+      <div className="border-b border-neutral-100 lg:[&>svg]:max-h-[max(10rem,calc(100svh-28rem))]">
         <FigureFrame description={problem.description}>
           {problem.figure}
         </FigureFrame>

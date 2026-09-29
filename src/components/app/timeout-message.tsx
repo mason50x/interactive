@@ -66,8 +66,8 @@ export function TimeoutMessage({
           </p>
         </div>
       </div>
-      <div className="border-t border-neutral-200 bg-neutral-50 px-6 pt-10 pb-24 lg:h-svh lg:overflow-y-auto lg:border-t-0 lg:border-l lg:py-12">
-        <div className="flex min-h-full items-center">
+      <div className="border-t border-neutral-200 bg-neutral-50 px-6 pt-10 pb-24 lg:flex lg:h-svh lg:items-center lg:overflow-hidden lg:border-t-0 lg:border-l lg:py-8">
+        <div className="flex w-full items-center">
           <CalculusPlayground mathBypass={mathBypass} />
         </div>
       </div>
