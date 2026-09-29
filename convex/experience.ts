@@ -70,10 +70,12 @@ async function quota(ctx: QueryCtx) {
   return quotaFor(ctx, identity.subject);
 }
 
-/** Called only by the accepted chat-send transaction, never by the client.
- * Qualifying messages add time immediately; distinct rewards stack.
- * Receipts survive message deletion and daily resets. The third similar
- * qualifying message in a row does not earn time. */
+/** Called only by the accepted chat-send transaction, never by the client,
+ * and only for a message that follows somebody else's — the caller decides
+ * whose turn it is (see `send` in `chat/messages.ts`). Qualifying messages add
+ * time immediately; distinct rewards stack. Receipts survive message deletion
+ * and daily resets. The third similar qualifying message in a row does not
+ * earn time. */
 export async function rewardChatPlaytime(ctx: MutationCtx, clerkId: string, body: string, seconds = CHAT_REWARD_SECONDS) {
   const normalized = rewardText(body);
   if (!normalized) return;

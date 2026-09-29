@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import {
@@ -29,11 +29,22 @@ const subscribeOnline = (notify: () => void) => {
   };
 };
 
+/** The one thing the server can say about a message it accepted. */
+export type SendNotice = "turn";
+
 export function useOutbox(
   account: string | null | undefined,
   conversationId: Id<"conversations">,
+  onNotice?: (notice: SendNotice) => void,
 ) {
   const key = account ? outboxKey(account, conversationId) : null;
+  // Through a ref so a caller passing a fresh closure each render does not
+  // restart the send effect below, which would claim and release the same
+  // entry over and over.
+  const notify = useRef(onNotice);
+  useEffect(() => {
+    notify.current = onNotice;
+  }, [onNotice]);
   const entries = useSyncExternalStore(
     subscribeOutbox,
     () => getOutbox(key),
@@ -79,6 +90,7 @@ export function useOutbox(
         if (result.ok) {
           for (const image of entry.images)
             rememberPreview(image.attachmentId, image.url);
+          if (result.notice !== undefined) notify.current?.(result.notice);
         }
         updateOutbox(key, (rows) =>
           result.ok

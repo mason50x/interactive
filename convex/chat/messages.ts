@@ -3,7 +3,7 @@ import { rewardChatPlaytime } from "../experience";
 import type { ChatAccount } from "./shared";
 import { announcementPublisherId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
-import { DM_REWARD_SECONDS } from "../../config/playtime";
+import { DM_REWARD_SECONDS, rewardText } from "../../config/playtime";
 import { botQuotaName } from "./botConfig";
 import { lockedFor, roomControlRefusal } from "./roomControls";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
@@ -64,8 +64,14 @@ const REWARDED_ROOMS: ReadonlySet<string> = new Set(["global", "announcements", 
  * position in the conversation, not a promise of fifty messages.
  */
 
+/**
+ * `notice` rides along with an accepted message when there is one thing
+ * worth telling the sender about it. `"turn"`: the message went, but earned
+ * no playtime because nobody else had spoken since their last one. Sent once
+ * per account, the first time it happens; see `turnNoticeAt` in the schema.
+ */
 export type SendResult =
-  { ok: true } | { ok: false; refusal: Refusal };
+  { ok: true; notice?: "turn" } | { ok: false; refusal: Refusal };
 
 /** One message, exactly as it goes to the client. */
 export type ChatMessage = {
@@ -137,7 +143,7 @@ export const gifValidator = v.object({
   slug: v.string(), url: v.string(), width: v.number(), height: v.number(), title: v.optional(v.string()),
 });
 const sendResultValidator = v.union(
-  v.object({ ok: v.literal(true) }),
+  v.object({ ok: v.literal(true), notice: v.optional(v.literal("turn")) }),
   v.object({ ok: v.literal(false), refusal: v.string() }),
 );
 const chatMessageValidator = v.object({
@@ -406,6 +412,21 @@ export const send = mutation({
       return { ok: false, refusal: verdict.refusal };
     }
 
+    // Read before the insert so "the last thing said here" is not this message.
+    // Only one message per turn earns playtime: after a rewarded message, the
+    // sender earns nothing more in this conversation until somebody else has
+    // spoken. The bot is not somebody else — its replies are asked for.
+    const lastSpeaker = (
+      await ctx.db
+        .query("messages")
+        .withIndex("byConversation", (q) => q.eq("conversationId", conversationId))
+        .order("desc")
+        .first()
+    )?.authorClerkId;
+    const rewardableTurn =
+      lastSpeaker === undefined ||
+      (lastSpeaker !== profile.clerkId && lastSpeaker !== BOT_ID);
+
     const messageId = await ctx.db.insert("messages", {
       conversationId,
       authorClerkId: profile.clerkId,
@@ -435,12 +456,22 @@ export const send = mutation({
     });
 
     // Shared rooms earn full playtime and direct messages half. Group chats,
-    // and anything addressed to the bot, would let one person farm time alone.
-    if (!named.bot) {
-      if (REWARDED_ROOMS.has(member.kind)) {
-        await rewardChatPlaytime(ctx, profile.clerkId, verdict.body);
-      } else if (member.kind === "dm") {
-        await rewardChatPlaytime(ctx, profile.clerkId, verdict.body, DM_REWARD_SECONDS);
+    // anything addressed to the bot, and a run of messages with no reply in
+    // between, would let one person farm time alone.
+    let notice: "turn" | undefined;
+    const rewardedHere = REWARDED_ROOMS.has(member.kind) || member.kind === "dm";
+    if (!named.bot && rewardedHere) {
+      if (rewardableTurn) {
+        await rewardChatPlaytime(
+          ctx, profile.clerkId, verdict.body,
+          member.kind === "dm" ? DM_REWARD_SECONDS : undefined,
+        );
+      } else if (profile.turnNoticeAt === undefined && rewardText(verdict.body) !== null) {
+        // The first time a message that would have counted does not, say so
+        // — once. Set in the same transaction as the message so a retry of
+        // this send, or a second tab, cannot show it twice.
+        await ctx.db.patch(profile._id, { turnNoticeAt: now });
+        notice = "turn";
       }
     }
     await addScore(ctx, profile.clerkId, "chat", 1, now);
@@ -551,7 +582,7 @@ export const send = mutation({
       await ctx.db.patch(conversationId, { lastMessageAt: now });
     }
 
-    return { ok: true };
+    return notice === undefined ? { ok: true } : { ok: true, notice };
   },
 });
 
