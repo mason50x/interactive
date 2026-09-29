@@ -877,6 +877,39 @@
     width: min(26rem, calc(100vw - 1rem));
   }
 
+  /* The GIF picker's two pages — all of KLIPY, and the saved ones — sit side
+     by side on a track twice the panel's width, and the track slides a page
+     over, so the whole page swipes as one thing. Written here rather than as
+     a `translate-x-*` utility for the reason given at `.popup-slide` below:
+     Tailwind's utility and this transition would name different properties. */
+  .gif-pages {
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  .gif-pages[data-page="saved"] {
+    transform: translateX(-50%);
+  }
+
+  /* The heart, on the tap that fills it: in from small, a beat past full
+     size, and back — the same bounce a "like" has everywhere else, so it
+     needs no explaining. */
+  .gif-heart-pop {
+    animation: gif-heart-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes gif-heart-pop {
+    0% {
+      transform: scale(0.5);
+    }
+    45% {
+      transform: scale(1.35);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
   .plus-menu-actions,
   .plus-menu-emojis {
     animation: plus-menu-content-in 180ms ease-out both;
@@ -892,12 +925,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .plus-menu-popup.popup-slide {
+    .plus-menu-popup.popup-slide,
+    .gif-pages {
       transition: none;
     }
 
     .plus-menu-actions,
-    .plus-menu-emojis {
+    .plus-menu-emojis,
+    .gif-heart-pop {
       animation: none;
     }
   }

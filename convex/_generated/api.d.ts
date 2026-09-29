@@ -18,6 +18,7 @@ import type * as chat_attachments from "../chat/attachments.js";
 import type * as chat_bot from "../chat/bot.js";
 import type * as chat_botConfig from "../chat/botConfig.js";
 import type * as chat_conversations from "../chat/conversations.js";
+import type * as chat_gifFavorites from "../chat/gifFavorites.js";
 import type * as chat_groups from "../chat/groups.js";
 import type * as chat_messages from "../chat/messages.js";
 import type * as chat_presence from "../chat/presence.js";
@@ -83,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "chat/bot": typeof chat_bot;
   "chat/botConfig": typeof chat_botConfig;
   "chat/conversations": typeof chat_conversations;
+  "chat/gifFavorites": typeof chat_gifFavorites;
   "chat/groups": typeof chat_groups;
   "chat/messages": typeof chat_messages;
   "chat/presence": typeof chat_presence;

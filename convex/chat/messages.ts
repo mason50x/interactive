@@ -133,7 +133,7 @@ export type ChatPoll = {
 
 export const EDIT_WINDOW_MS = 15 * 60_000;
 const MAX_POLL_VOTERS = 1000;
-const gifValidator = v.object({
+export const gifValidator = v.object({
   slug: v.string(), url: v.string(), width: v.number(), height: v.number(), title: v.optional(v.string()),
 });
 const sendResultValidator = v.union(
@@ -192,7 +192,7 @@ export type ChatGif = {
 };
 
 /** KLIPY's media hosts. See "Network Requirements" in KLIPY's docs. */
-const KLIPY_MEDIA_HOST = /^static\d*\.klipy\.com$/;
+export const KLIPY_MEDIA_HOST = /^static\d*\.klipy\.com$/;
 
 /**
  * A GIF as the client described it, or null when it is not one we will draw.
@@ -201,7 +201,7 @@ const KLIPY_MEDIA_HOST = /^static\d*\.klipy\.com$/;
  * has to be HTTPS on KLIPY's CDN. The title is only alt text, and is dropped
  * rather than refused when it would not pass as a group title would.
  */
-function checkGif(gif: ChatGif): ChatGif | null {
+export function checkGif(gif: ChatGif): ChatGif | null {
   if (!/^[A-Za-z0-9_-]{1,160}$/.test(gif.slug) || gif.url.length > 500) return null;
   let url: URL;
   try {
