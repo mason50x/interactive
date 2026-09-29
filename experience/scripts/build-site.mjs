@@ -139,6 +139,20 @@ if (handler.split(appendCookie).length !== 2) {
 }
 handler = handler.replace(appendCookie, 'u=e.cookie.updateCookieString(u,r,e.meta)');
 
+// A parent that reads a frame's contentWindow before the frame's document
+// exists installs its own engine into the initial about:blank window, and the
+// browser keeps that window for the document that then loads there. That
+// document's handler finds an engine and stands down, so every native call
+// the frame makes runs from the parent's realm: a message it posts arrives
+// with the parent as its source, and reCAPTCHA's anchor frame, which hands
+// its parent a MessagePort this way, is never trusted. Give such a document a
+// call helper of its own realm; postMessage goes through the sender's helper
+// precisely so that the source is the sender.
+const foreignEngine = "self.__uv||p(self);";
+const ownRealmCall = "self.__uv?self.__uv instanceof m||(self.__uv.call=function(t,r,l){return l?t.apply(l,r):t(...r)}):p(self);";
+if (handler.split(foreignEngine).length !== 2) throw new Error("Review the experience frame realm patch.");
+handler = handler.replace(foreignEngine, ownRealmCall);
+
 writeFileSync(handlerPath, handler + "\n" + readFileSync(join(root, "site", "popup.js"), "utf8") + String.raw`
 ;(() => {
   if (typeof document === "undefined") return;
