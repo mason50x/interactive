@@ -25,8 +25,10 @@ import styles from "./admin.module.css";
 import { AdminSelect } from "./admin-select";
 import {
   AllowanceReset,
+  DEFAULT_SOUND_CHOICE,
   RemoteSoundButton,
   UserControls,
+  type SoundChoice,
 } from "./user-controls";
 import { useLiveUsers } from "./use-live-users";
 import { PAGE_BREAKPOINTS, pageWidthRem } from "@/lib/page-width";
@@ -170,6 +172,14 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [closing, setClosing] = useState<string | null>(null);
   const [showBulkReset, setShowBulkReset] = useState(false);
+  // What each row's Play button sends, chosen in the row's expanded panel.
+  // Per account, so a fart lined up for one person does not follow the CEO
+  // to the next row.
+  const [soundChoices, setSoundChoices] = useState<Record<string, SoundChoice>>(
+    {},
+  );
+  const soundChoiceFor = (clerkId: string) =>
+    soundChoices[clerkId] ?? DEFAULT_SOUND_CHOICE;
   const term = search.trim().toLowerCase();
   const hasFilter = Boolean(term) || filter !== "all";
 
@@ -274,7 +284,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
         <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">
             User directory. View a user to manage their role, timeout, and
-            allowances{ceo ? ", or play a beep on their device" : ""}.
+            allowances{ceo ? ", or play a sound on their device" : ""}.
           </caption>
           <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
@@ -388,7 +398,10 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                     </td>
                     {ceo && (
                       <td className="hidden px-3 py-3.5 page-md:table-cell">
-                        <RemoteSoundButton user={user} />
+                        <RemoteSoundButton
+                          user={user}
+                          choice={soundChoiceFor(user.clerkId)}
+                        />
                       </td>
                     )}
                     <td className="hidden px-3 py-3.5 page-lg:table-cell">
@@ -436,7 +449,19 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                             <div className="p-4 page-sm:p-5">
                               <UserControls
                                 user={user}
-                                isCeo={role === "ceo"}
+                                isCeo={ceo}
+                                remoteSound={
+                                  ceo
+                                    ? {
+                                        choice: soundChoiceFor(user.clerkId),
+                                        onChange: (choice) =>
+                                          setSoundChoices((current) => ({
+                                            ...current,
+                                            [user.clerkId]: choice,
+                                          })),
+                                      }
+                                    : undefined
+                                }
                               />
                             </div>
                           </div>

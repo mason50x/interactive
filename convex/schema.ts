@@ -209,7 +209,10 @@ export default defineSchema({
    */
   soundPings: defineTable({
     clerkId: v.string(),
-    sound: v.literal("beep"),
+    /** An id from `SOUND_GROUPS` in `src/lib/remote-sound.ts`; checked on write. */
+    sound: v.string(),
+    /** Percent of the sound's natural level, 50–200. Absent means 100. */
+    volume: v.optional(v.number()),
     sentBy: v.string(),
     sentAt: v.number(),
   }).index("byClerkId", ["clerkId"]),
