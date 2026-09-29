@@ -10,6 +10,9 @@ import type { ChatGif } from "@convex/chat/messages";
  * configured in the KLIPY Partner Panel, not here — results must be shown in
  * the order and composition KLIPY returns them.
  *
+ * Hearting a GIF in the picker keeps the same links a message keeps — see
+ * `convex/chat/gifFavorites.ts` — and, as with a message, never the media.
+ *
  * Unset `NEXT_PUBLIC_KLIPY_APP_KEY` and the GIF picker is simply not offered.
  */
 const APP_KEY = process.env.NEXT_PUBLIC_KLIPY_APP_KEY ?? "";

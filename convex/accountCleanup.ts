@@ -119,6 +119,11 @@ export const purge = internalMutation({
         .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).take(BATCH);
       for (const row of rows) await ctx.db.delete(row._id);
       changed = rows.length;
+    } else if (stage === 16) {
+      const rows = await ctx.db.query("gifFavorites")
+        .withIndex("byClerkId", q => q.eq("clerkId", clerkId)).take(BATCH);
+      for (const row of rows) await ctx.db.delete(row._id);
+      changed = rows.length;
     } else {
       return { stage, changed: 0, done: true };
     }

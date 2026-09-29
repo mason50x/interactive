@@ -281,6 +281,30 @@ export default defineSchema({
     ),
   }).index("byClerkId", ["clerkId"]),
 
+  /**
+   * A GIF somebody hearted in the picker, so it is one tap away next time.
+   *
+   * Two KLIPY links and nothing else: the one a message keeps (`gif`, the
+   * same shape `messages.gif` takes) and the small rendition the picker's grid
+   * draws (`preview`). Only links, for the reason `messages.gif` is only a
+   * link — KLIPY's terms forbid copying the media — and the same host check
+   * guards both on the way in. `gifFavorites.save` caps the rows per account,
+   * so this table is bounded by the number of accounts and not by enthusiasm.
+   */
+  gifFavorites: defineTable({
+    clerkId: v.string(),
+    gif: v.object({
+      slug: v.string(),
+      url: v.string(),
+      width: v.number(),
+      height: v.number(),
+      title: v.optional(v.string()),
+    }),
+    preview: v.object({ url: v.string(), width: v.number(), height: v.number() }),
+  })
+    .index("byClerkId", ["clerkId"])
+    .index("byClerkIdAndSlug", ["clerkId", "gif.slug"]),
+
   /** Per-account moderation counters, separate from Clerk identity. */
   chatSenders: defineTable({
     clerkId: v.string(),
