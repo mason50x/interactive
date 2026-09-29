@@ -104,7 +104,13 @@ export async function fetchGifs(
     results.push({
       slug: item.slug,
       title: item.title ?? "",
-      preview,
+      // Copied field by field: KLIPY's rendition carries extras (`size`)
+      // that the favorites validator rejects.
+      preview: {
+        url: preview.url,
+        width: Math.round(preview.width),
+        height: Math.round(preview.height),
+      },
       gif: {
         slug: item.slug,
         url: full.url,
