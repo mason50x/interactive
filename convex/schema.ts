@@ -145,14 +145,36 @@ export default defineSchema({
     .index("byActor", ["actor"]),
 
   /**
-   * CEO-set account restrictions: a full-screen page the account can't leave,
-   * and every public function refused while the row exists. Absent means
-   * unrestricted. See `convex/restrictions.ts` and `convex/functions.ts`.
+   * The one site-wide announcement, on or off for everyone at once. A single
+   * row, created on the first save; absent means nothing has ever been
+   * written. While `enabled` and `display` is `screen`, every public function
+   * refuses a caller who is not a CEO or Head Moderator. See
+   * `convex/announcement.ts` and `convex/functions.ts`.
+   */
+  siteAnnouncement: defineTable({
+    enabled: v.boolean(),
+    heading: v.string(),
+    message: v.optional(v.string()),
+    /** `screen` takes the whole viewport; `banner` is a card over the app. */
+    display: v.union(v.literal("screen"), v.literal("banner")),
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+    /** When and by whom it was last turned on. Absent until the first time. */
+    enabledAt: v.optional(v.number()),
+    enabledBy: v.optional(v.string()),
+  }),
+
+  /**
+   * Retired. Per-account restrictions were replaced by `siteAnnouncement`,
+   * and nothing reads or writes this table any more except the account purge
+   * (`convex/accountCleanup.ts`), which still drains it. The definition stays
+   * until the table is empty in every deployment: Convex refuses a schema
+   * that drops a table still holding documents. Clear it in the dashboard,
+   * then delete this block and the purge stage together.
    */
   accountRestrictions: defineTable({
     clerkId: v.string(),
     kind: v.union(v.literal("banned"), v.literal("error")),
-    /** Error screens only; `banned` shows nothing but the word. */
     title: v.optional(v.string()),
     heading: v.optional(v.string()),
     message: v.optional(v.string()),
