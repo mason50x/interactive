@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { MiniPlayer } from "./mini-player";
 import { PopOutPlayer } from "./pop-out-player";
+import { useTabMediaSession } from "./tab-media";
 
 type Session = { appId: string; run: number };
 
@@ -385,6 +386,16 @@ export function ListenProvider({
     sessions.at(-1)?.appId ??
     null;
   const current = currentId ? (playing[currentId] ?? null) : null;
+
+  // Switching tabs while it plays pops the player out on its own.
+  useTabMediaSession({
+    active: enabled && sessions.length > 0 && popOutSupported,
+    track: current,
+    command: (next) => {
+      if (currentId) command(currentId, next);
+    },
+    popOut: () => void openPopOut(),
+  });
 
   const value: ListenContextValue = {
     enabled,
