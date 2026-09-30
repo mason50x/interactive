@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RailConstellation } from "@/components/app/rail-constellation";
-import { Spinner } from "@/components/ui/spinner";
+import { PageSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 /** A softly lit loading interlude, remounted with each activity run. */
@@ -68,12 +68,11 @@ export function PacketCover({
         />
       </div>
       {/* `packet-logo` is where the access reveal opens its circle from. */}
-      <Spinner
+      <PageSpinner
         role={undefined}
         aria-label={undefined}
         aria-hidden="true"
-        strokeWidth={1.5}
-        className="packet-logo relative size-20 text-muted-foreground"
+        className="packet-logo relative"
       />
 
       {holdMs !== null && (

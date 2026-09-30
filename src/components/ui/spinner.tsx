@@ -31,6 +31,20 @@ function Spinner({ className, ...props }: ComponentProps<"svg">) {
   );
 }
 
+/** The spinner at the one size every full-pane wait uses — the gates, the
+ *  route loaders, and the activity cover — so handing off from one to the
+ *  next never changes its size. A finer stroke than the default so the line
+ *  does not turn heavy at this scale. */
+function PageSpinner({ className, ...props }: ComponentProps<"svg">) {
+  return (
+    <Spinner
+      strokeWidth={1.5}
+      className={cn("size-20 text-muted-foreground", className)}
+      {...props}
+    />
+  );
+}
+
 /** The spinner filling whatever it is put in, for a pane that is still
  *  loading. `min-h-48` so an empty pane holds its shape rather than
  *  collapsing to the spinner's own height. */
@@ -44,9 +58,9 @@ function CenteredSpinner({ className, ...props }: ComponentProps<"div">) {
       )}
       {...props}
     >
-      <Spinner className="size-8 text-muted-foreground" />
+      <PageSpinner />
     </div>
   );
 }
 
-export { Spinner, CenteredSpinner };
+export { Spinner, PageSpinner, CenteredSpinner };
