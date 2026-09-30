@@ -153,20 +153,27 @@ test("conversation unread count and first unread target share a single indexed s
       username: "alice",
       usernameKey: "alice",
     });
+    await ctx.db.insert("users", {
+      clerkId: "bob",
+      username: "bob",
+      usernameKey: "bob",
+    });
     const conversationId = await ctx.db.insert("conversations", {
-      kind: "group",
+      kind: "dm",
+      dmKey: "alice|bob",
       createdBy: "alice",
       createdAt: Date.now(),
     });
-    await ctx.db.insert("conversationMembers", {
-      conversationId,
-      clerkId: "alice",
-      kind: "group",
-      role: "member",
-      status: "active",
-      joinedAt: 0,
-      lastReadAt: 0,
-    });
+    for (const clerkId of ["alice", "bob"])
+      await ctx.db.insert("conversationMembers", {
+        conversationId,
+        clerkId,
+        kind: "dm",
+        role: "member",
+        status: "active",
+        joinedAt: 0,
+        lastReadAt: 0,
+      });
     for (const body of ["First", "Second"])
       await ctx.db.insert("messages", {
         conversationId,

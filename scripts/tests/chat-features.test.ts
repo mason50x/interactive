@@ -157,11 +157,10 @@ test("offline send identity and immutable retry metadata reject changed requests
       replyToId: message._id,
     }),
   ).toEqual({ ok: false, refusal: "duplicate" });
-  const other = await alice.mutation(api.chat.conversations.createGroup, {
-    title: "Other group",
-    joinPolicy: "invite",
+  const other = await alice.mutation(api.chat.conversations.openDm, {
+    peerClerkId: "bob",
   });
-  if (!other.ok) throw new Error("Could not create test group");
+  if (!other.ok) throw new Error("DM did not open");
   expect(
     await alice.mutation(api.chat.messages.send, {
       ...args,
