@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RailConstellation } from "@/components/app/rail-constellation";
-import { mark } from "@/lib/brand";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 /** A softly lit loading interlude, remounted with each activity run. */
@@ -67,22 +67,14 @@ export function PacketCover({
           className="z-0 [--web-fade:0.28] dark:[--web-fade:0.32]"
         />
       </div>
-      <svg className="packet-logo" viewBox="0 0 160 160" aria-hidden="true">
-        <circle
-          className="packet-logo-ring"
-          cx="80"
-          cy="80"
-          r="70"
-          pathLength="432"
-        />
-        <path
-          className="packet-logo-mark"
-          fillRule="evenodd"
-          d={mark.path}
-          // The mark's 100x100 canvas, centred inside the ring.
-          transform="translate(30 30)"
-        />
-      </svg>
+      {/* `packet-logo` is where the access reveal opens its circle from. */}
+      <Spinner
+        role={undefined}
+        aria-label={undefined}
+        aria-hidden="true"
+        strokeWidth={1.5}
+        className="packet-logo relative size-20 text-muted-foreground"
+      />
 
       {holdMs !== null && (
         <span

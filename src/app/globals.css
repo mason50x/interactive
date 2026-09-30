@@ -1800,7 +1800,7 @@
   animation-delay: calc(var(--i) * 0.17s), 0s;
 }
 
-/* A quiet brand interlude: a breathing mark inside a revolving dashed ring. */
+/* A quiet loading interlude: the shared spinner over a drifting constellation. */
 .packet-cover {
   overflow: hidden;
   isolation: isolate;
@@ -1815,56 +1815,8 @@
   pointer-events: none;
   mask-image: linear-gradient(to top, #000, transparent 95%);
 }
-.packet-logo {
-  position: relative;
-  width: clamp(136px, 16vw, 176px);
-  height: auto;
-  flex-shrink: 0;
-  overflow: visible;
-}
-.packet-logo-mark {
-  fill: currentColor;
-  animation: packet-logo-pulse 3s ease-in-out infinite;
-}
-.packet-logo-ring {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-dasharray: 4 32;
-  stroke-linecap: round;
-  opacity: 0.6;
-  transform-origin: 80px 80px;
-  animation:
-    packet-logo-spin 6s linear infinite,
-    packet-logo-dashes 2.4s ease-in-out infinite;
-}
 .packet-reveal {
   opacity: 0;
-}
-@keyframes packet-logo-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-@keyframes packet-logo-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes packet-logo-dashes {
-  0%,
-  100% {
-    stroke-dasharray: 4 32;
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dasharray: 12 24;
-    stroke-dashoffset: 4;
-  }
 }
 /* The shared loading spinner: the svg turns steadily while its one arc
    grows and shrinks along the circle, so the line flows instead of ticking. */
