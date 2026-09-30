@@ -120,6 +120,68 @@ test("chat week standings count Monday to Friday only", async () => {
   expect(nextWeek.people.map((row) => row.score)).toEqual([1]);
 });
 
+test("the weekly chat board also lists chat accounts that have not spoken", async () => {
+  const { t, one } = await setup();
+  await one.mutation(api.users.store, {});
+  await t.run(async (ctx) => {
+    for (const user of await ctx.db.query("users").collect()) {
+      await ctx.db.patch(user._id, {
+        username: user.clerkId,
+        firstName: user.clerkId === "one" ? "Ada" : "Bo",
+      });
+    }
+    await ctx.db.insert("users", {
+      clerkId: "gated",
+      username: "gated",
+      invited: false,
+    });
+    await ctx.db.insert("users", { clerkId: "nameless" });
+  });
+  await t.run((ctx) => addScore(ctx, "one", "chat", 2, now));
+  const clock = Math.floor(now / DAY);
+  const week = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "week",
+    clock,
+  });
+  expect(week.people.map((row) => [row.handle, row.score])).toEqual([
+    ["one", 2],
+    ["two", 0],
+  ]);
+  const day = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "day",
+    clock,
+  });
+  expect(day.people.map((row) => [row.handle, row.score])).toEqual([
+    ["one", 2],
+  ]);
+});
+
+test("scorers ranked below the visible 25 are not listed again as silent", async () => {
+  const { t, one } = await setup();
+  await one.mutation(api.users.store, {});
+  await t.run(async (ctx) => {
+    for (const user of await ctx.db.query("users").collect()) {
+      await ctx.db.patch(user._id, { username: user.clerkId });
+    }
+    for (let i = 0; i < 30; i++) {
+      const clerkId = `scorer${i}`;
+      await ctx.db.insert("users", { clerkId, username: clerkId });
+      await addScore(ctx, clerkId, "chat", i + 1, now);
+    }
+  });
+  const week = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "week",
+    clock: Math.floor(now / DAY),
+  });
+  expect(week.people.filter((row) => row.score > 0)).toHaveLength(25);
+  expect(
+    week.people.filter((row) => row.score === 0).map((row) => row.handle),
+  ).toEqual(["one", "two"]);
+});
+
 test("page views coalesce heartbeats, require auth, and only count known sections", async () => {
   const { t, one } = await setup();
   expect(pageKey("/chat/room")).toBe("/chat");

@@ -116,7 +116,7 @@ export function Leaderboard() {
             href: undefined,
           }));
   const top = entries?.[0];
-  const max = top?.value ?? 1;
+  const max = top?.value || 1;
   const selected = tabs.find((tab) => tab.id === metric)!;
   const periods: { id: Period; label: string }[] =
     metric === "games"

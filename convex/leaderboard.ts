@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, type MutationCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { query } from "./functions";
 import { internal } from "./_generated/api";
 
@@ -65,12 +66,34 @@ export const standings = query({
     const key = `${metric}:${bucket}`;
     const rows = await ctx.db.query("leaderboardScores")
       .withIndex("by_key_and_score", q => q.eq("key", key)).order("desc").take(50);
-    const people = await Promise.all(rows.map(async row => {
+    const scored = await Promise.all(rows.map(async row => {
       const user = await ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", row.clerkId)).first();
-      return user ? { clerkId: row.clerkId, name: user.firstName || user.username || user.name?.split(/\s+/)[0] || "Member", handle: user.username ?? null, imageUrl: user.imageUrl ?? null, score: row.score } : null;
+      return user ? person(user, row.score) : null;
     }));
-    return { people: people.filter((person): person is NonNullable<typeof person> => person !== null).slice(0, 25), pages: [] };
+    const people = scored.filter((entry): entry is NonNullable<typeof entry> => entry !== null).slice(0, 25);
+    if (metric === "chat" && period === "week") {
+      // The weekly chat board also names every chat account that has not said anything yet.
+      // Anyone with a score this week is excluded, including scorers ranked below the visible 25.
+      const scorers = await ctx.db.query("leaderboardScores")
+        .withIndex("by_key_and_score", q => q.eq("key", key).gt("score", 0)).take(10_000);
+      const ranked = new Set([...people.map(entry => entry.clerkId), ...scorers.map(row => row.clerkId)]);
+      const users = await ctx.db.query("users").take(10_000);
+      const silent = users
+        .filter(user => user.username && user.invited !== false && !ranked.has(user.clerkId))
+        .map(user => person(user, 0))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return { people: [...people, ...silent], pages: [] };
+    }
+    return { people, pages: [] };
   },
+});
+
+const person = (user: Doc<"users">, score: number) => ({
+  clerkId: user.clerkId,
+  name: user.firstName || user.username || user.name?.split(/\s+/)[0] || "Member",
+  handle: user.username ?? null,
+  imageUrl: user.imageUrl ?? null,
+  score,
 });
 
 /** Fixed-size batches keep cron transactions small even after a long outage. */
