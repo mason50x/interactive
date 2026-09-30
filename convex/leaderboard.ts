@@ -73,7 +73,10 @@ export const standings = query({
     const people = scored.filter((entry): entry is NonNullable<typeof entry> => entry !== null).slice(0, 25);
     if (metric === "chat" && period === "week") {
       // The weekly chat board also names every chat account that has not said anything yet.
-      const ranked = new Set(people.map(entry => entry.clerkId));
+      // Anyone with a score this week is excluded, including scorers ranked below the visible 25.
+      const scorers = await ctx.db.query("leaderboardScores")
+        .withIndex("by_key_and_score", q => q.eq("key", key).gt("score", 0)).take(10_000);
+      const ranked = new Set([...people.map(entry => entry.clerkId), ...scorers.map(row => row.clerkId)]);
       const users = await ctx.db.query("users").take(10_000);
       const silent = users
         .filter(user => user.username && user.invited !== false && !ranked.has(user.clerkId))

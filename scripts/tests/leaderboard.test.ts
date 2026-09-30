@@ -158,6 +158,30 @@ test("the weekly chat board also lists chat accounts that have not spoken", asyn
   ]);
 });
 
+test("scorers ranked below the visible 25 are not listed again as silent", async () => {
+  const { t, one } = await setup();
+  await one.mutation(api.users.store, {});
+  await t.run(async (ctx) => {
+    for (const user of await ctx.db.query("users").collect()) {
+      await ctx.db.patch(user._id, { username: user.clerkId });
+    }
+    for (let i = 0; i < 30; i++) {
+      const clerkId = `scorer${i}`;
+      await ctx.db.insert("users", { clerkId, username: clerkId });
+      await addScore(ctx, clerkId, "chat", i + 1, now);
+    }
+  });
+  const week = await one.query(api.leaderboard.standings, {
+    metric: "chat",
+    period: "week",
+    clock: Math.floor(now / DAY),
+  });
+  expect(week.people.filter((row) => row.score > 0)).toHaveLength(25);
+  expect(
+    week.people.filter((row) => row.score === 0).map((row) => row.handle),
+  ).toEqual(["one", "two"]);
+});
+
 test("page views coalesce heartbeats, require auth, and only count known sections", async () => {
   const { t, one } = await setup();
   expect(pageKey("/chat/room")).toBe("/chat");
