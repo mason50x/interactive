@@ -18,10 +18,24 @@ export const ROLES = {
   builder: { ...staffPrivileges, deleteChatMessages: false, adminBadge: false },
   moderator: { ...staffPrivileges },
   head_moderator: { ...staffPrivileges },
+  co_owner: { ...staffPrivileges },
   ceo: { ...staffPrivileges },
 } as const;
 
-export type StaffRole = "ceo" | "head_moderator" | "moderator" | "builder";
+export type StaffRole =
+  "ceo" | "co_owner" | "head_moderator" | "moderator" | "builder";
+
+/**
+ * The roles that open the Admin page and everything behind it. A Head
+ * Moderator holds every CEO power except over CEOs themselves, invite codes,
+ * and role changes, which stay a CEO's alone. A Co-Owner is a Head Moderator
+ * in everything but name: the same powers, with its own badge in chat.
+ */
+export type AdminRole = "ceo" | "co_owner" | "head_moderator";
+
+export function isAdminRole(role: keyof typeof ROLES): role is AdminRole {
+  return role === "ceo" || role === "co_owner" || role === "head_moderator";
+}
 
 /**
  * Mason Singel's exact Clerk account: the site's founder and original CEO.
@@ -39,21 +53,26 @@ export function isFounder(clerkId: string): boolean {
 }
 
 /**
- * Why a CEO may not change one account's role, or `null` when they may.
+ * Why an admin may not change one account's role, or `null` when they may.
  *
- * The caller must already be a CEO; this only settles the cases CEOs differ
- * on. Shared by `setRole` in `convex/adminQuotas.ts`, which refuses with the
- * message, and by the Admin user directory, which shows it instead of a
- * control the server would refuse.
+ * The caller must already be an admin; this only settles the cases admins
+ * differ on. Shared by `setRole` in `convex/adminQuotas.ts`, which refuses
+ * with the message, and by the Admin user directory, which shows it instead
+ * of a control the server would refuse.
+ *
+ * Role changes are a CEO's alone: Head Moderators and Co-Owners cannot change
+ * anybody's. CEOs are equals except over each other: only the founder changes
+ * a CEO's role.
  */
 export function roleChangeRefusal(
-  caller: string,
+  caller: { clerkId: string; role: AdminRole },
   target: string,
   targetRole: keyof typeof ROLES,
 ): string | null {
-  if (target === caller) return "You cannot change your own role.";
+  if (caller.role !== "ceo") return "Only a CEO can change roles.";
+  if (target === caller.clerkId) return "You cannot change your own role.";
   if (isFounder(target)) return "The founder's role can't be changed.";
-  if (targetRole === "ceo" && !isFounder(caller)) {
+  if (targetRole === "ceo" && !isFounder(caller.clerkId)) {
     return "Only the founder can change another CEO's role.";
   }
   return null;
@@ -69,6 +88,7 @@ export function staffRoles(): { clerkId: string; role: StaffRole }[] {
     return Object.entries(value).flatMap(([clerkId, role]) =>
       clerkId &&
       (role === "ceo" ||
+        role === "co_owner" ||
         role === "head_moderator" ||
         role === "moderator" ||
         role === "builder")

@@ -3,11 +3,12 @@ import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { type QueryCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
-import { requireCeo } from "./roles";
+import { requireAdmin } from "./roles";
 import { requireNotTimedOut } from "./timeoutState";
 
 /**
- * Votes: a CEO raises a topic in the admin console, and every member answers
+ * Votes: an admin (a CEO, Co-Owner, or Head Moderator) raises a topic in the admin
+ * console, and every member answers
  * it yes or no from the rail. A `forced` topic holds the member's playtime
  * until they have answered — `experience.acquire` asks `voteRequired` before
  * granting a lease, so the hold is the server's and not a hidden button.
@@ -128,7 +129,7 @@ export const list = query({
   args: {},
   returns: v.array(topicRow),
   handler: async (ctx) => {
-    await requireCeo(ctx);
+    await requireAdmin(ctx);
     return ctx.db.query("voteTopics").order("desc").take(200);
   },
 });
@@ -152,7 +153,7 @@ export const results = query({
     }),
   ),
   handler: async (ctx, { topicId }) => {
-    await requireCeo(ctx);
+    await requireAdmin(ctx);
     if (!(await ctx.db.get(topicId))) return null;
     const ballots = await ctx.db
       .query("votes")
@@ -178,7 +179,7 @@ export const create = mutation({
   },
   returns: v.id("voteTopics"),
   handler: async (ctx, args) => {
-    const clerkId = await requireCeo(ctx);
+    const { clerkId } = await requireAdmin(ctx);
     const title = args.title.trim();
     const description = args.description.trim();
     if (!title) throw new ConvexError("A topic needs a title.");
@@ -206,7 +207,7 @@ export const setForced = mutation({
   args: { id: v.id("voteTopics"), forced: v.boolean() },
   returns: v.null(),
   handler: async (ctx, { id, forced }) => {
-    await requireCeo(ctx);
+    await requireAdmin(ctx);
     if (!(await ctx.db.get(id))) throw new ConvexError("Topic not found.");
     await ctx.db.patch(id, { forced });
     return null;
@@ -218,7 +219,7 @@ export const setClosed = mutation({
   args: { id: v.id("voteTopics"), closed: v.boolean() },
   returns: v.null(),
   handler: async (ctx, { id, closed }) => {
-    await requireCeo(ctx);
+    await requireAdmin(ctx);
     if (!(await ctx.db.get(id))) throw new ConvexError("Topic not found.");
     if (!closed && (await openTopics(ctx)).length >= OPEN_MAX)
       throw new ConvexError("Close an open vote before reopening this one.");
@@ -232,7 +233,7 @@ export const remove = mutation({
   /** False when there were too many ballots for one go; delete again. */
   returns: v.boolean(),
   handler: async (ctx, { id }) => {
-    await requireCeo(ctx);
+    await requireAdmin(ctx);
     const ballots = await ctx.db
       .query("votes")
       .withIndex("byTopicId", (q) => q.eq("topicId", id))

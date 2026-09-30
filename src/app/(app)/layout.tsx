@@ -15,7 +15,6 @@ import { CLIENT_ACTIVITIES } from "@/lib/activities";
 import { OnboardingGate } from "@/components/app/onboarding-gate";
 import { WorkspaceProvider } from "@/components/app/workspace/workspace-provider";
 import { WorkspaceStage } from "@/components/app/workspace/workspace-stage";
-import { RemoteSound } from "@/components/app/remote-sound";
 
 export const metadata: Metadata = {
   // Nothing behind a session is indexable. This is now the same answer the
@@ -65,10 +64,6 @@ export default async function DashboardLayout({
   return (
     <AppProviders>
       <OnboardingGate>
-        {/* Outside the timeout gate on purpose: a beep sent to a timed-out
-            account should still reach it, since the point is to get the
-            person to look at their screen. */}
-        <RemoteSound />
         {/* Wraps both the rail and shell: the
             unread dot is on a row in the rail, and the conversations it counts
             are read on a page in the shell. Mounted here rather than inside

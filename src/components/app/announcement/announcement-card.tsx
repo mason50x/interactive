@@ -15,7 +15,7 @@ import { paragraphs, type LiveAnnouncement } from "./announcement-screen";
  *
  * It says one of two things. For a `banner` announcement it is the notice
  * itself, with the heading and message, and anyone can dismiss it. For a
- * `screen` announcement it only ever reaches a CEO or Head Moderator — members
+ * `screen` announcement it only ever reaches an admin — members
  * are behind the screen — and then it says so: the site is showing a notice
  * to everyone else, and here is the switch that takes it down. That switch is
  * the safeguard in the other direction: however it was turned on, it is one

@@ -10,6 +10,7 @@ import { Avatar } from "@/components/app/user-menu/avatar";
 import { SignOutRow } from "@/components/app/user-menu/sign-out-row";
 import { ThemeSubmenu } from "@/components/app/user-menu/theme-submenu";
 import { StaffBadge } from "@/components/ui/staff-badge";
+import { isAdminRole } from "@config/roles";
 import { useTheme } from "@/components/theme-provider";
 import {
   Menu,
@@ -56,9 +57,7 @@ export function UserMenu({
       : undefined,
   );
   const hasAdminPanel = staffRoles.some(
-    (entry) =>
-      entry.clerkId === user?.id &&
-      (entry.role === "ceo" || entry.role === "head_moderator"),
+    (entry) => entry.clerkId === user?.id && isAdminRole(entry.role),
   );
   const { signOut } = useClerk();
   const { preference, setPreference } = useTheme();

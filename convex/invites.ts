@@ -11,7 +11,8 @@ import { requireCeo } from "./roles";
 
 /**
  * Invite codes: anyone can make an account, but the app stays covered until
- * the account redeems a code a CEO made in the admin console.
+ * the account redeems a code a CEO made in the admin console. Codes are a
+ * CEO's alone: Head Moderators and Co-Owners never see or make them.
  *
  * Codes are six digits, so guessing is held off by the attempt limit rather
  * than by the size of the space: five tries, then one more every three

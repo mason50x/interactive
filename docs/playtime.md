@@ -1,9 +1,9 @@
 # Shared daily playtime
 
 Every account, including staff, receives 1,800 seconds by default at 7:30 a.m.
-Central Time (`America/Chicago`). Head Moderators and CEOs can set a user's
+Central Time (`America/Chicago`). Head Moderators, Co-Owners, and CEOs can set a user's
 daily base limit to any whole number from 20 to 160 minutes, or restore the
-default. A Head Moderator cannot change a CEO's limit. Changing a limit during
+default. A Head Moderator or Co-Owner cannot change a CEO's limit. Changing a limit during
 the day preserves time already spent; lowering it below spent time leaves no
 time until a reward or the next reset. There is no rollover; daily chat bonuses
 expire at that boundary. `config/playtime.ts` owns the timezone, default

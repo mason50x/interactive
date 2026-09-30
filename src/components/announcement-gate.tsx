@@ -58,8 +58,8 @@ function FloatingAnnouncement({
  * replaces the whole tree for a member — the providers included, so nothing
  * underneath is left subscribing to functions that now refuse it. The server
  * is what actually holds them out (see `convex/functions.ts`); this only
- * shows them which way. A banner, or a full-screen one seen by the CEO or
- * Head Moderator it exempts, floats a card over the app instead.
+ * shows them which way. A banner, or a full-screen one seen by the admin it
+ * exempts, floats a card over the app instead.
  */
 export function AnnouncementGate({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();

@@ -20,16 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Input, InputAddon, InputGroup } from "@/components/ui/input";
 import { Avatar } from "@/components/app/user-menu/avatar";
 import { adminPageLabel } from "@/lib/admin-page-label";
+import type { AdminRole } from "@config/roles";
 import { cn } from "@/lib/utils";
 import styles from "./admin.module.css";
 import { AdminSelect } from "./admin-select";
-import {
-  AllowanceReset,
-  DEFAULT_SOUND_CHOICE,
-  RemoteSoundButton,
-  UserControls,
-  type SoundChoice,
-} from "./user-controls";
+import { AllowanceReset, UserControls } from "./user-controls";
 import { useLiveUsers } from "./use-live-users";
 import { PAGE_BREAKPOINTS, pageWidthRem } from "@/lib/page-width";
 
@@ -39,11 +34,13 @@ export type DirectoryUser = FunctionReturnType<
 export type SiteRole = DirectoryUser["role"];
 export const ROLE_LABEL: Record<SiteRole, string> = {
   ceo: "CEO",
+  co_owner: "Co-Owner",
   head_moderator: "Head Moderator",
   moderator: "Moderator",
   builder: "Builder",
   member: "Member",
 };
+export type { AdminRole };
 // A span over hidden cells creates phantom columns in a fixed-layout table.
 // Keep expanded rows aligned with the page-sm, -md, -lg and -xl columns above.
 const COLUMN_BREAKPOINTS = [
@@ -52,8 +49,7 @@ const COLUMN_BREAKPOINTS = [
   PAGE_BREAKPOINTS.lg,
   PAGE_BREAKPOINTS.xl,
 ];
-// The CEO-only Sound column appears alongside Current Page.
-const SOUND_COLUMN_BREAKPOINT = PAGE_BREAKPOINTS.md;
+const SERVER_COLUMNS = 2 + COLUMN_BREAKPOINTS.length;
 function subscribeColumns(onChange: () => void) {
   const shell = document.querySelector('main[data-slot="shell"]');
   window.addEventListener("resize", onChange);
@@ -64,16 +60,21 @@ function subscribeColumns(onChange: () => void) {
     window.removeEventListener("resize", onChange);
   };
 }
-function visibleColumns(ceo: boolean) {
+function visibleColumns() {
   const width = pageWidthRem();
-  return (
-    2 +
-    COLUMN_BREAKPOINTS.filter((rem) => width >= rem).length +
-    (ceo && width >= SOUND_COLUMN_BREAKPOINT ? 1 : 0)
-  );
+  return 2 + COLUMN_BREAKPOINTS.filter((rem) => width >= rem).length;
 }
-function serverColumns(ceo: boolean) {
-  return ceo ? 7 : 6;
+function serverColumns() {
+  return SERVER_COLUMNS;
+}
+
+/**
+ * Whether the viewer may act on this account: a Head Moderator or Co-Owner
+ * holds the directory's powers except over CEOs themselves, and the server
+ * refuses the rest.
+ */
+export function canActOn(viewer: AdminRole, user: DirectoryUser) {
+  return viewer === "ceo" || user.role !== "ceo";
 }
 
 function AccountStatus({ user }: { user: DirectoryUser }) {
@@ -143,12 +144,11 @@ function CurrentPage({
   );
 }
 
-export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
-  const ceo = role === "ceo";
+export function UserDirectory({ role }: { role: AdminRole }) {
   const columnCount = useSyncExternalStore(
     subscribeColumns,
-    () => visibleColumns(ceo),
-    () => serverColumns(ceo),
+    visibleColumns,
+    serverColumns,
   );
   const { isAuthenticated } = useConvexAuth();
   const { results, status, loadMore } = usePaginatedQuery(
@@ -172,14 +172,6 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [closing, setClosing] = useState<string | null>(null);
   const [showBulkReset, setShowBulkReset] = useState(false);
-  // What each row's Play button sends, chosen in the row's expanded panel.
-  // Per account, so a fart lined up for one person does not follow the CEO
-  // to the next row.
-  const [soundChoices, setSoundChoices] = useState<Record<string, SoundChoice>>(
-    {},
-  );
-  const soundChoiceFor = (clerkId: string) =>
-    soundChoices[clerkId] ?? DEFAULT_SOUND_CHOICE;
   const term = search.trim().toLowerCase();
   const hasFilter = Boolean(term) || filter !== "all";
 
@@ -224,11 +216,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
           </InputAddon>
           <Input
             aria-label="Search users"
-            placeholder={
-              role === "ceo"
-                ? "Search name, handle, or email"
-                : "Search name or handle"
-            }
+            placeholder="Search name, handle, or email"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -246,45 +234,41 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
             </option>
           ))}
         </AdminSelect>
-        {role === "ceo" && (
-          <Button
-            variant="ghost"
-            className="max-w-full text-left whitespace-normal page-sm:ml-auto"
-            aria-expanded={showBulkReset}
-            aria-controls="bulk-allowances"
-            onClick={() => setShowBulkReset(!showBulkReset)}
-          >
-            Reset all allowances
-            <ChevronDownIcon
-              className={cn(
-                "size-4 transition-transform",
-                showBulkReset && "rotate-180",
-              )}
-            />
-          </Button>
-        )}
-      </div>
-      {role === "ceo" && (
-        <div
-          id="bulk-allowances"
-          className={styles.reveal}
-          data-open={showBulkReset}
-          aria-hidden={!showBulkReset}
-          inert={!showBulkReset}
+        <Button
+          variant="ghost"
+          className="max-w-full text-left whitespace-normal page-sm:ml-auto"
+          aria-expanded={showBulkReset}
+          aria-controls="bulk-allowances"
+          onClick={() => setShowBulkReset(!showBulkReset)}
         >
-          <div className={styles.revealContent}>
-            <div className="mt-4 border-y border-border py-4">
-              <AllowanceReset />
-            </div>
+          Reset all allowances
+          <ChevronDownIcon
+            className={cn(
+              "size-4 transition-transform",
+              showBulkReset && "rotate-180",
+            )}
+          />
+        </Button>
+      </div>
+      <div
+        id="bulk-allowances"
+        className={styles.reveal}
+        data-open={showBulkReset}
+        aria-hidden={!showBulkReset}
+        inert={!showBulkReset}
+      >
+        <div className={styles.revealContent}>
+          <div className="mt-4 border-y border-border py-4">
+            <AllowanceReset />
           </div>
         </div>
-      )}
+      </div>
 
       <div className="mt-5 overflow-hidden rounded-xl border border-border">
         <table className="w-full table-fixed text-left text-sm">
           <caption className="sr-only">
             User directory. View a user to manage their role, timeout, and
-            allowances{ceo ? ", or play a sound on their device" : ""}.
+            allowances.
           </caption>
           <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
@@ -303,14 +287,6 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
               >
                 Current Page
               </th>
-              {ceo && (
-                <th
-                  scope="col"
-                  className="hidden w-28 px-3 py-3 font-medium page-md:table-cell"
-                >
-                  Sound
-                </th>
-              )}
               <th
                 scope="col"
                 className="hidden w-36 px-3 py-3 font-medium page-lg:table-cell"
@@ -396,14 +372,6 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         loading={liveUsers === undefined}
                       />
                     </td>
-                    {ceo && (
-                      <td className="hidden px-3 py-3.5 page-md:table-cell">
-                        <RemoteSoundButton
-                          user={user}
-                          choice={soundChoiceFor(user.clerkId)}
-                        />
-                      </td>
-                    )}
                     <td className="hidden px-3 py-3.5 page-lg:table-cell">
                       <AccountStatus user={user} />
                     </td>
@@ -447,22 +415,7 @@ export function UserDirectory({ role }: { role: "ceo" | "head_moderator" }) {
                         >
                           <div className={styles.revealContent}>
                             <div className="p-4 page-sm:p-5">
-                              <UserControls
-                                user={user}
-                                isCeo={ceo}
-                                remoteSound={
-                                  ceo
-                                    ? {
-                                        choice: soundChoiceFor(user.clerkId),
-                                        onChange: (choice) =>
-                                          setSoundChoices((current) => ({
-                                            ...current,
-                                            [user.clerkId]: choice,
-                                          })),
-                                      }
-                                    : undefined
-                                }
-                              />
+                              <UserControls user={user} viewer={role} />
                             </div>
                           </div>
                         </div>

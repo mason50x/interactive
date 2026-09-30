@@ -69,13 +69,13 @@ test("Builder gets moderator allowances and distinct presentation without modera
       clerkId: "member",
       role: "builder",
     }),
-  ).rejects.toThrow("CEO access required");
+  ).rejects.toThrow("Admin access required");
   await expect(
     builder.mutation(api.adminQuotas.reset, {
       clerkId: "builder",
       quotas: ["bot"],
     }),
-  ).rejects.toThrow("CEO access required");
+  ).rejects.toThrow("Admin access required");
   await expect(
     builder.mutation(api.timeouts.set, {
       clerkId: "member",

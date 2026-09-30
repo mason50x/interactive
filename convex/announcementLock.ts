@@ -1,15 +1,15 @@
 import { announcementRow, type ReadCtx } from "./announcementState";
+import { isAdminRole } from "../config/roles";
 import { resolveRole } from "./roles";
 
 /**
  * Whether this account keeps the app while a full-screen announcement is up.
- * CEOs and Head Moderators do, because they are the ones who turn it off; an
- * announcement that locked them out too could never be lifted from the page
- * that lifts it.
+ * Admins (CEOs, Co-Owners, and Head Moderators) do, because they are the ones
+ * who turn it off; an announcement that locked them out too could never be
+ * lifted from the page that lifts it.
  */
 export async function managesAnnouncement(ctx: ReadCtx, clerkId: string) {
-  const role = await resolveRole(ctx, clerkId);
-  return role === "ceo" || role === "head_moderator";
+  return isAdminRole(await resolveRole(ctx, clerkId));
 }
 
 /**

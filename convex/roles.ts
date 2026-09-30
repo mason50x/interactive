@@ -1,7 +1,14 @@
 import { requireNotTimedOut } from "./timeoutState";
 import { ConvexError, v } from "convex/values";
 
-import { ROLES, roleFor, staffRoles, type StaffRole } from "../config/roles";
+import {
+  isAdminRole,
+  ROLES,
+  roleFor,
+  staffRoles,
+  type AdminRole,
+  type StaffRole,
+} from "../config/roles";
 import {
   internalMutation,
   type MutationCtx,
@@ -81,7 +88,25 @@ export async function resolveAdminClerkIds(ctx: ReadCtx): Promise<string[]> {
     .map(({ clerkId }) => clerkId);
 }
 
-/** CEO check for mutations and CEO-only queries. Throws when not a CEO. */
+export type AdminCaller = { clerkId: string; role: AdminRole };
+
+/**
+ * Admin check for mutations and admin-only queries: CEOs, Co-Owners, and Head
+ * Moderators pass, everybody else throws. A Head Moderator or Co-Owner holds
+ * the CEO powers this gates except over CEOs themselves; the features that
+ * touch one account ask `outrankedByCeo` before acting on it. Invite codes and
+ * role changes are a CEO's alone (`requireCeo`, `roleChangeRefusal`).
+ */
+export async function requireAdmin(ctx: ReadCtx): Promise<AdminCaller> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new ConvexError("Admin access required.");
+  const role = await resolveRole(ctx, identity.subject);
+  if (!isAdminRole(role)) throw new ConvexError("Admin access required.");
+  await requireNotTimedOut(ctx, identity.subject);
+  return { clerkId: identity.subject, role };
+}
+
+/** CEO check for the powers no other admin shares. Throws when not a CEO. */
 export async function requireCeo(ctx: ReadCtx): Promise<string> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new ConvexError("CEO access required.");
@@ -93,18 +118,29 @@ export async function requireCeo(ctx: ReadCtx): Promise<string> {
 }
 
 /**
- * The gate on the site announcement, which CEOs and Head Moderators share.
- * The same shape as `requireCeo`: signed in, holding the role, and not timed
- * out — a timed-out manager cannot take the site down on their way out.
+ * Whether `clerkId` is a CEO the caller does not outrank: true for a Head
+ * Moderator or Co-Owner acting on any CEO, false for a CEO acting on anyone.
+ */
+export async function outrankedByCeo(
+  ctx: ReadCtx,
+  caller: AdminCaller,
+  clerkId: string,
+): Promise<boolean> {
+  return caller.role !== "ceo" && (await resolveRole(ctx, clerkId)) === "ceo";
+}
+
+/**
+ * The gate on the site announcement, which every admin shares. The same shape
+ * as `requireAdmin`: signed in, holding the role, and not timed out — a
+ * timed-out manager cannot take the site down on their way out.
  */
 export async function requireAnnouncementManager(
   ctx: ReadCtx,
-): Promise<{ clerkId: string; role: "ceo" | "head_moderator" }> {
+): Promise<AdminCaller> {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new ConvexError("CEO or Head Moderator access required.");
+  if (!identity) throw new ConvexError("Admin access required.");
   const role = await resolveRole(ctx, identity.subject);
-  if (role !== "ceo" && role !== "head_moderator")
-    throw new ConvexError("CEO or Head Moderator access required.");
+  if (!isAdminRole(role)) throw new ConvexError("Admin access required.");
   await requireNotTimedOut(ctx, identity.subject);
   return { clerkId: identity.subject, role };
 }

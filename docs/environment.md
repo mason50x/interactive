@@ -73,9 +73,9 @@ Set one server-owned key, `STAFF_ROLES`, on each Convex deployment:
 {"user_3IhbuJdEMX72wHvrpeidDZP1LY5":"ceo","user_3Im2mCDx3WPHlOsnBXdFAKFbWPx":"moderator"}
 ```
 
-Add an exact Clerk ID with `ceo`, `head_moderator`, `moderator`, or `builder`; remove it to revoke staff
+Add an exact Clerk ID with `ceo`, `co_owner`, `head_moderator`, `moderator`, or `builder`; remove it to revoke staff
 privileges. Unknown roles and malformed configuration grant no access.
-`config/roles.ts` defines the privileges for each role. CEO, head moderator, and moderator retain
+`config/roles.ts` defines the privileges for each role. CEO, co-owner, head moderator, and moderator retain
 chat moderation, 50 bot uses per rolling day and two hours
 of Experience per UTC day. CEO displays a crown and CEO text; moderator displays
 a shield. Builder receives the same 50 bot uses and two hours of Experience,
@@ -84,11 +84,23 @@ access. Its Builder badge appears in chat and beside OSS in the sidebar.
 Builders can post in Announcements.
 Group membership is independent.
 
-A CEO can also change any account's role — including to `member` — from the
-role selector in the Admin page's user directory. Those edits are stored in
-the `staffRoles` table (`convex/adminQuotas.ts` `setRole`) and always win
-over this env map for that account, which is what makes them editable from a
-CEO client: env vars are deployment config with no runtime write API. A CEO
+A Co-Owner is a Head Moderator in everything but appearance: the same powers
+and the same limits, with its own star badge, "Co-Owner" title, and violet
+name colour in chat. Everything below about Head Moderators applies to
+Co-Owners too.
+
+CEOs, Co-Owners, and Head Moderators share the Admin page: the user directory,
+votes, and the site announcement, plus publishing shared HTML simulators. Two
+things stay a CEO's alone: invite codes (the tab is hidden and
+`convex/invites.ts` refuses anyone else) and role changes. A Head Moderator
+also cannot time out, reset, or change the badge or activity limit of a CEO's
+account.
+
+A CEO can change any account's role — including to `member` — from the role
+selector in the Admin page's user directory. Those edits are stored in the
+`staffRoles` table (`convex/adminQuotas.ts` `setRole`) and always win over
+this env map for that account, which is what makes them editable from a CEO
+client: env vars are deployment config with no runtime write API. A CEO
 cannot change their own role, and the change cannot leave zero CEOs, so the
 site cannot be locked out of the Admin page.
 

@@ -10,7 +10,7 @@ The separate `htmlSimulatorEntries` Convex table stores only owner, hash, label,
 
 ## Published HTML library
 
-Below personal progress, a shared grid uses the same cards and layout as games. All signed-in users can open these templates without supplying a file. Only Builders and CEOs can publish, edit code/name/description, or remove any published entry. Head moderators and moderators are read-only. This permission does not grant Admin-panel access.
+Below personal progress, a shared grid uses the same cards and layout as games. All signed-in users can open these templates without supplying a file. Only Builders, Head Moderators, Co-Owners, and CEOs can publish, edit code/name/description, or remove any published entry. Moderators are read-only. This permission does not grant Admin-panel access.
 
 Use **Publish** beside a personal file or **Publish HTML** in the shared section. Publishing copies the source, never personal progress, to Convex file storage. Personal HTML remains local and continues to work as before. The `publishedHtmlSimulators` table holds metadata, a storage ID, a source hash, and a revision; lists never download source. The editor accepts a self-contained UTF-8 HTML file or code up to **2 MiB**, names up to 60 characters, and descriptions up to 280 characters. The shared catalogue is capped at 200 entries; publishing is rate-limited. These limits are enforced on the backend.
 

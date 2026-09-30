@@ -35,13 +35,12 @@ async function setup() {
   return t;
 }
 
-async function roleOf(
-  t: ReturnType<typeof convexTest>,
-  clerkId: string,
-) {
+async function roleOf(t: ReturnType<typeof convexTest>, clerkId: string) {
   const users = await t
     .withIdentity({ subject: boss })
-    .query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } });
+    .query(api.adminQuotas.users, {
+      paginationOpts: { cursor: null, numItems: 50 },
+    });
   return users.page.find((user) => user.clerkId === clerkId)?.role;
 }
 
@@ -53,7 +52,9 @@ async function directoryRow(
 ) {
   const users = await t
     .withIdentity({ subject: viewer })
-    .query(api.timeouts.users, { paginationOpts: { cursor: null, numItems: 50 } });
+    .query(api.timeouts.users, {
+      paginationOpts: { cursor: null, numItems: 50 },
+    });
   return users.page.find((user) => user.clerkId === clerkId)!;
 }
 
@@ -84,7 +85,7 @@ test("moderators, members, and signed-out callers cannot change roles", async ()
         clerkId: amy,
         role: "moderator",
       }),
-    ).rejects.toThrow("CEO access required.");
+    ).rejects.toThrow("Admin access required.");
   }
   expect(await roleOf(t, amy)).toBe("member");
 });
@@ -166,17 +167,18 @@ test("the founder can change any CEO's role and nobody can change the founder's"
     clerkId: boss,
     role: "head_moderator",
   });
+  // A Head Moderator keeps the Admin page, just not the CEO rank.
   expect(
     await t.withIdentity({ subject: boss }).query(api.adminQuotas.access, {}),
-  ).toBe(false);
+  ).toBe(true);
   expect(
     await t.withIdentity({ subject: boss }).query(api.timeouts.access, {}),
   ).toBe("head_moderator");
 
-  // A demoted CEO has no say over the founder either.
+  // A demoted CEO has no say over roles at all, the founder's included.
   await expect(
     ceo.mutation(api.adminQuotas.setRole, { clerkId: founder, role: "member" }),
-  ).rejects.toThrow("CEO access required.");
+  ).rejects.toThrow("Only a CEO can change roles.");
   expect(await mason.query(api.adminQuotas.access, {})).toBe(true);
 
   // The founder can hand the role back, too.
@@ -201,9 +203,7 @@ test("demoting one of two CEOs leaves the other in charge", async () => {
     await t.withIdentity({ subject: amy }).query(api.adminQuotas.access, {}),
   ).toBe(false);
   // The acting CEO is untouched by someone else's demotion.
-  expect(
-    await mason.query(api.adminQuotas.access, {}),
-  ).toBe(true);
+  expect(await mason.query(api.adminQuotas.access, {})).toBe(true);
 });
 
 test("a table member row revokes env staff access and unknown users reject", async () => {
@@ -293,7 +293,7 @@ test("a CEO hides a staff badge without changing the role's powers", async () =>
   });
 });
 
-test("only CEOs can change badge visibility", async () => {
+test("only admins change badge visibility, and a Head Moderator not a CEO's", async () => {
   const t = await setup();
   for (const subject of [mod, amy, null] as const) {
     const caller = subject === null ? t : t.withIdentity({ subject });
@@ -302,6 +302,26 @@ test("only CEOs can change badge visibility", async () => {
         clerkId: mod,
         visible: false,
       }),
-    ).rejects.toThrow("CEO access required.");
+    ).rejects.toThrow("Admin access required.");
   }
+  await t.withIdentity({ subject: boss }).mutation(api.adminQuotas.setRole, {
+    clerkId: amy,
+    role: "head_moderator",
+  });
+  const head = t.withIdentity({ subject: amy });
+  await head.mutation(api.adminQuotas.setBadgeVisible, {
+    clerkId: mod,
+    visible: false,
+  });
+  expect(await head.query(api.chat.admin.roles, {})).toContainEqual({
+    clerkId: mod,
+    role: "moderator",
+    hideBadge: true,
+  });
+  await expect(
+    head.mutation(api.adminQuotas.setBadgeVisible, {
+      clerkId: boss,
+      visible: false,
+    }),
+  ).rejects.toThrow("Only a CEO can change a CEO's badge.");
 });

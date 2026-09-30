@@ -108,7 +108,11 @@ export default defineSchema({
     enabled: v.boolean(),
     ceoCleared: v.optional(v.boolean()),
     issuedBy: v.string(),
-    issuedByRole: v.union(v.literal("ceo"), v.literal("head_moderator")),
+    issuedByRole: v.union(
+      v.literal("ceo"),
+      v.literal("co_owner"),
+      v.literal("head_moderator"),
+    ),
     /**
      * Whether twenty calculus problems in a row lift this timeout early (see
      * `timeoutPuzzles.ts`). Missing on rows from before the option, which
@@ -148,7 +152,7 @@ export default defineSchema({
    * The one site-wide announcement, on or off for everyone at once. A single
    * row, created on the first save; absent means nothing has ever been
    * written. While `enabled` and `display` is `screen`, every public function
-   * refuses a caller who is not a CEO or Head Moderator. See
+   * refuses a caller who is not an admin. See
    * `convex/announcement.ts` and `convex/functions.ts`.
    */
   siteAnnouncement: defineTable({
@@ -208,6 +212,7 @@ export default defineSchema({
     clerkId: v.string(),
     role: v.union(
       v.literal("ceo"),
+      v.literal("co_owner"),
       v.literal("head_moderator"),
       v.literal("moderator"),
       v.literal("builder"),
@@ -224,14 +229,14 @@ export default defineSchema({
     .index("byUpdatedBy", ["updatedBy"]),
 
   /**
-   * The last sound a CEO sent to an account's devices from the Admin user
-   * directory. One replaceable row per target, patched on every send, so the
-   * table never grows and the target's subscription wakes on `sentAt`
-   * changing. See `convex/remoteSound.ts`.
+   * Retired. Remote sound, which played a sound on an account's devices from
+   * the Admin user directory, was removed, and nothing reads or writes this
+   * table any more. The definition stays until the table is empty in every
+   * deployment: Convex refuses a schema that drops a table still holding
+   * documents. Clear it in the dashboard, then delete this block.
    */
   soundPings: defineTable({
     clerkId: v.string(),
-    /** An id from `SOUND_GROUPS` in `src/lib/remote-sound.ts`; checked on write. */
     sound: v.string(),
     /** Percent of the sound's natural level, 50–200. Absent means 100. */
     volume: v.optional(v.number()),

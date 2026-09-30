@@ -270,7 +270,7 @@ function InviteRow({ invite }: { invite: InviteCode }) {
   );
 }
 
-/** CEO-only: make, pause, and delete the codes the invite gate accepts. */
+/** Admin-only: make, pause, and delete the codes the invite gate accepts. */
 export function InviteCodes() {
   const now = useMinute();
   const invites = useAuthedQuery(api.invites.list, { now });
