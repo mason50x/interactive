@@ -15,6 +15,9 @@ import { CLIENT_ACTIVITIES } from "@/lib/activities";
 import { OnboardingGate } from "@/components/app/onboarding-gate";
 import { WorkspaceProvider } from "@/components/app/workspace/workspace-provider";
 import { WorkspaceStage } from "@/components/app/workspace/workspace-stage";
+import { ListenProvider } from "@/components/app/listen/listen-provider";
+import { experienceAppsFor, experienceSrc } from "@/lib/experience";
+import { isListenApp } from "@/lib/listen";
 
 export const metadata: Metadata = {
   // Nothing behind a session is indexable. This is now the same answer the
@@ -59,7 +62,11 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await protectPage();
+  const { userId } = await protectPage();
+  // The music apps, for players that outlive Browse. See `ListenProvider`.
+  const listenServices = experienceAppsFor(userId)
+    .filter((app) => isListenApp(app.id))
+    .map((app) => ({ ...app, src: experienceSrc(app.start) }));
 
   return (
     <AppProviders>
@@ -86,13 +93,15 @@ export default async function DashboardLayout({
                       a frame. With one pane the stage is the shell it
                       always was. See `WorkspaceStage`. */}
                   <WorkspaceProvider>
-                    <div className="flex h-svh overflow-hidden bg-sidebar">
-                      <AppSidebar />
-                      <WorkspaceStage>
-                        <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
-                      </WorkspaceStage>
-                      <BellToast />
-                    </div>
+                    <ListenProvider services={listenServices}>
+                      <div className="flex h-svh overflow-hidden bg-sidebar">
+                        <AppSidebar />
+                        <WorkspaceStage>
+                          <PlaytimeRouteGate>{children}</PlaytimeRouteGate>
+                        </WorkspaceStage>
+                        <BellToast />
+                      </div>
+                    </ListenProvider>
                   </WorkspaceProvider>
                 </PlaytimeStatusProvider>
               </PlaytimeActivityProvider>

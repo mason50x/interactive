@@ -59,6 +59,24 @@
       let receiveAccess;
       const accessReady = new Promise(resolve => { receiveAccess = resolve; });
       const configureTransport = () => connection.setTransport("/transport.mjs", [location.origin + "/", accessToken]);
+      // A music app's frame reports what it is playing through media.js; this
+      // relays it to the app and relays the app's buttons back. Only when the
+      // app asks, and only to the origin it named.
+      let frame = null;
+      if (launchOptions.get("media") === "1" && appOrigin && window.parent !== window) {
+        window.__experienceMediaLauncher = true;
+        window.__experienceMedia = (state) => {
+          window.parent.postMessage({ type: "experience-media", state }, appOrigin);
+        };
+        window.addEventListener("message", event => {
+          if (event.source !== window.parent || event.origin !== appOrigin || event.data?.type !== "experience-media-command") return;
+          try {
+            frame?.contentWindow?.__experienceMediaCommand?.(event.data.command);
+          } catch {
+            // The frame is between documents; the app will press again.
+          }
+        });
+      }
       window.addEventListener("message", event => {
         if (event.source !== window.parent || event.origin !== appOrigin || event.data?.type !== "experience-access") return;
         if (event.data.token !== null && typeof event.data.token !== "string") return;
@@ -115,7 +133,7 @@
       });
 
       stage = "Opening the destination";
-      const frame = document.createElement("iframe");
+      frame = document.createElement("iframe");
       frame.title = "Experience";
       const targetHost = new URL(target).hostname;
       const under = (domain) => targetHost === domain || targetHost.endsWith("." + domain);

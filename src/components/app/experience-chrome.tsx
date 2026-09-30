@@ -28,10 +28,15 @@ import {
   useExperienceQuota,
 } from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
+import {
+  ListenSlot,
+  useListen,
+} from "@/components/app/listen/listen-provider";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import type { ExperienceApp } from "@/lib/experience";
+import { isListenApp } from "@/lib/listen";
 import { readStoredJson, writeStoredJson } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +92,12 @@ const SHELVES: { label: string; ids: string[] }[] = [
  * ratio the divider sets, and either side can be swapped or closed without
  * touching the other's frame — every frame is rendered in the same order at
  * all times and only its CSS `order`, size and visibility change.
+ *
+ * Music is the exception. Spotify and Apple Music keep playing after you
+ * leave Browse, so their frames belong to the shell (`ListenProvider`) and
+ * a pane only holds the place the shell lays the frame over. Their sessions
+ * are the shell's, read back here, so the dock still lists them when you
+ * return.
  */
 export function ExperienceChrome({
   services,
@@ -97,9 +108,27 @@ export function ExperienceChrome({
   initialAppId?: string;
   accessToken?: string | null;
 }) {
-  const [sessions, setSessions] = useState<Session[]>(
-    initialAppId ? [{ appId: initialAppId, run: 0 }] : [],
-  );
+  const listen = useListen();
+  const shared = (appId: string) => listen.enabled && isListenApp(appId);
+  const [ownSessions, setSessions] = useState<Session[]>(() => [
+    ...(listen.enabled ? listen.sessions : []),
+    ...(initialAppId &&
+    !(listen.enabled && listen.sessions.some((s) => s.appId === initialAppId))
+      ? [{ appId: initialAppId, run: 0 }]
+      : []),
+  ]);
+  // In our order; a music session only while the shell has it.
+  const listenSessions = listen.enabled ? listen.sessions : [];
+  const sessions = [
+    ...ownSessions.flatMap((session) =>
+      shared(session.appId)
+        ? listenSessions.filter((s) => s.appId === session.appId)
+        : [session],
+    ),
+    ...listenSessions.filter(
+      (s) => !ownSessions.some((session) => session.appId === s.appId),
+    ),
+  ];
   const [focus, setFocus] = useState<string | null>(initialAppId ?? null);
   const [split, setSplit] = useState<string | null>(null);
   const [ratio, setRatio] = useState(0.5);
@@ -172,7 +201,39 @@ export function ExperienceChrome({
     if (focus) rememberRecent(focus);
   }, [focus]);
 
+  // Arriving on /browse/spotify hands the session to the shell. Only once
+  // the shell is known: a hydrating render cannot tell a pane from the tab.
+  const { enabled: listenEnabled, launch: listenLaunch } = listen;
+  useEffect(() => {
+    if (listenEnabled && initialAppId && isListenApp(initialAppId))
+      listenLaunch(initialAppId);
+  }, [listenEnabled, listenLaunch, initialAppId]);
+
+  // The mini player can close a music app, and running out closes them all.
+  // Whatever was showing it steps aside.
+  const previousListen = useRef(listen.sessions);
+  useEffect(() => {
+    const gone = previousListen.current
+      .filter((p) => !listen.sessions.some((s) => s.appId === p.appId))
+      .map((p) => p.appId);
+    previousListen.current = listen.sessions;
+    if (gone.length === 0) return;
+    setSessions((current) => current.filter((s) => !gone.includes(s.appId)));
+    if (focus && gone.includes(focus)) {
+      setFocus(splitApp && !gone.includes(splitApp) ? splitApp : null);
+      setSplit(null);
+    } else if (splitApp && gone.includes(splitApp)) {
+      setSplit(null);
+    }
+  }, [listen.sessions, focus, splitApp]);
+
+  const frameRef = (appId: string) => (frame: HTMLIFrameElement | null) => {
+    if (frame) frames.current.set(appId, frame);
+    else frames.current.delete(appId);
+  };
+
   function launch(appId: string) {
+    if (shared(appId)) listen.launch(appId);
     setSessions((current) =>
       current.some((session) => session.appId === appId)
         ? current
@@ -194,6 +255,7 @@ export function ExperienceChrome({
   }
 
   function close(appId: string) {
+    if (shared(appId)) listen.close(appId);
     setSessions((current) =>
       current.filter((session) => session.appId !== appId),
     );
@@ -211,6 +273,7 @@ export function ExperienceChrome({
   }
 
   function reload(appId: string) {
+    if (shared(appId)) return listen.reload(appId);
     setSessions((current) =>
       current.map((session) =>
         session.appId === appId
@@ -420,13 +483,12 @@ export function ExperienceChrome({
                       It can’t be opened right now. Everything else still works.
                     </p>
                   </div>
+                ) : shared(service.id) ? (
+                  <ListenSlot appId={service.id} inert={dragging} />
                 ) : (
                   <iframe
                     key={session.run}
-                    ref={(frame) => {
-                      if (frame) frames.current.set(session.appId, frame);
-                      else frames.current.delete(session.appId);
-                    }}
+                    ref={frameRef(session.appId)}
                     src={
                       accessToken
                         ? `${service.src}#${new URLSearchParams({ access: "1", appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`

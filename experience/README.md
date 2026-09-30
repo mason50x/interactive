@@ -22,6 +22,7 @@ an eligible chat message, including a short reply, earns 30 seconds; see
 ## Layout
 
     src/worker.js          the Bare server and the allowlist check
+    site/media.js          the media bridge for music apps (see its header)
     site/                  the frontend: index.html, sw.js, experience.config.js, _headers
     site/dist/             built output (gitignored): site/ plus the vendored
                            engine, bridge and transport bundles from node_modules

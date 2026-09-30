@@ -4,8 +4,7 @@ import { Popover } from "@base-ui/react/popover";
 import { PacketCover } from "@/components/app/packet-cover";
 import { Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import Link from "next/link";
+import { ChevronUpIcon } from "@heroicons/react/20/solid";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import {
   createContext,
@@ -31,7 +30,15 @@ import {
   type PlaytimeDisplay,
 } from "@/lib/playtime-display";
 
-export function useExperienceQuota(active = false) {
+/**
+ * `background` is for music that keeps playing once the site is out of sight:
+ * a hidden tab keeps its lease instead of stopping, and the lease is bought
+ * at the background rate (see `acquire`).
+ */
+export function useExperienceQuota(
+  active = false,
+  { background = false }: { background?: boolean } = {},
+) {
   const { isAuthenticated } = useConvexAuth();
   const statusOffset = useRef(0);
   const [clockOffset, setClockOffset] = useState(0);
@@ -97,12 +104,21 @@ export function useExperienceQuota(active = false) {
     };
     const unload = () => releaseOnExit(sessionId);
     const tick = async () => {
-      if (document.hidden || pending || Date.now() < nextCheck.current) return;
+      const hidden = document.hidden;
+      if ((hidden && !background) || pending || Date.now() < nextCheck.current)
+        return;
       pending = true;
       const requestSession = sessionId;
       try {
-        const result = await acquire({ sessionId: requestSession });
-        if (cancelled || document.hidden || requestSession !== sessionId) {
+        const result = await acquire({
+          sessionId: requestSession,
+          ...(background && hidden ? { background: true } : {}),
+        });
+        if (
+          cancelled ||
+          (document.hidden && !background) ||
+          requestSession !== sessionId
+        ) {
           // Covers leaving while the start/renew request was in flight.
           void release({ sessionId: requestSession }).catch(() => {});
           return;
@@ -135,8 +151,10 @@ export function useExperienceQuota(active = false) {
     void tick();
     const timer = setInterval(() => void tick(), 1000);
     const visibilityChanged = () => {
-      if (document.hidden) stop();
-      else void tick();
+      if (document.hidden && !background) return stop();
+      // The rate changes with visibility; say so at once rather than at renewal.
+      nextCheck.current = 0;
+      void tick();
     };
     document.addEventListener("visibilitychange", visibilityChanged);
     window.addEventListener("pagehide", unload);
@@ -152,6 +170,7 @@ export function useExperienceQuota(active = false) {
     };
   }, [
     active,
+    background,
     isAuthenticated,
     acquire,
     release,
@@ -176,7 +195,7 @@ export function useExperienceQuota(active = false) {
     !status?.voteRequired &&
     (paused ||
       (isAuthenticated &&
-        visible &&
+        (visible || background) &&
         lease.until > serverNow &&
         (status?.leaseUntil ?? 0) > serverNow));
   useEffect(() => {
@@ -331,12 +350,20 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
 }
 
 /** The time left, as text in the rail; its details open beside it over the page. */
+/**
+ * The rail's playtime clock: its own raised card above the rail's foot. Just
+ * the time in the icon rail, where there is no room to say more; once the
+ * rail is wide it is labelled, and opens upward — the card grows into the
+ * rail above it — to say how playtime works, with the way to get more.
+ */
 export function PlaytimeSidebar({
   quota,
   compact = false,
+  className,
 }: {
   quota: Quota;
   compact?: boolean;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   if (compact && open) setOpen(false);
@@ -350,73 +377,84 @@ export function PlaytimeSidebar({
       ? "—:—"
       : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   return (
-    <div ref={root} className="relative shrink-0">
-      <button
-        type="button"
-        disabled={compact}
-        aria-expanded={compact ? undefined : open}
-        aria-controls={compact ? undefined : detailsId}
-        aria-label={
-          compact
-            ? `Playtime: ${label} remaining`
-            : `Playtime: ${label} remaining. ${open ? "Hide" : "View"} details`
-        }
-        onClick={() => setOpen((value) => !value)}
-        className={cn(
-          "flex h-9 items-center gap-1 rounded-lg px-1 text-[0.8125rem] font-medium text-muted-foreground tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/60 wide:px-2",
-          compact
-            ? "cursor-default"
-            : "cursor-pointer transition-colors hover:text-foreground",
-        )}
-      >
-        <span
-          className="inline-block min-w-[5ch] text-right leading-none"
-          aria-hidden="true"
-        >
-          {label}
-        </span>
-        {!compact && (
-          <ChevronDownIcon
-            aria-hidden="true"
-            className={cn(
-              // No room for it in the icon rail; the time is the control.
-              "playtime-spring hidden size-3.5 transition-transform duration-[440ms] motion-reduce:transition-none wide:block",
-              open && "rotate-180",
-            )}
-          />
-        )}
-      </button>
-      <div
-        id={detailsId}
-        aria-hidden={!open}
-        inert={!open}
-        className={cn(
-          "playtime-spring absolute bottom-0 left-full ml-2 w-64 transition-[opacity,transform,visibility] duration-[350ms] motion-reduce:transition-none",
-          open
-            ? "visible translate-x-0 opacity-100"
-            : "invisible -translate-x-2 opacity-0",
-        )}
-      >
-        <Card
-          radius="sm"
-          className="space-y-1.5 px-3 py-2.5 text-xs leading-snug text-foreground/85"
-        >
-          {seconds === 0 && (
-            <p className="font-medium">Chat for more playtime.</p>
+    <div ref={root} className={cn("shrink-0", className)}>
+      <Card radius="sm" className="overflow-hidden bg-surface shadow-card">
+        {/* Rows 0fr → 1fr: the details open to their own height, however
+            the sentence wraps, without measuring it. The content fades and
+            rises on the same curve and clock as the height, both ways, so
+            the card changes as one piece. */}
+        <div
+          id={detailsId}
+          aria-hidden={!open}
+          inert={!open}
+          className={cn(
+            "hidden duration-[440ms] ease-(--ease-workspace) motion-safe:transition-[grid-template-rows] wide:grid",
+            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
           )}
-          <p>Your daily time counts only in an open player or proxy app.</p>
-          <p>
-            Resets at 7:30 a.m. CT. Room messages add 1.5 minutes, direct
-            messages 45 seconds.
-          </p>
-          <Link
-            href="/chat"
-            className="inline-block font-medium text-primary hover:underline"
+        >
+          <div className="min-h-0">
+            <div
+              className={cn(
+                "space-y-3 px-3 pt-3 pb-1 duration-[440ms] ease-(--ease-workspace) motion-safe:transition-[opacity,translate]",
+                open ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
+              )}
+            >
+              <p className="text-[0.8125rem] leading-snug text-muted-foreground">
+                {seconds === 0
+                  ? "You're out for today. Chatting earns more."
+                  : "Counts down only while you play, and resets at 7:30 a.m. Chatting earns more."}
+              </p>
+              <ButtonLink
+                href="/chat"
+                variant="secondary"
+                size="lg"
+                className="w-full"
+                onClick={close}
+              >
+                Open chat
+              </ButtonLink>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={compact}
+          aria-expanded={compact ? undefined : open}
+          aria-controls={compact ? undefined : detailsId}
+          aria-label={
+            compact
+              ? `Playtime: ${label} remaining`
+              : `Playtime: ${label} remaining. ${open ? "Hide" : "View"} details`
+          }
+          onClick={() => setOpen((value) => !value)}
+          className={cn(
+            "flex h-11 w-full items-center justify-center gap-1.5 rounded-[inherit] px-1 text-sm font-medium text-foreground tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset wide:px-3",
+            // Only the wide card opens; in the icon rail it's a readout.
+            compact
+              ? "cursor-default"
+              : "pointer-events-none wide:pointer-events-auto wide:cursor-pointer wide:transition-colors wide:hover:bg-foreground/[0.03]",
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className="mr-auto hidden text-[0.8125rem] text-muted-foreground wide:inline"
           >
-            Open chat →
-          </Link>
-        </Card>
-      </div>
+            Playtime
+          </span>
+          <span className="leading-none" aria-hidden="true">
+            {label}
+          </span>
+          {!compact && (
+            <ChevronUpIcon
+              aria-hidden="true"
+              className={cn(
+                "hidden size-3.5 text-muted-foreground duration-[440ms] ease-(--ease-workspace) motion-safe:transition-transform wide:block",
+                open && "rotate-180",
+              )}
+            />
+          )}
+        </button>
+      </Card>
     </div>
   );
 }

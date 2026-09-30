@@ -15,6 +15,7 @@ import {
   type LayoutId,
   type Sizes,
 } from "@/lib/workspace";
+import { RailSheet, useRailSheet } from "@/components/app/rail/rail-sheet";
 import { TRIED_KEY, useWorkspace } from "./workspace-provider";
 
 const HINTED_KEY = "workspace:hinted";
@@ -33,98 +34,129 @@ function useStored(key: string) {
 }
 
 /**
- * The way into split view: a row in the rail, under the destinations.
+ * The way into split view: an icon in the rail's foot, beside the schedule.
  *
- * Its icon is the current layout, drawn live, so the rail always shows what
- * the stage is doing. It opens the layout menu. The first time someone is on
- * something to play or watch, it offers — once — to put Chat beside it,
- * which is what most people will want split view for.
+ * Its icon is the current layout, drawn live and filled — side-by-side panes
+ * even when there is only one, so it always reads as split view. It opens the
+ * layout menu: as a sheet inside the labelled rail, and beside the icon rail.
+ * The first time someone is on something to play or watch, it offers — once
+ * — to put Chat beside it, which is what most people will want split view
+ * for.
  */
 export function SplitViewButton() {
   const workspace = useWorkspace();
   const tried = useStored(TRIED_KEY) === "1";
   const seen = useStored(SEEN_KEY) === "1";
   const fresh = !seen && !tried;
-  const [open, setOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const sheet = useRailSheet("split-view");
   const button = useRef<HTMLButtonElement>(null);
   const preset = layoutPreset(workspace.layout);
 
   if (workspace.isPane) return null;
 
-  return (
-    <div className="shrink-0 pb-1 pl-3 max-md:hidden">
-      <Popover.Root
-        open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (next && !seen) {
-            writeStorage(SEEN_KEY, "1");
-            window.dispatchEvent(
-              new StorageEvent("storage", { key: SEEN_KEY }),
-            );
-          }
-        }}
-      >
-        <Popover.Trigger
-          ref={button}
-          className={cn(
-            "group relative flex h-11 w-full items-center gap-3 rounded-lg border border-transparent px-3 text-[0.9375rem] font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
-            workspace.multi
-              ? "text-foreground"
-              : "text-muted-foreground transition-[background-color,color] duration-150 hover:bg-foreground/[0.05] hover:text-foreground data-popup-open:bg-foreground/[0.05] data-popup-open:text-foreground",
-          )}
-          aria-label={
-            workspace.multi ? `Split view: ${preset.label}` : "Split view"
-          }
-          title={
-            workspace.multi
-              ? `${preset.label} · change layout`
-              : "Split view: more than one thing on screen"
-          }
-        >
-          <span className="ml-2 inline-flex h-full min-w-0 items-center gap-3 wide:ml-0">
-            <LayoutGlyph
-              layout={workspace.layout}
-              sizes={workspace.sizes}
-              focusIndex={workspace.slots.indexOf(workspace.focus)}
-              className={cn(
-                "size-5 shrink-0",
-                fresh && "workspace-glyph-tease",
-              )}
-            />
-            <span className="sr-only wide:not-sr-only">
-              {workspace.multi ? preset.label : "Split view"}
-            </span>
-          </span>
-          {fresh && (
-            <span className="absolute top-1 right-0.5 rounded-full bg-primary px-1 py-0.5 text-[0.625rem] leading-none font-semibold text-primary-foreground wide:top-1/2 wide:right-3 wide:-translate-y-1/2 wide:px-1.5 wide:text-xs">
-              New
-            </span>
-          )}
-        </Popover.Trigger>
+  const markSeen = () => {
+    if (seen) return;
+    writeStorage(SEEN_KEY, "1");
+    window.dispatchEvent(new StorageEvent("storage", { key: SEEN_KEY }));
+  };
+  const trigger = {
+    className: cn(
+      "relative flex size-11 shrink-0 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset",
+      workspace.multi
+        ? "text-foreground"
+        : "text-muted-foreground transition-colors hover:text-foreground data-popup-open:text-foreground",
+    ),
+    "aria-label": workspace.multi
+      ? `Split view: ${preset.label}`
+      : "Split view",
+    title: workspace.multi
+      ? `Split view · ${preset.label}`
+      : "Split view: more than one thing on screen",
+    children: (
+      <>
+        <LayoutGlyph
+          layout={workspace.layout}
+          sizes={workspace.sizes}
+          focusIndex={workspace.slots.indexOf(workspace.focus)}
+          className={cn("size-5 shrink-0", fresh && "workspace-glyph-tease")}
+        />
+        {/* A dot, not the word: there's no room for it beside an icon. */}
+        {fresh && (
+          <span
+            aria-hidden
+            className="absolute top-2 right-2 size-2 rounded-full bg-primary"
+          />
+        )}
+      </>
+    ),
+  };
 
-        <Popover.Portal>
-          <Popover.Positioner
-            side="right"
-            align="end"
-            sideOffset={12}
-            collisionPadding={12}
-            className="z-[60] outline-none"
+  return (
+    <div className="shrink-0 max-md:hidden">
+      {sheet.inRail ? (
+        <>
+          <button
+            ref={button}
+            type="button"
+            aria-expanded={sheet.open}
+            aria-haspopup="dialog"
+            data-popup-open={sheet.open ? "" : undefined}
+            onClick={() => {
+              if (!sheet.open) markSeen();
+              sheet.toggle();
+            }}
+            {...trigger}
+          />
+          <RailSheet
+            open={sheet.open}
+            onClose={sheet.close}
+            origin={button}
+            title="Split view"
           >
-            <Popover.Popup
-              className={cn(
-                popupVariants({ motion: "slide", padding: "none" }),
-                "w-[21rem] max-w-[calc(100vw-6rem)] overflow-hidden",
-              )}
+            <LayoutList onDone={sheet.close} />
+          </RailSheet>
+        </>
+      ) : (
+        <Popover.Root
+          open={popoverOpen}
+          onOpenChange={(next) => {
+            setPopoverOpen(next);
+            if (next) markSeen();
+          }}
+        >
+          <Popover.Trigger ref={button} {...trigger} />
+          <Popover.Portal>
+            <Popover.Positioner
+              side="right"
+              align="end"
+              sideOffset={12}
+              collisionPadding={12}
+              className="z-[60] outline-none"
             >
-              <LayoutMenu onDone={() => setOpen(false)} />
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
-      <SplitViewHint anchor={button} menuOpen={open} />
+              <Popover.Popup
+                className={cn(
+                  popupVariants({ motion: "slide", padding: "none" }),
+                  "w-[21rem] max-w-[calc(100vw-6rem)] overflow-hidden",
+                )}
+              >
+                <LayoutMenu onDone={() => setPopoverOpen(false)} />
+              </Popover.Popup>
+            </Popover.Positioner>
+          </Popover.Portal>
+        </Popover.Root>
+      )}
+      <SplitViewHint anchor={button} menuOpen={popoverOpen || sheet.open} />
     </div>
   );
+}
+
+function chooseLayout(
+  workspace: ReturnType<typeof useWorkspace>,
+  layout: LayoutId,
+) {
+  if (layout === "single") workspace.exitSplit();
+  else workspace.setLayout(layout);
 }
 
 function LayoutMenu({ onDone }: { onDone: () => void }) {
@@ -140,8 +172,7 @@ function LayoutMenu({ onDone }: { onDone: () => void }) {
               key={layout.id}
               type="button"
               onClick={() => {
-                if (layout.id === "single") workspace.exitSplit();
-                else workspace.setLayout(layout.id);
+                chooseLayout(workspace, layout.id);
                 onDone();
               }}
               aria-pressed={current}
@@ -168,6 +199,60 @@ function LayoutMenu({ onDone }: { onDone: () => void }) {
         })}
       </div>
     </div>
+  );
+}
+
+/**
+ * The layouts as rows, for the rail's sheet: too narrow for the menu's grid,
+ * and room for each one's hint. The rows follow the sheet in one by one.
+ */
+function LayoutList({ onDone }: { onDone: () => void }) {
+  const workspace = useWorkspace();
+  return (
+    <ul className="flex flex-col gap-0.5 px-1.5 pt-1 pb-1.5">
+      {LAYOUTS.map((layout, index) => {
+        const current = workspace.layout === layout.id;
+        return (
+          <li
+            key={layout.id}
+            className="rail-sheet-item"
+            style={{ ["--i" as string]: index }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                chooseLayout(workspace, layout.id);
+                onDone();
+              }}
+              aria-pressed={current}
+              className={cn(
+                "group/layout flex w-full items-center gap-3 rounded-lg px-2.5 py-1.5 text-left transition-[background-color,scale] duration-150 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset active:scale-[0.98]",
+                current ? "bg-foreground/[0.07]" : "hover:bg-foreground/[0.04]",
+              )}
+            >
+              <span className="w-9 shrink-0">
+                <LayoutThumb layout={layout.id} current={current} />
+              </span>
+              <span className="min-w-0">
+                <span
+                  className={cn(
+                    "block truncate text-[0.8125rem] leading-tight font-medium transition-colors duration-150",
+                    current
+                      ? "text-foreground"
+                      : "text-muted-foreground group-hover/layout:text-foreground",
+                  )}
+                >
+                  {layout.label}
+                </span>
+                <span className="block truncate text-xs leading-tight text-faint">
+                  {layout.hint}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -204,7 +289,10 @@ function LayoutThumb({
   );
 }
 
-/** The current layout as a 20px icon, the focused pane filled. */
+/**
+ * The current layout as a 20px icon, every pane filled. In split view the
+ * focused pane is solid and the rest are dimmed.
+ */
 function LayoutGlyph({
   layout,
   sizes,
@@ -220,7 +308,7 @@ function LayoutGlyph({
     layout === "single"
       ? layoutRects("columns", { ...sizes, x: 0.5 })
       : layoutRects(layout, sizes);
-  const inset = 1.25;
+  const inset = 2;
   return (
     <svg viewBox="0 0 20 20" aria-hidden className={className}>
       {rects.map((rect, index) => {
@@ -228,7 +316,7 @@ function LayoutGlyph({
         const y = 2.5 + rect.t * 15;
         const w = rect.w * 17;
         const h = rect.h * 15;
-        const filled = layout !== "single" && index === focusIndex;
+        const dimmed = layout !== "single" && index !== focusIndex;
         return (
           <rect
             key={index}
@@ -246,12 +334,11 @@ function LayoutGlyph({
                 (rect.t > 0 ? inset / 2 : 0) -
                 (rect.t + rect.h < 0.999 ? inset / 2 : 0),
             )}
-            rx={1.5}
+            rx={2}
             className={cn(
-              "transition-[x,y,width,height,fill] duration-[460ms] ease-(--ease-workspace)",
-              filled ? "fill-current" : "fill-none stroke-current",
+              "fill-current transition-[x,y,width,height,opacity] duration-[460ms] ease-(--ease-workspace)",
+              dimmed && "opacity-40",
             )}
-            strokeWidth={1.5}
           />
         );
       })}

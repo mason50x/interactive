@@ -29,9 +29,9 @@ const cardVariants = cva("border", {
     hover: {
       none: "",
       /** Moves a step and strengthens the border, for a card that is a link. */
-      lift: "transition-[transform,border-color] duration-300 hover:-translate-y-1 hover:border-card-outline-hover",
+      lift: "hover:border-card-outline-hover transition-[transform,border-color] duration-300 hover:-translate-y-1",
       /** Strengthens the border without movement, for a card with controls in it. */
-      glow: "transition-colors duration-300 hover:border-card-outline-hover",
+      glow: "hover:border-card-outline-hover transition-colors duration-300",
     },
   },
   defaultVariants: {
@@ -49,8 +49,11 @@ function Card({
   ...props
 }: ComponentProps<"div"> & VariantProps<typeof cardVariants>) {
   return (
+    // Not `card`: that slot is the page's own card in `WorkspaceStage`, and
+    // `globals.css` hangs a full-bleed hairline off it that would otherwise
+    // stretch across whatever positioned box this card sits in.
     <div
-      data-slot="card"
+      data-slot="surface-card"
       className={cn(cardVariants({ radius, surface, hover }), className)}
       {...props}
     />

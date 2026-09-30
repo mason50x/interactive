@@ -25,6 +25,18 @@ playtime routes to Chat. Chat stays fully usable. Direct links and browser Back
 receive the same route guard. The standalone `/learn` document retains a local
 exhaustion notice with a chat link. Existing moderation timeouts are separate.
 
+## Background music
+
+Spotify and Apple Music keep playing after you leave Browse (see
+`src/lib/listen.ts`). Their frames belong to the app shell, and the mini player
+and pop-out control them. While you are in the app, playing music is charged
+like any player. While the tab is hidden and the music is still playing, it is
+charged at half rate. That is what the pop-out window is for. A `background`
+lease is bought at half rate only while every live session is a background
+one. When anything visible joins, the rest of the half-rate lease is topped up
+to full. Unused background time is refunded at half. Paused music is not
+charged, and running out closes the music apps like every other player.
+
 ## Chat rewards
 
 Only the normal, authenticated, accepted chat-send mutation can award time.
@@ -52,7 +64,7 @@ batches. Checks and credit share one Convex transaction.
 
 ## Rollout
 
-Deploy Convex before the frontend. `bonusSeconds` is optional for existing data.
+Deploy Convex before the frontend. `bonusSeconds` and `half` are optional for existing data.
 Daily keys use the reset's epoch milliseconds, distinct from the legacy UTC day
 numbers. The legacy lease rows were removed from development and production on
 September 23, 2026. Existing scheduled cleanup cannot erase a new policy key.

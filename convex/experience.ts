@@ -11,6 +11,8 @@ import { internalMutation, type QueryCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
 
 const limiter = new RateLimiter(components.rateLimiter);
+/** Music playing in the background, from the mini player, costs half. */
+const HALF = 0.5;
 const statusValidator = v.object({
   remainingSeconds: v.number(),
   allowanceSeconds: v.number(),
@@ -19,6 +21,8 @@ const statusValidator = v.object({
   serverNow: v.number(),
   /** An open forced vote is waiting on this account; no lease until it lands. */
   voteRequired: v.boolean(),
+  /** Allowance spent per second of the current lease: 1, or 0.5 in the background. */
+  leaseRate: v.number(),
 });
 
 async function quotaFor(ctx: QueryCtx, clerkId: string) {
@@ -37,7 +41,7 @@ async function quotaFor(ctx: QueryCtx, clerkId: string) {
   return { now, day, key, config, lease, clerkId,
     status: { remainingSeconds: Math.max(0, Math.min(allowanceSeconds, value.value)),
       allowanceSeconds, leaseUntil: lease?.until ?? 0, resetsAt, serverNow: now,
-      voteRequired: await voteRequired(ctx, clerkId) } };
+      voteRequired: await voteRequired(ctx, clerkId), leaseRate: lease?.half ? HALF : 1 } };
 }
 
 /** Preserve today's spent time when an admin changes the daily base limit. */
@@ -118,37 +122,56 @@ export const status = query({
 
 /** Reserve up to 15 seconds before mounting the frame. A shared lease makes
  * retries, reloads, and multiple tabs idempotent, with no per-heartbeat log.
- * Each browser session releases its unused reservation when it leaves. */
+ * Each browser session releases its unused reservation when it leaves.
+ *
+ * A `background` session is music playing while the site itself is out of
+ * sight. The lease is bought at half price only while every live session is
+ * one; the moment anything in front joins, the rest of a half-price lease is
+ * paid up to full, so the discount never covers foreground time. */
 export const acquire = mutation({
-  args: { sessionId: v.optional(v.string()) },
+  args: { sessionId: v.optional(v.string()), background: v.optional(v.boolean()) },
   returns: statusValidator,
-  handler: async (ctx, { sessionId }) => {
+  handler: async (ctx, { sessionId, background }) => {
     if (sessionId !== undefined && (!sessionId || sessionId.length > 100)) throw new ConvexError("Invalid session");
     const q = await quota(ctx);
     await requireNotTimedOut(ctx, q.clerkId);
     const sessions = (q.lease?.sessions ?? []).filter(s => s.until > q.now && s.id !== sessionId);
     if (sessionId) {
       if (sessions.length >= 32) throw new ConvexError("Too many open activities");
-      sessions.push({ id: sessionId, until: q.now + 15_000 });
+      sessions.push({ id: sessionId, until: q.now + 15_000, ...(background ? { half: true } : {}) });
       if (q.lease) await ctx.db.patch(q.lease._id, { sessions });
     }
-    if (q.status.voteRequired || q.status.leaseUntil > q.now + 5_000 || q.status.remainingSeconds <= 0) return q.status;
-    const from = Math.max(q.now, q.status.leaseUntil);
-    const seconds = Math.min((q.now + 15_000 - from) / 1000, q.status.remainingSeconds, (q.status.resetsAt - from) / 1000);
-    if (seconds <= 0) return q.status;
-    const result = await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: seconds });
-    if (!result.ok) return q.status;
-    await addScore(ctx, q.clerkId, "playtime", seconds, q.now);
+    const rate = (sessionId ? sessions.every(s => s.half) : background) ? HALF : 1;
+    let status = q.status;
+    if (rate === 1 && q.lease?.half && status.leaseUntil > q.now) {
+      const owed = Math.min(((status.leaseUntil - q.now) / 1000) * (1 - HALF), status.remainingSeconds);
+      if (owed > 0) {
+        await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: owed });
+        await addScore(ctx, q.clerkId, "playtime", owed, q.now);
+      }
+      await ctx.db.patch(q.lease._id, { half: false });
+      status = { ...status, remainingSeconds: status.remainingSeconds - owed, leaseRate: 1 };
+    }
+    if (status.voteRequired || status.leaseUntil > q.now + 5_000 || status.remainingSeconds <= 0) return status;
+    const from = Math.max(q.now, status.leaseUntil);
+    // Wall-clock seconds reserved; the allowance pays `rate` for each.
+    const seconds = Math.min((q.now + 15_000 - from) / 1000, status.remainingSeconds / rate, (status.resetsAt - from) / 1000);
+    if (seconds <= 0) return status;
+    const cost = seconds * rate;
+    const result = await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: cost });
+    if (!result.ok) return status;
+    await addScore(ctx, q.clerkId, "playtime", cost, q.now);
     const until = from + seconds * 1000;
+    const half = rate < 1;
     if (q.lease) {
-      await ctx.db.patch(q.lease._id, { until });
+      await ctx.db.patch(q.lease._id, { until, half });
     } else {
-      const leaseId = await ctx.db.insert("experienceLeases", { clerkId: q.clerkId, day: q.day, until, allowanceSeconds: q.status.allowanceSeconds, ...(sessionId ? { sessions } : {}) });
+      const leaseId = await ctx.db.insert("experienceLeases", { clerkId: q.clerkId, day: q.day, until, half, allowanceSeconds: status.allowanceSeconds, ...(sessionId ? { sessions } : {}) });
       // One cleanup per account/day. Day-specific keys keep a delayed cleanup
       // from resetting today's allowance. reset deletes the component row too.
-      await ctx.scheduler.runAt(q.status.resetsAt, internal.experience.prune, { leaseId, key: q.key });
+      await ctx.scheduler.runAt(status.resetsAt, internal.experience.prune, { leaseId, key: q.key });
     }
-    return { ...q.status, remainingSeconds: q.status.remainingSeconds - seconds, leaseUntil: until };
+    return { ...status, remainingSeconds: status.remainingSeconds - cost, leaseUntil: until, leaseRate: rate };
   },
 });
 
@@ -165,12 +188,14 @@ export const release = mutation({
       await ctx.db.patch(q.lease._id, { sessions });
       return null;
     }
-    const unused = Math.max(0, (q.lease.until - q.now) / 1000);
+    // A lease extended at full price and then at half is refunded at half:
+    // at most a few seconds in the house's favour, never in the reader's.
+    const unused = Math.max(0, (q.lease.until - q.now) / 1000) * (q.lease.half ? HALF : 1);
     if (unused > 0) {
       await limiter.limit(ctx, "experienceSeconds", { key: q.key, config: q.config, count: -unused });
       await addScore(ctx, q.clerkId, "playtime", -unused, q.now);
     }
-    await ctx.db.patch(q.lease._id, { sessions: [], until: q.now });
+    await ctx.db.patch(q.lease._id, { sessions: [], until: q.now, half: false });
     return null;
   },
 });

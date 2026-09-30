@@ -153,7 +153,7 @@ const ownRealmCall = "self.__uv?self.__uv instanceof m||(self.__uv.call=function
 if (handler.split(foreignEngine).length !== 2) throw new Error("Review the experience frame realm patch.");
 handler = handler.replace(foreignEngine, ownRealmCall);
 
-writeFileSync(handlerPath, handler + "\n" + readFileSync(join(root, "site", "popup.js"), "utf8") + String.raw`
+writeFileSync(handlerPath, handler + "\n" + readFileSync(join(root, "site", "popup.js"), "utf8") + "\n" + readFileSync(join(root, "site", "media.js"), "utf8") + String.raw`
 ;(() => {
   if (typeof document === "undefined") return;
   for (const proto of [Document.prototype, Element.prototype]) {

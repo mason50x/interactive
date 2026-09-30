@@ -1,9 +1,11 @@
-/** Add back reserved but unused lease time without showing more than the allowance. */
+/** Add back reserved but unused lease time without showing more than the
+ * allowance. A background lease is worth half its length. */
 export function availablePlaytimeSeconds(
   status: {
     remainingSeconds: number;
     allowanceSeconds: number;
     leaseUntil: number;
+    leaseRate?: number;
   },
   serverNow: number,
 ) {
@@ -13,7 +15,8 @@ export function availablePlaytimeSeconds(
       status.allowanceSeconds,
       Math.ceil(
         status.remainingSeconds +
-          Math.max(0, status.leaseUntil - serverNow) / 1000,
+          (Math.max(0, status.leaseUntil - serverNow) / 1000) *
+            (status.leaseRate ?? 1),
       ),
     ),
   );

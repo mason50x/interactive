@@ -34,7 +34,9 @@ export default defineSchema({
     allowanceSeconds: v.optional(v.number()),
     bonusSeconds: v.optional(v.number()),
     activitySpentOverageSeconds: v.optional(v.number()),
-    sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
+    /** Listening in the background: the reserved time is charged at half. */
+    half: v.optional(v.boolean()),
+    sessions: v.optional(v.array(v.object({ id: v.string(), until: v.number(), half: v.optional(v.boolean()) }))),
   }).index("by_clerkId_and_day", ["clerkId", "day"]),
   playtimeRewards: defineTable({
     clerkId: v.string(), hash: v.string(), normalized: v.string(),

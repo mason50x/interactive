@@ -1,22 +1,27 @@
 "use client";
 
 import { Popover } from "@base-ui/react/popover";
+import { useRef } from "react";
 import {
   Donut,
   SchoolDayContent,
   useSchoolDay,
 } from "@/components/app/home/school-schedule";
+import { RailSheet, useRailSheet } from "@/components/app/rail/rail-sheet";
 import { popupVariants } from "@/components/ui/popup";
 import { cn } from "@/lib/utils";
 
 /**
  * The bell schedule in the rail: a ring for the class under way, or a grey
  * circle when there isn't one — a dot between classes, a dash when school is
- * out. Opens the same schedule the home page shows.
+ * out. Opens the same schedule the home page shows: as a sheet inside the
+ * labelled rail, and beside the icon rail, which has no room for one.
  */
 export function SchoolDayButton() {
   const day = useSchoolDay();
   const { status } = day;
+  const sheet = useRailSheet("schedule");
+  const button = useRef<HTMLButtonElement>(null);
   const inClass =
     status?.state === "in-session" && !status.passing
       ? status.periods[status.index]
@@ -29,26 +34,60 @@ export function SchoolDayButton() {
       ? "Passing time · school schedule"
       : "School schedule";
 
+  const mark =
+    inClass && status?.state === "in-session" ? (
+      <Donut
+        filled={
+          (status.seconds - inClass.start * 60) /
+          ((inClass.end - inClass.start) * 60)
+        }
+        size={20}
+        stroke={3}
+        active
+      />
+    ) : (
+      <IdleMark kind={between ? "dot" : "dash"} />
+    );
+  const triggerClassName =
+    "flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset data-popup-open:text-foreground";
+
+  if (sheet.inRail)
+    return (
+      <>
+        <button
+          ref={button}
+          type="button"
+          aria-label={label}
+          aria-expanded={sheet.open}
+          aria-haspopup="dialog"
+          title={label}
+          onClick={sheet.toggle}
+          data-popup-open={sheet.open ? "" : undefined}
+          className={triggerClassName}
+        >
+          {mark}
+        </button>
+        <RailSheet
+          open={sheet.open}
+          onClose={sheet.close}
+          origin={button}
+          title="Schedule"
+        >
+          <div className="flex flex-col px-4 pt-3 pb-3">
+            <SchoolDayContent day={day} compact />
+          </div>
+        </RailSheet>
+      </>
+    );
+
   return (
     <Popover.Root>
       <Popover.Trigger
         aria-label={label}
         title={label}
-        className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset data-popup-open:text-foreground"
+        className={triggerClassName}
       >
-        {inClass && status?.state === "in-session" ? (
-          <Donut
-            filled={
-              (status.seconds - inClass.start * 60) /
-              ((inClass.end - inClass.start) * 60)
-            }
-            size={20}
-            stroke={3}
-            active
-          />
-        ) : (
-          <IdleMark kind={between ? "dot" : "dash"} />
-        )}
+        {mark}
       </Popover.Trigger>
 
       <Popover.Portal>

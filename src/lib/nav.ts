@@ -33,7 +33,21 @@ export type NavItem = {
    * more line here rather than a different shape.
    */
   unread?: boolean;
+  /** Which heading the rail files it under. Home has none: it sits above them. */
+  group?: NavGroup;
 };
+
+/**
+ * The rail's headings, in the order it shows them. A destination's place
+ * within its group still follows the account's own arrangement.
+ */
+export const navGroups = [
+  { id: "entertainment", label: "Entertainment" },
+  { id: "utilities", label: "Utilities" },
+  { id: "community", label: "Community" },
+] as const;
+
+export type NavGroup = (typeof navGroups)[number]["id"];
 
 /** The activities catalogue, with its own search box. */
 export const ACTIVITIES_HREF = "/activities";
@@ -63,16 +77,19 @@ export const navItems: NavItem[] = [
   },
   {
     label: "Activities",
+    group: "entertainment",
     href: ACTIVITIES_HREF,
     icon: { outline: ControllerIcon, solid: ControllerIconSolid },
   },
   {
     label: "TV",
+    group: "entertainment",
     href: "/tv",
     icon: { outline: FilmIcon, solid: FilmIconSolid },
   },
   {
     label: "Chat",
+    group: "community",
     href: CHAT_HREF,
     icon: {
       outline: ChatBubbleLeftRightIcon,
@@ -82,16 +99,19 @@ export const navItems: NavItem[] = [
   },
   {
     label: "Browse",
+    group: "utilities",
     href: "/browse",
     icon: { outline: GlobeAltIcon, solid: GlobeIconSolid },
   },
   {
     label: "Emulate",
+    group: "utilities",
     href: SIMULATOR_HREF,
     icon: { outline: CpuChipIcon, solid: ChipIconSolid },
   },
   {
     label: "Leaderboard",
+    group: "community",
     href: LEADERBOARD_HREF,
     icon: { outline: TrophyIcon, solid: TrophyIconSolid },
   },
@@ -127,4 +147,22 @@ export function arrangeNav(
   return [...items]
     .sort((a, b) => rank(a.href) - rank(b.href))
     .filter((item) => item.href === HOME_HREF || !hidden.includes(item.href));
+}
+
+/**
+ * The arranged rail cut into its sections: the ungrouped destinations first
+ * with no heading, then each of `navGroups` that still has something in it.
+ */
+export function groupNav(
+  items: NavItem[],
+): { id: NavGroup | null; label: string | null; items: NavItem[] }[] {
+  const sections = [
+    { id: null, label: null, items: items.filter((item) => !item.group) },
+    ...navGroups.map((group) => ({
+      id: group.id,
+      label: group.label,
+      items: items.filter((item) => item.group === group.id),
+    })),
+  ];
+  return sections.filter((section) => section.items.length > 0);
 }

@@ -1,13 +1,13 @@
-import { brand, mark } from "@/lib/brand";
+import { brand, logotype, mark } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 /**
- * The Rift airplane on its own, drawn in `currentColor`.
+ * The Rift mark on its own — the logotype's R — drawn in `currentColor`.
  *
  * The viewBox is cropped to the mark's ink box rather than its 100x100
  * design canvas, so the element has no built-in padding and its edges are
- * the wingtips, nose and tail themselves. Sized in `em`, so it scales with
- * the text beside it.
+ * the letter's own. The R is taller than it is wide: give it a height and
+ * `w-auto` to hug it, or a square size to centre it.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
@@ -24,48 +24,31 @@ export function LogoMark({ className }: { className?: string }) {
 }
 
 /**
- * The horizontal lockup: the airplane plus the name.
- *
- * The mark is a diagonal, so its visual mass sits in the middle of its square
- * rather than on a baseline; centring it against the name and letting it run
- * a little past the cap height is what makes the two read at the same weight.
+ * The logotype: "Rift", slanted, its letters strung on one cut band. Drawn in
+ * `currentColor` and sized in `em` — a little over the line height, which
+ * puts its cap height near the text beside it — so it scales with the
+ * `text-*` size it is given.
  */
 export function Wordmark({
   tone = "default",
-  showName = true,
-  short = false,
   className,
-  nameClassName,
 }: {
   tone?: "default" | "inverted";
-  showName?: boolean;
-  /**
-   * Drop to `brand.shortName`. For the app rail, where the lockup is a place
-   * marker rather than a signature — the name has already been read on the way
-   * in, and at 15rem the full one takes a third of the column to repeat it.
-   */
-  short?: boolean;
   className?: string;
-  /** Classes for the name alone. The app rail fades it out of the lockup. */
-  nameClassName?: string;
 }) {
-  const color =
-    tone === "inverted" ? "text-panel-foreground" : "text-foreground";
-
   return (
-    <span
+    <svg
+      viewBox={logotype.viewBox}
+      fill="currentColor"
+      role="img"
+      aria-label={brand.name}
       className={cn(
-        "inline-flex items-center gap-[0.36em] text-[1.0625rem] leading-none",
-        color,
+        "inline-block h-[1.15em] w-auto shrink-0 text-[1.0625rem]",
+        tone === "inverted" ? "text-panel-foreground" : "text-foreground",
         className,
       )}
     >
-      <LogoMark className="size-[1.05em] shrink-0" />
-      {showName && (
-        <span className={cn("font-semibold whitespace-nowrap", nameClassName)}>
-          {short ? brand.shortName : brand.name}
-        </span>
-      )}
-    </span>
+      <path fillRule="evenodd" d={logotype.path} />
+    </svg>
   );
 }
