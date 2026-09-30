@@ -90,7 +90,12 @@ export function readBridgeState(value: unknown): BridgeState | null {
 
 /** Where the track is now, from where it was when the bridge last spoke. */
 export function positionAt(
-  state: { position: number | null; duration: number | null; rate: number; playing: boolean },
+  state: {
+    position: number | null;
+    duration: number | null;
+    rate: number;
+    playing: boolean;
+  },
   receivedAt: number,
   now: number,
 ) {

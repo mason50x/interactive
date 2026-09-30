@@ -28,10 +28,7 @@ import {
   useExperienceQuota,
 } from "@/components/app/experience-quota";
 import { ExperienceAppIcon } from "@/components/app/experience-app-icon";
-import {
-  ListenSlot,
-  useListen,
-} from "@/components/app/listen/listen-provider";
+import { ListenSlot, useListen } from "@/components/app/listen/listen-provider";
 import { useStageFullscreen } from "@/components/app/use-stage-fullscreen";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";

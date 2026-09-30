@@ -85,7 +85,7 @@ export function Transport({
   const playing = track.state.playing;
   const has = (action: string) => track.state.actions.includes(action);
   const skip = cn(
-    "grid place-items-center rounded-full transition-[background-color,opacity,scale] active:scale-90 disabled:opacity-35 disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-ring",
+    "grid place-items-center rounded-full transition-[background-color,opacity,scale] focus-visible:outline-2 focus-visible:outline-ring active:scale-90 disabled:opacity-35 disabled:active:scale-100",
     tone === "light"
       ? "text-white hover:bg-white/15"
       : "text-foreground hover:bg-foreground/[0.08]",
@@ -111,7 +111,7 @@ export function Transport({
         title={playing ? "Pause" : "Play"}
         onClick={() => onCommand({ action: playing ? "pause" : "play" })}
         className={cn(
-          "grid place-items-center rounded-full shadow-sm transition-[scale,background-color] hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          "grid place-items-center rounded-full shadow-sm transition-[scale,background-color] hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-95",
           tone === "light"
             ? "bg-white text-black"
             : "bg-foreground text-background",

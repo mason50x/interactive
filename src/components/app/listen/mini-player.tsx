@@ -123,11 +123,7 @@ export function MiniPlayer() {
   const appId = listen.currentId;
   const now = useNow(!!track?.state.playing);
 
-  if (
-    !appId ||
-    listen.onScreen.includes(appId) ||
-    listen.popOut.window
-  )
+  if (!appId || listen.onScreen.includes(appId) || listen.popOut.window)
     return null;
 
   const label =
@@ -206,7 +202,7 @@ export function MiniPlayer() {
       aria-label={`${label} player`}
       style={drag.style}
       className={cn(
-        "fixed z-[60] isolate w-[min(22rem,calc(100vw-2rem))] animate-in overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl shadow-black/[0.14] duration-300 fade-in-0 [[data-pane]_&]:hidden",
+        "fixed isolate z-[60] w-[min(22rem,calc(100vw-2rem))] animate-in overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl shadow-black/[0.14] duration-300 fade-in-0 [[data-pane]_&]:hidden",
         CORNERS[corner],
         corner[0] === "t" ? "slide-in-from-top-4" : "slide-in-from-bottom-4",
       )}
@@ -300,9 +296,7 @@ export function MiniPlayer() {
         <div className="flex items-center gap-3 px-3 pb-3">
           <Artwork track={null} appId={appId} className="size-14 rounded-lg" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {label} is open
-            </p>
+            <p className="truncate text-sm font-semibold">{label} is open</p>
             <p className="text-xs text-muted-foreground">
               Start something and it plays here while you move around.
             </p>

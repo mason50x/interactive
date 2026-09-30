@@ -440,7 +440,10 @@ export function ListenProvider({
       {enabled && <MiniPlayer />}
       {enabled &&
         popOutWindow &&
-        createPortal(<PopOutPlayer window={popOutWindow} />, popOutWindow.document.body)}
+        createPortal(
+          <PopOutPlayer window={popOutWindow} />,
+          popOutWindow.document.body,
+        )}
     </ListenContext.Provider>
   );
 }
@@ -470,7 +473,10 @@ function subscribeVisibility(onChange: () => void) {
 
 type PictureInPicture = {
   window: Window | null;
-  requestWindow: (options: { width: number; height: number }) => Promise<Window>;
+  requestWindow: (options: {
+    width: number;
+    height: number;
+  }) => Promise<Window>;
 };
 
 /** Document Picture-in-Picture: Chrome and Edge on the desktop. */
@@ -490,7 +496,10 @@ function mirrorDocument(pip: Window) {
   for (const sheet of Array.from(document.styleSheets)) {
     try {
       const style = target.createElement("style");
-      style.textContent = Array.from(sheet.cssRules, (rule) => rule.cssText).join("\n");
+      style.textContent = Array.from(
+        sheet.cssRules,
+        (rule) => rule.cssText,
+      ).join("\n");
       target.head.append(style);
     } catch {
       if (!sheet.href) continue;
@@ -501,7 +510,9 @@ function mirrorDocument(pip: Window) {
     }
   }
   const copy = () => {
-    for (const { name, value } of Array.from(document.documentElement.attributes))
+    for (const { name, value } of Array.from(
+      document.documentElement.attributes,
+    ))
       target.documentElement.setAttribute(name, value);
     target.body.className = document.body.className;
   };
