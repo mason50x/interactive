@@ -32,7 +32,10 @@
   const Session = Object.getPrototypeOf(session);
   const handlers = new Map();
   let position = null;
-  let media = null;
+  // Every media element the page has used. A player can keep more than one —
+  // Spotify plays a short muted clip beside the track — so the one reported
+  // is chosen each time, not simply the last to start.
+  const media = new Set();
 
   const setActionHandler = Session.setActionHandler;
   Session.setActionHandler = function (action, handler) {
@@ -51,14 +54,14 @@
   // Media events do not bubble, but they do capture. An element that was never
   // attached to the document is caught when it is told to play.
   const adopt = (event) => {
-    if (event.target instanceof HTMLMediaElement) media = event.target;
+    if (event.target instanceof HTMLMediaElement) media.add(event.target);
   };
   for (const type of ["play", "playing", "pause", "durationchange", "volumechange", "ended"]) {
     window.addEventListener(type, adopt, true);
   }
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function (...args) {
-    media = this;
+    media.add(this);
     return play.apply(this, args);
   };
 
@@ -108,11 +111,50 @@
     }
   }
 
+  /** The element carrying the music: audible and playing, then audible, then
+   * longest. A muted clip that is playing says nothing about the music. */
+  function currentMedia() {
+    let best = null;
+    let bestScore = -1;
+    for (const element of media) {
+      const duration = Number.isFinite(element.duration) ? element.duration : 0;
+      const audible = !element.muted && element.volume > 0;
+      const score =
+        (audible && !element.paused && !element.ended ? 4e6 : 0) +
+        (audible ? 2e6 : 0) +
+        Math.min(duration, 1e6);
+      if (score > bestScore) {
+        best = element;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  // The time a player prints under its own scrubber, when it has one. It is
+  // what the listener sees, so it wins over a guess from the elements.
+  const CLOCKS = [
+    ['[data-testid="playback-position"]', '[data-testid="playback-duration"]'],
+  ];
+  const seconds = (text) => {
+    const parts = String(text || "").trim().replace(/^-/, "").split(":").map(Number);
+    if (parts.length < 2 || parts.some((part) => !Number.isFinite(part))) return null;
+    return parts.reduce((total, part) => total * 60 + part, 0);
+  };
+  function pageClock() {
+    for (const [at, length] of CLOCKS) {
+      const position = seconds(document.querySelector(at)?.textContent);
+      const duration = seconds(document.querySelector(length)?.textContent);
+      if (position !== null && duration) return { position, duration };
+    }
+    return null;
+  }
+
   function snapshot() {
     const metadata = session.metadata;
     const src = metadata ? largestArtwork(metadata.artwork) : null;
     if (src !== artworkSrc) void loadArtwork(src);
-    const element = media;
+    const element = currentMedia();
     const declared = session.playbackState;
     const playing = declared === "playing" || (declared !== "paused" && !!element && !element.paused && !element.ended);
     let duration = null;
@@ -123,6 +165,8 @@
       rate = position.rate;
       at = position.position;
       if (playing) at += ((Date.now() - position.at) / 1000) * rate;
+    } else if (pageClock()) {
+      ({ duration, position: at } = pageClock());
     } else if (element && Number.isFinite(element.duration) && element.duration > 0) {
       duration = element.duration;
       at = element.currentTime;
@@ -179,7 +223,7 @@
 
   window.__experienceMediaCommand = (command) => {
     if (!command || typeof command.action !== "string") return;
-    const element = media;
+    const element = currentMedia();
     switch (command.action) {
       case "play":
         if (!run("play") && element) element.play().catch(() => {});

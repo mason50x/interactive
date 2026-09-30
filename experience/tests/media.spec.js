@@ -22,7 +22,8 @@ const LAUNCHER = `<!doctype html><script>
 // browser through Media Session the way Spotify and Apple Music do.
 const PLAYER = `<!doctype html><script src="/media.js"></script><script>
   window.calls = [];
-  const rate = 8000, seconds = 30, data = new Uint8Array(44 + rate * seconds);
+  const wav = (seconds) => {
+  const rate = 8000, data = new Uint8Array(44 + rate * seconds);
   const view = new DataView(data.buffer);
   const text = (at, value) => [...value].forEach((c, i) => view.setUint8(at + i, c.charCodeAt(0)));
   text(0, "RIFF"); view.setUint32(4, 36 + rate * seconds, true); text(8, "WAVEfmt ");
@@ -30,7 +31,9 @@ const PLAYER = `<!doctype html><script src="/media.js"></script><script>
   view.setUint32(24, rate, true); view.setUint32(28, rate, true); view.setUint16(32, 1, true);
   view.setUint16(34, 8, true); text(36, "data"); view.setUint32(40, rate * seconds, true);
   data.fill(128, 44);
-  const audio = new Audio(URL.createObjectURL(new Blob([data], { type: "audio/wav" })));
+  return URL.createObjectURL(new Blob([data], { type: "audio/wav" }));
+  };
+  const audio = new Audio(wav(30));
   const describe = (title) => {
     navigator.mediaSession.metadata = new MediaMetadata({
       title, artist: "The Testers", album: "Fixtures",
@@ -42,6 +45,12 @@ const PLAYER = `<!doctype html><script src="/media.js"></script><script>
   navigator.mediaSession.setActionHandler("pause", () => { calls.push("pause"); audio.pause(); });
   navigator.mediaSession.setActionHandler("nexttrack", () => { calls.push("next"); describe("Song B"); });
   audio.play();
+  // Spotify keeps a short muted clip playing beside the track. It must not
+  // be mistaken for the music.
+  const clip = new Audio(wav(7));
+  clip.muted = true;
+  clip.loop = true;
+  setTimeout(() => clip.play(), 200);
 </script>`;
 
 test("the media bridge reports a web player and presses its buttons", async ({ page }) => {
@@ -92,6 +101,32 @@ test("the media bridge reports a web player and presses its buttons", async ({ p
     await page.evaluate(() => window.command({ action: "play" }));
     await expect.poll(async () => (await latest()).playing).toBe(true);
     expect(await player.evaluate(() => window.calls)).toEqual(["pause", "next", "play"]);
+  } finally {
+    server.close();
+  }
+});
+
+test("the media bridge reads the time a player prints under its scrubber", async ({ page }) => {
+  const bridge = await readFile(new URL("../site/media.js", import.meta.url));
+  const server = createServer((request, response) => {
+    const path = new URL(request.url, "http://localhost").pathname;
+    const send = (type, body) => response.writeHead(200, { "Content-Type": type }).end(body);
+    if (path === "/") send("text/html", LAUNCHER);
+    else if (path === "/player") send("text/html", `<!doctype html><script src="/media.js"></script>
+      <div data-testid="playback-position">1:38</div><div data-testid="playback-duration">3:44</div>
+      <script>navigator.mediaSession.metadata = new MediaMetadata({ title: "Pink Skies" });</script>`);
+    else if (path === "/media.js") send("text/javascript", bridge);
+    else response.writeHead(404).end();
+  });
+  await new Promise((resolve) => server.listen(0, resolve));
+  try {
+    await page.goto(`http://localhost:${server.address().port}/`);
+    await expect
+      .poll(() => page.evaluate(() => {
+        const state = window.states.at(-1);
+        return state && { position: state.position, duration: state.duration };
+      }))
+      .toEqual({ position: 98, duration: 224 });
   } finally {
     server.close();
   }
