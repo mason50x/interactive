@@ -72,7 +72,11 @@ export function useTabMediaSession({
   useEffect(() => {
     if (!active || !("mediaSession" in navigator)) return;
     const session = navigator.mediaSession;
-    session.playbackState = state ? (state.playing ? "playing" : "paused") : "none";
+    session.playbackState = state
+      ? state.playing
+        ? "playing"
+        : "paused"
+      : "none";
     if (!state?.duration || state.position === null) return;
     try {
       session.setPositionState({
