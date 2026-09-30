@@ -3,7 +3,7 @@
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@convex/_generated/api";
-import { CenteredSpinner } from "@/components/ui/spinner";
+import { ScreenSpinner } from "@/components/ui/spinner";
 import { InviteGate } from "./invite-gate";
 import { OnboardingExperience } from "./onboarding-experience";
 
@@ -41,12 +41,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   if (user === undefined || user === null) {
     return (
-      <div
-        className="fixed inset-0 z-[100] bg-background"
-        aria-label="Loading your account"
-      >
-        <CenteredSpinner />
-      </div>
+      <ScreenSpinner className="z-[100]" aria-label="Loading your account" />
     );
   }
 

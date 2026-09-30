@@ -9,16 +9,8 @@ import {
 import { api } from "@convex/_generated/api";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { TimeoutMessage } from "@/components/app/timeout-message";
-import { PacketCover } from "@/components/app/packet-cover";
+import { ScreenSpinner } from "@/components/ui/spinner";
 import styles from "./timeout-gate.module.css";
-
-function AccessLoader() {
-  return (
-    <div className="fixed inset-0 bg-background text-foreground">
-      <PacketCover label="Access" holdMs={null} />
-    </div>
-  );
-}
 
 /**
  * Whether this document has already opened the app once. The reveal is the
@@ -65,7 +57,7 @@ function AccessReveal({
 
   return (
     <>
-      {!revealed && <AccessLoader />}
+      {!revealed && <ScreenSpinner aria-label="Checking access" />}
       {ready && (
         <div
           className={revealed ? "contents" : styles.reveal}

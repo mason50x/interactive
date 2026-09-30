@@ -1,6 +1,16 @@
-import type { ComponentProps } from "react";
+"use client";
+
+import { useLayoutEffect, useRef, type ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
+
+/**
+ * The moment the first spinner on the page started turning. Every spinner
+ * after it starts from the same moment, so one loader handing off to the
+ * next (the server's, then a gate's, then a route's) reads as the same
+ * spinner carrying on rather than a new one starting from the top.
+ */
+let epoch: CSSNumberish | null = null;
 
 /**
  * One round-capped line chasing itself around a circle. The svg turns at a
@@ -11,10 +21,22 @@ import { cn } from "@/lib/utils";
  * `role="status"` with a label is what announces the wait to a screen reader.
  * Where the spinner sits inside a control that already says it is busy, pass
  * `aria-hidden` at the call site so the state is not read out twice.
+ *
+ * The animations are pinned to `epoch` as soon as they exist, so the
+ * spinner never shows a frame of its own phase.
  */
 function Spinner({ className, ...props }: ComponentProps<"svg">) {
+  const ref = useRef<SVGSVGElement>(null);
+  useLayoutEffect(() => {
+    const animations = ref.current?.getAnimations({ subtree: true }) ?? [];
+    epoch ??=
+      animations.find((animation) => animation.startTime !== null)?.startTime ??
+      document.timeline.currentTime;
+    for (const animation of animations) animation.startTime = epoch;
+  }, []);
   return (
     <svg
+      ref={ref}
       data-slot="spinner"
       role="status"
       aria-label="Loading"
@@ -63,4 +85,19 @@ function CenteredSpinner({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
-export { Spinner, PageSpinner, CenteredSpinner };
+/** The whole window held on the spinner, for a wait before the app itself
+ *  can show. Every gate on the way in uses this same screen, so passing from
+ *  one to the next changes nothing on it. */
+function ScreenSpinner({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="screen-spinner"
+      className={cn("fixed inset-0 bg-background", className)}
+      {...props}
+    >
+      <CenteredSpinner />
+    </div>
+  );
+}
+
+export { Spinner, PageSpinner, CenteredSpinner, ScreenSpinner };
