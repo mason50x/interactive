@@ -2608,5 +2608,14 @@
   "thumbnail": "ddlc.jpg",
   "rank": 491,
   "bytes": 249960991
+ },
+ {
+  "slug": "slopeplus",
+  "path": "sulpepols",
+  "title": "Slope Plus",
+  "genre": "coordination",
+  "thumbnail": "slopeplus.webp",
+  "rank": 492,
+  "bytes": 21502220
  }
 ]

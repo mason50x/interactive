@@ -66,6 +66,48 @@ function patchBlackjackScript(source) {
   return source.replace(domainGate, "f=new CPreloader");
 }
 
+function patchSlopePlusHtml(source) {
+  const itchScript =
+    /\s*<script defer src="https:\/\/static\.itch\.io\/htmlgame\.js" type="text\/javascript"><\/script>/;
+  const fixedSize =
+    '<div id="gameContainer" style="width: 900px; height: 600px"></div>';
+  const footer = /\s*<div class="footer">[\s\S]*?<\/div>\s*<\/div>\s*(<\/div>)/;
+  if (
+    !itchScript.test(source) ||
+    !source.includes(fixedSize) ||
+    !footer.test(source)
+  ) {
+    throw new Error("Slope Plus page changed upstream; review the patch.");
+  }
+
+  // itch's page ships 900x600 with a Unity footer and its own frame helper.
+  // In our player the game fills the stage, which has its own fullscreen.
+  return source
+    .replace(itchScript, "")
+    .replace(
+      "<title>Unity WebGL Player | Slope Plus</title>",
+      "<title>Slope Plus</title>",
+    )
+    .replace(footer, "\n    $1")
+    .replace(
+      fixedSize,
+      '<div id="gameContainer" style="width: 100%; height: 100%"></div>',
+    )
+    .replace(
+      "</head>",
+      "  <style>html, body { margin: 0; height: 100%; overflow: hidden; background: #000; } .webgl-content { inset: 0; transform: none; -webkit-transform: none; }</style>\n  </head>",
+    );
+}
+
+/** Per-slug rewrites for bundles fetched file by file from `bundleUrl`. */
+const FILE_PATCHES = {
+  blackjack: {
+    "index.html": patchBlackjackHtml,
+    "js/main.js": patchBlackjackScript,
+  },
+  slopeplus: { "index.html": patchSlopePlusHtml },
+};
+
 function patchDdlcHtml(source) {
   if (!source.includes("</body>") || !source.includes("renpy-pre.js")) {
     throw new Error(
@@ -147,8 +189,16 @@ async function materializeDdlc(activity, directory) {
   return files.length + 2; // Source files, pinned archive, and our file panel.
 }
 
-export async function materializeCuratedActivities({ fresh = false } = {}) {
-  const activities = await readCuratedActivities();
+export async function materializeCuratedActivities({
+  fresh = false,
+  only,
+} = {}) {
+  const activities = (await readCuratedActivities()).filter(
+    (activity) => !only || activity.slug === only,
+  );
+  if (only && activities.length === 0) {
+    throw new Error(`No curated activity named ${only}`);
+  }
   if (fresh) await rm(CURATED_STAGING, { recursive: true, force: true });
 
   for (const activity of activities) {
@@ -165,13 +215,8 @@ export async function materializeCuratedActivities({ fresh = false } = {}) {
       const bytes = await download(
         new URL(relative, activity.source.bundleUrl),
       );
-      let content = bytes;
-      if (relative === "index.html") {
-        content = patchBlackjackHtml(bytes.toString("utf8"));
-      } else if (relative === "js/main.js") {
-        content = patchBlackjackScript(bytes.toString("utf8"));
-      }
-      await writeFile(output, content);
+      const patch = FILE_PATCHES[activity.slug]?.[relative];
+      await writeFile(output, patch ? patch(bytes.toString("utf8")) : bytes);
     }
   }
 
@@ -180,7 +225,12 @@ export async function materializeCuratedActivities({ fresh = false } = {}) {
 
 const entry = process.argv[1];
 if (entry && import.meta.url === pathToFileURL(entry).href) {
-  materializeCuratedActivities({ fresh: process.argv.includes("--fresh") })
+  // `node scripts/materialize-curated-activities.mjs [slug] [--fresh]`
+  const only = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
+  materializeCuratedActivities({
+    fresh: process.argv.includes("--fresh"),
+    only,
+  })
     .then(({ activities, staging }) =>
       console.log(`Materialised ${activities.length} bundle(s) in ${staging}`),
     )

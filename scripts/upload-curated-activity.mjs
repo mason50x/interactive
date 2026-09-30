@@ -35,6 +35,8 @@ const types = {
   ".jpg": "image/jpeg",
   ".webp": "image/webp",
   ".wasm": "application/wasm",
+  ".css": "text/css; charset=utf-8",
+  ".ico": "image/x-icon",
   ".zip": "application/zip",
 };
 
@@ -75,19 +77,25 @@ const realFiles = [];
 for (const file of files) {
   if ((await stat(join(directory, file))).isFile()) realFiles.push(file);
 }
-if (!realFiles.includes("index.html") || !realFiles.includes("game.zip")) {
+if (!realFiles.includes("index.html")) {
   throw new Error(`Incomplete staged bundle for ${slug}`);
 }
 
 console.log(
   `Uploading ${realFiles.length} objects to R2:${bucket}/activities/${activity.path}/`,
 );
-await put("game.zip");
-realFiles.splice(realFiles.indexOf("game.zip"), 1);
+// The page goes last so it never points at files that are not there yet, and
+// a Ren'Py archive goes first for the same reason.
+const total = realFiles.length;
+let complete = 0;
+if (realFiles.includes("game.zip")) {
+  await put("game.zip");
+  realFiles.splice(realFiles.indexOf("game.zip"), 1);
+  complete++;
+}
 realFiles.splice(realFiles.indexOf("index.html"), 1);
 realFiles.sort();
 let next = 0;
-let complete = 1;
 await Promise.all(
   Array.from({ length: 8 }, async () => {
     while (next < realFiles.length) {
@@ -95,11 +103,11 @@ await Promise.all(
       await put(file);
       complete++;
       if (complete % 25 === 0) {
-        console.log(`${complete}/${realFiles.length + 2} objects uploaded`);
+        console.log(`${complete}/${total} objects uploaded`);
       }
     }
   }),
 );
 await put("index.html");
-console.log(`${realFiles.length + 2}/${realFiles.length + 2} objects uploaded`);
+console.log(`${total}/${total} objects uploaded`);
 console.log(`Uploaded ${slug} to R2:${bucket}/activities/${activity.path}/`);

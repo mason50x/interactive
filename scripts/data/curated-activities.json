@@ -108,5 +108,34 @@
         "icons/icon-512x512-maskable.png"
       ]
     }
+  },
+  {
+    "slug": "slopeplus",
+    "path": "sulpepols",
+    "title": "Slope Plus",
+    "genre": "coordination",
+    "thumbnail": "slopeplus.webp",
+    "rank": 492,
+    "bytes": 21502220,
+    "source": {
+      "publisher": "coweggs",
+      "productUrl": "https://coweggs.itch.io/slope-plus",
+      "bundleUrl": "https://html-classic.itch.zone/html/14788017/SlopePlus1.3.1Web/",
+      "retrieved": "2026-09-30",
+      "files": [
+        "index.html",
+        "Build/UnityLoader.js",
+        "Build/SlopePlus1.3.1Web.json",
+        "Build/SlopePlus1.3.1Web.data.unityweb",
+        "Build/SlopePlus1.3.1Web.wasm.code.unityweb",
+        "Build/SlopePlus1.3.1Web.wasm.framework.unityweb",
+        "TemplateData/UnityProgress.js",
+        "TemplateData/style.css",
+        "TemplateData/favicon.ico",
+        "TemplateData/progressEmpty.Dark.png",
+        "TemplateData/progressFull.Dark.png",
+        "TemplateData/progressLogo.Dark.png"
+      ]
+    }
   }
 ]
