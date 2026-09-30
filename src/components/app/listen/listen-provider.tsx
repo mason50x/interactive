@@ -52,6 +52,8 @@ type ListenContextValue = {
   close: (appId: string) => void;
   reload: (appId: string) => void;
   registerSlot: (appId: string, slot: Slot | null) => void;
+  /** Browse's say in which listen apps it is showing, before any slot lays out. */
+  setFront: (appIds: string[]) => void;
   /** Apps whose frame is on screen in Browse right now. */
   onScreen: string[];
   playing: Record<string, NowPlaying>;
@@ -75,6 +77,7 @@ const ListenContext = createContext<ListenContextValue>({
   close: () => {},
   reload: () => {},
   registerSlot: () => {},
+  setFront: () => {},
   onScreen: [],
   playing: {},
   current: null,
@@ -115,6 +118,14 @@ export function ListenProvider({
   const [playing, setPlaying] = useState<Record<string, NowPlaying>>({});
   const [lastPlayed, setLastPlayed] = useState<string | null>(null);
   const [onScreen, setOnScreen] = useState<string[]>([]);
+  const [front, setFrontState] = useState<string[]>([]);
+  const setFront = useCallback(
+    (appIds: string[]) =>
+      setFrontState((current) =>
+        current.join(" ") === appIds.join(" ") ? current : appIds,
+      ),
+    [],
+  );
   const [popOutWindow, setPopOutWindow] = useState<Window | null>(null);
   const frames = useRef(new Map<string, HTMLIFrameElement>());
   const holders = useRef(new Map<string, HTMLDivElement>());
@@ -383,7 +394,10 @@ export function ListenProvider({
     close,
     reload,
     registerSlot,
-    onScreen,
+    setFront,
+    // In front in Browse counts as on screen even while its pane waits on a
+    // playtime lease, so the mini player does not flash up over it.
+    onScreen: [...new Set([...onScreen, ...front])],
     playing,
     current,
     currentId,

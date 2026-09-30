@@ -2,6 +2,7 @@
 
 import {
   ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
   ArrowsRightLeftIcon,
@@ -14,6 +15,7 @@ import {
 import { StarIcon } from "@heroicons/react/24/solid";
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -205,6 +207,16 @@ export function ExperienceChrome({
     if (listenEnabled && initialAppId && isListenApp(initialAppId))
       listenLaunch(initialAppId);
   }, [listenEnabled, listenLaunch, initialAppId]);
+
+  // A music app in front is the mini player's cue to step aside.
+  const { setFront } = listen;
+  const frontListen = [focus, splitApp]
+    .filter((id): id is string => !!id && listenEnabled && isListenApp(id))
+    .join(" ");
+  useLayoutEffect(() => {
+    setFront(frontListen ? frontListen.split(" ") : []);
+    return () => setFront([]);
+  }, [frontListen, setFront]);
 
   // The mini player can close a music app, and running out closes them all.
   // Whatever was showing it steps aside.
@@ -401,6 +413,17 @@ export function ExperienceChrome({
               >
                 <ViewColumnsIcon className="size-4" />
               </BarButton>
+            )}
+            {shared(focusService.id) && listen.popOut.supported && (
+              <button
+                type="button"
+                onClick={listen.popOut.open}
+                title="A player that stays on top of every tab. The music also keeps playing when you leave Browse."
+                className="mr-1 flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-foreground/[0.06] px-3 text-sm font-medium transition-colors hover:bg-foreground/[0.1] focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <ArrowTopRightOnSquareIcon className="size-4" />
+                <span className="max-page-sm:sr-only">Pop out</span>
+              </button>
             )}
             <BarButton
               label={`Reload ${focusService.label}`}
