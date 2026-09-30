@@ -22,7 +22,7 @@ import { UNINVITED_ERROR, isUninvited } from "./inviteState";
  * the server's and not an overlay a client could delete. One choke point
  * rather than a check beside every handler: a function added later is covered
  * without anyone remembering to be. Internal functions are untouched —
- * nothing a client can call is. CEOs and Head Moderators are never locked
+ * nothing a client can call is. Admins are never locked
  * out, since they are the ones who turn it off.
  *
  * `announcement.mine` is the one public function built on the raw builder,

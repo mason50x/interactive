@@ -338,17 +338,11 @@ function RoleControl({
             setFeedback(null);
           }}
         >
-          {Object.entries(ROLE_LABEL)
-            // Granting CEO is a CEO's call; the server refuses it anyway.
-            .filter(
-              ([value]) =>
-                value !== "ceo" || viewer === "ceo" || value === user.role,
-            )
-            .map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+          {Object.entries(ROLE_LABEL).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </AdminSelect>
         {user.canChangeRole && (
           <Button

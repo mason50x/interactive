@@ -34,6 +34,7 @@ export type DirectoryUser = FunctionReturnType<
 export type SiteRole = DirectoryUser["role"];
 export const ROLE_LABEL: Record<SiteRole, string> = {
   ceo: "CEO",
+  co_owner: "Co-Owner",
   head_moderator: "Head Moderator",
   moderator: "Moderator",
   builder: "Builder",
@@ -68,8 +69,9 @@ function serverColumns() {
 }
 
 /**
- * Whether the viewer may act on this account: a Head Moderator holds every
- * CEO power except over CEOs themselves, and the server refuses the rest.
+ * Whether the viewer may act on this account: a Head Moderator or Co-Owner
+ * holds the directory's powers except over CEOs themselves, and the server
+ * refuses the rest.
  */
 export function canActOn(viewer: AdminRole, user: DirectoryUser) {
   return viewer === "ceo" || user.role !== "ceo";

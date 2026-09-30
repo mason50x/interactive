@@ -33,6 +33,7 @@ const RANK: Record<SiteRole, number> = {
   builder: 1,
   moderator: 1,
   head_moderator: 2,
+  co_owner: 2,
   ceo: 3,
 };
 

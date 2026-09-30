@@ -7,7 +7,7 @@ import { requireAdmin } from "./roles";
 import { requireNotTimedOut } from "./timeoutState";
 
 /**
- * Votes: an admin (a CEO or Head Moderator) raises a topic in the admin
+ * Votes: an admin (a CEO, Co-Owner, or Head Moderator) raises a topic in the admin
  * console, and every member answers
  * it yes or no from the rail. A `forced` topic holds the member's playtime
  * until they have answered — `experience.acquire` asks `voteRequired` before

@@ -6,7 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { ANNOUNCEMENT_ERROR } from "../../convex/announcementState";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
-const REFUSED = "CEO or Head Moderator access required.";
+const REFUSED = "Admin access required.";
 
 beforeEach(() => {
   vi.stubEnv(

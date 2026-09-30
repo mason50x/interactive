@@ -7,7 +7,7 @@ import { CEO_CLEAR_MS, timeoutRow } from "./timeoutState";
 import { components, internal } from "./_generated/api";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { mutation, query } from "./functions";
-import { isAdminRole, roleChangeRefusal, roleGrantRefusal } from "../config/roles";
+import { isAdminRole, roleChangeRefusal } from "../config/roles";
 import {
   outrankedByCeo,
   requireAdmin,
@@ -34,6 +34,7 @@ export const access = query({
 
 const siteRole = v.union(
   v.literal("ceo"),
+  v.literal("co_owner"),
   v.literal("head_moderator"),
   v.literal("moderator"),
   v.literal("builder"),
@@ -166,20 +167,18 @@ export const continueReset = internalMutation({
 /**
  * Sets one account's site role from the Admin user directory.
  *
- * Admin-gated. The write lands in the `staffRoles` table, which every
- * authorization path reads ahead of the `STAFF_ROLES` env map — the env map
- * is deployment config with no runtime write API, so an admin client could
- * never edit it directly.
+ * CEO-only: other admins reach the directory but `roleChangeRefusal` in
+ * `config/roles.ts` refuses them. The write lands in the `staffRoles` table,
+ * which every authorization path reads ahead of the `STAFF_ROLES` env map —
+ * the env map is deployment config with no runtime write API, so a CEO client
+ * could never edit it directly.
  *
- * CEOs are equals except over each other (`roleChangeRefusal` in
- * `config/roles.ts`): a CEO cannot change their own role or another CEO's,
- * so nobody can quietly demote a peer. The founder — the original CEO — is
- * the one exception: they can change any CEO's role, and no one can change
- * theirs. Head Moderators are equals the same way: one can change any role
- * below their own, while a peer's or a CEO's role, and granting CEO itself
- * (`roleGrantRefusal`), stay a CEO's call. The change also cannot leave zero
- * CEOs (counting table rows and env entries together), so the site cannot be
- * locked out of this page.
+ * CEOs are equals except over each other: a CEO cannot change their own role
+ * or another CEO's, so nobody can quietly demote a peer. The founder — the
+ * original CEO — is the one exception: they can change any CEO's role, and no
+ * one can change theirs. The change also cannot leave zero CEOs (counting
+ * table rows and env entries together), so the site cannot be locked out of
+ * this page.
  */
 export const setRole = mutation({
   args: {
@@ -194,9 +193,11 @@ export const setRole = mutation({
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
     if (!user) throw new ConvexError("User not found.");
-    const refusal =
-      roleChangeRefusal(caller, clerkId, await resolveRole(ctx, clerkId)) ??
-      roleGrantRefusal(caller.role, role);
+    const refusal = roleChangeRefusal(
+      caller,
+      clerkId,
+      await resolveRole(ctx, clerkId),
+    );
     if (refusal) throw new ConvexError(refusal);
 
     const staff = await resolveStaffRoles(ctx);
@@ -263,7 +264,7 @@ export const setRole = mutation({
  * Shows or hides one account's staff badge in chat. Cosmetic only: the role,
  * and every power it grants, stay exactly as they are.
  *
- * Admin-gated, like `setRole`, and a Head Moderator cannot touch a CEO's.
+ * Admin-gated, and a Head Moderator or Co-Owner cannot touch a CEO's.
  * An account the env map names has no table row yet, so the first toggle
  * writes one carrying the role it already resolves to, which leaves the
  * effective role unchanged.

@@ -163,7 +163,7 @@ function Status({
       : "Nobody sees anything. Write it below, then turn it on when it’s ready.";
   const reach =
     current.display === "screen"
-      ? "Members see it as a full-screen notice; CEOs and Head Moderators keep the app."
+      ? "Members see it as a full-screen notice; CEOs, Co-Owners, and Head Moderators keep the app."
       : "Members see it as a card over the app they can dismiss.";
 
   return (
@@ -206,7 +206,7 @@ function Status({
             <p className="text-sm font-medium">Show this to everyone?</p>
             <p className="mt-1 text-xs text-pretty text-muted-foreground">
               {draft.display === "screen"
-                ? "Every member is held on a full-screen notice the moment you confirm, until it’s turned off. CEOs and Head Moderators keep the app, and can turn it off from anywhere."
+                ? "Every member is held on a full-screen notice the moment you confirm, until it’s turned off. CEOs, Co-Owners, and Head Moderators keep the app, and can turn it off from anywhere."
                 : "Every member sees a card over the app the moment you confirm, until they dismiss it or it’s turned off."}
               {dirty && " Your unsaved edits go live with it."}
             </p>
@@ -473,7 +473,7 @@ function Editor({ current }: { current: Current }) {
 }
 
 /**
- * CEOs and Head Moderators: the one site-wide announcement, on or off for
+ * Admins: the one site-wide announcement, on or off for
  * everyone at once. The draft is held locally from the first load, so
  * somebody else's save doesn't wipe half-typed text; the save button knows
  * when the two differ.

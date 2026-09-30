@@ -18,20 +18,23 @@ export const ROLES = {
   builder: { ...staffPrivileges, deleteChatMessages: false, adminBadge: false },
   moderator: { ...staffPrivileges },
   head_moderator: { ...staffPrivileges },
+  co_owner: { ...staffPrivileges },
   ceo: { ...staffPrivileges },
 } as const;
 
-export type StaffRole = "ceo" | "head_moderator" | "moderator" | "builder";
+export type StaffRole =
+  "ceo" | "co_owner" | "head_moderator" | "moderator" | "builder";
 
 /**
  * The roles that open the Admin page and everything behind it. A Head
- * Moderator holds every CEO power except over CEOs themselves: they cannot
- * act on a CEO's account, and they cannot grant the CEO role.
+ * Moderator holds every CEO power except over CEOs themselves, invite codes,
+ * and role changes, which stay a CEO's alone. A Co-Owner is a Head Moderator
+ * in everything but name: the same powers, with its own badge in chat.
  */
-export type AdminRole = "ceo" | "head_moderator";
+export type AdminRole = "ceo" | "co_owner" | "head_moderator";
 
 export function isAdminRole(role: keyof typeof ROLES): role is AdminRole {
-  return role === "ceo" || role === "head_moderator";
+  return role === "ceo" || role === "co_owner" || role === "head_moderator";
 }
 
 /**
@@ -57,36 +60,20 @@ export function isFounder(clerkId: string): boolean {
  * with the message, and by the Admin user directory, which shows it instead
  * of a control the server would refuse.
  *
- * CEOs are equals except over each other, and Head Moderators likewise: a
- * Head Moderator can change any role below their own, while another Head
- * Moderator's, or a CEO's, is a CEO's call. Only the founder changes a CEO's.
+ * Role changes are a CEO's alone: Head Moderators and Co-Owners cannot change
+ * anybody's. CEOs are equals except over each other: only the founder changes
+ * a CEO's role.
  */
 export function roleChangeRefusal(
   caller: { clerkId: string; role: AdminRole },
   target: string,
   targetRole: keyof typeof ROLES,
 ): string | null {
+  if (caller.role !== "ceo") return "Only a CEO can change roles.";
   if (target === caller.clerkId) return "You cannot change your own role.";
   if (isFounder(target)) return "The founder's role can't be changed.";
   if (targetRole === "ceo" && !isFounder(caller.clerkId)) {
     return "Only the founder can change another CEO's role.";
-  }
-  if (targetRole === "head_moderator" && caller.role !== "ceo") {
-    return "Only a CEO can change another Head Moderator's role.";
-  }
-  return null;
-}
-
-/**
- * Why an admin may not hand out one role, or `null` when they may. Granting
- * CEO is a CEO's call; everything below it any admin can give.
- */
-export function roleGrantRefusal(
-  callerRole: AdminRole,
-  role: keyof typeof ROLES,
-): string | null {
-  if (role === "ceo" && callerRole !== "ceo") {
-    return "Only a CEO can grant the CEO role.";
   }
   return null;
 }
@@ -101,6 +88,7 @@ export function staffRoles(): { clerkId: string; role: StaffRole }[] {
     return Object.entries(value).flatMap(([clerkId, role]) =>
       clerkId &&
       (role === "ceo" ||
+        role === "co_owner" ||
         role === "head_moderator" ||
         role === "moderator" ||
         role === "builder")

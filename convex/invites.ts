@@ -7,12 +7,12 @@ import { internalQuery } from "./_generated/server";
 import { ensureGlobalMembership } from "./chat/shared";
 import { mutation, preInviteMutation, query } from "./functions";
 import { isUninvited as uninvited } from "./inviteState";
-import { requireAdmin } from "./roles";
+import { requireCeo } from "./roles";
 
 /**
  * Invite codes: anyone can make an account, but the app stays covered until
- * the account redeems a code an admin (a CEO or Head Moderator) made in the
- * admin console.
+ * the account redeems a code a CEO made in the admin console. Codes are a
+ * CEO's alone: Head Moderators and Co-Owners never see or make them.
  *
  * Codes are six digits, so guessing is held off by the attempt limit rather
  * than by the size of the space: five tries, then one more every three
@@ -124,7 +124,7 @@ export const list = query({
   args: { now: v.number() },
   returns: v.array(inviteRow),
   handler: async (ctx, { now }) => {
-    await requireAdmin(ctx);
+    await requireCeo(ctx);
     const codes = await ctx.db.query("inviteCodes").order("desc").take(200);
     return codes.map((code) => ({ ...code, status: statusOf(code, now) }));
   },
@@ -140,7 +140,7 @@ export const create = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const { clerkId } = await requireAdmin(ctx);
+    const clerkId = await requireCeo(ctx);
     const note = args.note?.trim().slice(0, 80) || undefined;
     if (
       args.maxUses !== undefined &&
@@ -188,7 +188,7 @@ export const setDisabled = mutation({
   args: { id: v.id("inviteCodes"), disabled: v.boolean() },
   returns: v.null(),
   handler: async (ctx, { id, disabled }) => {
-    await requireAdmin(ctx);
+    await requireCeo(ctx);
     if (!(await ctx.db.get(id))) throw new ConvexError("Code not found.");
     await ctx.db.patch(id, { disabled });
     return null;
@@ -200,7 +200,7 @@ export const remove = mutation({
   args: { id: v.id("inviteCodes") },
   returns: v.null(),
   handler: async (ctx, { id }) => {
-    await requireAdmin(ctx);
+    await requireCeo(ctx);
     if (await ctx.db.get(id)) await ctx.db.delete(id);
     return null;
   },

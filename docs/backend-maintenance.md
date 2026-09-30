@@ -23,7 +23,7 @@ small batches. Shared published simulators remain available with the deleted
 account's attribution removed.
 
 The Admin directory shows each user's timeout log for the last seven days.
-Only users who pass the existing CEO or Head Moderator dashboard check may read
+Only users who pass the existing admin (CEO, Co-Owner, or Head Moderator) check may read
 it. Bulk allowance resets also run in batches once the first page is processed.
 
 On September 23, 2026, both deployments were checked and migrated: development

@@ -35,13 +35,12 @@ async function setup() {
   return t;
 }
 
-async function roleOf(
-  t: ReturnType<typeof convexTest>,
-  clerkId: string,
-) {
+async function roleOf(t: ReturnType<typeof convexTest>, clerkId: string) {
   const users = await t
     .withIdentity({ subject: boss })
-    .query(api.adminQuotas.users, { paginationOpts: { cursor: null, numItems: 50 } });
+    .query(api.adminQuotas.users, {
+      paginationOpts: { cursor: null, numItems: 50 },
+    });
   return users.page.find((user) => user.clerkId === clerkId)?.role;
 }
 
@@ -53,7 +52,9 @@ async function directoryRow(
 ) {
   const users = await t
     .withIdentity({ subject: viewer })
-    .query(api.timeouts.users, { paginationOpts: { cursor: null, numItems: 50 } });
+    .query(api.timeouts.users, {
+      paginationOpts: { cursor: null, numItems: 50 },
+    });
   return users.page.find((user) => user.clerkId === clerkId)!;
 }
 
@@ -174,10 +175,10 @@ test("the founder can change any CEO's role and nobody can change the founder's"
     await t.withIdentity({ subject: boss }).query(api.timeouts.access, {}),
   ).toBe("head_moderator");
 
-  // A demoted CEO has no say over the founder either.
+  // A demoted CEO has no say over roles at all, the founder's included.
   await expect(
     ceo.mutation(api.adminQuotas.setRole, { clerkId: founder, role: "member" }),
-  ).rejects.toThrow("The founder's role can't be changed.");
+  ).rejects.toThrow("Only a CEO can change roles.");
   expect(await mason.query(api.adminQuotas.access, {})).toBe(true);
 
   // The founder can hand the role back, too.
@@ -202,9 +203,7 @@ test("demoting one of two CEOs leaves the other in charge", async () => {
     await t.withIdentity({ subject: amy }).query(api.adminQuotas.access, {}),
   ).toBe(false);
   // The acting CEO is untouched by someone else's demotion.
-  expect(
-    await mason.query(api.adminQuotas.access, {}),
-  ).toBe(true);
+  expect(await mason.query(api.adminQuotas.access, {})).toBe(true);
 });
 
 test("a table member row revokes env staff access and unknown users reject", async () => {

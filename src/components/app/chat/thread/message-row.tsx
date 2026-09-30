@@ -38,6 +38,7 @@ import { brand } from "@/lib/brand";
 /** What a staff name's colour means, for its tooltip. */
 const STAFF_TITLES = {
   ceo: { title: "CEO", blurb: `Runs ${brand.name}` },
+  co_owner: { title: "Co-Owner", blurb: `Co-owns ${brand.name}` },
   head_moderator: {
     title: "Head Moderator",
     blurb: "Leads the moderation team",

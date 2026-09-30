@@ -14,10 +14,10 @@ import { announcementRow, type ReadCtx } from "./announcementState";
  * for maintenance and anything else that should stop people using the site
  * while it is up; `banner` is a card over the app that can be dismissed, for
  * news. While a `screen` announcement is live, `functions.ts` refuses every
- * public call from an account that is not a CEO or Head Moderator, so the
+ * public call from an account that is not an admin, so the
  * screen is the server's and not an overlay a client could delete.
  *
- * CEOs and Head Moderators both manage it, with the same guards: the heading
+ * Every admin manages it, with the same guards: the heading
  * is required before it can go live, the row records who turned it on and
  * when, and they are exempt from the lockout so nobody can shut themselves out
  * of the page that turns it off.
@@ -84,7 +84,7 @@ export const isLockedOut = internalQuery({
   handler: (ctx, { clerkId }) => lockedOut(ctx, clerkId),
 });
 
-/** Everything the admin console needs, for CEOs and Head Moderators. */
+/** Everything the admin console needs, for every admin. */
 export const get = query({
   args: {},
   returns: v.object({

@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import type { ROLES } from "@config/roles";
 import { readStorage, writeStorage } from "@/lib/storage";
+
+type SiteRole = keyof typeof ROLES;
 
 function subscribe(onChange: () => void) {
   window.addEventListener("storage", onChange);
@@ -15,13 +18,13 @@ function serverSnapshot() {
 /** Cosmetic only. Permissions must always use the live server response. */
 export function useCachedAdminBadge(
   userId: string | undefined,
-  live:
-    "ceo" | "head_moderator" | "moderator" | "builder" | "member" | undefined,
-): "ceo" | "head_moderator" | "moderator" | "builder" | "member" | null {
+  live: SiteRole | undefined,
+): SiteRole | null {
   const key = userId ? `il-staff-role:${userId}` : null;
   const getSnapshot = useCallback(() => {
     const value = key ? readStorage(key) : null;
     return value === "ceo" ||
+      value === "co_owner" ||
       value === "head_moderator" ||
       value === "moderator" ||
       value === "builder" ||

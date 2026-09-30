@@ -1,8 +1,8 @@
 # Site announcement
 
 One notice for the whole site, on or off for everyone at once. It lives on
-the **Announcement** tab of `/admin`, which CEOs and Head Moderators both
-see. There is no per-account version: the old per-account restrictions and
+the **Announcement** tab of `/admin`, which CEOs, Co-Owners, and Head
+Moderators all see. There is no per-account version: the old per-account restrictions and
 their imitation browser error pages are gone.
 
 ## What members see
@@ -17,7 +17,7 @@ their imitation browser error pages are gone.
 
 ## Safeguards
 
-- Only CEOs and Head Moderators can read or write it
+- Only CEOs, Co-Owners, and Head Moderators can read or write it
   (`requireAnnouncementManager` in `convex/roles.ts`), and not while timed
   out.
 - Turning it on opens a confirmation under the switch that says who will see

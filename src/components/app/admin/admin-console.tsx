@@ -23,7 +23,9 @@ export function AdminConsole() {
   const [tab, setTab] = useState<(typeof TABS)[number]["value"]>("users");
   if (role === undefined) return <p role="status">Checking access…</p>;
   if (!role)
-    return <p>Admin access is restricted to CEOs and Head Moderators.</p>;
+    return (
+      <p>Admin access is restricted to CEOs, Co-Owners, and Head Moderators.</p>
+    );
   const tabs = TABS.filter((entry) => role === "ceo" || !entry.ceoOnly);
   return (
     <>

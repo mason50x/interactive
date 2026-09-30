@@ -3,7 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { mutation, preInviteQuery, query } from "./functions";
-import { roleChangeRefusal } from "../config/roles";
+import { isAdminRole, roleChangeRefusal } from "../config/roles";
 import { badgeHidden, resolveRole } from "./roles";
 import {
   activeTimeout,
@@ -13,7 +13,14 @@ import {
   timeoutRow,
 } from "./timeoutState";
 
-const ranks = { member: 0, builder: 1, moderator: 1, head_moderator: 2, ceo: 3 } as const;
+const ranks = {
+  member: 0,
+  builder: 1,
+  moderator: 1,
+  head_moderator: 2,
+  co_owner: 2,
+  ceo: 3,
+} as const;
 const timeoutView = v.object({
   rayId: v.id("userTimeouts"),
   reason: v.string(),
@@ -26,19 +33,24 @@ async function manager(ctx: QueryCtx | MutationCtx) {
   if (!identity) throw new ConvexError("Timeout management access required.");
   await requireNotTimedOut(ctx, identity.subject);
   const role = await resolveRole(ctx, identity.subject);
-  if (role !== "ceo" && role !== "head_moderator")
+  if (!isAdminRole(role))
     throw new ConvexError("Timeout management access required.");
   return { clerkId: identity.subject, role };
 }
 
 export const access = query({
   args: {},
-  returns: v.union(v.literal("ceo"), v.literal("head_moderator"), v.null()),
+  returns: v.union(
+    v.literal("ceo"),
+    v.literal("co_owner"),
+    v.literal("head_moderator"),
+    v.null(),
+  ),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity || (await activeTimeout(ctx, identity.subject))) return null;
     const role = await resolveRole(ctx, identity.subject);
-    return role === "ceo" || role === "head_moderator" ? role : null;
+    return isAdminRole(role) ? role : null;
   },
 });
 
@@ -108,6 +120,7 @@ const directoryUser = v.object({
   username: v.optional(v.string()),
   role: v.union(
     v.literal("ceo"),
+    v.literal("co_owner"),
     v.literal("head_moderator"),
     v.literal("moderator"),
     v.literal("builder"),
