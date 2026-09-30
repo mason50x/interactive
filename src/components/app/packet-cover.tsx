@@ -67,12 +67,11 @@ export function PacketCover({
           className="z-0 [--web-fade:0.28] dark:[--web-fade:0.32]"
         />
       </div>
-      {/* `packet-logo` is where the access reveal opens its circle from. */}
       <PageSpinner
         role={undefined}
         aria-label={undefined}
         aria-hidden="true"
-        className="packet-logo relative"
+        className="relative"
       />
 
       {holdMs !== null && (
