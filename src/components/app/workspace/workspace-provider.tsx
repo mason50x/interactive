@@ -6,6 +6,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -242,6 +243,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(new StorageEvent("storage", { key: TRIED_KEY }));
     }
   }, [isPane, state, multi]);
+
+  // `paneScript` marks `<html>` before the first paint, but React strips every
+  // attribute off `<html>` when it recovers from a hydration error by
+  // rendering the root again on the client. Without this the pane would come
+  // back with a rail, a margin and toasts of its own. Before paint, so it
+  // never shows.
+  useLayoutEffect(() => {
+    if (isPane) document.documentElement.setAttribute("data-pane", "");
+  }, [isPane]);
 
   // The rail folds to icons while there is more than one pane; see the `wide`
   // variant in `globals.css`.
