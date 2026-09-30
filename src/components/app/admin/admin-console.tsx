@@ -32,7 +32,7 @@ export function AdminConsole() {
       <SegmentedControl
         tone="neutral"
         aria-label="Admin section"
-        className="mb-5"
+        className="mb-5 w-fit max-w-full"
         value={tab}
         onValueChange={setTab}
         options={tabs}
