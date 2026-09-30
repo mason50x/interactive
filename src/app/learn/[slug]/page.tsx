@@ -1,7 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@convex/_generated/api";
 import { TimeoutMessage } from "@/components/app/timeout-message";
-import { RestrictionScreen } from "@/components/app/restriction-screen";
+import { AnnouncementScreen } from "@/components/app/announcement/announcement-screen";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { protectPage } from "@/lib/session";
@@ -39,9 +39,12 @@ export default async function LearnPage({
   const { getToken } = await protectPage();
   const token = await getToken({ template: "convex" });
   if (!token) throw new Error("Your session is not available.");
-  // First: every other function refuses a restricted account outright.
-  const restriction = await fetchQuery(api.restrictions.mine, {}, { token });
-  if (restriction) return <RestrictionScreen restriction={restriction} />;
+  // First: while a full-screen announcement is live, every other function
+  // refuses a member outright. Managers keep the app and get no card here,
+  // since this page is a frame inside the app that already shows them one.
+  const announcement = await fetchQuery(api.announcement.mine, {}, { token });
+  if (announcement?.display === "screen" && !announcement.manages)
+    return <AnnouncementScreen announcement={announcement} />;
   const timeout = await fetchQuery(api.timeouts.mine, {}, { token });
   if (timeout)
     return (

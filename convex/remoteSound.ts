@@ -2,17 +2,25 @@ import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./functions";
 import { requireCeo } from "./roles";
+import {
+  DEFAULT_SOUND,
+  isSoundId,
+  isVolume,
+  VOLUME_DEFAULT,
+  VOLUME_MAX,
+  VOLUME_MIN,
+} from "../src/lib/remote-sound";
 
 /**
- * Remote sound: a CEO presses a button on a row of the Admin user directory
- * and that account's open tabs play a sound. For now the only sound is a
- * beep.
+ * Remote sound: a CEO picks a sound and a volume on a row of the Admin user
+ * directory, presses Play, and that account's open tabs play it. The
+ * catalogue — beeps, farts, booms and the rest — is `SOUND_GROUPS` in
+ * `src/lib/remote-sound.ts`, and every sound is synthesised in the browser.
  *
  * ## CEO-gated
  *
  * `play` is the only write and it goes through `requireCeo`, the same gate as
- * every other CEO power on the directory (`adminQuotas.setRole`,
- * `restrictions.set`). Hiding the column from a Head Moderator is a courtesy;
+ * every other CEO power on the directory (`adminQuotas.setRole`). Hiding the column from a Head Moderator is a courtesy;
  * the mutation refusing them is the rule. A CEO may target any account,
  * including their own, which is how the feature is tried out without a second
  * person.
@@ -26,21 +34,35 @@ import { requireCeo } from "./roles";
  * acknowledgement from one tab would silence the others.
  */
 
-const SOUNDS = v.literal("beep");
-
 export const play = mutation({
-  args: { clerkId: v.string(), sound: v.optional(SOUNDS) },
+  args: {
+    clerkId: v.string(),
+    /** A catalogue id. Absent plays the default. */
+    sound: v.optional(v.string()),
+    /** Percent of the sound's natural level, 50–200. Absent is 100. */
+    volume: v.optional(v.number()),
+  },
   returns: v.null(),
-  handler: async (ctx, { clerkId, sound }) => {
+  handler: async (ctx, { clerkId, sound, volume }) => {
     const caller = await requireCeo(ctx);
     const user = await ctx.db
       .query("users")
       .withIndex("byClerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
     if (!user) throw new ConvexError("User not found.");
+    // Checked against the catalogue rather than typed as a union so that
+    // adding a sound is one edit to the list, not a schema migration.
+    const chosen = sound ?? DEFAULT_SOUND;
+    if (!isSoundId(chosen)) throw new ConvexError("Unknown sound.");
+    const level = volume ?? VOLUME_DEFAULT;
+    if (!isVolume(level))
+      throw new ConvexError(
+        `Volume must be a whole number from ${VOLUME_MIN}% to ${VOLUME_MAX}%.`,
+      );
     const data = {
       clerkId,
-      sound: sound ?? ("beep" as const),
+      sound: chosen,
+      volume: level,
       sentBy: caller,
       sentAt: Date.now(),
     };
@@ -66,7 +88,12 @@ export const play = mutation({
 export const mine = query({
   args: {},
   returns: v.union(
-    v.object({ sound: SOUNDS, sentAt: v.number(), ageMs: v.number() }),
+    v.object({
+      sound: v.string(),
+      volume: v.number(),
+      sentAt: v.number(),
+      ageMs: v.number(),
+    }),
     v.null(),
   ),
   handler: async (ctx) => {
@@ -79,6 +106,7 @@ export const mine = query({
     if (!row) return null;
     return {
       sound: row.sound,
+      volume: row.volume ?? VOLUME_DEFAULT,
       sentAt: row.sentAt,
       ageMs: Math.max(0, Date.now() - row.sentAt),
     };

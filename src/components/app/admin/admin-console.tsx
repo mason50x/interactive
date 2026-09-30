@@ -5,16 +5,17 @@ import { useState } from "react";
 import { api } from "@convex/_generated/api";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { useAuthedQuery } from "@/lib/use-authed-query";
-import { AccountConfig } from "./account-config";
+import { AnnouncementConfig } from "./announcement-config";
 import { InviteCodes } from "./invite-codes";
 import { UserDirectory } from "./user-directory";
 import { Votes } from "./votes";
 
+/** Head Moderators get the users and the announcement; CEOs get everything. */
 const TABS = [
-  { value: "users", label: "Users" },
-  { value: "invites", label: "Invite codes" },
-  { value: "votes", label: "Vote" },
-  { value: "config", label: "Config" },
+  { value: "users", label: "Users", ceoOnly: false },
+  { value: "invites", label: "Invite codes", ceoOnly: true },
+  { value: "votes", label: "Vote", ceoOnly: true },
+  { value: "announcement", label: "Announcement", ceoOnly: false },
 ] as const;
 
 export function AdminConsole() {
@@ -23,7 +24,7 @@ export function AdminConsole() {
   if (role === undefined) return <p role="status">Checking access…</p>;
   if (!role)
     return <p>Admin access is restricted to CEOs and Head Moderators.</p>;
-  if (role !== "ceo") return <UserDirectory role={role} />;
+  const tabs = TABS.filter((entry) => role === "ceo" || !entry.ceoOnly);
   return (
     <>
       <SegmentedControl
@@ -32,16 +33,16 @@ export function AdminConsole() {
         className="mb-5"
         value={tab}
         onValueChange={setTab}
-        options={TABS}
+        options={tabs}
       />
       {tab === "users" ? (
         <UserDirectory role={role} />
-      ) : tab === "invites" ? (
+      ) : tab === "invites" && role === "ceo" ? (
         <InviteCodes />
-      ) : tab === "votes" ? (
+      ) : tab === "votes" && role === "ceo" ? (
         <Votes />
       ) : (
-        <AccountConfig />
+        <AnnouncementConfig />
       )}
     </>
   );

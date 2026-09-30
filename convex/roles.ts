@@ -93,6 +93,23 @@ export async function requireCeo(ctx: ReadCtx): Promise<string> {
 }
 
 /**
+ * The gate on the site announcement, which CEOs and Head Moderators share.
+ * The same shape as `requireCeo`: signed in, holding the role, and not timed
+ * out — a timed-out manager cannot take the site down on their way out.
+ */
+export async function requireAnnouncementManager(
+  ctx: ReadCtx,
+): Promise<{ clerkId: string; role: "ceo" | "head_moderator" }> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new ConvexError("CEO or Head Moderator access required.");
+  const role = await resolveRole(ctx, identity.subject);
+  if (role !== "ceo" && role !== "head_moderator")
+    throw new ConvexError("CEO or Head Moderator access required.");
+  await requireNotTimedOut(ctx, identity.subject);
+  return { clerkId: identity.subject, role };
+}
+
+/**
  * One-time migration: copy the `STAFF_ROLES` env map into the `staffRoles`
  * table so prod staff keep their roles once the table is the editable source
  * of truth.
