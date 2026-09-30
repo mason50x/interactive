@@ -17,7 +17,7 @@
     "meriyah": "7.3.3"
   },
   "devDependencies": {
-    "wrangler": "^4.143.0"
+    "wrangler": "^4.145.0"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
