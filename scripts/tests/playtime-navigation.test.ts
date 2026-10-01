@@ -1,15 +1,24 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { expect, test } from "vitest";
-import { isPlaytimeRoute } from "../../config/playtime";
+import { isFreeExperienceApp, isPlaytimeRoute } from "../../config/playtime";
 import { PlaytimeNavLink } from "../../src/components/app/playtime-status";
 
-test("only the four playtime sections are restricted, including deep links", () => {
-  for (const path of ["/activities", "/activities/chess", "/tv", "/tv/show", "/browse", "/browse/app", "/emulate", "/emulate/html/hash", "/emulate/published/id"]) {
+test("only the three player sections are restricted, including deep links", () => {
+  for (const path of ["/activities", "/activities/chess", "/tv", "/tv/show", "/emulate", "/emulate/html/hash", "/emulate/published/id"]) {
     expect(isPlaytimeRoute(path)).toBe(true);
   }
-  for (const path of ["/chat", "/chat/room", "/home", "/admin", "/activities-other"]) {
+  for (const path of ["/chat", "/chat/room", "/home", "/admin", "/activities-other", "/browse", "/browse/spotify", "/browse/app"]) {
     expect(isPlaytimeRoute(path)).toBe(false);
+  }
+});
+
+test("Spotify, Apple Music and Gemini are free; other Browse apps are charged", () => {
+  for (const id of ["spotify", "apple-music", "gemini"]) {
+    expect(isFreeExperienceApp(id)).toBe(true);
+  }
+  for (const id of ["youtube", "tiktok", "x", "roblox", ""]) {
+    expect(isFreeExperienceApp(id)).toBe(false);
   }
 });
 

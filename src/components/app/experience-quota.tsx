@@ -31,9 +31,9 @@ import {
 } from "@/lib/playtime-display";
 
 /**
- * `background` is for music that keeps playing once the site is out of sight:
- * a hidden tab keeps its lease instead of stopping, and the lease is bought
- * at the background rate (see `acquire`).
+ * `background` keeps a hidden tab's lease instead of stopping it, bought at
+ * the background rate (see `acquire`). It was for music playing out of
+ * sight; music is free now (`FREE_EXPERIENCE_APPS`), so nothing passes it.
  */
 export function useExperienceQuota(
   active = false,
@@ -328,7 +328,8 @@ export function PlaytimeDetails({ quota }: { quota: Quota }) {
       <p>
         Your daily minutes are shared across games, the proxy, entertainment,
         and simulators. Time runs only while a player or proxy app is open in a
-        visible tab; browsing is free.
+        visible tab; browsing is free, and so are Spotify, Apple Music, and
+        Gemini.
       </p>
       <p>
         Qualifying chat messages add time, even while time remains.{" "}

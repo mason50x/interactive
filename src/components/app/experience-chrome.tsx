@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import type { ExperienceApp } from "@/lib/experience";
 import { isListenApp } from "@/lib/listen";
+import { isFreeExperienceApp } from "@config/playtime";
 import { readStoredJson, writeStoredJson } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
@@ -99,6 +100,10 @@ const SHELVES: { label: string; ids: string[] }[] = [
  * a pane only holds the place the shell lays the frame over. Their sessions
  * are the shell's, read back here, so the dock still lists them when you
  * return.
+ *
+ * Some apps are free (`FREE_EXPERIENCE_APPS`): they never start the lease,
+ * and when time runs out only the charged apps' panes are replaced by the
+ * used-up screen, so a free app beside one keeps working.
  */
 export function ExperienceChrome({
   services,
@@ -137,8 +142,13 @@ export function ExperienceChrome({
   const stage = useRef<HTMLDivElement>(null);
   const panes = useRef<HTMLDivElement>(null);
   // One lease for the whole workspace, including apps running out of sight.
+  // A free app never starts it.
+  const charged = (appId: string) => !isFreeExperienceApp(appId);
   const quota = useExperienceQuota(
-    sessions.some((session) => serviceFor(services, session.appId)?.src),
+    sessions.some(
+      (session) =>
+        charged(session.appId) && serviceFor(services, session.appId)?.src,
+    ),
   );
   const { full, canFull, toggleFull } = useStageFullscreen(stage);
   const latestAccess = useRef(accessToken ?? null);
@@ -424,75 +434,71 @@ export function ExperienceChrome({
           focus !== null && "flex",
         )}
       >
-        {!quota.allowed && sessions.length > 0 ? (
-          <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface">
-            <PlaytimeBlocked quota={quota} />
-          </div>
-        ) : (
-          sessions.map((session) => {
-            const service = serviceFor(services, session.appId);
-            if (!service) return null;
-            const side =
-              session.appId === focus
-                ? "front"
-                : session.appId === splitApp
-                  ? "beside"
-                  : null;
-            return (
-              <Pane
-                key={session.appId}
-                side={side}
-                grow={split ? (side === "front" ? ratio : 1 - ratio) : 1}
-              >
-                {!service.src ? (
-                  <div
-                    role="status"
-                    className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"
-                  >
-                    <ExperienceAppIcon id={service.id} className="size-10" />
-                    <p className="font-medium">
-                      {service.label} is unavailable
-                    </p>
-                    <p className="max-w-xs text-sm text-muted-foreground">
-                      It can’t be opened right now. Everything else still works.
-                    </p>
-                  </div>
-                ) : shared(service.id) ? (
-                  <ListenSlot appId={service.id} inert={dragging} />
-                ) : (
-                  <iframe
-                    key={session.run}
-                    ref={frameRef(session.appId)}
-                    src={
-                      accessToken
-                        ? `${service.src}#${new URLSearchParams({ access: "1", appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
-                        : service.src
-                    }
-                    title={service.label}
-                    sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${
-                      CLOUD_GAMING.has(service.id) ? " allow-pointer-lock" : ""
-                    }`}
-                    allow={`fullscreen; autoplay; encrypted-media${
-                      CLOUD_GAMING.has(service.id)
-                        ? "; gamepad; microphone; screen-wake-lock"
-                        : CALLING.has(service.id)
-                          ? "; camera; microphone"
-                          : ""
-                    }`}
-                    referrerPolicy="no-referrer"
-                    className={cn(
-                      "h-full w-full border-0 bg-white",
-                      // A frame under the pointer swallows the drag.
-                      dragging && "pointer-events-none",
-                    )}
-                  />
-                )}
-              </Pane>
-            );
-          })
-        )}
+        {sessions.map((session) => {
+          const service = serviceFor(services, session.appId);
+          if (!service) return null;
+          const side =
+            session.appId === focus
+              ? "front"
+              : session.appId === splitApp
+                ? "beside"
+                : null;
+          return (
+            <Pane
+              key={session.appId}
+              side={side}
+              grow={split ? (side === "front" ? ratio : 1 - ratio) : 1}
+            >
+              {charged(service.id) && !quota.allowed && service.src ? (
+                <div className="h-full overflow-y-auto">
+                  <PlaytimeBlocked quota={quota} />
+                </div>
+              ) : !service.src ? (
+                <div
+                  role="status"
+                  className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"
+                >
+                  <ExperienceAppIcon id={service.id} className="size-10" />
+                  <p className="font-medium">{service.label} is unavailable</p>
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    It can’t be opened right now. Everything else still works.
+                  </p>
+                </div>
+              ) : shared(service.id) ? (
+                <ListenSlot appId={service.id} inert={dragging} />
+              ) : (
+                <iframe
+                  key={session.run}
+                  ref={frameRef(session.appId)}
+                  src={
+                    accessToken
+                      ? `${service.src}#${new URLSearchParams({ access: "1", appOrigin: typeof window === "undefined" ? "" : window.location.origin })}`
+                      : service.src
+                  }
+                  title={service.label}
+                  sandbox={`allow-scripts allow-same-origin allow-forms allow-popups${
+                    CLOUD_GAMING.has(service.id) ? " allow-pointer-lock" : ""
+                  }`}
+                  allow={`fullscreen; autoplay; encrypted-media${
+                    CLOUD_GAMING.has(service.id)
+                      ? "; gamepad; microphone; screen-wake-lock"
+                      : CALLING.has(service.id)
+                        ? "; camera; microphone"
+                        : ""
+                  }`}
+                  referrerPolicy="no-referrer"
+                  className={cn(
+                    "h-full w-full border-0 bg-white",
+                    // A frame under the pointer swallows the drag.
+                    dragging && "pointer-events-none",
+                  )}
+                />
+              )}
+            </Pane>
+          );
+        })}
 
-        {split && quota.allowed && (
+        {split && (
           <div
             role="separator"
             aria-orientation="vertical"
@@ -533,7 +539,7 @@ export function ExperienceChrome({
           </div>
         )}
 
-        {split === PICK && quota.allowed && (
+        {split === PICK && (
           <Pane side="beside" grow={1 - ratio}>
             <SidePicker
               services={services.filter((service) => service.id !== focus)}

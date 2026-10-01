@@ -70,9 +70,20 @@ export function similarReward(a: string, b: string) {
   return common / Math.max(left.size, right.size) >= 0.8;
 }
 
-/** Catalogue roots and players are unavailable after exhaustion; chat is not. */
+/** Browse apps that never spend playtime. They open with no time left, and
+ * music from them keeps playing in the background for free. */
+export const FREE_EXPERIENCE_APPS: ReadonlySet<string> = new Set([
+  "spotify",
+  "apple-music",
+  "gemini",
+]);
+export function isFreeExperienceApp(id: string) {
+  return FREE_EXPERIENCE_APPS.has(id);
+}
+
+/** Catalogue roots and players are unavailable after exhaustion; chat is not.
+ * Browse stays open: its free apps still work, and it blocks a spent app in
+ * its own pane rather than at the route. */
 export function isPlaytimeRoute(pathname: string) {
-  return /^\/(activities|tv|emulate|browse)(?:\/|$)/.test(
-    pathname,
-  );
+  return /^\/(activities|tv|emulate)(?:\/|$)/.test(pathname);
 }
