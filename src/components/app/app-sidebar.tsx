@@ -38,7 +38,6 @@ import { usePlaytimeActivity } from "@/components/app/playtime-activity";
 import { SplitViewButton } from "@/components/app/workspace/split-view-button";
 import { useWorkspace } from "@/components/app/workspace/workspace-provider";
 import { WORKSPACE_DRAG_TYPE } from "@/lib/workspace";
-import { ViewColumnsIcon } from "@heroicons/react/24/outline";
 
 /** How many rail destinations are warmed without being asked for. */
 const HOT_ROUTE_COUNT = 2;
@@ -214,7 +213,7 @@ export function AppSidebar() {
                     const showUnread = item.unread && hasUnread && !lit;
                     const Icon = item.icon.solid;
                     return (
-                      <li key={item.href} className="group/row relative">
+                      <li key={item.href} className="relative">
                         <PlaytimeNavLink
                           disabled={disabled}
                           href={item.href}
@@ -300,7 +299,7 @@ export function AppSidebar() {
                               }
                               role="status"
                               className={cn(
-                                "absolute top-2.5 right-2 flex items-center gap-1.5 transition-opacity wide:top-1/2 wide:right-3 wide:-translate-y-1/2 md:wide:group-hover/row:opacity-0",
+                                "absolute top-2.5 right-2 flex items-center gap-1.5 transition-opacity wide:top-1/2 wide:right-3 wide:-translate-y-1/2",
                                 hasNewAnnouncement
                                   ? "text-red-500"
                                   : "text-primary",
@@ -333,19 +332,6 @@ export function AppSidebar() {
                             <NavPending href={item.href} report={report} />
                           )}
                         </PlaytimeNavLink>
-                        {/* One click to split: on hover in the labelled rail, the
-                    row offers to open beside what is already up. */}
-                        {!disabled && !active && (
-                          <button
-                            type="button"
-                            onClick={() => workspace.openPane(item.href)}
-                            aria-label={`Open ${item.label} beside`}
-                            title={`Open ${item.label} beside · or drag it onto the page`}
-                            className="absolute top-1/2 right-1.5 hidden size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground opacity-0 transition-[opacity,background-color,color] duration-150 group-hover/row:opacity-100 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring md:wide:grid"
-                          >
-                            <ViewColumnsIcon className="size-4" />
-                          </button>
-                        )}
                       </li>
                     );
                   })}
