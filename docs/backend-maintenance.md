@@ -22,6 +22,38 @@ roles, timeouts, log rows, presence, typing, and other account references in
 small batches. Shared published simulators remain available with the deleted
 account's attribution removed.
 
+## Friday inactivity removal
+
+Every Friday at 2:55 p.m. Central Time, `inactivity.run` in
+`convex/inactivity.ts` deletes the member account that did the least on the
+site that week and tells Mason who it was, as a message from the bot in Mason's
+private bot direct message. Convex crons keep UTC time, so `convex/crons.ts`
+books the job at both 19:55 and 20:55 UTC; the job reads the Central clock
+and only the booking that lands on 2:55 does anything. Run it by hand with
+`npx convex run inactivity:run '{"force": true}'`.
+
+The week is Monday through Friday in the leaderboard's UTC days. An account's
+activity is the sum, in seconds, of:
+
+| Signal | Source |
+| --- | --- |
+| Time with the site open on a weekday | `userActivity.weekSeconds`, added up by the visible-tab heartbeat from the gaps between its own beats, at most 45 seconds each |
+| Playtime spent on games, emulators, TV and Browse apps | `leaderboardScores` rows `playtime:day:*` |
+| Chat messages sent, at 90 seconds each | `leaderboardScores` rows `chat:day:*` |
+
+The lowest total loses; ties go to the account seen least recently, then to
+the older one. Staff (anybody above member, from `STAFF_ROLES` and the
+`staffRoles` table), Mason's founder account, accounts still at the invite
+gate, and accounts created since Monday are never candidates. With nobody
+eligible the job only tells Mason that nobody was removed.
+
+Removal is Clerk's `DELETE /v1/users/{id}` with the deployment's
+`CLERK_SECRET_KEY`, after which the job runs `users.deleteFromClerk` itself,
+the same cascade the deletion webhook runs, so the Convex rows go even on a
+deployment without the webhook; the webhook's replay is a no-op. When Clerk
+refuses, nothing is changed, Mason is told why, and the job fails loudly in
+the Convex logs.
+
 The Admin directory shows each user's timeout log for the last seven days.
 Only users who pass the existing admin (CEO, Co-Owner, or Head Moderator) check may read
 it. Bulk allowance resets also run in batches once the first page is processed.

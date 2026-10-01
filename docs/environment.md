@@ -57,7 +57,7 @@ separate Clerk instances and webhook secrets.
 | Variable | Required for |
 | --- | --- |
 | `CLERK_JWT_ISSUER_DOMAIN` | JWT validation; issuer of your Clerk instance |
-| `CLERK_SECRET_KEY` | Account synchronization via Clerk's backend API |
+| `CLERK_SECRET_KEY` | Account synchronization and the Friday inactivity removal, both through Clerk's backend API |
 | `CLERK_WEBHOOK_SECRET` | Verification of the Clerk users webhook |
 | `STAFF_ROLES` | JSON map of exact Clerk user IDs to `ceo` or `moderator` |
 | `OPENAI_API_KEY` | Optional image moderation |
