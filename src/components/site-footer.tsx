@@ -1,10 +1,12 @@
 /**
  * The foot of every marketing page: the lockup and the blurb on the left,
- * the link columns on the right, and the legal line under both. The copy
- * comes from `src/lib/content.ts` so the footer and the pages it links say
- * the same names.
+ * the link columns on the right, and the legal line under both. On the
+ * landing page alone, a line of fine print follows the legal line; see
+ * `LandingDisclaimer`. The copy comes from `src/lib/content.ts` so the footer
+ * and the pages it links say the same names.
  */
 import Link from "next/link";
+import { LandingDisclaimer } from "@/components/landing-disclaimer";
 import { Container } from "@/components/ui/container";
 import { SectionDivider } from "@/components/ui/section";
 import { Wordmark } from "@/components/wordmark";
@@ -52,10 +54,11 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-border py-6 text-[0.8125rem] text-faint sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-border py-6 text-[0.8125rem] text-faint">
           <p>
             © {new Date().getFullYear()} {brand.name}. All rights reserved.
           </p>
+          <LandingDisclaimer />
         </div>
       </Container>
     </footer>
