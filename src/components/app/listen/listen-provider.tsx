@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -13,8 +12,6 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { useExperienceQuota } from "@/components/app/experience-quota";
-import { usePlaytimeExhausted } from "@/components/app/playtime-status";
 import type { ExperienceService } from "@/components/app/experience-chrome";
 import { isPaneWindow } from "@/lib/workspace";
 import {
@@ -103,9 +100,9 @@ const noop = () => () => {};
  * parked out of sight, still playing. A frame is never moved in the DOM —
  * that would reload it — so both are only a change of position.
  *
- * Time is charged like any player while you are in the app. Once the tab is
- * out of sight and the music is still playing, it is charged at half: that is
- * what the pop-out is for.
+ * Music is free. A listen app spends no playtime, in Browse or out of it
+ * (see `FREE_EXPERIENCE_APPS` in `config/playtime.ts`), so running out of
+ * time neither charges for it nor closes it.
  */
 export function ListenProvider({
   services,
@@ -131,12 +128,6 @@ export function ListenProvider({
   const frames = useRef(new Map<string, HTMLIFrameElement>());
   const holders = useRef(new Map<string, HTMLDivElement>());
   const slots = useRef(new Map<string, Slot>());
-  const pathname = usePathname();
-  const hidden = useSyncExternalStore(
-    subscribeVisibility,
-    () => document.hidden,
-    () => false,
-  );
 
   const serviceFor = useCallback(
     (appId: string) => services.find((service) => service.id === appId),
@@ -326,23 +317,6 @@ export function ListenProvider({
     return () => cancelAnimationFrame(raf);
   }, [enabled, sessions]);
 
-  // In the app and in sight, Browse is charging for what it shows. Anywhere
-  // else, a playing player is charged here — at half once the tab is hidden.
-  const anyPlaying = sessions.some(
-    (session) => playing[session.appId]?.state.playing,
-  );
-  const inBrowse = /^\/browse(?:\/|$)/.test(pathname);
-  useExperienceQuota(enabled && anyPlaying && (!inBrowse || hidden), {
-    background: true,
-  });
-
-  // Out of time closes the players, as it does every other player.
-  const exhausted = usePlaytimeExhausted();
-  useEffect(() => {
-    if (!exhausted) return;
-    for (const session of sessions) close(session.appId);
-  }, [exhausted, sessions, close]);
-
   const openPopOut = useCallback(async () => {
     const api = pictureInPicture();
     if (!api) return;
@@ -489,11 +463,6 @@ export function ListenSlot({
     return () => registerSlot(appId, null);
   }, [appId, inert, registerSlot]);
   return <div ref={ref} className="h-full w-full" />;
-}
-
-function subscribeVisibility(onChange: () => void) {
-  document.addEventListener("visibilitychange", onChange);
-  return () => document.removeEventListener("visibilitychange", onChange);
 }
 
 type PictureInPicture = {

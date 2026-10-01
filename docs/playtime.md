@@ -20,22 +20,29 @@ share the same lease, so they do not charge twice. Hidden documents stop and
 release, matching the existing proxy behavior.
 
 The sidebar shows a live countdown with expandable details above the version card.
-Exhaustion unmounts players, grays out the four playtime tabs, and redirects active
-playtime routes to Chat. Chat stays fully usable. Direct links and browser Back
-receive the same route guard. The standalone `/learn` document retains a local
+Exhaustion unmounts players, grays out the Activities, TV, and Emulate tabs,
+and redirects active playtime routes to Chat. Chat stays fully usable. Direct
+links and browser Back receive the same route guard. Browse stays open: its
+free apps still work, and a charged app's pane shows the used-up screen in
+place of its frame. The standalone `/learn` document retains a local
 exhaustion notice with a chat link. Existing moderation timeouts are separate.
+
+## Free apps
+
+Spotify, Apple Music, and Gemini never spend playtime (`FREE_EXPERIENCE_APPS`
+in `config/playtime.ts`). Opening one does not start the lease, they open with
+no time left, and running out does not close them. Every other Browse app is
+charged like any player while it is open in a visible tab.
 
 ## Background music
 
 Spotify and Apple Music keep playing after you leave Browse (see
 `src/lib/listen.ts`). Their frames belong to the app shell, and the mini player
-and pop-out control them. While you are in the app, playing music is charged
-like any player. While the tab is hidden and the music is still playing, it is
-charged at half rate. That is what the pop-out window is for. A `background`
-lease is bought at half rate only while every live session is a background
-one. When anything visible joins, the rest of the half-rate lease is topped up
-to full. Unused background time is refunded at half. Paused music is not
-charged, and running out closes the music apps like every other player.
+and pop-out control them. Because both are free, background music is not
+charged either. The `background` half-rate lease that `experience.acquire`
+still accepts is unused by the app: a `background` lease is bought at half
+rate only while every live session is a background one, and when anything
+visible joins, the rest of the half-rate lease is topped up to full.
 
 ## Chat rewards
 
