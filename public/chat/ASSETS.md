@@ -1,9 +1,15 @@
 # Bot avatars
 
-`chatgpt-avatar.svg` is the current avatar. It is copied unchanged from the
-[OpenAI Agents SDK logo](https://github.com/openai/openai-agents-python/blob/main/docs/assets/logo.svg).
+`flame-avatar.svg` is the current avatar: Flame's mark, an original 16x16
+pixel-art flame drawn for this project (tall flat flame, orange body, hot
+yellow core, no outline), stored as one `<rect>` per pixel run with `shape-rendering="crispEdges"`
+so it stays sharp at every size. No third-party source.
 
 ## Previous avatars
+
+`chatgpt-avatar.svg` was the ChatGPT-era avatar. It is copied unchanged from the
+[OpenAI Agents SDK logo](https://github.com/openai/openai-agents-python/blob/main/docs/assets/logo.svg)
+and is no longer referenced by code.
 
 `bot-avatar.webp` is the original Bot profile picture, restored byte-for-byte
 from commit `1113491` (first added in `02e5e62`).
