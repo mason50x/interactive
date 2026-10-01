@@ -1,11 +1,11 @@
 /** Display branding is independent of the persistent bot identity. */
 export const BOT_ID = "bot";
 export const BOT_HANDLE = "chat";
-export const BOT_NAME = "ChatGPT";
-export const BOT_AVATAR = "/chat/chatgpt-avatar.svg";
+export const BOT_NAME = "Flame";
+export const BOT_AVATAR = "/chat/flame-avatar.svg";
 
 export function botWelcomeBody(name: string): string {
-  return `Hi, ${name}! I'm ${BOT_NAME}. What would you like help with?`;
+  return `Hey, ${name}! I'm ${BOT_NAME}. Toss me a question and let's light it up.`;
 }
 
 /** Present the old scripted greeting with the current assistant voice. */
@@ -15,11 +15,14 @@ export function presentBotBody(body: string, authorClerkId: string): string {
   const oldPersona = /^Hello, (.+?)! I'm your bot, with a little old-fashioned charm\. Ask me a question, bring me a puzzle, or just say hello\. What's on your mind\?$/i.exec(normalized);
   if (oldPersona) return botWelcomeBody(oldPersona[1]);
   const oldWelcome = /^Hey, (.+?)\. I'm (?:Wizard|Chat|ChatGPT)\. What's on your mind\?$/i.exec(normalized);
-  return oldWelcome ? botWelcomeBody(oldWelcome[1]) : body;
+  if (oldWelcome) return botWelcomeBody(oldWelcome[1]);
+  const assistantWelcome = /^Hi, (.+?)! I'm ChatGPT\. What would you like help with\?$/i.exec(normalized);
+  return assistantWelcome ? botWelcomeBody(assistantWelcome[1]) : body;
 }
 
 export const BOT_MENTION_HANDLES: ReadonlySet<string> = new Set([
   BOT_HANDLE,
+  "flame",
   "chatgpt",
   "gpt",
   "bot",

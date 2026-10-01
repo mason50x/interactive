@@ -110,9 +110,11 @@ export function Monogram({
       {bot ? null : (emoji ?? (initials ?? handle.slice(0, 1)).toUpperCase())}
       {bot ? (
         // The assistant has no profile row, so its app-owned mark is fixed here.
+        // The mark is full-colour pixel art, so it is never inverted; the small
+        // inset keeps the flame's base inside the disc at every size.
         <Photo
           src={BOT_AVATAR}
-          className="absolute inset-0 size-full rounded-[inherit] object-contain invert dark:invert-0"
+          className="absolute inset-[5%] size-[90%] rounded-none object-contain"
         />
       ) : imageUrl === undefined ? null : (
         <Photo

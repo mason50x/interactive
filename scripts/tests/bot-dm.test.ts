@@ -38,12 +38,12 @@ test("everyone receives a private pinned bot DM, without duplicates or a bot pro
   expect(list.find((conversation) => conversation.peerClerkId === "bot")).toMatchObject({
     kind: "dm",
     peerClerkId: "bot",
-    peerName: "ChatGPT",
-    peerAvatarUrl: "/chat/chatgpt-avatar.svg",
+    peerName: "Flame",
+    peerAvatarUrl: "/chat/flame-avatar.svg",
   });
   expect(
     await alice.query(api.chat.conversations.get, { conversationId: dm }),
-  ).toMatchObject({ peerName: "ChatGPT" });
+  ).toMatchObject({ peerName: "Flame" });
   expect(
     await t
       .withIdentity({ subject: "bob" })
@@ -151,7 +151,7 @@ test("empty bot DMs get one delayed personalized welcome without generation", as
     expect(messages).toHaveLength(1);
     expect(messages[0]).toMatchObject({
       authorClerkId: "bot",
-      body: "Hi, alice! I'm ChatGPT. What would you like help with?",
+      body: "Hey, alice! I'm Flame. Toss me a question and let's light it up.",
     });
     expect(await t.run((ctx) => ctx.db.query("typing").take(10))).toHaveLength(
       0,
@@ -365,15 +365,15 @@ test("historical bot messages and reply previews use current branding without ch
     conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER, paginationOpts: { numItems: 20, cursor: null },
   });
   expect(result.page.find(message => message.authorClerkId === "bot"))
-    .toMatchObject({ authorName: "ChatGPT", authorHandle: "chat", body: "An existing answer." });
+    .toMatchObject({ authorName: "Flame", authorHandle: "chat", body: "An existing answer." });
   expect(result.page.find(message => message.replyTo)?.replyTo)
-    .toMatchObject({ authorName: "ChatGPT", authorHandle: "chat", preview: "An existing answer." });
+    .toMatchObject({ authorName: "Flame", authorHandle: "chat", preview: "An existing answer." });
 });
 
 test("the old persona greeting reads as the current general welcome everywhere", async () => {
   const { t, alice, dm } = await setup();
   const oldBody = "Hello, Mason! I'm your bot, with a little old-fashioned charm. Ask me a question, bring me a puzzle, or just say hello. What's on your mind?";
-  const newBody = "Hi, Mason! I'm ChatGPT. What would you like help with?";
+  const newBody = "Hey, Mason! I'm Flame. Toss me a question and let's light it up.";
   const original = await t.run(ctx => ctx.db.insert("messages", {
     conversationId: dm, authorClerkId: "bot", authorHandle: "wizard",
     authorName: "Wizard", body: oldBody, status: "visible", flags: [],
@@ -399,7 +399,22 @@ test("the old persona greeting reads as the current general welcome everywhere",
 });
 
 
-test.each(["@chat", "@Chat", "@CHAT", "@chatgpt", "@ChatGPT", "@gpt", "@GPT", "@wizard", "@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot @chat"])("%s resolves to one bot request", async (tag) => {
+test("the ChatGPT-era welcome reads as Flame's welcome", async () => {
+  const { t, alice, dm } = await setup();
+  const original = await t.run(ctx => ctx.db.insert("messages", {
+    conversationId: dm, authorClerkId: "bot", authorHandle: "chat", authorName: "ChatGPT",
+    body: "Hi, Mason! I'm ChatGPT. What would you like help with?", status: "visible", flags: [],
+  }));
+  const page = await alice.query(api.chat.messages.list, {
+    conversationId: dm, dayStart: 0, dayEnd: Number.MAX_SAFE_INTEGER,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(page.page.find(message => message._id === original)).toMatchObject({
+    authorName: "Flame", body: "Hey, Mason! I'm Flame. Toss me a question and let's light it up.",
+  });
+});
+
+test.each(["@flame", "@Flame", "@FLAME", "@chat", "@Chat", "@CHAT", "@chatgpt", "@ChatGPT", "@gpt", "@GPT", "@wizard", "@Verity", "@verity", "@VERITY", "@bot", "@Verity @bot @chat"])("%s resolves to one bot request", async (tag) => {
   const { t, alice, global } = await setup();
   const result = await alice.mutation(api.chat.messages.send, {
     conversationId: global, body: `${tag} What is 10 plus three?`,
