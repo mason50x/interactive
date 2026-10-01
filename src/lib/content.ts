@@ -322,6 +322,14 @@ export const footer = {
       ],
     },
   ],
+  /**
+   * The fine print under the landing page's legal line. The page above it is
+   * the product's story, not a record: the cohorts, the numbers, the quotes,
+   * the prices, and above all the institutions in the trust strip are
+   * illustrative, and this is where the page says so.
+   */
+  landingDisclaimer:
+    "This page is a product demonstration. Statistics, testimonials, pricing, and other claims on it are illustrative, have not been verified, and should not be relied upon as accurate. Institution names and logos are shown as placeholder examples only; they are trademarks of their respective owners, who are not affiliated with this site and have not reviewed, sponsored, or endorsed it.",
 } as const;
 
 export const about = {
