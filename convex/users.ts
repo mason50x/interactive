@@ -1,4 +1,4 @@
-import { recordPage, pageKey } from "./leaderboard";
+import { isWeekday, pageKey, recordPage, weekKey } from "./leaderboard";
 import { ensureGlobalMembership } from "./chat/shared";
 import { resolveRole } from "./roles";
 import { normalizePersonName } from "../src/lib/person-name";
@@ -195,6 +195,14 @@ export const backfillInvited = internalMutation({
   },
 });
 
+/**
+ * The longest gap between two beats that still counts as time on the site.
+ * The visible tab beats every twenty seconds (`activity-presence.tsx`); a
+ * gap past this is a tab that was hidden or closed in between, and the time
+ * away is nobody's.
+ */
+const CONTINUOUS_BEAT_MS = 45_000;
+
 /** One current-page snapshot per signed-in account. The admin query expires it. */
 export const heartbeat = mutation({
   args: { path: v.string() },
@@ -220,8 +228,21 @@ export const heartbeat = mutation({
       now - (user.lastCountedAt ?? 0) >= 60_000
     ));
     if (countView) await recordPage(ctx, path, now);
-    if (user) await ctx.db.patch(user._id, { ...snapshot, ...(countView ? { lastCountedAt: now } : {}) });
-    else await ctx.db.insert("userActivity", { clerkId: identity.subject, ...snapshot, ...(countView ? { lastCountedAt: now } : {}) });
+    if (user) {
+      // Time on the site this week, for the Friday inactivity job: the gap
+      // since the last beat, when it is short enough to be one, on the same
+      // patch the beat makes anyway. See `weekSeconds` in `convex/schema.ts`.
+      const week = weekKey(now);
+      const gap = now - user.lastActiveAt;
+      const continuous = isWeekday(now) && gap > 0 && gap <= CONTINUOUS_BEAT_MS;
+      const weekSeconds = (user.weekKey === week ? (user.weekSeconds ?? 0) : 0) + (continuous ? gap / 1000 : 0);
+      await ctx.db.patch(user._id, {
+        ...snapshot, ...(countView ? { lastCountedAt: now } : {}),
+        weekKey: week, weekSeconds,
+      });
+    } else {
+      await ctx.db.insert("userActivity", { clerkId: identity.subject, ...snapshot, ...(countView ? { lastCountedAt: now } : {}) });
+    }
     return null;
   },
 });

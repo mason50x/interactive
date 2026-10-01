@@ -100,6 +100,16 @@ export default defineSchema({
     currentPath: v.string(),
     lastActiveAt: v.number(),
     lastCountedAt: v.optional(v.number()),
+    /**
+     * Seconds this account has had the site open on weekdays of the week
+     * `weekKey` names (`weekKey` in `convex/leaderboard.ts`: Monday UTC).
+     * Added up by the heartbeat from the gaps between its own beats, so it
+     * costs no write the beat was not already making. Read by the Friday
+     * inactivity job (`convex/inactivity.ts`); a row from another week reads
+     * as zero. Absent on rows from before the job.
+     */
+    weekKey: v.optional(v.number()),
+    weekSeconds: v.optional(v.number()),
   }).index("byClerkId", ["clerkId"])
     .index("byLastActiveAt", ["lastActiveAt"]),
 

@@ -72,4 +72,23 @@ crons.daily("prune inactive timeouts", { hourUTC: 9, minuteUTC: 35 }, internal.d
 crons.daily("prune reward receipts", { hourUTC: 9, minuteUTC: 40 }, internal.dataMaintenance.pruneRewardReceipts, {});
 crons.daily("prune old activity snapshots", { hourUTC: 9, minuteUTC: 45 }, internal.dataMaintenance.pruneUserActivity, {});
 
+// Friday at 2:55 in the afternoon, Central Time: the week's least active
+// member account is deleted and Mason is told. Convex keeps UTC time only,
+// and Central is five hours behind it in summer and six in winter, so the
+// job is booked at both and reads the local clock itself — the booking that
+// is 2:55 runs and the other does nothing. See `isCullTime` in
+// `convex/inactivity.ts`.
+crons.weekly(
+  "remove the week's least active account (daylight time)",
+  { dayOfWeek: "friday", hourUTC: 19, minuteUTC: 55 },
+  internal.inactivity.run,
+  {},
+);
+crons.weekly(
+  "remove the week's least active account (standard time)",
+  { dayOfWeek: "friday", hourUTC: 20, minuteUTC: 55 },
+  internal.inactivity.run,
+  {},
+);
+
 export default crons;

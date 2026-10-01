@@ -37,6 +37,7 @@ import type * as features from "../features.js";
 import type * as functions from "../functions.js";
 import type * as gameViews from "../gameViews.js";
 import type * as http from "../http.js";
+import type * as inactivity from "../inactivity.js";
 import type * as inviteState from "../inviteState.js";
 import type * as invites from "../invites.js";
 import type * as leaderboard from "../leaderboard.js";
@@ -104,6 +105,7 @@ declare const fullApi: ApiFromModules<{
   functions: typeof functions;
   gameViews: typeof gameViews;
   http: typeof http;
+  inactivity: typeof inactivity;
   inviteState: typeof inviteState;
   invites: typeof invites;
   leaderboard: typeof leaderboard;
