@@ -5,6 +5,10 @@ pixel-art flame drawn for this project (tall flat flame, orange body, hot
 yellow core, no outline), stored as one `<rect>` per pixel run with `shape-rendering="crispEdges"`
 so it stays sharp at every size. No third-party source.
 
+`flame-avatar-animated.svg` is the same mark flickering through three frames
+on a 0.6s loop, driven by a CSS animation inside the file. The still file is
+its first frame and is what the UI shows under `prefers-reduced-motion`.
+
 ## Previous avatars
 
 `chatgpt-avatar.svg` was the ChatGPT-era avatar. It is copied unchanged from the
