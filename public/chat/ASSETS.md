@@ -1,8 +1,8 @@
 # Bot avatars
 
 `flame-avatar.svg` is the current avatar: Flame's mark, an original 16x16
-pixel-art flame drawn for this project (orange body, hot yellow core, ember
-outline), stored as one `<rect>` per pixel run with `shape-rendering="crispEdges"`
+pixel-art flame drawn for this project (tall flat flame, orange body, hot
+yellow core, no outline), stored as one `<rect>` per pixel run with `shape-rendering="crispEdges"`
 so it stays sharp at every size. No third-party source.
 
 ## Previous avatars
