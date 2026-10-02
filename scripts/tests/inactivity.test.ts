@@ -6,7 +6,7 @@ import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import { addScore } from "../../convex/leaderboard";
 import { dmKeyFor } from "../../convex/chat/shared";
-import { isCullTime, weekDays } from "../../convex/inactivity";
+import { isCullTime, nextCullAt, weekDays } from "../../convex/inactivity";
 import { FOUNDER_CLERK_ID } from "../../config/roles";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
@@ -257,7 +257,7 @@ test("the run deletes the account from Clerk, clears it here, and tells Mason fr
   expect(notes).toHaveLength(1);
   expect(notes[0]).toMatchObject({
     authorClerkId: "bot",
-    authorName: "ChatGPT",
+    authorName: "Flame",
     status: "visible",
   });
   expect(notes[0].body).toBe(
@@ -406,4 +406,65 @@ test("the heartbeat adds up weekday time on the site from the gaps between beats
   vi.setSystemTime(nextMonday + 20_000);
   await visitor.mutation(api.users.heartbeat, { path: "/chat" });
   expect((await row()).weekSeconds).toBe(20);
+});
+
+test("the next cycle is the next Friday at 2:55 Central, in daylight time and in standard time", () => {
+  expect(nextCullAt(monday)).toBe(friday);
+  expect(nextCullAt(friday - 1)).toBe(friday);
+  // Once it has fired, the next one is a week on.
+  expect(nextCullAt(friday)).toBe(friday + 7 * DAY);
+  // In January the booking that counts is 20:55 UTC.
+  expect(nextCullAt(Date.UTC(2027, 0, 4))).toBe(Date.UTC(2027, 0, 8, 20, 55));
+});
+
+test("a CEO sees the standings and the next cycle, and switching it off makes the Friday booking skip", async () => {
+  const fetch = clerk();
+  const t = await setup();
+  const ceo = t.withIdentity({ subject: FOUNDER_CLERK_ID });
+
+  const status = await ceo.query(api.inactivity.status, { now: monday });
+  expect(status).toMatchObject({
+    enabled: true,
+    nextRunAt: friday,
+    considered: 2,
+    lastRun: null,
+  });
+  expect(status.standings.map((standing) => standing.clerkId)).toEqual([
+    amy,
+    bo,
+  ]);
+
+  await expect(
+    t
+      .withIdentity({ subject: mod })
+      .query(api.inactivity.status, { now: monday }),
+  ).rejects.toThrow("CEO access required.");
+  await expect(
+    t
+      .withIdentity({ subject: amy })
+      .mutation(api.inactivity.setEnabled, { enabled: false }),
+  ).rejects.toThrow("CEO access required.");
+
+  await ceo.mutation(api.inactivity.setEnabled, { enabled: false });
+  expect(await t.action(internal.inactivity.run, {})).toBeNull();
+  expect(fetch).not.toHaveBeenCalled();
+  expect(await masonsBotMessages(t)).toEqual([]);
+  expect(await ceo.query(api.inactivity.status, { now: friday })).toMatchObject(
+    {
+      enabled: false,
+      updatedBy: "@mason",
+      lastRun: { at: friday, outcome: "skipped" },
+    },
+  );
+
+  // Back on, the booking runs and the console says who went.
+  await ceo.mutation(api.inactivity.setEnabled, { enabled: true });
+  expect(await t.action(internal.inactivity.run, {})).toBe(amy);
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  expect(await ceo.query(api.inactivity.status, { now: friday })).toMatchObject(
+    {
+      enabled: true,
+      lastRun: { outcome: "removed", name: "Amy", handle: "amy" },
+    },
+  );
 });

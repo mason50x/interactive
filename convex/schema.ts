@@ -181,6 +181,29 @@ export default defineSchema({
   }),
 
   /**
+   * The Friday inactivity removal's switch and its last outcome. A single
+   * row, created the first time a CEO flips the switch or the job runs;
+   * absent means on, which is how the job shipped. See `convex/inactivity.ts`.
+   */
+  inactivitySettings: defineTable({
+    enabled: v.boolean(),
+    updatedAt: v.optional(v.number()),
+    updatedBy: v.optional(v.string()),
+    lastRun: v.optional(v.object({
+      at: v.number(),
+      outcome: v.union(
+        v.literal("removed"),
+        v.literal("nobody"),
+        v.literal("failed"),
+        v.literal("skipped"),
+      ),
+      /** Who was removed, or who Clerk refused to remove. */
+      name: v.optional(v.string()),
+      handle: v.optional(v.string()),
+    })),
+  }),
+
+  /**
    * Retired. Per-account restrictions were replaced by `siteAnnouncement`,
    * and nothing reads or writes this table any more except the account purge
    * (`convex/accountCleanup.ts`), which still drains it. The definition stays

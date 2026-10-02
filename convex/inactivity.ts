@@ -3,10 +3,11 @@ import { BOT_HANDLE, BOT_ID, BOT_NAME } from "../config/bot";
 import { CHAT_REWARD_SECONDS, PLAYTIME_TIMEZONE } from "../config/playtime";
 import { FOUNDER_CLERK_ID } from "../config/roles";
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation, internalQuery, type QueryCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { ensureDm } from "./chat/shared";
+import { mutation, query } from "./functions";
 import { dayKey, weekKey } from "./leaderboard";
-import { resolveStaffRoles } from "./roles";
+import { requireCeo, resolveStaffRoles } from "./roles";
 
 /**
  * The Friday cull.
@@ -67,6 +68,21 @@ export function isCullTime(now: number): boolean {
   return parts.weekday === "Fri" && Number(parts.hour) === CULL_HOUR;
 }
 
+/**
+ * When the next booking that `isCullTime` accepts falls, strictly after
+ * `now`: the two UTC bookings `crons.ts` makes, tried day by day.
+ */
+export function nextCullAt(now: number): number {
+  const midnight = Math.floor(now / DAY) * DAY;
+  for (let day = 0; day <= 8; day++) {
+    for (const hour of [19, 20]) {
+      const at = midnight + day * DAY + hour * 3_600_000 + 55 * 60_000;
+      if (at > now && isCullTime(at)) return at;
+    }
+  }
+  throw new Error("No Friday booking in the next eight days");
+}
+
 /** Monday through Friday of the week `now` is in, as leaderboard day keys. */
 export function weekDays(now: number): number[] {
   const monday = weekKey(now) * 7 - 3;
@@ -121,6 +137,79 @@ async function bucketTotals(
   return totals;
 }
 
+type Ranked = { candidate: Candidate; lastActiveAt: number };
+
+/**
+ * Every eligible member account for the week `now` is in, least active
+ * first, ties broken as described at the top of the file. Shared by the job
+ * and the admin console's preview, so the console shows exactly who the job
+ * would take.
+ */
+async function rank(ctx: QueryCtx, now: number): Promise<{ ranked: Ranked[]; windowStart: number }> {
+  const days = weekDays(now).filter((day) => day <= dayKey(now));
+  const windowStart = days[0] * DAY;
+  const week = weekKey(now);
+
+  const staff = new Set((await resolveStaffRoles(ctx)).map((entry) => entry.clerkId));
+  const playtime = await bucketTotals(ctx, "playtime", days);
+  const chat = await bucketTotals(ctx, "chat", days);
+
+  const presence = new Map<string, { siteSeconds: number; lastActiveAt: number }>();
+  for await (const row of ctx.db.query("userActivity")) {
+    presence.set(row.clerkId, {
+      siteSeconds: row.weekKey === week ? (row.weekSeconds ?? 0) : 0,
+      lastActiveAt: row.lastActiveAt,
+    });
+  }
+
+  const entries: (Ranked & { createdAt: number })[] = [];
+  for await (const user of ctx.db.query("users")) {
+    const createdAt = user.clerkCreatedAt ?? user._creationTime;
+    if (
+      user.clerkId === BOT_ID ||
+      user.clerkId === FOUNDER_CLERK_ID ||
+      staff.has(user.clerkId) ||
+      user.invited === false ||
+      createdAt >= windowStart
+    ) {
+      continue;
+    }
+    const seen = presence.get(user.clerkId);
+    const siteSeconds = seen?.siteSeconds ?? 0;
+    const playtimeSeconds = playtime.get(user.clerkId) ?? 0;
+    const chatMessages = chat.get(user.clerkId) ?? 0;
+    entries.push({
+      candidate: {
+        clerkId: user.clerkId,
+        handle: user.username ?? null,
+        name: user.firstName || user.name?.split(/\s+/)[0] || user.username || null,
+        siteSeconds,
+        playtimeSeconds,
+        chatMessages,
+        score: siteSeconds + playtimeSeconds + chatMessages * CHAT_REWARD_SECONDS,
+        considered: 0,
+        windowStart,
+      },
+      lastActiveAt: seen?.lastActiveAt ?? 0,
+      createdAt,
+    });
+  }
+  entries.sort(
+    (a, b) =>
+      a.candidate.score - b.candidate.score ||
+      a.lastActiveAt - b.lastActiveAt ||
+      a.createdAt - b.createdAt,
+  );
+  const considered = entries.length;
+  return {
+    ranked: entries.map(({ candidate, lastActiveAt }) => ({
+      candidate: { ...candidate, considered },
+      lastActiveAt,
+    })),
+    windowStart,
+  };
+}
+
 /**
  * This week's least active member, with the numbers that made them so, or
  * `null` when no account is eligible. Reads only; the action decides what
@@ -130,68 +219,140 @@ export const pick = internalQuery({
   args: {},
   returns: v.union(v.null(), candidateValidator),
   handler: async (ctx): Promise<Candidate | null> => {
-    const now = Date.now();
-    const days = weekDays(now).filter((day) => day <= dayKey(now));
-    const windowStart = days[0] * DAY;
-    const week = weekKey(now);
+    const { ranked } = await rank(ctx, Date.now());
+    return ranked[0]?.candidate ?? null;
+  },
+});
 
-    const staff = new Set((await resolveStaffRoles(ctx)).map((entry) => entry.clerkId));
-    const playtime = await bucketTotals(ctx, "playtime", days);
-    const chat = await bucketTotals(ctx, "chat", days);
+async function settingsRow(ctx: QueryCtx | MutationCtx) {
+  return ctx.db.query("inactivitySettings").first();
+}
 
-    const presence = new Map<string, { siteSeconds: number; lastActiveAt: number }>();
-    for await (const row of ctx.db.query("userActivity")) {
-      presence.set(row.clerkId, {
-        siteSeconds: row.weekKey === week ? (row.weekSeconds ?? 0) : 0,
-        lastActiveAt: row.lastActiveAt,
+/** Whether the Friday job is on. No row yet reads as on. */
+export const isEnabled = internalQuery({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => (await settingsRow(ctx))?.enabled ?? true,
+});
+
+/** Keeps what the last Friday came to, for the admin console. */
+export const record = internalMutation({
+  args: {
+    outcome: v.union(v.literal("removed"), v.literal("nobody"), v.literal("failed"), v.literal("skipped")),
+    name: v.optional(v.string()),
+    handle: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, { outcome, name, handle }) => {
+    const lastRun = { at: Date.now(), outcome, name, handle };
+    const row = await settingsRow(ctx);
+    if (row) await ctx.db.patch(row._id, { lastRun });
+    else await ctx.db.insert("inactivitySettings", { enabled: true, lastRun });
+    return null;
+  },
+});
+
+/** How many of the bottom of the week the console lists. */
+const STANDINGS = 10;
+
+const standingValidator = v.object({
+  clerkId: v.string(),
+  handle: v.union(v.string(), v.null()),
+  name: v.union(v.string(), v.null()),
+  imageUrl: v.union(v.string(), v.null()),
+  siteSeconds: v.number(),
+  playtimeSeconds: v.number(),
+  chatMessages: v.number(),
+  score: v.number(),
+  lastActiveAt: v.union(v.number(), v.null()),
+});
+
+/**
+ * The CEO's view of the Friday job: whether it is on, when it next fires,
+ * who it would take if it fired now, and how last time went. `now` comes
+ * from the client so the query stays cacheable, as `invites.list` does.
+ */
+export const status = query({
+  args: { now: v.number() },
+  returns: v.object({
+    enabled: v.boolean(),
+    updatedAt: v.union(v.number(), v.null()),
+    updatedBy: v.union(v.string(), v.null()),
+    nextRunAt: v.number(),
+    windowStart: v.number(),
+    considered: v.number(),
+    standings: v.array(standingValidator),
+    lastRun: v.union(
+      v.null(),
+      v.object({
+        at: v.number(),
+        outcome: v.union(v.literal("removed"), v.literal("nobody"), v.literal("failed"), v.literal("skipped")),
+        name: v.union(v.string(), v.null()),
+        handle: v.union(v.string(), v.null()),
+      }),
+    ),
+  }),
+  handler: async (ctx, { now }) => {
+    await requireCeo(ctx);
+    const row = await settingsRow(ctx);
+    const { ranked, windowStart } = await rank(ctx, now);
+    const standings = [];
+    for (const { candidate, lastActiveAt } of ranked.slice(0, STANDINGS)) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("byClerkId", (q) => q.eq("clerkId", candidate.clerkId))
+        .unique();
+      standings.push({
+        clerkId: candidate.clerkId,
+        handle: candidate.handle,
+        name: candidate.name,
+        imageUrl: user?.imageUrl ?? null,
+        siteSeconds: candidate.siteSeconds,
+        playtimeSeconds: candidate.playtimeSeconds,
+        chatMessages: candidate.chatMessages,
+        score: candidate.score,
+        lastActiveAt: lastActiveAt || null,
       });
     }
-
-    let least: { candidate: Candidate; lastActiveAt: number; createdAt: number } | null = null;
-    let considered = 0;
-    for await (const user of ctx.db.query("users")) {
-      const createdAt = user.clerkCreatedAt ?? user._creationTime;
-      if (
-        user.clerkId === BOT_ID ||
-        user.clerkId === FOUNDER_CLERK_ID ||
-        staff.has(user.clerkId) ||
-        user.invited === false ||
-        createdAt >= windowStart
-      ) {
-        continue;
-      }
-      considered += 1;
-      const seen = presence.get(user.clerkId);
-      const siteSeconds = seen?.siteSeconds ?? 0;
-      const playtimeSeconds = playtime.get(user.clerkId) ?? 0;
-      const chatMessages = chat.get(user.clerkId) ?? 0;
-      const entry = {
-        candidate: {
-          clerkId: user.clerkId,
-          handle: user.username ?? null,
-          name: user.firstName || user.name?.split(/\s+/)[0] || user.username || null,
-          siteSeconds,
-          playtimeSeconds,
-          chatMessages,
-          score: siteSeconds + playtimeSeconds + chatMessages * CHAT_REWARD_SECONDS,
-          considered: 0,
-          windowStart,
-        },
-        lastActiveAt: seen?.lastActiveAt ?? 0,
-        createdAt,
-      };
-      if (
-        least === null ||
-        entry.candidate.score < least.candidate.score ||
-        (entry.candidate.score === least.candidate.score &&
-          (entry.lastActiveAt < least.lastActiveAt ||
-            (entry.lastActiveAt === least.lastActiveAt && entry.createdAt < least.createdAt)))
-      ) {
-        least = entry;
-      }
+    let updatedBy: string | null = null;
+    if (row?.updatedBy) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("byClerkId", (q) => q.eq("clerkId", row.updatedBy!))
+        .unique();
+      updatedBy = user?.username ? `@${user.username}` : (user?.name ?? row.updatedBy);
     }
-    if (least === null) return null;
-    return { ...least.candidate, considered };
+    return {
+      enabled: row?.enabled ?? true,
+      updatedAt: row?.updatedAt ?? null,
+      updatedBy,
+      nextRunAt: nextCullAt(now),
+      windowStart,
+      considered: ranked.length,
+      standings,
+      lastRun: row?.lastRun
+        ? {
+            at: row.lastRun.at,
+            outcome: row.lastRun.outcome,
+            name: row.lastRun.name ?? null,
+            handle: row.lastRun.handle ?? null,
+          }
+        : null,
+    };
+  },
+});
+
+/** A CEO turns the Friday job on or off. Off, the bookings do nothing. */
+export const setEnabled = mutation({
+  args: { enabled: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { enabled }) => {
+    const clerkId = await requireCeo(ctx);
+    const patch = { enabled, updatedAt: Date.now(), updatedBy: clerkId };
+    const row = await settingsRow(ctx);
+    if (row) await ctx.db.patch(row._id, patch);
+    else await ctx.db.insert("inactivitySettings", patch);
+    return null;
   },
 });
 
@@ -269,7 +430,9 @@ export const notify = internalMutation({
 
 /**
  * The job itself. Booked twice on Fridays by `crons.ts`; the booking that
- * is not 2:55 Central does nothing. `force` is for running it by hand:
+ * is not 2:55 Central does nothing, and while a CEO has the job switched off
+ * in the admin console the one that is does nothing either. `force` is for
+ * running it by hand, and runs it whether or not it is switched on:
  *
  *   npx convex run inactivity:run '{"force": true}'
  *
@@ -280,12 +443,18 @@ export const run = internalAction({
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, { force }): Promise<string | null> => {
     if (!force && !isCullTime(Date.now())) return null;
+    if (!force && !(await ctx.runQuery(internal.inactivity.isEnabled, {}))) {
+      await ctx.runMutation(internal.inactivity.record, { outcome: "skipped" });
+      return null;
+    }
 
     const candidate: Candidate | null = await ctx.runQuery(internal.inactivity.pick, {});
     if (candidate === null) {
       await ctx.runMutation(internal.inactivity.notify, { body: NOBODY_BODY });
+      await ctx.runMutation(internal.inactivity.record, { outcome: "nobody" });
       return null;
     }
+    const who = { name: candidate.name ?? undefined, handle: candidate.handle ?? undefined };
 
     try {
       await deleteClerkAccount(candidate.clerkId);
@@ -294,11 +463,13 @@ export const run = internalAction({
       await ctx.runMutation(internal.inactivity.notify, {
         body: failedBody(candidate, `Clerk refused the deletion (${reason}).`),
       });
+      await ctx.runMutation(internal.inactivity.record, { ...who, outcome: "failed" });
       throw error;
     }
 
     await ctx.runMutation(internal.users.deleteFromClerk, { clerkId: candidate.clerkId });
     await ctx.runMutation(internal.inactivity.notify, { body: removedBody(candidate) });
+    await ctx.runMutation(internal.inactivity.record, { ...who, outcome: "removed" });
     console.log(`Friday inactivity check removed ${candidate.clerkId} (score ${candidate.score})`);
     return candidate.clerkId;
   },
