@@ -609,6 +609,22 @@ export default defineSchema({
     .index("byUntil", ["until"]),
 
   /**
+   * Flame staying in a room conversation after a tag, so follow-ups do not
+   * each need another `@flame`. One row per conversation, rewritten by the
+   * bot alone — a send only reads it — so busy rooms never contend on it.
+   * See `followUp` in `convex/chat/bot.ts`.
+   */
+  botEngagements: defineTable({
+    conversationId: v.id("conversations"),
+    /** Untagged messages before this instant may still get an answer. */
+    until: v.number(),
+    /** Untagged messages the model has been asked about since the last tag. */
+    considered: v.number(),
+    /** Of those, how many Flame actually answered. */
+    replies: v.number(),
+  }).index("byConversation", ["conversationId"]),
+
+  /**
    * What was said.
    *
    * Ordered by `_creationTime` through `byConversation`, which is what the

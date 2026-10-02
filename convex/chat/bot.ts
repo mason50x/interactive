@@ -1,6 +1,6 @@
 import { botQuotaName } from "./botConfig";
 import { callerId, callerAccount, dmKeyFor, membership } from "./shared";
-import type { QueryCtx } from "../_generated/server";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
 import { Agent } from "@convex-dev/agent";
 import type { ModelMessage, UserContent } from "ai";
@@ -16,6 +16,10 @@ import {
   botWelcomeBody,
   presentBotBody,
   botRateLimiter,
+  engagementOf,
+  FOLLOW_UP_MAX_CONSIDERED,
+  FOLLOW_UP_MAX_REPLIES,
+  FOLLOW_UP_WINDOW_MS,
 } from "./botConfig";
 
 /**
@@ -81,6 +85,10 @@ const READABLE_PICTURE_TYPES: ReadonlySet<string> = new Set([
 const BOT_TYPING_BEAT_MS = 2_500;
 const BOT_REQUEST_TIMEOUT_MS = 45_000;
 
+/** What the model says instead of a reply to a follow-up: stay quiet, or go. */
+const PASS = "PASS";
+const LEAVE = "LEAVE";
+
 /** Current stable, low-latency Gemini model; overridable without a deploy. */
 const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 
@@ -133,6 +141,8 @@ const contextMessage = v.object({
   authorName: v.optional(v.string()),
   body: v.string(),
   fromBot: v.boolean(),
+  /** The handle of the message this one replies to, if it is a reply. */
+  replyingTo: v.optional(v.string()),
   /** The numbers of this message's pictures in `pictures`, if any were taken. */
   pictures: v.array(v.number()),
 });
@@ -150,6 +160,7 @@ type ContextMessage = {
   authorName?: string;
   body: string;
   fromBot: boolean;
+  replyingTo?: string;
   pictures: number[];
 };
 
@@ -323,6 +334,14 @@ export const context = internalQuery({
       };
     });
 
+    const replyingTo = new Map<Id<"messages">, string>();
+    for (const row of recent) {
+      if (row.replyToId === undefined) continue;
+      const target = await ctx.db.get(row.replyToId);
+      if (target === null) continue;
+      replyingTo.set(row._id, target.authorClerkId === BOT_ID ? BOT_HANDLE : target.authorHandle);
+    }
+
     return {
       messages: recent.reverse().map((row) => ({
         authorHandle: row.authorHandle,
@@ -335,6 +354,7 @@ export const context = internalQuery({
             ? "[shared a picture]"
             : `[shared ${row.images?.length ?? 0} pictures]`),
         fromBot: row.authorClerkId === BOT_ID,
+        replyingTo: replyingTo.get(row._id),
         pictures: numbers.get(row._id) ?? [],
       })),
       pictures,
@@ -388,6 +408,8 @@ export const finish = internalMutation({
     conversationId: v.id("conversations"),
     messageId: v.id("messages"),
     body: v.string(),
+    /** A real answer, not a fallback: keep Flame in the room conversation. */
+    engage: v.optional(v.boolean()),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -427,6 +449,13 @@ export const finish = internalMutation({
     if (conversation?.kind === "dm") {
       await ctx.db.patch(conversation._id, { lastMessageAt: Date.now() });
     }
+    if (args.engage && conversation?.kind === "global") {
+      await engage(
+        ctx,
+        args.conversationId,
+        prompt.mentions?.some((mention) => mention.clerkId === BOT_ID) === true,
+      );
+    }
     const row = await ctx.db
       .query("typing")
       .withIndex("byConversationUser", (q) =>
@@ -435,6 +464,87 @@ export const finish = internalMutation({
       .unique();
     if (row?.token === args.messageId) await ctx.db.delete(row._id);
     return true;
+  },
+});
+
+/**
+ * Open the window on a tag, with fresh budgets, or stretch it after a
+ * follow-up answer until the reply budget runs out.
+ */
+async function engage(
+  ctx: MutationCtx,
+  conversationId: Id<"conversations">,
+  tagged: boolean,
+): Promise<void> {
+  const row = await engagementOf(ctx, conversationId);
+  const now = Date.now();
+  const replies = tagged ? 0 : (row?.replies ?? 0) + 1;
+  const fields = {
+    until: replies >= FOLLOW_UP_MAX_REPLIES ? now : now + FOLLOW_UP_WINDOW_MS,
+    considered: tagged ? 0 : (row?.considered ?? 0),
+    replies,
+  };
+  if (row === null) await ctx.db.insert("botEngagements", { conversationId, ...fields });
+  else await ctx.db.patch(row._id, fields);
+}
+
+/**
+ * Take one untagged message for the model, or refuse it. Refused when the
+ * window has closed or its budget is spent, when anything was said after it
+ * (the settle delay hands the turn to the newest message instead), and while
+ * Flame is already answering someone. Counting it here, in a mutation, is
+ * what keeps two settled messages from both being sent to the model.
+ */
+export const claimFollowUp = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    messageId: v.id("messages"),
+    askerClerkId: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const conversation = await ctx.db.get(args.conversationId);
+    const prompt = await ctx.db.get(args.messageId);
+    if (
+      conversation?.kind !== "global" ||
+      prompt === null ||
+      prompt.status !== "visible" ||
+      prompt.conversationId !== args.conversationId ||
+      prompt.authorClerkId !== args.askerClerkId
+    ) {
+      return false;
+    }
+    const row = await engagementOf(ctx, args.conversationId);
+    if (row === null || row.until <= Date.now() || row.considered >= FOLLOW_UP_MAX_CONSIDERED) {
+      return false;
+    }
+    const later = await ctx.db
+      .query("messages")
+      .withIndex("byConversation", (q) =>
+        q.eq("conversationId", args.conversationId).gt("_creationTime", prompt._creationTime),
+      )
+      .take(CONTEXT_SCAN);
+    if (later.some((message) => message.status === "visible")) return false;
+    const typing = await ctx.db
+      .query("typing")
+      .withIndex("byConversationUser", (q) =>
+        q.eq("conversationId", args.conversationId).eq("clerkId", BOT_ID),
+      )
+      .unique();
+    if (typing !== null && typing.until > Date.now()) return false;
+    await ctx.db.patch(row._id, { considered: row.considered + 1 });
+    return true;
+  },
+});
+
+/** Asked to go: close the window without a word. */
+export const disengage = internalMutation({
+  args: { conversationId: v.id("conversations") },
+  returns: v.null(),
+  handler: async (ctx, { conversationId }) => {
+    const row = await engagementOf(ctx, conversationId);
+    if (row !== null) await ctx.db.patch(row._id, { until: 0 });
+    return null;
   },
 });
 
@@ -460,15 +570,23 @@ function plainReply(raw: string): string {
   return raw.replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim();
 }
 
-function transcriptOf(messages: ContextMessage[], askerHandle: string): string {
+function transcriptOf(
+  messages: ContextMessage[],
+  askerHandle: string,
+  followUp: boolean,
+): string {
   const transcript = messages.map((message) => ({
     speaker: message.fromBot
       ? `@${BOT_HANDLE}`
       : `${message.authorName ?? message.authorHandle} (@${message.authorHandle})`,
     message: message.body,
+    ...(message.replyingTo ? { replyingTo: `@${message.replyingTo}` } : {}),
     ...(message.pictures.length > 0 ? { pictures: message.pictures } : {}),
   }));
-  return `Here are the last room messages as JSON. Reply only to @${askerHandle}'s final message while using earlier messages only as conversational context:\n${JSON.stringify(transcript)}`;
+  if (!followUp) {
+    return `Here are the last room messages as JSON. Reply only to @${askerHandle}'s final message while using earlier messages only as conversational context:\n${JSON.stringify(transcript)}`;
+  }
+  return `Here are the last room messages as JSON. You were tagged recently and are still part of this conversation, but @${askerHandle}'s final message does not tag you. Decide whether it is meant for you: a reply to you, a follow-up to your exchange, or a question put to you or to the room that you can genuinely help with. If so, reply to it the way you would to a tag. If it is chatter between other people, aimed at someone else, a reaction that needs no answer (like "ok", "lol", or "thanks"), or anything you would only be butting into, reply with exactly ${PASS} and nothing else. If they tell you to stop, leave, or be quiet, reply with exactly ${LEAVE}. When unsure, ${PASS}.\n${JSON.stringify(transcript)}`;
 }
 
 /**
@@ -485,9 +603,10 @@ async function promptOf(
   fetchPicture: (storageId: Id<"_storage">) => Promise<Blob | null>,
   room: { messages: ContextMessage[]; pictures: ContextPicture[] },
   askerHandle: string,
+  followUp = false,
 ): Promise<ModelMessage[]> {
   const content: UserContent = [
-    { type: "text", text: transcriptOf(room.messages, askerHandle) },
+    { type: "text", text: transcriptOf(room.messages, askerHandle, followUp) },
   ];
   for (const picture of room.pictures) {
     const blob = await fetchPicture(picture.storageId);
@@ -635,6 +754,7 @@ export const ask = internalAction({
         conversationId: args.conversationId,
         messageId: args.messageId,
         body,
+        engage: true,
       });
     } catch (error) {
       console.error("@bot generation failed", {
@@ -690,6 +810,108 @@ export const ask = internalAction({
     return null;
   },
 });
+
+/**
+ * Consider one untagged room message while Flame is still in the
+ * conversation. Scheduled by `send` after the settle delay; silent on
+ * everything but a real answer — no dots while deciding, since most
+ * messages end in a pass, and no fallback on failure, since nobody asked.
+ */
+export const followUp = internalAction({
+  args: {
+    conversationId: v.id("conversations"),
+    messageId: v.id("messages"),
+    askerClerkId: v.string(),
+    askerHandle: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return null;
+    const claimed = await ctx.runMutation(internal.chat.bot.claimFollowUp, {
+      conversationId: args.conversationId,
+      messageId: args.messageId,
+      askerClerkId: args.askerClerkId,
+    });
+    if (!claimed) return null;
+
+    const startedAt = Date.now();
+    const model = process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), BOT_REQUEST_TIMEOUT_MS);
+    try {
+      const room = await ctx.runQuery(internal.chat.bot.context, {
+        conversationId: args.conversationId,
+        messageId: args.messageId,
+        askerClerkId: args.askerClerkId,
+      });
+      if (room === null) return null;
+      const google = createGoogleGenerativeAI({ apiKey });
+      const bot = new Agent(components.agent, {
+        name: BOT_NAME,
+        languageModel: google(model),
+        instructions: INSTRUCTIONS,
+      });
+      const result = await bot.generateText(
+        ctx,
+        { userId: args.askerClerkId },
+        {
+          prompt: await promptOf(
+            (storageId) => ctx.storage.get(storageId),
+            room,
+            args.askerHandle,
+            true,
+          ),
+          maxOutputTokens: 4_096,
+          temperature: 0.85,
+          maxRetries: 1,
+          abortSignal: controller.signal,
+        },
+      );
+      const body = plainReply(result.text);
+      const verdict = followUpVerdict(body);
+      console.info("@bot follow-up completed", {
+        messageId: args.messageId,
+        model,
+        verdict,
+        durationMs: Date.now() - startedAt,
+        usage: result.usage,
+      });
+      if (verdict === "leave") {
+        await ctx.runMutation(internal.chat.bot.disengage, {
+          conversationId: args.conversationId,
+        });
+      } else if (verdict === "reply") {
+        await ctx.runMutation(internal.chat.bot.finish, {
+          conversationId: args.conversationId,
+          messageId: args.messageId,
+          body,
+          engage: true,
+        });
+      }
+    } catch (error) {
+      console.warn("@bot follow-up failed", {
+        messageId: args.messageId,
+        model,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+    return null;
+  },
+});
+
+/**
+ * A pass may arrive with punctuation or a stray explanation after it; never
+ * post it. Matched in capitals so "Pass the salt" is still a reply.
+ */
+export function followUpVerdict(body: string): "reply" | "pass" | "leave" {
+  if (new RegExp(`^\\W*${LEAVE}\\b`).test(body)) return "leave";
+  if (!/[a-z0-9]/i.test(body) || new RegExp(`^\\W*${PASS}\\b`).test(body)) return "pass";
+  return "reply";
+}
 
 /** Refresh a legacy greeting or start a delayed welcome in an empty DM. */
 export const welcome = mutation({

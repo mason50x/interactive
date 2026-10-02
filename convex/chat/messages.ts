@@ -4,7 +4,7 @@ import type { ChatAccount } from "./shared";
 import { announcementPublisherId, staffId } from "./admin";
 import { BOT_MENTION_HANDLES } from "../../config/bot";
 import { DM_REWARD_SECONDS, rewardText } from "../../config/playtime";
-import { botQuotaName } from "./botConfig";
+import { botQuotaName, FOLLOW_UP_SETTLE_MS, isEngaged } from "./botConfig";
 import { lockedFor, roomControlRefusal } from "./roomControls";
 import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { v } from "convex/values";
@@ -599,6 +599,25 @@ export const send = mutation({
         retryAfter: botLimit?.retryAfter,
         metered: botLimit?.ok === true,
         quotaName,
+      });
+    } else if (
+      // Flame is still in the room conversation after a tag. Polls, GIFs, and
+      // messages that name somebody else are never for it, so they are not
+      // even shown to the model. The rest wait for the room to settle — see
+      // `followUp` in `convex/chat/bot.ts`, which decides whether to answer.
+      member.kind === "global" &&
+      pollOptions === undefined &&
+      gif === undefined &&
+      named.people.length === 0 &&
+      !named.everyone &&
+      Boolean(process.env.GEMINI_API_KEY) &&
+      (await isEngaged(ctx, conversationId))
+    ) {
+      await ctx.scheduler.runAfter(FOLLOW_UP_SETTLE_MS, internal.chat.bot.followUp, {
+        conversationId,
+        messageId,
+        askerClerkId: profile.clerkId,
+        askerHandle: profile.handle,
       });
     }
 

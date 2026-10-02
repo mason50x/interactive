@@ -499,3 +499,108 @@ test("blank bot output gets a visible fallback and diagnostics stay internal", a
   expect(page.page[0].body).toContain("couldn't get an answer through");
   expect(page.page.find(message => message._id === promptId)).not.toHaveProperty("botFailure");
 });
+
+test("after a tagged answer, untagged room messages are held up to Flame until the window closes", async () => {
+  vi.useFakeTimers();
+  vi.stubEnv("GEMINI_API_KEY", "test-key");
+  try {
+    const { t, alice, global } = await setup();
+    const bob = t.withIdentity({ subject: "bob" });
+    const followUps = async () =>
+      (await t.run((ctx) => ctx.db.system.query("_scheduled_functions").take(50)))
+        .filter((job) => job.name.includes("bot:followUp"));
+
+    // Nothing before Flame has been tagged and has answered.
+    await alice.mutation(api.chat.messages.send, { conversationId: global, body: "Anyone around?" });
+    expect(await followUps()).toHaveLength(0);
+
+    vi.setSystemTime(Date.now() + 60_000);
+    await alice.mutation(api.chat.messages.send, { conversationId: global, body: "@flame what is 10 plus three?" });
+    const tag = await t.run((ctx) =>
+      ctx.db.query("messages").withIndex("byConversation", (q) => q.eq("conversationId", global)).order("desc").first(),
+    );
+    await t.mutation(internal.chat.bot.finish, {
+      conversationId: global, messageId: tag!._id, body: "Thirteen, blazing fast!", engage: true,
+    });
+
+    vi.setSystemTime(Date.now() + 10_000);
+    await alice.mutation(api.chat.messages.send, { conversationId: global, body: "and times two?" });
+    expect(await followUps()).toHaveLength(1);
+    // Naming somebody else is never for Flame.
+    vi.setSystemTime(Date.now() + 10_000);
+    await alice.mutation(api.chat.messages.send, { conversationId: global, body: "@bob you try one" });
+    expect(await followUps()).toHaveLength(1);
+
+    // Only the newest message of a burst is taken, and only once.
+    const latest = await t.run((ctx) =>
+      ctx.db.query("messages").withIndex("byConversation", (q) => q.eq("conversationId", global)).order("desc").first(),
+    );
+    const older = (await followUps())[0].args[0];
+    expect(await t.mutation(internal.chat.bot.claimFollowUp, {
+      conversationId: global, messageId: older.messageId, askerClerkId: "alice",
+    })).toBe(false);
+    vi.setSystemTime(Date.now() + 10_000);
+    await bob.mutation(api.chat.messages.send, { conversationId: global, body: "what about 7 squared" });
+    const bobs = (await followUps()).at(-1)!.args[0];
+    expect(bobs.messageId).not.toBe(latest!._id);
+    expect(await t.mutation(internal.chat.bot.claimFollowUp, {
+      conversationId: global, messageId: bobs.messageId, askerClerkId: "bob",
+    })).toBe(true);
+    expect(await t.mutation(internal.chat.bot.claimFollowUp, {
+      conversationId: global, messageId: bobs.messageId, askerClerkId: "alice",
+    })).toBe(false);
+
+    // An answer to a follow-up keeps Flame in, up to the reply budget.
+    for (let reply = 0; reply < 4; reply++) {
+      await t.mutation(internal.chat.bot.finish, {
+        conversationId: global, messageId: bobs.messageId, body: "Forty-nine!", engage: true,
+      });
+    }
+    const engagement = await t.run((ctx) => ctx.db.query("botEngagements").first());
+    expect(engagement).toMatchObject({ replies: 4 });
+    expect(engagement!.until).toBeLessThanOrEqual(Date.now());
+    const before = (await followUps()).length;
+    vi.setSystemTime(Date.now() + 10_000);
+    await bob.mutation(api.chat.messages.send, { conversationId: global, body: "one more?" });
+    expect(await followUps()).toHaveLength(before);
+
+    // A fresh tag reopens the window with fresh budgets; time closes it again.
+    await t.mutation(internal.chat.bot.finish, {
+      conversationId: global, messageId: tag!._id, body: "Back again!", engage: true,
+    });
+    expect(await t.run((ctx) => ctx.db.query("botEngagements").first())).toMatchObject({ replies: 0, considered: 0 });
+    vi.setSystemTime(Date.now() + 3 * 60_000 + 1);
+    await bob.mutation(api.chat.messages.send, { conversationId: global, body: "still there?" });
+    expect(await followUps()).toHaveLength(before);
+  } finally {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  }
+});
+
+test("fallbacks and DMs never open a room window", async () => {
+  const { t, dm, global } = await setup();
+  const tag = await t.run((ctx) => ctx.db.insert("messages", {
+    conversationId: global, authorClerkId: "alice", authorHandle: "alice",
+    body: "@chat hi", status: "visible", flags: [], mentions: [{ clerkId: "bot", handle: "chat" }],
+  }));
+  await t.mutation(internal.chat.bot.finish, { conversationId: global, messageId: tag, body: "fallback" });
+  const prompt = await t.run((ctx) => ctx.db.insert("messages", {
+    conversationId: dm, authorClerkId: "alice", authorHandle: "alice",
+    body: "hi", status: "visible", flags: [],
+  }));
+  await t.mutation(internal.chat.bot.finish, { conversationId: dm, messageId: prompt, body: "Hey!", engage: true });
+  expect(await t.run((ctx) => ctx.db.query("botEngagements").take(5))).toEqual([]);
+});
+
+test("follow-up passes and leaves are never posted", async () => {
+  const { followUpVerdict } = await import("../../convex/chat/bot");
+  expect(followUpVerdict("PASS")).toBe("pass");
+  expect(followUpVerdict("PASS.")).toBe("pass");
+  expect(followUpVerdict("PASS - that's for Bob")).toBe("pass");
+  expect(followUpVerdict("")).toBe("pass");
+  expect(followUpVerdict("...")).toBe("pass");
+  expect(followUpVerdict("LEAVE")).toBe("leave");
+  expect(followUpVerdict("Pass the salt? Sure thing!")).toBe("reply");
+  expect(followUpVerdict("Twenty-six, easy!")).toBe("reply");
+});
