@@ -21,3 +21,16 @@ regexes = ['''^\s*\{ key: "sexual/minors", refusal: "exploitation"(?:, banOnSigh
 description = "Google Drive share-link resource keys are public URL components, not secrets"
 regexTarget = "line"
 regexes = ['''[?&]resourcekey=0-[A-Za-z0-9_-]+''']
+
+# scripts/tests/inactivity.test.ts stubs CLERK_SECRET_KEY with the made-up
+# value `sk_test_inactivity` and asserts it reaches the Clerk request. It is
+# no key at all, but Gitleaks' stripe-access-token rule reads the `sk_test_`
+# prefix as one. Match the two source lines in full; never exempt a file,
+# commit, or real key format.
+[[allowlists]]
+description = "Made-up Clerk secret stub in the inactivity tests is not a credential"
+regexTarget = "line"
+regexes = [
+  '''^\s*vi\.stubEnv\("CLERK_SECRET_KEY", "sk_test_inactivity"\);$''',
+  '''^\s*expect\(init\.headers\.Authorization\)\.toBe\("Bearer sk_test_inactivity"\);$''',
+]
