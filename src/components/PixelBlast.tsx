@@ -406,8 +406,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       uRippleIntensity: { value: number };
       uEdgeFade: { value: number };
     };
-    resizeObserver?: ResizeObserver;
-    raf?: number;
+    /** Stops the render loop and frees the GPU context. */
+    dispose: () => void;
     quad?: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
     timeOffset?: number;
     composer?: EffectComposer;
@@ -435,19 +435,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         }
     }
     if (mustReinit) {
-      if (threeRef.current) {
-        const t = threeRef.current;
-        t.resizeObserver?.disconnect();
-        cancelAnimationFrame(t.raf!);
-        t.quad?.geometry.dispose();
-        t.material.dispose();
-        t.composer?.dispose();
-        t.renderer.dispose();
-        t.renderer.forceContextLoss();
-        if (t.renderer.domElement.parentElement === container)
-          container.removeChild(t.renderer.domElement);
-        threeRef.current = null;
-      }
+      threeRef.current?.dispose();
+      threeRef.current = null;
       const canvas = document.createElement("canvas");
       const renderer = new THREE.WebGLRenderer({
         canvas,
@@ -635,6 +624,19 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         raf = requestAnimationFrame(animate);
       };
       raf = requestAnimationFrame(animate);
+      // `raf` is reassigned every frame, so the loop is cancelled through this
+      // closure rather than a copy of the first frame's id.
+      const dispose = () => {
+        cancelAnimationFrame(raf);
+        ro.disconnect();
+        quadGeom.dispose();
+        material.dispose();
+        touch?.texture.dispose();
+        composer?.dispose();
+        renderer.dispose();
+        renderer.forceContextLoss();
+        renderer.domElement.remove();
+      };
       threeRef.current = {
         renderer,
         scene,
@@ -643,8 +645,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         clock,
         clickIx: 0,
         uniforms,
-        resizeObserver: ro,
-        raf,
+        dispose,
         quad,
         timeOffset,
         composer,
@@ -678,21 +679,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       if (t.touch) t.touch.radiusScale = liquidRadius;
     }
     prevConfigRef.current = cfg;
-    return () => {
-      if (threeRef.current && mustReinit) return;
-      if (!threeRef.current) return;
-      const t = threeRef.current;
-      t.resizeObserver?.disconnect();
-      cancelAnimationFrame(t.raf!);
-      t.quad?.geometry.dispose();
-      t.material.dispose();
-      t.composer?.dispose();
-      t.renderer.dispose();
-      t.renderer.forceContextLoss();
-      if (t.renderer.domElement.parentElement === container)
-        container.removeChild(t.renderer.domElement);
-      threeRef.current = null;
-    };
+    // No cleanup here: a prop change only updates uniforms, and a change that
+    // needs a new renderer disposes the old one above. Unmount is below.
   }, [
     antialias,
     liquid,
@@ -715,6 +703,15 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     color,
     speed,
   ]);
+
+  // Without this the render loop and its WebGL context outlive the component.
+  useEffect(
+    () => () => {
+      threeRef.current?.dispose();
+      threeRef.current = null;
+    },
+    [],
+  );
 
   return (
     <div
