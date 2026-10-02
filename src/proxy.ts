@@ -39,6 +39,41 @@ const isSignedOutRoute = (path: string) =>
   inRouteTree(path, "/auth/sign-up");
 
 /**
+ * Whether Clerk can renew an expired session on this request.
+ *
+ * The session cookie lives for sixty seconds and clerk-js renews it on a
+ * timer, which browsers slow or freeze in a background tab — so a member
+ * coming back to the site often arrives with it expired. Clerk renews it with
+ * a handshake redirect, but only on a request for a document (the same test
+ * as `isRequestEligibleForHandshake` in `@clerk/backend`). Anything else —
+ * the router's fetch for a client-side navigation, a hover prefetch — just
+ * reads as signed out.
+ */
+export function canRenewSession(req: Request) {
+  if (req.method !== "GET") return false;
+  const dest = req.headers.get("sec-fetch-dest");
+  if (dest) return dest === "document" || dest === "iframe";
+  return req.headers.get("accept")?.startsWith("text/html") ?? false;
+}
+
+/**
+ * The answer to a router fetch that arrived signed out.
+ *
+ * `auth.protect()` would redirect it to sign-in, and the router would show
+ * that form to someone who is still signed in — or worse, cache it as the
+ * prefetch for a rail link and show it on their next click. A body-less
+ * error instead makes the router load the same URL as a full page, which
+ * Clerk can renew: a live session lands where it was going, and a dead one
+ * is sent to sign-in by `auth.protect()` on that load.
+ */
+function reloadAsDocument() {
+  return new NextResponse(null, {
+    status: 401,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
+/**
  * One origin, one job: decide who may see a route before it renders.
  *
  * This was once a two-hostname router — the player origin was rewritten here
@@ -64,6 +99,11 @@ const sessionGate = clerkMiddleware(async (auth, req) => {
       LEARN_PATH_PREFIX,
     ].some((root) => inRouteTree(path, root))
   ) {
+    if (req.method === "GET" && !canRenewSession(req)) {
+      const { userId } = await auth();
+      if (!userId) return reloadAsDocument();
+      return;
+    }
     await auth.protect();
     return;
   }
