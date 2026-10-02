@@ -54,6 +54,13 @@ deployment without the webhook; the webhook's replay is a no-op. When Clerk
 refuses, nothing is changed, Mason is told why, and the job fails loudly in
 the Convex logs.
 
+CEOs see the job under **Auto ban** in the admin console: a switch that turns
+it off (`inactivity.setEnabled`; the single `inactivitySettings` row, absent
+means on), the next Friday it fires, the last cycle's outcome, and the ten
+members currently least active, in the order the job would take them. While
+it is off the Friday booking records a skip and changes nothing; a forced run
+by hand still runs.
+
 The Admin directory shows each user's timeout log for the last seven days.
 Only users who pass the existing admin (CEO, Co-Owner, or Head Moderator) check may read
 it. Bulk allowance resets also run in batches once the first page is processed.

@@ -6,16 +6,18 @@ import { api } from "@convex/_generated/api";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { useAuthedQuery } from "@/lib/use-authed-query";
 import { AnnouncementConfig } from "./announcement-config";
+import { AutoBan } from "./auto-ban";
 import { InviteCodes } from "./invite-codes";
 import { UserDirectory } from "./user-directory";
 import { Votes } from "./votes";
 
-/** Invite codes stay with CEOs; every other tab is open to all admins. */
+/** Invite codes and Auto ban stay with CEOs; every other tab is open to all admins. */
 const TABS = [
   { value: "users", label: "Users", ceoOnly: false },
   { value: "invites", label: "Invite codes", ceoOnly: true },
   { value: "votes", label: "Vote", ceoOnly: false },
   { value: "announcement", label: "Announcement", ceoOnly: false },
+  { value: "autoban", label: "Auto ban", ceoOnly: true },
 ] as const;
 
 export function AdminConsole() {
@@ -41,6 +43,8 @@ export function AdminConsole() {
         <UserDirectory role={role} />
       ) : tab === "invites" && role === "ceo" ? (
         <InviteCodes />
+      ) : tab === "autoban" && role === "ceo" ? (
+        <AutoBan />
       ) : tab === "votes" ? (
         <Votes />
       ) : (
