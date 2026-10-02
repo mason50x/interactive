@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { MegaphoneIcon, ShieldCheckIcon } from "@heroicons/react/24/solid";
 import { LogoMark } from "@/components/wordmark";
 import { Photo } from "@/components/app/chat/photo";
-import { BOT_AVATAR, BOT_HANDLE, handleHue } from "@/lib/chat";
+import { BOT_AVATAR, BOT_AVATAR_ANIMATED, BOT_HANDLE, handleHue } from "@/lib/chat";
 import { cn } from "@/lib/utils";
 
 /**
@@ -111,11 +111,19 @@ export function Monogram({
       {bot ? (
         // The assistant has no profile row, so its app-owned mark is fixed here.
         // The mark is full-colour pixel art, so it is never inverted; the small
-        // inset keeps the flame's base inside the disc at every size.
-        <Photo
-          src={BOT_AVATAR}
-          className="absolute inset-[5%] size-[90%] rounded-none object-contain"
-        />
+        // inset keeps the flame's base inside the disc at every size. The
+        // flicker lives inside the SVG, but a browser does not pass the page's
+        // motion preference into an image, so the still frame is swapped in here.
+        <>
+          <Photo
+            src={BOT_AVATAR_ANIMATED}
+            className="absolute inset-[5%] size-[90%] rounded-none object-contain motion-reduce:hidden"
+          />
+          <Photo
+            src={BOT_AVATAR}
+            className="absolute inset-[5%] size-[90%] rounded-none object-contain hidden motion-reduce:block"
+          />
+        </>
       ) : imageUrl === undefined ? null : (
         <Photo
           src={imageUrl}

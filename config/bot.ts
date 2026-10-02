@@ -3,6 +3,8 @@ export const BOT_ID = "bot";
 export const BOT_HANDLE = "chat";
 export const BOT_NAME = "Flame";
 export const BOT_AVATAR = "/chat/flame-avatar.svg";
+/** The same mark flickering through three frames; the still above stands in under reduced motion. */
+export const BOT_AVATAR_ANIMATED = "/chat/flame-avatar-animated.svg";
 
 export function botWelcomeBody(name: string): string {
   return `Hey, ${name}! I'm ${BOT_NAME}. Toss me a question and let's light it up.`;
