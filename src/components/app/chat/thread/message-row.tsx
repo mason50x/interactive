@@ -113,12 +113,10 @@ export function MessageRow({
     new Date(previous._creationTime).toDateString() !==
       new Date(message._creationTime).toDateString();
   const joinsNext = messagesConnect(message, next);
-  const showTail = !joinsNext && (mine || message.replyTo !== undefined);
   const corners = cn(
     "rounded-3xl",
     grouped && (mine ? "rounded-tr-md" : "rounded-tl-md"),
     joinsNext && (mine ? "rounded-br-md" : "rounded-bl-md"),
-    showTail && (mine ? "rounded-br-lg" : "rounded-bl-lg"),
   );
   const gone = message.status !== "visible";
   const bot = isBot(message.authorClerkId);
@@ -343,7 +341,7 @@ export function MessageRow({
                 : "text-foreground",
             )}
           >
-            {/* The bubble's solid fill and final-message tail sit behind the text. */}
+            {/* The bubble's solid fill sits behind the text. */}
             <span
               aria-hidden
               className={cn(
@@ -353,24 +351,7 @@ export function MessageRow({
                 // `.bubble-named` in `globals.css`.
                 named && "bubble-named",
               )}
-            >
-              {showTail && (
-                <svg
-                  viewBox="0 0 24 14"
-                  className={cn(
-                    "bubble-tail pointer-events-none absolute -bottom-[2px] h-[7px] w-3",
-                    mine ? "-right-1.5" : "-left-1.5 -scale-x-100",
-                  )}
-                >
-                  <path
-                    d="M0 0h10c0 5.5 4 10 11 11.2 2.2.4 3 1.1 2.3 2-.7.9-2.3 1-3.8.7C10 13 3 9.5 0 4Z"
-                    stroke="var(--bubble-fill)"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </span>
+            />
             <div className="relative">
               <MessageText
                 message={message}

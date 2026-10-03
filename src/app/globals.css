@@ -706,7 +706,7 @@
       0 1px 2px rgba(0, 0, 0, 0.45);
   }
 
-  /* The bubble and its tail share one flat fill. */
+  /* The bubble's flat fill. */
   .bubble-mine {
     --bubble-fill: var(--primary);
   }
@@ -718,10 +718,6 @@
   .bubble-mine,
   .bubble-theirs {
     background-color: var(--bubble-fill);
-  }
-
-  .bubble-tail {
-    fill: var(--bubble-fill);
   }
 
   /* A subtle solid tint marks messages that mention the reader. */
